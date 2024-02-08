@@ -23,7 +23,7 @@ def format(session):
 
     autoflake_args = [
         "--in-place",
-        "--imports=fillname",
+        "--imports=large_neighbourhood_search",
         "--ignore-init-module-imports",
         "--remove-unused-variables",
         "-r",
@@ -105,7 +105,7 @@ def lint_pylint(session):
     Run pylint.
     """
     session.install("-e", ".[lint_pylint]")
-    session.run("pylint", "fillname", "tests")
+    session.run("pylint", "large_neighbourhood_search", "tests")
 
 
 @nox.session
@@ -114,7 +114,7 @@ def typecheck(session):
     Typecheck the code using mypy.
     """
     session.install("-e", ".[typecheck]")
-    session.run("mypy", "-p", "fillname", "-p", "tests")
+    session.run("mypy", "-p", "large_neighbourhood_search", "-p", "tests")
 
 
 @nox.session(python=PYTHON_VERSIONS)

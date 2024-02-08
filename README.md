@@ -1,13 +1,4 @@
-# fillname
-
-> Remove this block after following the instructions below to use the template.
->
-> This project template is configured to ease collaboration. Linters,
-> formatters, and actions are already configured and ready to use.
->
-> To use the project template, run the `init.py` script to give the project a
-> name and some metadata. The script can then be removed. Then adjust the
-> `setup.cfg` file as needed.
+# large_neighbourhood_search
 
 ## Installation
 
@@ -18,14 +9,14 @@ pip install .
 ## Usage
 
 ```bash
-fillname -h
+large_neighbourhood_search -h
 ```
 
 ## Development
 
 To improve code quality, we use [nox] to run linters, type checkers, unit
 tests, documentation and more. We recommend installing nox using [pipx] to have
-it available globally.
+it available globally.git 
 
 ```bash
 # install
