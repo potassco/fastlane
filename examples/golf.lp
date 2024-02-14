@@ -14,3 +14,6 @@ meets(P1,P2,W) :- plays(P1,W,G), plays(P2,W,G), P1 < P2.
 
 _minimize(1,(P1,P2)) :- #count { W : meets(P1,P2,W) } > 1, player(P1), player(P2), P1 < P2.
 #show plays/3.
+
+_lns_select(W) :- week(W).
+_lns_fix(plays(P,W,G),W) :- _lns_select(W), plays(P,W,G).

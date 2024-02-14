@@ -21,8 +21,14 @@ def main():
     log.debug("debug")
     log.error("error")
 
-    clingo.clingo_main(LNS(args.lns_seed, args.bnb_search), args.i)
-
+    lns = LNS(
+        args.i,
+        rest,
+        args.lns_seed,
+        args.bnb_search,
+        args.declarative
+    )
+    lns.main()
 
 if __name__ == "__main__":
     main()
