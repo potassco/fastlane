@@ -26,7 +26,8 @@ def get_parser() -> ArgumentParser:
         prog="large_neighbourhood_search",
         description=dedent(
             """\
-            ASP using Large-Neighbourhood Search (LNS)
+            ASP using Large-Neighbourhood Search (LNS).
+            For advanced options a parameter file is requiered.
             """
         ),
     )
@@ -66,6 +67,10 @@ def get_parser() -> ArgumentParser:
     )
 
     parser.add_argument(
+        "-rr", help="Relax rate for LNS. Value between 0 and 1", default=0.2, type=float
+    )
+
+    parser.add_argument(
         "--bnb_search", help="Perform standard branch-and-bound search (no LNS).", action="store_true"
     )
 
@@ -73,4 +78,7 @@ def get_parser() -> ArgumentParser:
         "--declarative", help="Perform LNS using declarative neighbourhood.", action="store_true"
     )
 
+    parser.add_argument(
+        "--gen_example", help="Generate example parameter file at destination and exit.", type=str, metavar="DIR"
+    )
     return parser

@@ -1,0 +1,15 @@
+{
+    "name": "example_params",
+    "relaxation": {
+        "mode": "decl",
+        "rates": [
+            0.2,
+            0.4,
+            0.6
+        ]
+    },
+    "search": {
+        "mode": "hard_const",
+        "bound": 100
+    }
+}
