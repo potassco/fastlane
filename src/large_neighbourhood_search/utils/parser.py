@@ -15,7 +15,7 @@ if sys.version_info[1] < 8:
 else:
     from importlib import metadata  # nocoverage
 
-VERSION = metadata.version("fillname")
+VERSION = metadata.version("large_neighbourhood_search")
 
 
 def get_parser() -> ArgumentParser:
@@ -23,11 +23,11 @@ def get_parser() -> ArgumentParser:
     Return the parser for command line options.
     """
     parser = ArgumentParser(
-        prog="fillname",
+        prog="large_neighbourhood_search",
         description=dedent(
             """\
-            fillname
-            filldescription
+            ASP using Large-Neighbourhood Search (LNS).
+            For advanced options a parameter file is requiered.
             """
         ),
     )
@@ -56,5 +56,29 @@ def get_parser() -> ArgumentParser:
 
     parser.add_argument(
         "--version", "-v", action="version", version=f"%(prog)s {VERSION}"
+    )
+
+    parser.add_argument(
+        "-i", help="Input file(s)", nargs="+"
+    )
+
+    parser.add_argument(
+        "--lns_seed", help="Random seed for LNS.", default=None, type=int
+    )
+
+    parser.add_argument(
+        "-rr", help="Relax rate for LNS. Value between 0 and 1", default=0.2, type=float
+    )
+
+    parser.add_argument(
+        "--bnb_search", help="Perform standard branch-and-bound search (no LNS).", action="store_true"
+    )
+
+    parser.add_argument(
+        "--declarative", help="Perform LNS using declarative neighbourhood.", action="store_true"
+    )
+
+    parser.add_argument(
+        "--gen_example", help="Generate example parameter file at destination and exit.", type=str, metavar="DIR"
     )
     return parser
