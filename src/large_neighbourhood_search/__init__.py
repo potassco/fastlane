@@ -8,6 +8,27 @@ import clingo
 from clingo.symbol import Number, SymbolType
 
 class LNS(clingo.Application):
+    """
+    Clingo application performing LNS.
+
+    :param files: Problem encoding.
+    :type files: str
+    :param clingo_args: Additional clingo arguments.
+    :type clingo_args: list[str]
+    :default clingo_args: []
+    :param seed: Seed used for random relaxation.
+    :type seed: int
+    :default seed: None
+    :param relax_rate: Singular relax rate used for LNS (1>RR>0).
+    :type relax_rate: float
+    :default relax_rate: 0.2
+    :param bnb_search: Enables branch-and-bound search instead of LNS (RR=1).
+    :type bnb_search: bool
+    :default bnb_search: False
+    :param declarative: Enables declarative relaxation mode. Otherwise random relaxation is used.
+    :type declarative: bool
+    :default declarative: False
+    """
     
     def __init__(self, 
                  files: list[str], 
@@ -48,6 +69,9 @@ class LNS(clingo.Application):
     def load_param_file(self, json_file: str):
         """
         Load parameters from json file, overwriting all other options.
+
+        :param json_file: Parameter file to be loaded.
+        :type json_file: str
         """
         with open(json_file) as json_data:
             params = json.load(json_data)
@@ -79,6 +103,9 @@ class LNS(clingo.Application):
         Saves shown atoms of model and aggregates optimization values.
 
         Extracts selected and fixed atoms from model if declarative mode is selected.
+
+        :param model: Model found during solving.
+        :type model: clingo.solving.Model
         """
         self._model = model.symbols(shown=True)
         self._opt_val = 0
@@ -87,7 +114,7 @@ class LNS(clingo.Application):
         self._fix = {}
 
         if self._best_model:
-            print(self.get_varibility(self._model, self._best_model))
+            print(self.get_variability(self._model, self._best_model))
 
         for atom in model.symbols(atoms=True):
             if (atom.match("_minimize", 2) and 
@@ -100,11 +127,16 @@ class LNS(clingo.Application):
                 elif (atom.match("_lns_fix", 2)):
                     self._fix[atom.arguments[1]].append((atom.arguments[0], True))
 
-    def relax(self, atoms: list[clingo.Symbol], relax_rate: float = 0.2):
+    def relax(self, atoms: list[clingo.Symbol], relax_rate: float):
         """
         Relax random number of shown atoms given by the relax_rate.
 
-        Returns non-relaxed (fixed) atoms.
+        :param atoms: Symbols to choose from for relaxation.
+        :type atoms: list[clingo.Symbol]
+        :param relax_rate: Percentage of atoms to be relaxed.
+        :type relax_rate: float
+        :return: Fixed (not relaxed) atoms.
+        :rtype: list[clingo.Symbol]
         """
         fixed_atoms = []
         for atom in atoms:
@@ -112,16 +144,18 @@ class LNS(clingo.Application):
                     fixed_atoms.append((atom, True))
         return fixed_atoms
     
-    def decl_relax(self, select: list[clingo.Symbol], fix_dict: dict[clingo.Symbol, list[clingo.Symbol]], relax_rate: float = 0.2):
+    def decl_relax(self, select: list[clingo.Symbol], fix_dict: dict[clingo.Symbol, list[clingo.Symbol]], relax_rate: float):
         """
         Fix random number of selected atoms, relax the rest.
 
-        Arguments:
-        select -- List of Symbols S corresponding to _lns_select(S)
-        fix_dict -- Dictionary of lists of symbols S' with symbols S as key, corresponding to _lns_fix(S',S)
-        relax_rate -- Percentage of selected atoms to be relaxed (not fixed)
-
-        Returns fixed atoms.
+        :param select: List of Symbols S corresponding to _lns_select(S).
+        :type select: list[clingo.Symbol]
+        :param fix_dict: Dictionary of lists of symbols S' with symbols S as key, corresponding to _lns_fix(S',S).
+        :type fix_dict: dict[clingo.Symbol, list[clingo.Symbol]]
+        :param relax_rate: Percentage of selected atoms to be relaxed (not fixed).
+        :type relax_rate: float
+        :return: Fixed (not relaxed) atoms.
+        :rtype: list[clingo.Symbol]
         """
         fixed_atoms = []
         for sym in select:
@@ -133,16 +167,31 @@ class LNS(clingo.Application):
     def repair(self, ctl: clingo.Control, assumptions: list):
         """
         Solve under given assumptions.
+
+        :param ctl: Clingo Control object used for solving.
+        :type ctl: clingo.Control
+        :param assumptions: Assumptions for solving (fixed atoms).
+        :type assumptions: list[tuple(clingo.Symbol, True)]
+        :return: Result of solving call.
+        :rtype: clingo.solving.SolveResult
         """
         x = ctl.solve(assumptions=assumptions, on_model=self._on_model)
         return x
     
-    def get_varibility(self, list1: list, list2:list):
+    def get_variability(self, list1: list, list2:list):
         """
-        Calculate varibility of two lists.
+        Calculate variability of two lists.
 
         0 - no variability (same lists or bigger one contains smaller one)
+
         1 - completely different
+
+        :param list1: First list.
+        :type list1: list
+        :param list2: Second list.
+        :type list2: list
+        :return: Variability of both lists.
+        :rtype: float
         """
         len1 = len(list1)
         len2 = len(list2)
@@ -153,14 +202,18 @@ class LNS(clingo.Application):
 
     def get_stats(self, ctl: clingo.Control):
         """
-        Method to obtain different stats from the last solver call.
+        WIP Method to obtain different stats from the last solver call.
+
+        :param ctl: Clingo Control object used for solving.
+        :type ctl: clingo.Control
+        :return: Conflict statistics
         """
         conflicts = ctl.statistics["solvers"]["conflicts"]
         return conflicts
 
     def main(self):
         """
-        Run Large-Neighbourhood Search.
+        Run Large-Neighbourhood Search according to set parameters.
         """
         ctl = clingo.Control(self._clingo_args)
         if not self._files: self._files = ["-"]
