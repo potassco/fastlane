@@ -48,7 +48,7 @@ class LNS(clingo.Application):
         self._seed = seed
         self._relax_rates = [relax_rate]
         self._relax_rate = relax_rate
-        self._unsat_treshold = 3
+        self._unsat_threshold = 3
 
         self._bnb_search = bnb_search
         self._decl = declarative
@@ -65,8 +65,9 @@ class LNS(clingo.Application):
         self._fix = None
 
         self._opt_val = None
+        self._best_val = None
 
-    def load_param_file(self, json_file: str):
+    def load_params(self, json_file: str):
         """
         Load parameters from json file, overwriting all other options.
 
@@ -178,59 +179,13 @@ class LNS(clingo.Application):
         x = ctl.solve(assumptions=assumptions, on_model=self._on_model)
         return x
     
-    def get_variability(self, list1: list, list2:list):
+    def LNS_hard_cons(self, ctl: clingo.Control):
         """
-        Calculate variability of two lists.
+        Run LNS using hard constraints.
 
-        0 - no variability (same lists or bigger one contains smaller one)
-
-        1 - completely different
-
-        :param list1: First list.
-        :type list1: list
-        :param list2: Second list.
-        :type list2: list
-        :return: Variability of both lists.
-        :rtype: float
-        """
-        len1 = len(list1)
-        len2 = len(list2)
-        if len1 < len2:
-            return 1 - len(set(list1).intersection(list2))/len1
-        else:
-            return 1 - len(set(list2).intersection(list1))/len2
-
-    def get_stats(self, ctl: clingo.Control):
-        """
-        WIP Method to obtain different stats from the last solver call.
-
-        :param ctl: Clingo Control object used for solving.
+        :param ctl: Clingo Control Object used for solving.
         :type ctl: clingo.Control
-        :return: Conflict statistics
         """
-        conflicts = ctl.statistics["solvers"]["conflicts"]
-        return conflicts
-
-    def main(self):
-        """
-        Run Large-Neighbourhood Search according to set parameters.
-        """
-        ctl = clingo.Control(self._clingo_args)
-        if not self._files: self._files = ["-"]
-        for path in self._files: ctl.load(path)
-        
-        # set seed if given
-        if self._seed is not None:
-            random.seed(self._seed)
-        
-        if self._bnb_search:
-            print("Running branch-and-bound search.")
-            self._relax_rate = 1       
-        elif self._decl:
-            print("Running with declarative relaxation with a rate of {}.".format(self._relax_rate))
-        else:
-            print("Running with random relaxation of shown atoms with a rate of {}.".format(self._relax_rate))
-        
         # add constraint to force better solution with each iteration
         # encoding has to contain _minimize(V,I) predicates as minimization criteria
         # where V: value, I: identifier
@@ -269,8 +224,114 @@ class LNS(clingo.Application):
             else:
                 unsat_c += 1
             # change relax_rate after unsat_treshold amount of unsat solutions
-            self._relax_rate = self._relax_rates[unsat_c//self._unsat_treshold%len(self._relax_rates)]
+            self._relax_rate = self._relax_rates[unsat_c//self._unsat_threshold%len(self._relax_rates)]
             # stop criterion, WIP
             if s == self._bound or self._opt_val == 0:
                 print("Answer:\n{}\nopt_val: {}".format(" ".join([str(atom) for atom in self._best_model]), self._opt_val))
-                break
+                return
+    
+    def LNS_classic(self, ctl: clingo.Control):
+        """
+        Run classic LNS.
+
+        :param ctl: Clingo Control Object used for solving.
+        :type ctl: clingo.Control
+        """
+        ctl.ground([("base", [])], context=self)
+        # get first solution
+        if ctl.solve(on_model=self._on_model).satisfiable:               
+                print("Initial solution found with opt_val: {}".format(self._opt_val))
+                self._best_val = self._opt_val            
+                self._best_model = self._model
+        else:
+            print("No first solution found.")
+            return
+        
+        # perform LNS
+        s = 0
+        unsat_c = 0
+        while True:
+            s += 1
+            print("step {} with rate {}:".format(s,self._relax_rate))
+            
+            # relax model
+            if self._decl:
+                assumptions = self.decl_relax(self._select, self._fix, self._relax_rate)
+            else:
+                assumptions = self.relax(self._best_model, self._relax_rate)
+            # reconstruct model, if new solution is satisfiable: better solution has been found
+            if self.repair(ctl, assumptions).satisfiable and self._opt_val < self._best_val:
+                print("New opt_val: {}".format(self._opt_val))
+                
+                self._best_val = self._opt_val
+                self._best_model = self._model                
+            else:
+                unsat_c += 1
+            # change relax_rate after unsat_treshold amount of unsat solutions
+            self._relax_rate = self._relax_rates[unsat_c//self._unsat_threshold%len(self._relax_rates)]
+            # stop criterion, WIP
+            if s == self._bound or self._opt_val == 0:
+                print("Answer:\n{}\nopt_val: {}".format(" ".join([str(atom) for atom in self._best_model]), self._best_val))
+                return
+
+    def get_variability(self, list1: list, list2:list):
+        """
+        Calculate variability of two lists.
+
+        0 - no variability (same lists or bigger one contains smaller one)
+
+        1 - completely different
+
+        :param list1: First list.
+        :type list1: list
+        :param list2: Second list.
+        :type list2: list
+        :return: Variability of both lists.
+        :rtype: float
+        """
+        len1 = len(list1)
+        len2 = len(list2)
+        if len1 < len2:
+            return 1 - len(set(list1).intersection(list2))/len1
+        else:
+            return 1 - len(set(list2).intersection(list1))/len2
+
+    def get_stats(self, ctl: clingo.Control):
+        """
+        WIP Method to obtain different stats from the last solver call.
+
+        :param ctl: Clingo Control object used for solving.
+        :type ctl: clingo.Control
+        :return: Conflict statistics
+        """
+        conflicts = ctl.statistics["solvers"]["conflicts"]
+        return conflicts
+
+    def main(self):
+        """
+        Run Large-Neighbourhood Search according to set parameters.
+        """
+        if self._search_mode==1:
+            self._clingo_args.append("--rand-freq=0.5")
+
+        ctl = clingo.Control(self._clingo_args)
+        if not self._files: self._files = ["-"]
+        for path in self._files: ctl.load(path)
+        
+        # set seed if given
+        if self._seed is not None:
+            random.seed(self._seed)
+        
+        if self._bnb_search:
+            print("Running branch-and-bound search.")
+            self._relax_rate = 1       
+        elif self._decl:
+            print("Running with declarative relaxation with a rate of {}.".format(self._relax_rate))
+        else:
+            print("Running with random relaxation of shown atoms with a rate of {}.".format(self._relax_rate))
+        
+        match self._search_mode:
+            case 0:
+                self.LNS_hard_cons(ctl)
+            case 1:
+                self.LNS_classic(ctl)
