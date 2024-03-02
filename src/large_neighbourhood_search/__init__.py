@@ -3,9 +3,10 @@ The large_neighbourhood_search project.
 """
 
 import random
-import json
 import clingo
+import time
 from clingo.symbol import Number, SymbolType
+from .utils.pf_handling import load_param_file
 
 class LNS(clingo.Application):
     """
@@ -28,6 +29,9 @@ class LNS(clingo.Application):
     :param declarative: Enables declarative relaxation mode. Otherwise random relaxation is used.
     :type declarative: bool
     :default declarative: False
+    :param param_path: Location of parameter file.
+    :type param_path: str
+    :default param_path: None
     """
     
     def __init__(self, 
@@ -36,12 +40,13 @@ class LNS(clingo.Application):
                  seed: int = None,
                  relax_rate: float = 0.2, 
                  bnb_search: bool = False, 
-                 declarative: bool = False):
+                 declarative: bool = False,
+                 param_path: str = None):
         """
         Initialize application.
         """
         self.program_name = "lns"
-        self.version = "0.1"
+        self.version = "0.2"
 
         self._files = files
         self._clingo_args = clingo_args
@@ -53,9 +58,15 @@ class LNS(clingo.Application):
         self._bnb_search = bnb_search
         self._decl = declarative
 
+        self.param_path = param_path
+
         # 0: hard const, 1: classic
-        self._search_mode = 0
-        self._bound = 200
+        self._search_mode = 1
+        # 0: overall, 1: per_improv
+        self._bound_mode = 0
+        # 0: steps, 1: time
+        self._bound_type = 0
+        self._bound = 2000
 
 
         self._model = None
@@ -74,14 +85,13 @@ class LNS(clingo.Application):
         :param json_file: Parameter file to be loaded.
         :type json_file: str
         """
-        with open(json_file) as json_data:
-            params = json.load(json_data)
-            json_data.close()
-
-        self._relax_rates = params["relaxation"]["rates"]
-        self._relax_rate = self._relax_rates[0]
-        if params["relaxation"]["mode"] in ["decl", "rndm"]:
-            if params["relaxation"]["mode"] == "decl":
+        params = load_param_file(json_file)
+        r_params = params["relaxation"]
+        s_params = params["search"]
+        b_params = s_params["bound"]
+        # relaxation
+        if r_params["mode"] in ["decl", "rndm"]:
+            if r_params["mode"] == "decl":
                 self._decl = True
             else:
                 self._decl = False
@@ -89,13 +99,40 @@ class LNS(clingo.Application):
             pass
             # TODO throw invalid input error
         
-        if params["search"]["mode"] == "hard_const":
+        self._relax_rates = r_params["rates"]
+        self._relax_rate = self._relax_rates[0]
+        self._unsat_threshold = r_params["threshold"]
+        
+        # search
+        # 0: hard_cons 1: classic
+        if s_params["mode"] == "hard_const":
             self._search_mode = 0
+        elif s_params["mode"] == "classic":
+            self._search_mode = 1
         else:
             pass
             # TODO throw invalid input error
         
-        self._bound = params["search"]["bound"]
+        # bound
+        # 0: overall, 1: per_improv
+        if b_params["mode"] == "overall":
+            self._bound_mode = 0
+        elif b_params["mode"] == "per_step":
+            self._bound_mode = 1
+        else:
+            pass
+            # TODO throw invalid input error
+        # 0: steps, 1: time
+        if b_params["type"] == "steps":
+            self._bound_type = 0
+        elif b_params["type"] == "time":
+            self._bound_type = 1
+        else:
+            pass
+            # TODO throw invalid input error
+        self._bound = b_params["value"]
+
+        self._seed = params["seed"]
         return
 
 
@@ -178,101 +215,6 @@ class LNS(clingo.Application):
         """
         x = ctl.solve(assumptions=assumptions, on_model=self._on_model)
         return x
-    
-    def LNS_hard_cons(self, ctl: clingo.Control):
-        """
-        Run LNS using hard constraints.
-
-        :param ctl: Clingo Control Object used for solving.
-        :type ctl: clingo.Control
-        """
-        # add constraint to force better solution with each iteration
-        # encoding has to contain _minimize(V,I) predicates as minimization criteria
-        # where V: value, I: identifier
-        ctl.add("opt_val", ["o"], 
-                ":- #sum{V,I: _minimize(V,I)} >= o.")
-        ctl.ground([("base", [])], context=self)
-
-        # get first solution
-        if ctl.solve(on_model=self._on_model).satisfiable:               
-                print("Initial solution found with opt_val: {}".format(self._opt_val))
-                ctl.ground([("opt_val", [Number(self._opt_val)])])               
-                self._best_model = self._model
-        else:
-            print("No first solution found.")
-            return
-        
-        # perform LNS
-        s = 0
-        unsat_c = 0
-        while True:
-            s += 1
-            print("step {} with rate {}:".format(s,self._relax_rate))
-            
-            # relax model
-            if self._decl:
-                assumptions = self.decl_relax(self._select, self._fix, self._relax_rate)
-            else:
-                assumptions = self.relax(self._best_model, self._relax_rate)
-            # reconstruct model, if new solution is satisfiable: better solution has been found
-            if self.repair(ctl, assumptions).satisfiable:
-                print("New opt_val: {}".format(self._opt_val))
-                
-                self._best_model = self._model                
-                # update boundary
-                ctl.ground([("opt_val", [Number(self._opt_val)])])
-            else:
-                unsat_c += 1
-            # change relax_rate after unsat_treshold amount of unsat solutions
-            self._relax_rate = self._relax_rates[unsat_c//self._unsat_threshold%len(self._relax_rates)]
-            # stop criterion, WIP
-            if s == self._bound or self._opt_val == 0:
-                print("Answer:\n{}\nopt_val: {}".format(" ".join([str(atom) for atom in self._best_model]), self._opt_val))
-                return
-    
-    def LNS_classic(self, ctl: clingo.Control):
-        """
-        Run classic LNS.
-
-        :param ctl: Clingo Control Object used for solving.
-        :type ctl: clingo.Control
-        """
-        ctl.ground([("base", [])], context=self)
-        # get first solution
-        if ctl.solve(on_model=self._on_model).satisfiable:               
-                print("Initial solution found with opt_val: {}".format(self._opt_val))
-                self._best_val = self._opt_val            
-                self._best_model = self._model
-        else:
-            print("No first solution found.")
-            return
-        
-        # perform LNS
-        s = 0
-        unsat_c = 0
-        while True:
-            s += 1
-            print("step {} with rate {}:".format(s,self._relax_rate))
-            
-            # relax model
-            if self._decl:
-                assumptions = self.decl_relax(self._select, self._fix, self._relax_rate)
-            else:
-                assumptions = self.relax(self._best_model, self._relax_rate)
-            # reconstruct model, if new solution is satisfiable: better solution has been found
-            if self.repair(ctl, assumptions).satisfiable and self._opt_val < self._best_val:
-                print("New opt_val: {}".format(self._opt_val))
-                
-                self._best_val = self._opt_val
-                self._best_model = self._model                
-            else:
-                unsat_c += 1
-            # change relax_rate after unsat_treshold amount of unsat solutions
-            self._relax_rate = self._relax_rates[unsat_c//self._unsat_threshold%len(self._relax_rates)]
-            # stop criterion, WIP
-            if s == self._bound or self._opt_val == 0:
-                print("Answer:\n{}\nopt_val: {}".format(" ".join([str(atom) for atom in self._best_model]), self._best_val))
-                return
 
     def get_variability(self, list1: list, list2:list):
         """
@@ -311,8 +253,13 @@ class LNS(clingo.Application):
         """
         Run Large-Neighbourhood Search according to set parameters.
         """
-        if self._search_mode==1:
-            self._clingo_args.append("--rand-freq=0.5")
+        # load parameters if needed
+        if self.param_path:
+            self.load_params(self.param_path)
+            
+        # classic mode
+        if self._search_mode == 1:
+            self._clingo_args.append("--rand-freq=0.8")
 
         ctl = clingo.Control(self._clingo_args)
         if not self._files: self._files = ["-"]
@@ -330,8 +277,69 @@ class LNS(clingo.Application):
         else:
             print("Running with random relaxation of shown atoms with a rate of {}.".format(self._relax_rate))
         
-        match self._search_mode:
-            case 0:
-                self.LNS_hard_cons(ctl)
-            case 1:
-                self.LNS_classic(ctl)
+        # hard_cons mode
+        if self._search_mode == 0:
+            # add constraint to force better solution with each iteration
+            # encoding has to contain _minimize(V,I) predicates as minimization criteria
+            # where V: value, I: identifier
+            ctl.add("opt_val", ["o"], 
+                    ":- #sum{V,I: _minimize(V,I)} >= o.")
+        ctl.ground([("base", [])], context=self)
+
+        # get first solution
+        if ctl.solve(on_model=self._on_model).satisfiable:               
+                print("Initial solution found with opt_val: {}".format(self._opt_val))
+                if self._search_mode == 0:
+                    ctl.ground([("opt_val", [Number(self._opt_val)])])
+                self._best_val = self._opt_val              
+                self._best_model = self._model
+        else:
+            print("No first solution found.")
+            return
+        
+        ## perform LNS 
+        # overall step counter and time
+        s = 0
+        start_time = time.time()
+        # step counter and time per improvement
+        sc = 0
+        improv_start_time = start_time
+        # unsat counter
+        unsat_c = 0
+        while True:
+            s += 1
+            sc += 1
+            if self._bound_type == 0:
+                print("{}|{}, relax rate {}:".format(sc, self._bound, self._relax_rate))
+            if self._bound_type == 1:
+                print("{:.3f}s, relax rate {}:".format(time.time()-improv_start_time, self._relax_rate))
+                
+            # relax model
+            if self._decl:
+                assumptions = self.decl_relax(self._select, self._fix, self._relax_rate)
+            else:
+                assumptions = self.relax(self._best_model, self._relax_rate)
+            # reconstruct model
+            # hard_cons mode: if new solution is satisfiable -> better solution
+            # classic mode: check if opt value better
+            if self.repair(ctl, assumptions).satisfiable:
+                if self._search_mode == 0 or (self._search_mode == 1 and self._opt_val < self._best_val):
+                    print("New opt_val: {}".format(self._opt_val))
+                
+                    if self._bound_mode == 1:
+                        sc = 0
+                        improv_start_time = time.time()
+                    self._best_val = self._opt_val
+                    self._best_model = self._model
+                    if self._search_mode == 0:              
+                        # update boundary
+                        ctl.ground([("opt_val", [Number(self._opt_val)])])
+            else:
+                unsat_c += 1
+            # change relax_rate after unsat_threshold amount of unsat solutions
+            self._relax_rate = self._relax_rates[unsat_c//self._unsat_threshold%len(self._relax_rates)]
+            # stop criterion, WIP
+            if (self._bound_type == 0 and (sc >= self._bound or self._best_val == 0)) or (self._bound_type == 1 and (time.time()-improv_start_time >= self._bound or self._best_val == 0)):
+                end_time = time.time()
+                print("Answer:\n{}\nFinal opt_val: {}\nOverall steps: {}\nOverall time: {:.3f}s".format(" ".join([str(atom) for atom in self._best_model]), self._best_val, s, end_time-start_time))
+                break

@@ -30,6 +30,8 @@ An example call for LNS using hard constraints in declarative mode with a consta
 
     $ large_neighbourhood_search -i ./examples/golf.lp --declarative -rr 0.4 
 
+Problem instances have to contain :code:`_minimize/2` predicates to describe optimization criteria. 
+:code:`_minimize(N,O)` sates, that each occurrence of :code:`O` corresponds to an optimization value of N.
 
 Declarative mode
 ----------------

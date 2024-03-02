@@ -6,10 +6,16 @@
             0.2,
             0.4,
             0.6
-        ]
+        ],
+        "threshold": 3
     },
     "search": {
         "mode": "hard_const",
-        "bound": 100
-    }
+        "bound": {
+            "mode": "overall",
+            "type": "steps",
+            "value": "2000"
+        }
+    },
+    "seed": null
 }
