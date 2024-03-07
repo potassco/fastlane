@@ -71,9 +71,6 @@ class LNS(clingo.Application):
 
         self._model = None
         self._best_model = None
-        
-        self._select = None
-        self._fix = None
 
         self._opt_val = None
         self._best_val = None
@@ -138,69 +135,53 @@ class LNS(clingo.Application):
 
     def _on_model(self, model):
         """
-        Saves shown atoms of model and aggregates optimization values.
-
-        Extracts selected and fixed atoms from model if declarative mode is selected.
+        Saves shown and true atoms of model and aggregates optimization values.
 
         :param model: Model found during solving.
         :type model: clingo.solving.Model
         """
-        self._model = model.symbols(shown=True)
+        self._model = {}
+        self._model["shown"] = model.symbols(shown=True)
+        self._model["true"] = model.symbols(atoms=True)
         self._opt_val = 0
 
-        self._select = []
-        self._fix = {}
-
         if self._best_model:
-            print(self.get_variability(self._model, self._best_model))
+            print(self.get_variability(self._model["shown"], self._best_model["shown"]))
 
         for atom in model.symbols(atoms=True):
-            if (atom.match("_minimize", 2) and 
-                atom.arguments[0].type is SymbolType.Number):
+            if (atom.match("_minimize", 2) and atom.arguments[0].type is SymbolType.Number):
                     self._opt_val += atom.arguments[0].number
-            if self._decl:
-                if (atom.match("_lns_select", 1)):
-                    self._select.append(atom.arguments[0])
-                    self._fix[atom.arguments[0]] = []
-                elif (atom.match("_lns_fix", 2)):
-                    self._fix[atom.arguments[1]].append((atom.arguments[0], True))
+    
 
-    def relax(self, atoms: list[clingo.Symbol], relax_rate: float):
+    def relax(self, model: dict, relax_rate: float):
         """
-        Relax random number of shown atoms given by the relax_rate.
+        Relax random number of shown or selected (declarative mode) atoms given by the relax_rate.
 
-        :param atoms: Symbols to choose from for relaxation.
-        :type atoms: list[clingo.Symbol]
+        :param model: Dictionary containing list of shown and true atoms.
+        :type model: dict{str: list[clingo.Symbol]}
         :param relax_rate: Percentage of atoms to be relaxed.
         :type relax_rate: float
         :return: Fixed (not relaxed) atoms.
         :rtype: list[clingo.Symbol]
         """
         fixed_atoms = []
-        for atom in atoms:
+        if self._decl:
+            select = []
+            fix = {}
+            for atom in model["true"]:
+                if (atom.match("_lns_select", 1)):
+                    select.append(atom.arguments[0])
+                    fix[atom.arguments[0]] = []
+                elif (atom.match("_lns_fix", 2)):
+                    fix[atom.arguments[1]].append((atom.arguments[0], True))
+            for sym in select:
+                if random.randint(0,1) > relax_rate:
+                    fixed_atoms += fix[sym]
+        else:
+            for atom in model["shown"]:
                 if random.randint(0,1) > relax_rate:
                     fixed_atoms.append((atom, True))
         return fixed_atoms
-    
-    def decl_relax(self, select: list[clingo.Symbol], fix_dict: dict[clingo.Symbol, list[clingo.Symbol]], relax_rate: float):
-        """
-        Fix random number of selected atoms, relax the rest.
-
-        :param select: List of Symbols S corresponding to _lns_select(S).
-        :type select: list[clingo.Symbol]
-        :param fix_dict: Dictionary of lists of symbols S' with symbols S as key, corresponding to _lns_fix(S',S).
-        :type fix_dict: dict[clingo.Symbol, list[clingo.Symbol]]
-        :param relax_rate: Percentage of selected atoms to be relaxed (not fixed).
-        :type relax_rate: float
-        :return: Fixed (not relaxed) atoms.
-        :rtype: list[clingo.Symbol]
-        """
-        fixed_atoms = []
-        for sym in select:
-            if random.randint(0,1) > relax_rate:
-                fixed_atoms += fix_dict[sym]
-        return fixed_atoms
-
 
     def repair(self, ctl: clingo.Control, assumptions: list):
         """
@@ -292,7 +273,7 @@ class LNS(clingo.Application):
                 if self._search_mode == 0:
                     ctl.ground([("opt_val", [Number(self._opt_val)])])
                 self._best_val = self._opt_val              
-                self._best_model = self._model
+                self._best_model = self._model.copy()
         else:
             print("No first solution found.")
             return
@@ -315,10 +296,8 @@ class LNS(clingo.Application):
                 print("{:.3f}s, relax rate {}:".format(time.time()-improv_start_time, self._relax_rate))
                 
             # relax model
-            if self._decl:
-                assumptions = self.decl_relax(self._select, self._fix, self._relax_rate)
-            else:
-                assumptions = self.relax(self._best_model, self._relax_rate)
+            assumptions = self.relax(self._best_model, self._relax_rate)
+
             # reconstruct model
             # hard_cons mode: if new solution is satisfiable -> better solution
             # classic mode: check if opt value better
@@ -330,7 +309,7 @@ class LNS(clingo.Application):
                         sc = 0
                         improv_start_time = time.time()
                     self._best_val = self._opt_val
-                    self._best_model = self._model
+                    self._best_model = self._model.copy()
                     if self._search_mode == 0:              
                         # update boundary
                         ctl.ground([("opt_val", [Number(self._opt_val)])])
@@ -341,5 +320,5 @@ class LNS(clingo.Application):
             # stop criterion, WIP
             if (self._bound_type == 0 and (sc >= self._bound or self._best_val == 0)) or (self._bound_type == 1 and (time.time()-improv_start_time >= self._bound or self._best_val == 0)):
                 end_time = time.time()
-                print("Answer:\n{}\nFinal opt_val: {}\nOverall steps: {}\nOverall time: {:.3f}s".format(" ".join([str(atom) for atom in self._best_model]), self._best_val, s, end_time-start_time))
+                print("Answer:\n{}\nFinal opt_val: {}\nOverall steps: {}\nOverall time: {:.3f}s".format(" ".join([str(atom) for atom in self._best_model["shown"]]), self._best_val, s, end_time-start_time))
                 break
