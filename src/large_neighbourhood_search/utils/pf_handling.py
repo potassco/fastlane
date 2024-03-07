@@ -43,6 +43,8 @@ def parse_pos_int(string: str):
 
     :param string: String to be checked.
     :type string: str
+    :return: Whether input string was a positive integer or not.
+    :rtype: bool
     """
     m = re.match(rf'\+?\d+', string)
     if m is None:
@@ -56,6 +58,8 @@ def parse_rate(string: str):
 
     :param string: String to be checked.
     :type string: str
+    :return: Whether input string was a valid relax rate or not.
+    :rtype: bool
     """
     m = re.match(rf'\+?0.\d+', string)
     if m is None:
