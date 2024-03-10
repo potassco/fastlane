@@ -2,17 +2,18 @@
 The main entry point for the application.
 """
 
+from . import LNS
 from .utils.logger import setup_logger
 from .utils.parser import get_parser
-from .utils.pf_handling import gen_example_params, create_param_file
-from . import LNS
+from .utils.pf_handling import create_param_file, gen_example_params
+
 
 def main():
     """
     Run the main function.
     """
     parser = get_parser()
-    args,rest = parser.parse_known_args()
+    args, rest = parser.parse_known_args()
     log = setup_logger("main", args.log)
 
     log.info("info")
@@ -20,11 +21,11 @@ def main():
     log.debug("debug")
     log.error("error")
 
-    if (args.gen_example):
+    if args.gen_example:
         gen_example_params(args.gen_example)
         return
-    
-    if (args.new_param_file):
+
+    if args.new_param_file:
         create_param_file(args.new_param_file)
         return
 
@@ -35,9 +36,10 @@ def main():
         args.relax_rate,
         args.bnb_search,
         args.declarative,
-        args.load_param_file
+        args.load_param_file,
     )
     lns.main()
+
 
 if __name__ == "__main__":
     main()

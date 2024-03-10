@@ -1,7 +1,7 @@
 {
     "name": "example_params",
     "relaxation": {
-        "mode": "decl",
+        "mode": "declarative",
         "rates": [
             0.2,
             0.4,
@@ -10,7 +10,7 @@
         "threshold": 3
     },
     "search": {
-        "mode": "hard_const",
+        "mode": "hard_constraint",
         "bound": {
             "mode": "overall",
             "type": "steps",
