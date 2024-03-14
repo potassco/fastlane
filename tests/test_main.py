@@ -1,6 +1,7 @@
 """
 Test cases for main application functionality.
 """
+
 # pylint: disable=protected-access
 import logging
 import os
