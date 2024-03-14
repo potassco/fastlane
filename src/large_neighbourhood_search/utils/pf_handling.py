@@ -7,6 +7,19 @@ import re
 from typing import Any, Union
 
 
+def save_param_file(params: dict, json_file: str) -> None:
+    """
+    Save parameters to .json file.
+
+    :param param: Parameters to be saved.
+    :type param: dict
+    :param json_file: Parameter file to be saved.
+    :type json_file: str
+    """
+    with open(json_file, "w", encoding="utf-8") as file:
+        json.dump(params, file, ensure_ascii=False, indent=4)
+        file.close()
+        
 def gen_example_params(path: str) -> None:
     """
     Generate example parameter file.
@@ -53,10 +66,7 @@ def gen_example_params(path: str) -> None:
         },
         "seed": seed,
     }
-
-    with open(path + "/example_params.json", "w", encoding="utf-8") as f:
-        json.dump(parameters, f, ensure_ascii=False, indent=4)
-        f.close()
+    save_param_file(parameters, path + "/example_params.json")
 
 
 def parse_pos_int(string: str) -> bool:
@@ -218,11 +228,7 @@ def create_param_file(path: str) -> None:
         },
         "seed": seed,
     }
-
-    with open(path + name + ".json", "w", encoding="utf-8") as file:
-        json.dump(parameters, file, ensure_ascii=False, indent=4)
-        file.close()
-
+    save_param_file(parameters, path + name + ".json")
 
 def load_param_file(json_file: str) -> dict:
     """
@@ -237,3 +243,6 @@ def load_param_file(json_file: str) -> dict:
         parameters = json.load(json_data)
         json_data.close()
     return parameters
+
+
+
