@@ -4,15 +4,15 @@ The parameter file handling.
 
 import json
 import re
-from typing import Any, Union
+from typing import Any, Dict, List, Union
 
 
-def save_param_file(params: dict, json_file: str) -> None:
+def save_param_file(params: Dict, json_file: str) -> None:
     """
     Save parameters to .json file.
 
     :param param: Parameters to be saved.
-    :type param: dict
+    :type param: Dict
     :param json_file: Parameter file to be saved.
     :type json_file: str
     """
@@ -50,13 +50,13 @@ def gen_example_params(path: str) -> None:
 
     seed = None
 
-    parameters: dict[
+    parameters: Dict[
         str,
         Union[
             str,
             int,
             None,
-            dict[str, Union[str, int, list[float], dict[str, Union[str, int]]]],
+            Dict[str, Union[str, int, List[float], Dict[str, Union[str, int]]]],
         ],
     ] = {
         "name": name,
@@ -100,12 +100,12 @@ def parse_rate(string: str) -> bool:
     return True
 
 
-def selection_input(values: list, description: str) -> Any:
+def selection_input(values: List, description: str) -> Any:
     """
     Offer a selection for user input.
 
     :param values: Offered values for selection.
-    :type values: list
+    :type values: List
     :param description: Description presented to the user.
     :type description: str
     :return: Selected value.
@@ -164,7 +164,7 @@ def create_param_file(path: str) -> None:
         "All possible relax rates used during LNS.\nTo stop adding new rates, please type 0."
     )
     rate = None
-    rates: list[float] = []
+    rates: List[float] = []
     while rate != "0":
         f = True
         while f:
@@ -209,15 +209,15 @@ def create_param_file(path: str) -> None:
     # seed
     seed = pos_int_input("Seed, 'None' for no seed:", True)
 
-    parameters: dict[
+    parameters: Dict[
         str,
         Union[
             str,
             int,
             None,
-            dict[
+            Dict[
                 str,
-                Union[str, int, list[float], dict[str, Union[str, int, None]], None],
+                Union[str, int, List[float], Dict[str, Union[str, int, None]], None],
             ],
         ],
     ] = {
@@ -232,14 +232,14 @@ def create_param_file(path: str) -> None:
     save_param_file(parameters, path + name + ".json")
 
 
-def load_param_file(json_file: str) -> dict:
+def load_param_file(json_file: str) -> Dict:
     """
     Load parameters from json file, overwriting all other options.
 
     :param json_file: Parameter file to be loaded.
     :type json_file: str
     :return: parameters from parameter file
-    :rtype: dict
+    :rtype: Dict
     """
     with open(json_file, encoding="utf-8") as json_data:
         parameters = json.load(json_data)

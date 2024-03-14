@@ -4,7 +4,7 @@ The large_neighbourhood_search project.
 
 import random
 import time
-from typing import Sequence, Union
+from typing import Dict, List, Sequence, Tuple, Union
 
 import clingo
 from clingo.symbol import Number, SymbolType
@@ -19,7 +19,7 @@ class LNS:  # pylint: disable=too-many-instance-attributes
     :param files: Problem encoding.
     :type files: str
     :param clingo_args: Additional clingo arguments.
-    :type clingo_args: list[str]
+    :type clingo_args: List[str]
     :default clingo_args: []
     :param seed: Seed used for random relaxation.
     :type seed: int
@@ -40,8 +40,8 @@ class LNS:  # pylint: disable=too-many-instance-attributes
 
     def __init__(
         self,
-        files: list[str],
-        clingo_args: Union[list[str], None] = None,
+        files: List[str],
+        clingo_args: Union[List[str], None] = None,
         seed: Union[int, None] = None,
         relax_rate: float = 0.2,
         bnb_search: bool = False,
@@ -75,8 +75,8 @@ class LNS:  # pylint: disable=too-many-instance-attributes
         self._bound_type = "steps"
         self._bound = 2000
 
-        self._model: dict[str, Sequence[clingo.symbol.Symbol]] = {}
-        self._best_model: dict[str, Sequence[clingo.symbol.Symbol]] = {}
+        self._model: Dict[str, Sequence[clingo.symbol.Symbol]] = {}
+        self._best_model: Dict[str, Sequence[clingo.symbol.Symbol]] = {}
 
         self._opt_val: int = -1
         self._best_val: int = -1
@@ -140,17 +140,17 @@ class LNS:  # pylint: disable=too-many-instance-attributes
                 self._opt_val += atom.arguments[0].number
 
     def relax(
-        self, model: dict[str, Sequence[clingo.symbol.Symbol]], relax_rate: float
-    ) -> list[tuple[clingo.symbol.Symbol, bool]]:
+        self, model: Dict[str, Sequence[clingo.symbol.Symbol]], relax_rate: float
+    ) -> List[Tuple[clingo.symbol.Symbol, bool]]:
         """
         Relax random number of shown or selected (declarative mode) atoms given by the relax_rate.
 
         :param model: Dictionary containing list of shown and true atoms.
-        :type model: dict[str, Sequence[clingo.symbol.Symbol]]
+        :type model: Dict[str, Sequence[clingo.symbol.Symbol]]
         :param relax_rate: Percentage of atoms to be relaxed.
         :type relax_rate: float
         :return: Fixed (not relaxed) atoms.
-        :rtype: list[Tuple[clingo.symbol.Symbol, bool]]
+        :rtype: List[Tuple[clingo.symbol.Symbol, bool]]
         """
         fixed_atoms = []
         if self._relax_mode:
@@ -176,7 +176,9 @@ class LNS:  # pylint: disable=too-many-instance-attributes
         return fixed_atoms
 
     def repair(
-        self, ctl: clingo.control.Control, assumptions: list
+        self,
+        ctl: clingo.control.Control,
+        assumptions: List[Tuple[clingo.symbol.Symbol, bool]],
     ) -> clingo.solving.SolveResult:
         """
         Solve under given assumptions.
@@ -184,7 +186,7 @@ class LNS:  # pylint: disable=too-many-instance-attributes
         :param ctl: Clingo Control object used for solving.
         :type ctl: clingo..control.Control
         :param assumptions: Assumptions for solving (fixed atoms).
-        :type assumptions: list[Tuple[clingo.symbol.Symbol, bool]]
+        :type assumptions: List[Tuple[clingo.symbol.Symbol, bool]]
         :return: Result of solving call.
         :rtype: clingo.solving.SolveResult
         """
@@ -200,9 +202,9 @@ class LNS:  # pylint: disable=too-many-instance-attributes
         1 - completely different
 
         :param list1: First list.
-        :type list1: list
+        :type list1: Sequence
         :param list2: Second list.
-        :type list2: list
+        :type list2: Sequence
         :return: Variability of both lists.
         :rtype: float
         """
@@ -212,14 +214,14 @@ class LNS:  # pylint: disable=too-many-instance-attributes
             return 1 - len(set(list1).intersection(list2)) / len1
         return 1 - len(set(list2).intersection(list1)) / len2
 
-    def get_stats(self, ctl: clingo.control.Control) -> dict:
+    def get_stats(self, ctl: clingo.control.Control) -> Dict:
         """
         WIP Method to obtain different stats from the last solver call.
 
         :param ctl: Clingo Control object used for solving.
         :type ctl: clingo.control.Control
         :return: Conflict statistics
-        :rtype: dict
+        :rtype: Dict
         """
         # conflicts = ctl.statistics["solvers"]["conflicts"]
         return ctl.statistics
