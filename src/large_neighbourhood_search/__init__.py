@@ -248,9 +248,11 @@ class LNS:  # pylint: disable=too-many-instance-attributes
         # set seed if given
         if self._seed is not None:
             random.seed(self._seed)
+            self._clingo_args.append(f"--seed={self._seed}")
 
         if self._bnb_search:
             print("Running branch-and-bound search.")
+            self._relax_rates = [1]
             self._relax_rate = 1
         elif self._relax_mode:
             print(
