@@ -4,45 +4,62 @@ The parameter file handling.
 
 import json
 import re
+from typing import Any, Union
 
-def gen_example_params(path: str):
+
+def gen_example_params(path: str) -> None:
     """
     Generate example parameter file.
 
     :param path: Directory of the example parameter file.
     :type path: str
     """
-    params = {}
     # name of parameter file
-    params["name"] = "example_params"
-    params["relaxation"] = {}
+    name = "example_params"
+
     # relaxation mode: declarative, random
-    params["relaxation"]["mode"] = "declarative"
+    r_mode = "declarative"
     # relax rates
-    params["relaxation"]["rates"] = [0.2, 0.4, 0.6]
+    rates = [0.2, 0.4, 0.6]
     # switch relax rates after threshold
-    params["relaxation"]["threshold"] = 3
+    threshold = 3
 
-    params["search"] = {}
     # search mode: hard_constraint, classic
-    params["search"]["mode"] = "hard_constraint"
+    s_mode = "hard_constraint"
 
-    params["search"]["bound"] = {}
     # bound mode: overall, per_improvement
-    params["search"]["bound"]["mode"] = "overall"
+    b_mode = "overall"
     # bound type: steps, time
-    params["search"]["bound"]["type"] = "steps"
+    b_type = "steps"
     # bound value (steps or seconds)
-    params["search"]["bound"]["value"] = 2000
+    b_value = 2000
 
-    params["seed"] = None
+    seed = None
+
+    parameters: dict[
+        str,
+        Union[
+            str,
+            int,
+            None,
+            dict[str, Union[str, int, list[float], dict[str, Union[str, int]]]],
+        ],
+    ] = {
+        "name": name,
+        "relaxation": {"mode": r_mode, "rates": rates, "threshold": threshold},
+        "search": {
+            "mode": s_mode,
+            "bound": {"mode": b_mode, "type": b_type, "value": b_value},
+        },
+        "seed": seed,
+    }
 
     with open(path + "/example_params.json", "w", encoding="utf-8") as f:
-        json.dump(params, f, ensure_ascii=False, indent=4)
+        json.dump(parameters, f, ensure_ascii=False, indent=4)
         f.close()
 
 
-def parse_pos_int(string: str):
+def parse_pos_int(string: str) -> bool:
     """
     Check if input string is positive integer.
 
@@ -57,7 +74,7 @@ def parse_pos_int(string: str):
     return True
 
 
-def parse_rate(string: str):
+def parse_rate(string: str) -> bool:
     """
     Check if input string is valid relax rate.
 
@@ -72,7 +89,7 @@ def parse_rate(string: str):
     return True
 
 
-def selection_input(values: list, description: str):
+def selection_input(values: list, description: str) -> Any:
     """
     Offer a selection for user input.
 
@@ -90,7 +107,7 @@ def selection_input(values: list, description: str):
         print("Please select a valid option.")
 
 
-def pos_int_input(description: str, none_allowed: bool = False):
+def pos_int_input(description: str, none_allowed: bool = False) -> Union[int, None]:
     """
     Positive integer user input.
 
@@ -100,7 +117,7 @@ def pos_int_input(description: str, none_allowed: bool = False):
     :type none_allowed: bool
     :default none_allowed: False
     :return: Positive integer.
-    :rtype: Optional[int]
+    :rtype: Union[int, None]
     """
     while True:
         pos_int = input(f"{description}\n")
@@ -114,7 +131,7 @@ def pos_int_input(description: str, none_allowed: bool = False):
             print("Please enter a valid positive integer.")
 
 
-def create_param_file(path: str):
+def create_param_file(path: str) -> None:
     """
     Create new parameter file.
 
@@ -122,15 +139,12 @@ def create_param_file(path: str):
     :type path: str
     """
     f = True
-    parameters = {}
     # name of parameter file
     print(f"Creating new parameter file at {path}")
     name = input("Name of the new parameter file:\n")
-    parameters["name"] = name
-    parameters["relaxation"] = {}
 
     # relaxation mode: random, declarative
-    parameters["relaxation"]["mode"] = selection_input(
+    r_mode = selection_input(
         ["random", "declarative"], "Relax mode: 0: random, 1: declarative"
     )
 
@@ -139,11 +153,10 @@ def create_param_file(path: str):
         "All possible relax rates used during LNS.\nTo stop adding new rates, please type 0."
     )
     rate = None
-    parameters["relaxation"]["rates"] = []
+    rates: list[float] = []
     while rate != "0":
         f = True
         while f:
-            rates = parameters["relaxation"]["rates"]
             rate = input(
                 (
                     f"Current rates: {rates}\n"
@@ -153,51 +166,72 @@ def create_param_file(path: str):
             if rate == "0":
                 break
             if parse_rate(rate):
-                parameters["relaxation"]["rates"].append(float(rate))
+                rates.append(float(rate))
                 f = False
             else:
                 print("Please enter a valid relax rate between 0 and 1")
     f = True
 
     # switch relax rates after threshold
-    parameters["relaxation"]["threshold"] = pos_int_input(
+    threshold = pos_int_input(
         "Number of solutions without improvement before switching relax rates:"
     )
 
-    parameters["search"] = {}
     # search mode: hard_const, classic
-    parameters["search"]["mode"] = selection_input(
+    s_mode = selection_input(
         ["hard_constraint", "classic"], "Search mode: 0: hard constraint, 1: classic"
     )
 
-    parameters["search"]["bound"] = {}
     # bound mode: overall, per_improv
-    parameters["search"]["bound"]["mode"] = selection_input(
+    b_mode = selection_input(
         ["overall", "per_improvement"], "Bound mode: 0: overall, 1: per improvement"
     )
 
     # bound type: steps, time
-    parameters["search"]["bound"]["type"] = selection_input(
+    b_type = selection_input(
         ["steps", "time"], "Bound type: 0: number of steps, 1: time"
     )
 
     # bound value (steps or seconds)
-    parameters["search"]["bound"]["value"] = pos_int_input("Value of the bound:")
+    b_value = pos_int_input("Value of the bound:")
 
     # seed
-    parameters["seed"] = pos_int_input("Seed, 'None' for no seed:", True)
+    seed = pos_int_input("Seed, 'None' for no seed:", True)
 
-    with open(path + name + ".json", "w", encoding="utf-8") as f:
-        json.dump(parameters, f, ensure_ascii=False, indent=4)
-        f.close()
+    parameters: dict[
+        str,
+        Union[
+            str,
+            int,
+            None,
+            dict[
+                str,
+                Union[str, int, list[float], dict[str, Union[str, int, None]], None],
+            ],
+        ],
+    ] = {
+        "name": name,
+        "relaxation": {"mode": r_mode, "rates": rates, "threshold": threshold},
+        "search": {
+            "mode": s_mode,
+            "bound": {"mode": b_mode, "type": b_type, "value": b_value},
+        },
+        "seed": seed,
+    }
+
+    with open(path + name + ".json", "w", encoding="utf-8") as file:
+        json.dump(parameters, file, ensure_ascii=False, indent=4)
+        file.close()
 
 
-def load_param_file(json_file: str):
+def load_param_file(json_file: str) -> dict:
     """
     Load parameters from json file, overwriting all other options.
 
     :param json_file: Parameter file to be loaded.
     :type json_file: str
+    :return: parameters from parameter file
+    :rtype: dict
     """
     with open(json_file, encoding="utf-8") as json_data:
         parameters = json.load(json_data)

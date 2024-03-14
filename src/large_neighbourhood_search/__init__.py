@@ -4,6 +4,7 @@ The large_neighbourhood_search project.
 
 import random
 import time
+from typing import Sequence, Union
 
 import clingo
 from clingo.symbol import Number, SymbolType
@@ -40,13 +41,13 @@ class LNS:  # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
         files: list[str],
-        clingo_args: list[str] = None,
-        seed: int = None,
+        clingo_args: Union[list[str], None] = None,
+        seed: Union[int, None] = None,
         relax_rate: float = 0.2,
         bnb_search: bool = False,
         declarative: bool = False,
-        param_path: str = None,
-    ):
+        param_path: Union[str, None] = None,
+    ) -> None:
         """
         Initialize application.
         """
@@ -74,13 +75,13 @@ class LNS:  # pylint: disable=too-many-instance-attributes
         self._bound_type = "steps"
         self._bound = 2000
 
-        self._model = None
-        self._best_model = None
+        self._model: dict[str, Sequence[clingo.symbol.Symbol]] = {}
+        self._best_model: dict[str, Sequence[clingo.symbol.Symbol]] = {}
 
-        self._opt_val = None
-        self._best_val = None
+        self._opt_val: int = -1
+        self._best_val: int = -1
 
-    def load_params(self, json_file: str):
+    def load_params(self, json_file: str) -> None:
         """
         Load parameters from json file, overwriting all other options.
         Invalid parameters are ignored.
@@ -116,7 +117,7 @@ class LNS:  # pylint: disable=too-many-instance-attributes
 
         self._seed = parameters["seed"]
 
-    def _on_model(self, model: clingo.solving.Model):
+    def _on_model(self, model: clingo.solving.Model) -> None:
         """
         Saves shown and true atoms of model and aggregates optimization values.
 
@@ -138,12 +139,14 @@ class LNS:  # pylint: disable=too-many-instance-attributes
             ):
                 self._opt_val += atom.arguments[0].number
 
-    def relax(self, model: dict[str, list[clingo.symbol.Symbol]], relax_rate: float):
+    def relax(
+        self, model: dict[str, Sequence[clingo.symbol.Symbol]], relax_rate: float
+    ) -> list[tuple[clingo.symbol.Symbol, bool]]:
         """
         Relax random number of shown or selected (declarative mode) atoms given by the relax_rate.
 
         :param model: Dictionary containing list of shown and true atoms.
-        :type model: dict[str, list[clingo.symbol.Symbol]]
+        :type model: dict[str, Sequence[clingo.symbol.Symbol]]
         :param relax_rate: Percentage of atoms to be relaxed.
         :type relax_rate: float
         :return: Fixed (not relaxed) atoms.
@@ -152,7 +155,9 @@ class LNS:  # pylint: disable=too-many-instance-attributes
         fixed_atoms = []
         if self._relax_mode:
             selected_atoms = []
-            declared_fixed_atoms = {}
+            declared_fixed_atoms: dict[
+                clingo.symbol.Symbol, list[tuple[clingo.symbol.Symbol, bool]]
+            ] = {}
             for atom in model["true"]:
                 if atom.match("_lns_select", 1):
                     selected_atoms.append(atom.arguments[0])
@@ -170,7 +175,9 @@ class LNS:  # pylint: disable=too-many-instance-attributes
                     fixed_atoms.append((atom, True))
         return fixed_atoms
 
-    def repair(self, ctl: clingo.control.Control, assumptions: list):
+    def repair(
+        self, ctl: clingo.control.Control, assumptions: list
+    ) -> clingo.solving.SolveResult:
         """
         Solve under given assumptions.
 
@@ -184,7 +191,7 @@ class LNS:  # pylint: disable=too-many-instance-attributes
         x = ctl.solve(assumptions=assumptions, on_model=self._on_model)
         return x
 
-    def get_variability(self, list1: list, list2: list):
+    def get_variability(self, list1: Sequence, list2: Sequence) -> float:
         """
         Calculate variability of two lists.
 
@@ -205,7 +212,7 @@ class LNS:  # pylint: disable=too-many-instance-attributes
             return 1 - len(set(list1).intersection(list2)) / len1
         return 1 - len(set(list2).intersection(list1)) / len2
 
-    def get_stats(self, ctl: clingo.control.Control):
+    def get_stats(self, ctl: clingo.control.Control) -> dict:
         """
         WIP Method to obtain different stats from the last solver call.
 
@@ -214,10 +221,10 @@ class LNS:  # pylint: disable=too-many-instance-attributes
         :return: Conflict statistics
         :rtype: dict
         """
-        conflicts = ctl.statistics["solvers"]["conflicts"]
-        return conflicts
+        # conflicts = ctl.statistics["solvers"]["conflicts"]
+        return ctl.statistics
 
-    def setup(self):
+    def setup(self) -> clingo.control.Control:
         """
         Initialize Control object and prepare LNS.
 
@@ -255,7 +262,7 @@ class LNS:  # pylint: disable=too-many-instance-attributes
             )
         return ctl
 
-    def get_first_solution(self, ctl):
+    def get_first_solution(self, ctl) -> bool:
         """
         Find initial solution.
 
@@ -283,7 +290,7 @@ class LNS:  # pylint: disable=too-many-instance-attributes
         print("No first solution found.")
         return False
 
-    def print_step(self, step_for_improvement, improvement_start_time):
+    def print_step(self, step_for_improvement, improvement_start_time) -> None:
         """
         Print current step statistics.
 
@@ -301,7 +308,7 @@ class LNS:  # pylint: disable=too-many-instance-attributes
                 f"{time.time() - improvement_start_time:.3f}s, relax rate {self._relax_rate}:"
             )
 
-    def main(self):
+    def main(self) -> None:
         """
         Run Large-Neighbourhood Search according to set parameters.
         """
