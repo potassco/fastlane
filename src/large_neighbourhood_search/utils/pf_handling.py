@@ -19,7 +19,8 @@ def save_param_file(params: dict, json_file: str) -> None:
     with open(json_file, "w", encoding="utf-8") as file:
         json.dump(params, file, ensure_ascii=False, indent=4)
         file.close()
-        
+
+
 def gen_example_params(path: str) -> None:
     """
     Generate example parameter file.
@@ -230,6 +231,7 @@ def create_param_file(path: str) -> None:
     }
     save_param_file(parameters, path + name + ".json")
 
+
 def load_param_file(json_file: str) -> dict:
     """
     Load parameters from json file, overwriting all other options.
@@ -243,6 +245,3 @@ def load_param_file(json_file: str) -> dict:
         parameters = json.load(json_data)
         json_data.close()
     return parameters
-
-
-
