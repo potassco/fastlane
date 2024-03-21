@@ -17,12 +17,12 @@ class LNS:  # pylint: disable=too-many-instance-attributes
     Clingo application performing LNS.
 
     :param files: Problem encoding.
-    :type files: str
+    :type files: List[str]
     :param clingo_args: Additional clingo arguments.
-    :type clingo_args: List[str]
-    :default clingo_args: []
+    :type clingo_args: Union[List[str], None]
+    :default clingo_args: None
     :param seed: Seed used for random relaxation.
-    :type seed: int
+    :type seed: Union[int, None]
     :default seed: None
     :param relax_rate: Singular relax rate used for LNS (1>RR>0).
     :type relax_rate: float
@@ -34,7 +34,7 @@ class LNS:  # pylint: disable=too-many-instance-attributes
     :type declarative: bool
     :default declarative: False
     :param param_path: Location of parameter file.
-    :type param_path: str
+    :type param_path: Union[str, None]
     :default param_path: None
     """
 
@@ -153,7 +153,7 @@ class LNS:  # pylint: disable=too-many-instance-attributes
         :rtype: List[Tuple[clingo.symbol.Symbol, bool]]
         """
         fixed_atoms = []
-        if self._relax_mode:
+        if self._relax_mode == "declarative":
             selected_atoms = []
             declared_fixed_atoms: dict[
                 clingo.symbol.Symbol, list[tuple[clingo.symbol.Symbol, bool]]
@@ -167,11 +167,11 @@ class LNS:  # pylint: disable=too-many-instance-attributes
                         (atom.arguments[0], True)
                     )
             for symbol in selected_atoms:
-                if random.randint(0, 1) > relax_rate:
+                if random.randint(0, 100) >= relax_rate * 100:
                     fixed_atoms += declared_fixed_atoms[symbol]
-        else:
+        elif self._relax_mode == "random":
             for atom in model["shown"]:
-                if random.randint(0, 1) > relax_rate:
+                if random.randint(0, 100) >= relax_rate * 100:
                     fixed_atoms.append((atom, True))
         return fixed_atoms
 
@@ -256,11 +256,11 @@ class LNS:  # pylint: disable=too-many-instance-attributes
             print("Running branch-and-bound search.")
             self._relax_rates = [1]
             self._relax_rate = 1
-        elif self._relax_mode:
+        elif self._relax_mode == "declarative":
             print(
                 f"Running with declarative relaxation with a rate of {self._relax_rate}."
             )
-        else:
+        elif self._relax_mode == "random":
             print(
                 f"Running with random relaxation of shown atoms with a rate of {self._relax_rate}."
             )
