@@ -9,6 +9,7 @@ from io import StringIO
 from unittest import TestCase, mock
 
 import clingo
+from clingo.symbol import Function, Number
 
 from large_neighbourhood_search import LNS
 from large_neighbourhood_search.utils.logger import setup_logger
@@ -166,6 +167,38 @@ class TestMain(TestCase):
         self.assertEqual(lns._bound, 2000)
         self.assertEqual(lns._seed, None)
 
+    def test_lns_init(self):
+        """
+        Test LNS initialization.
+        """
+        lns = LNS(["./tests/ref/golf.lp"])
+        self.assertEqual(lns._files, ["./tests/ref/golf.lp"])
+        self.assertEqual(lns._clingo_args, [])
+        self.assertEqual(lns._seed, None)
+        self.assertEqual(lns._relax_rate, 0.2)
+        self.assertEqual(lns._relax_rates, [0.2])
+        self.assertEqual(lns._bnb_search, False)
+        self.assertEqual(lns._relax_mode, "random")
+        self.assertEqual(lns.param_path, None)
+
+        lns = LNS(
+            ["./tests/ref/golf.lp"],
+            ["--test"],
+            123,
+            0.4,
+            True,
+            True,
+            "./tests/test.json",
+        )
+        self.assertEqual(lns._files, ["./tests/ref/golf.lp"])
+        self.assertEqual(lns._clingo_args, ["--test"])
+        self.assertEqual(lns._seed, 123)
+        self.assertEqual(lns._relax_rate, 0.4)
+        self.assertEqual(lns._relax_rates, [0.4])
+        self.assertEqual(lns._bnb_search, True)
+        self.assertEqual(lns._relax_mode, "declarative")
+        self.assertEqual(lns.param_path, "./tests/test.json")
+
     def test_lns_setup(self):
         """
         Test the clingo setup for LNS.
@@ -226,3 +259,78 @@ class TestMain(TestCase):
         self.assertEqual(lns._relax_rate, 1)
         self.assertIsInstance(test_ctl, clingo.control.Control)
         os.remove("./tests/test.json")
+
+    def test_variability(self):
+        """
+        Test variability calculation.
+        """
+        lns = LNS(["./tests/ref/golf.lp"])
+        l1 = [0, 1, 2, 3, 4, 5]
+        l2 = [1, 3]
+        self.assertEqual(lns.get_variability(l1, l2), 0)
+        l2 = [0, 2, 6, 7]
+        self.assertEqual(lns.get_variability(l1, l2), 0.5)
+        self.assertEqual(lns.get_variability(l2, l1), 0.5)
+
+    def test_stats(self):
+        """
+        Test stats getter. WIP
+        """
+        lns = lns = LNS(["./tests/ref/golf.lp"])
+        test_ctl = lns.setup()
+        self.assertEqual(type(lns.get_stats(test_ctl)), dict)
+
+    def test_relax(self):
+        """
+        Test atom relaxation. Seed: 123
+        """
+        model = {
+            "shown": [
+                Function("plays", [Number(3), Number(1), Number(1)], True),
+                Function("plays", [Number(5), Number(1), Number(1)], True),
+                Function("plays", [Number(9), Number(1), Number(1)], True),
+                Function("plays", [Number(1), Number(2), Number(1)], True),
+            ],
+            "true": [
+                Function("_lns_select", [Number(1)], True),
+                Function("_lns_select", [Number(2)], True),
+                Function("_lns_select", [Number(3)], True),
+                Function(
+                    "_lns_fix",
+                    [
+                        Function("plays", [Number(1), Number(1), Number(3)], True),
+                        Number(1),
+                    ],
+                    True,
+                ),
+                Function(
+                    "_lns_fix",
+                    [
+                        Function("plays", [Number(2), Number(1), Number(3)], True),
+                        Number(2),
+                    ],
+                    True,
+                ),
+                Function(
+                    "_lns_fix",
+                    [
+                        Function("plays", [Number(3), Number(1), Number(1)], True),
+                        Number(3),
+                    ],
+                    True,
+                ),
+            ],
+        }
+        seed = 123
+        lns = LNS(["./tests/ref/golf.lp"], seed=seed)
+        lns.setup()
+        ref = [
+            (Function("plays", [Number(5), Number(1), Number(1)], True), True),
+            (Function("plays", [Number(1), Number(2), Number(1)], True), True),
+        ]
+        self.assertListEqual(lns.relax(model, 0.2), ref)
+
+        lns = LNS(["./tests/ref/golf.lp"], declarative=True, seed=seed)
+        lns.setup()
+        ref = [(Function("plays", [Number(2), Number(1), Number(3)], True), True)]
+        self.assertListEqual(lns.relax(model, 0.2), ref)
