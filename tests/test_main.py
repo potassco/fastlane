@@ -334,3 +334,84 @@ class TestMain(TestCase):
         lns.setup()
         ref = [(Function("plays", [Number(2), Number(1), Number(3)], True), True)]
         self.assertListEqual(lns.relax(model, 0.2), ref)
+
+    def test_first_solution(self):
+        """
+        Test finding of first solution.
+        """
+        lns = LNS(["./tests/ref/golf.lp"], seed=123)
+        ctl = lns.setup()
+        lns._search_mode = "hard_constraint"
+        self.assertEqual(lns.get_first_solution(ctl), True)
+        self.assertIsNotNone(lns._opt_val)
+        self.assertEqual(type(lns._opt_val), int)
+        self.assertIsNotNone(lns._best_val)
+        self.assertEqual(type(lns._best_val), int)
+        self.assertIsNotNone(lns._model)
+        self.assertEqual(type(lns._model), dict)
+        self.assertIsNotNone(lns._best_model)
+        self.assertEqual(type(lns._best_model), dict)
+
+        lns = LNS(["./tests/ref/bad_encoding.lp"], seed=123)
+        ctl = lns.setup()
+        self.assertEqual(lns.get_first_solution(ctl), False)
+
+    def test_repair(self):
+        """
+        Test reparation of solution.
+        """
+        lns = LNS(["./tests/ref/golf.lp"], seed=123)
+        lns._search_mode = "classic"
+        ctl = lns.setup()
+        lns.get_first_solution(ctl)
+
+        assumptions = lns.relax(lns._best_model, lns._relax_rate)
+        res = lns.repair(ctl, assumptions)
+        self.assertIsNotNone(res)
+        self.assertEqual(type(res), clingo.solving.SolveResult)
+
+        assumptions_atoms = list(map(lambda x: x[0], assumptions))
+        for atom in assumptions_atoms:
+            self.assertIn(atom, lns._model["true"])
+
+    def test_print_step(self):
+        """
+        Test message output.
+        """
+        lns = LNS(["./tests/ref/golf.lp"], seed=123)
+        lns.setup()
+        lns._bound = 2
+        lns._bound_type = "steps"
+        self.assertEqual(lns.print_step(1, 1.23456), "1|2, relax rate 0.2:")
+        lns._bound_type = "time"
+        self.assertEqual(type(lns.print_step(1, 1.23456)), str)
+
+    def test_main(self):
+        """
+        Test main method.
+        """
+        lns = LNS(
+            ["./tests/ref/golf.lp"],
+            None,
+            123,
+            0.2,
+            False,
+            False,
+            "./tests/ref/example_params_ref.json",
+        )
+        lns.main()
+
+        lns = LNS(
+            ["./tests/ref/golf.lp"],
+            None,
+            123,
+            0.2,
+            False,
+            False,
+        )
+        lns._bound_mode = "per_improvement"
+        lns._search_mode = "classic"
+        lns.main()
+
+        lns = LNS(["./tests/ref/bad_encoding.lp"], seed=123)
+        lns.main()
