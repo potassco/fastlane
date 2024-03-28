@@ -242,8 +242,9 @@ class LNS:  # pylint: disable=too-many-instance-attributes
             self._clingo_args.append("--rand-freq=0.8")
 
         ctl = clingo.Control(self._clingo_args)
-        if not self._files:
-            self._files = ["-"]
+        # no input files not supported
+        # if not self._files:
+        #    self._files = ["-"]
         for path in self._files:
             ctl.load(path)
 
@@ -294,7 +295,7 @@ class LNS:  # pylint: disable=too-many-instance-attributes
         print("No first solution found.")
         return False
 
-    def print_step(self, step_for_improvement, improvement_start_time) -> None:
+    def print_step(self, step_for_improvement, improvement_start_time) -> str:
         """
         Print current step statistics.
 
@@ -302,15 +303,17 @@ class LNS:  # pylint: disable=too-many-instance-attributes
         :type step_for_improvement: int
         :param improvement_start_time: Start time of current improvement
         :type improvement_start_time: float
+        :return: Printed message.
+        :rtype: str
         """
         if self._bound_type == "steps":
-            print(
+            message = (
                 f"{step_for_improvement}|{self._bound}, relax rate {self._relax_rate}:"
             )
         if self._bound_type == "time":
-            print(
-                f"{time.time() - improvement_start_time:.3f}s, relax rate {self._relax_rate}:"
-            )
+            message = f"{time.time() - improvement_start_time:.3f}s, relax rate {self._relax_rate}:"
+        print(message)
+        return message
 
     def main(self) -> None:
         """
