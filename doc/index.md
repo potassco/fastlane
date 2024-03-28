@@ -1,9 +1,14 @@
-# large_neighbourhood_search
+# Large Neighbourhood Search
 
-An example project template.
+Large Neighbourhood Search (LNS) is a local search technique for iteratively finding better solutions to difficult optimization problems by relaxing and rebuilding parts of previous solutions. The goal of this project is to implement a extensive and easily modifiable implementation of LNS using the tools of [potassco](https://potassco.org/).
 
 ```{toctree}
+:maxdepth: 2
 content/installation.md
-content/quickstart.md
-content/encodings/index.md
+content/usage.md
+content/implementation/index.rst
+```
+
+```{note}
+This project is still under active development.
 ```
