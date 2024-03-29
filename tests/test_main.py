@@ -335,6 +335,85 @@ class TestMain(TestCase):
         ref = [(Function("plays", [Number(2), Number(1), Number(3)], True), True)]
         self.assertListEqual(lns.relax(model, 0.2), ref)
 
+    def test_get_opt_val(self):
+        """
+        Test optimization value calculation.
+        """
+        model = {
+            "shown": [
+                Function("plays", [Number(3), Number(1), Number(1)], True),
+                Function("plays", [Number(5), Number(1), Number(1)], True),
+                Function("plays", [Number(9), Number(1), Number(1)], True),
+            ],
+            "true": [
+                Function("meets", [Number(7), Number(8), Number(3)], True),
+                Function("meets", [Number(7), Number(9), Number(3)], True),
+                Function("meets", [Number(8), Number(9), Number(3)], True),
+                Function(
+                    "_minimize",
+                    [Number(1), Function("", [Number(1), Number(2)], True)],
+                    True,
+                ),
+                Function(
+                    "_minimize",
+                    [Number(1), Function("", [Number(3), Number(5)], True)],
+                    True,
+                ),
+                Function(
+                    "_minimize",
+                    [Number(1), Function("", [Number(4), Number(5)], True)],
+                    True,
+                ),
+                Function(
+                    "_minimize",
+                    [Number(1), Function("", [Number(7), Number(8)], True)],
+                    True,
+                ),
+            ],
+        }
+        lns = LNS(["./tests/ref/golf.lp"], seed=123)
+        self.assertEqual(lns.get_opt_val(model), 4)
+
+    def test_acceptance(self):
+        """
+        Test acceptance check.
+        """
+        model = {
+            "shown": [
+                Function("plays", [Number(3), Number(1), Number(1)], True),
+                Function("plays", [Number(5), Number(1), Number(1)], True),
+                Function("plays", [Number(9), Number(1), Number(1)], True),
+            ],
+            "true": [
+                Function("meets", [Number(7), Number(8), Number(3)], True),
+                Function("meets", [Number(7), Number(9), Number(3)], True),
+                Function("meets", [Number(8), Number(9), Number(3)], True),
+                Function(
+                    "_minimize",
+                    [Number(1), Function("", [Number(1), Number(2)], True)],
+                    True,
+                ),
+                Function(
+                    "_minimize",
+                    [Number(1), Function("", [Number(3), Number(5)], True)],
+                    True,
+                ),
+                Function(
+                    "_minimize",
+                    [Number(1), Function("", [Number(4), Number(5)], True)],
+                    True,
+                ),
+            ],
+        }
+        lns = LNS(["./tests/ref/golf.lp"], seed=123)
+        lns._search_mode = "classic"
+        lns._best_val = 4
+        self.assertEqual(lns.check_acceptance(model), True)
+        lns._best_val = 3
+        self.assertEqual(lns.check_acceptance(model), False)
+        lns._search_mode = "hard_constraint"
+        self.assertEqual(lns.check_acceptance(model), True)
+
     def test_first_solution(self):
         """
         Test finding of first solution.
@@ -343,8 +422,6 @@ class TestMain(TestCase):
         ctl = lns.setup()
         lns._search_mode = "hard_constraint"
         self.assertEqual(lns.get_first_solution(ctl), True)
-        self.assertIsNotNone(lns._opt_val)
-        self.assertEqual(type(lns._opt_val), int)
         self.assertIsNotNone(lns._best_val)
         self.assertEqual(type(lns._best_val), int)
         self.assertIsNotNone(lns._model)
