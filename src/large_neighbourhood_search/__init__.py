@@ -12,7 +12,8 @@ from clingo.symbol import Number, SymbolType
 from .utils.pf_handling import load_param_file
 
 
-class LNS:  # pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes
+class LNS:
     """
     Clingo application performing LNS.
 
@@ -78,7 +79,6 @@ class LNS:  # pylint: disable=too-many-instance-attributes
         self._model: Dict[str, Sequence[clingo.symbol.Symbol]] = {}
         self._best_model: Dict[str, Sequence[clingo.symbol.Symbol]] = {}
 
-        self._opt_val: int = -1
         self._best_val: int = -1
 
     def load_params(self, json_file: str) -> None:
@@ -127,17 +127,9 @@ class LNS:  # pylint: disable=too-many-instance-attributes
         self._model = {}
         self._model["shown"] = model.symbols(shown=True)
         self._model["true"] = model.symbols(atoms=True)
-        self._opt_val = 0
 
         if self._best_model:
             print(self.get_variability(self._model["shown"], self._best_model["shown"]))
-
-        for atom in model.symbols(atoms=True):
-            if (
-                atom.match("_minimize", 2)
-                and atom.arguments[0].type is SymbolType.Number
-            ):
-                self._opt_val += atom.arguments[0].number
 
     def relax(
         self, model: Dict[str, Sequence[clingo.symbol.Symbol]], relax_rate: float
@@ -192,6 +184,49 @@ class LNS:  # pylint: disable=too-many-instance-attributes
         """
         x = ctl.solve(assumptions=assumptions, on_model=self._on_model)
         return x
+
+    def get_opt_val(self, model: Dict[str, Sequence[clingo.symbol.Symbol]]) -> int:
+        """
+        Get opt value of given model.
+
+        :param model: Model.
+        :type model: Dict[str, Sequence[clingo.symbol.Symbol]]
+        :return: Opt value of given model.
+        :rtype: int
+        """
+        opt_val = 0
+        for atom in model["true"]:
+            if (
+                atom.match("_minimize", 2)
+                and atom.arguments[0].type is SymbolType.Number
+            ):
+                opt_val += atom.arguments[0].number
+        return opt_val
+
+    # pylint: disable=dangerous-default-value, unused-argument
+    def check_acceptance(
+        self,
+        new_model: Dict[str, Sequence[clingo.symbol.Symbol]],
+        old_model: Dict[str, Sequence[clingo.symbol.Symbol]] = {},
+    ) -> bool:
+        """
+        Check whether new model is accepted.
+
+        :param new_model: New model checked for acceptance.
+        :type new_model: Dict[str, Sequence[clingo.symbol.Symbol]]
+        :param old_model: Old model optionally used for comparison.
+        :type old_model: Dict[str, Sequence[clingo.symbol.Symbol]]
+        :return: Whether new model was accepted or not.
+        :rtype: bool
+        """
+        new_opt_val = self.get_opt_val(new_model)
+        # hard_cons mode: if new solution is satisfiable -> better solution
+        # classic mode: check if opt value better
+        if self._search_mode == "hard_constraint" or (
+            self._search_mode == "classic" and new_opt_val < self._best_val
+        ):
+            return True
+        return False
 
     def get_variability(self, list1: Sequence, list2: Sequence) -> float:
         """
@@ -286,10 +321,11 @@ class LNS:  # pylint: disable=too-many-instance-attributes
 
         # get first solution
         if ctl.solve(on_model=self._on_model).satisfiable:
-            print(f"Initial solution found with opt_val: {self._opt_val}")
+            new_opt_val = self.get_opt_val(self._model)
+            print(f"Initial solution found with opt_val: {new_opt_val}")
             if self._search_mode == "hard_constraint":
-                ctl.ground([("opt_val", [Number(self._opt_val)])])
-            self._best_val = self._opt_val
+                ctl.ground([("opt_val", [Number(new_opt_val)])])
+            self._best_val = new_opt_val
             self._best_model = self._model.copy()
             return True
         print("No first solution found.")
@@ -345,21 +381,21 @@ class LNS:  # pylint: disable=too-many-instance-attributes
 
             # reconstruct model
             if self.repair(ctl, assumptions).satisfiable:
-                # hard_cons mode: if new solution is satisfiable -> better solution
-                # classic mode: check if opt value better
-                if self._search_mode == "hard_constraint" or (
-                    self._search_mode == "classic" and self._opt_val < self._best_val
-                ):
-                    print(f"New opt_val: {self._opt_val}")
+                # check acceptance
+                if self.check_acceptance(self._model):
+
+                    new_opt_val = self.get_opt_val(self._model)
+                    self._best_val = new_opt_val
+                    self._best_model = self._model.copy()
+                    print(f"New opt_val: {self._best_val}")
+
+                    if self._search_mode == "hard_constraint":
+                        # update boundary
+                        ctl.ground([("opt_val", [Number(self._best_val)])])
 
                     if self._bound_mode == "per_improvement":
                         step_for_improvement = 0
                         improvement_start_time = time.time()
-                    self._best_val = self._opt_val
-                    self._best_model = self._model.copy()
-                    if self._search_mode == "hard_constraint":
-                        # update boundary
-                        ctl.ground([("opt_val", [Number(self._opt_val)])])
             else:
                 unsat_counter += 1
             # change relax_rate after unsat_threshold amount of unsat solutions
