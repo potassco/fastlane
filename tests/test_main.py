@@ -2,7 +2,7 @@
 Test cases for main application functionality.
 """
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access, too-many-public-methods
 import logging
 import os
 from io import StringIO
@@ -462,6 +462,99 @@ class TestMain(TestCase):
         self.assertEqual(lns.print_step(1, 1.23456), "1|2, relax rate 0.2:")
         lns._bound_type = "time"
         self.assertEqual(type(lns.print_step(1, 1.23456)), str)
+
+    def test_handle_limit_init(self):
+        """
+        Test "init" action of handle_limit.
+        """
+        lns = LNS(["./tests/ref/golf.lp"])
+        limit = {}
+        self.assertTrue(lns.handle_limit(limit, "init"))
+        self.assertEqual(limit["bound"], lns._bound)
+        self.assertEqual(limit["step"], 0)
+        s_time = limit["start_time"]
+        self.assertEqual(type(s_time), float)
+        self.assertEqual(limit["step_for_improvement"], 0)
+        self.assertEqual(limit["improvement_start_time"], s_time)
+        self.assertEqual(limit["no_improvement"], 0)
+
+    def test_handle_limit_update(self):
+        """
+        Test "update" action of handle_limit.
+        """
+        lns = LNS(["./tests/ref/golf.lp"])
+        limit = {}
+        lns.handle_limit(limit, "init")
+        s_time = limit["start_time"]
+        self.assertTrue(lns.handle_limit(limit, "update"))
+        self.assertEqual(limit["bound"], lns._bound)
+        self.assertEqual(limit["step"], 1)
+        self.assertEqual(limit["start_time"], s_time)
+        self.assertEqual(limit["step_for_improvement"], 1)
+        self.assertEqual(limit["improvement_start_time"], limit["start_time"])
+        self.assertEqual(limit["no_improvement"], 0)
+
+    def test_handle_limit_improvement(self):
+        """
+        Test "improvement" action of handle_limit.
+        """
+        lns = LNS(["./tests/ref/golf.lp"])
+        limit = {}
+        lns.handle_limit(limit, "init")
+        lns.handle_limit(limit, "update")
+        s_time = limit["start_time"]
+        lns._bound_mode = "overall"
+        self.assertTrue(lns.handle_limit(limit, "improvement"))
+        self.assertEqual(limit["bound"], lns._bound)
+        self.assertEqual(limit["step"], 1)
+        self.assertEqual(limit["start_time"], s_time)
+        self.assertEqual(limit["step_for_improvement"], 1)
+        self.assertEqual(limit["improvement_start_time"], limit["start_time"])
+        self.assertEqual(limit["no_improvement"], 0)
+
+        lns._bound_mode = "per_improvement"
+        self.assertTrue(lns.handle_limit(limit, "improvement"))
+        self.assertEqual(limit["bound"], lns._bound)
+        self.assertEqual(limit["step"], 1)
+        self.assertEqual(limit["start_time"], s_time)
+        self.assertEqual(limit["step_for_improvement"], 0)
+        self.assertNotEqual(limit["improvement_start_time"], limit["start_time"])
+        self.assertEqual(limit["no_improvement"], 0)
+
+    def test_handle_limit_no_improvement(self):
+        """
+        Test "no_improvement" action of handle_limit.
+        """
+        lns = LNS(["./tests/ref/golf.lp"])
+        limit = {}
+        lns.handle_limit(limit, "init")
+        s_time = limit["start_time"]
+        self.assertTrue(lns.handle_limit(limit, "no_improvement"))
+        self.assertEqual(limit["bound"], lns._bound)
+        self.assertEqual(limit["step"], 0)
+        self.assertEqual(limit["start_time"], s_time)
+        self.assertEqual(limit["step_for_improvement"], 0)
+        self.assertEqual(limit["improvement_start_time"], limit["start_time"])
+        self.assertEqual(limit["no_improvement"], 1)
+
+    def test_handle_limit_check_stop(self):
+        """
+        Test "check_stop" action of handle_limit.
+        """
+        lns = LNS(["./tests/ref/golf.lp"])
+        limit = {}
+        lns.handle_limit(limit, "init")
+        lns._bound_type = "steps"
+        limit["step_for_improvement"] = 1
+        self.assertFalse(lns.handle_limit(limit, "check_stop"))
+        limit["bound"] = 0
+        self.assertTrue(lns.handle_limit(limit, "check_stop"))
+        lns._bound_type = "time"
+        self.assertTrue(lns.handle_limit(limit, "check_stop"))
+        limit["bound"] = 10
+        self.assertFalse(lns.handle_limit(limit, "check_stop"))
+
+        self.assertFalse(lns.handle_limit(limit, "invalid_action"))
 
     def test_main(self):
         """
