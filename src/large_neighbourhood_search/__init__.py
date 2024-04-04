@@ -4,7 +4,7 @@ The large_neighbourhood_search project.
 
 import random
 import time
-from typing import Dict, List, Sequence, Tuple, Union
+from typing import Any, Dict, List, Sequence, Tuple, Union
 
 import clingo
 from clingo.symbol import Number, SymbolType
@@ -228,6 +228,26 @@ class LNS:
             return True
         return False
 
+    def better_solution_found(self, ctl: clingo.control.Control) -> None:
+        """
+        What to do if better solution was found.
+
+        # (
+                # (self._bound_type == "steps" and step_for_improvement >= self._bound)
+                # or (
+                #    self._bound_type == "time"
+                #    and time.time() - improvement_start_time >= self._bound
+                # ):param ctl: Clingo control object used for solving.
+        :type ctl: clingo.control.Control
+        """
+        self._best_val = self.get_opt_val(self._model)
+        self._best_model = self._model.copy()
+        print(f"New opt_val: {self._best_val}")
+
+        if self._search_mode == "hard_constraint":
+            # update boundary
+            ctl.ground([("opt_val", [Number(self._best_val)])])
+
     def get_variability(self, list1: Sequence, list2: Sequence) -> float:
         """
         Calculate variability of two lists.
@@ -351,6 +371,64 @@ class LNS:
         print(message)
         return message
 
+    def handle_limit(self, values: Dict[str, Any], action: str) -> bool:
+        """
+        Handle all actions regarding the limit/bound.
+        Has to support the following actions:
+        - "init"
+        - "update"
+        - "improvement"
+        - "no_improvement"
+        - "check_stop"
+
+        :param values: Dictionary containing all values used for keeping track of the LNS.
+        :type values: Dict[str, Any]
+        :return: Whether action succeeded or not.
+        :rtype: bool
+        """
+        # dict call-by-reference
+        if action == "init":
+            values.clear()
+            values["bound"] = self._bound
+            values["step"] = 0
+            values["start_time"] = time.time()
+            values["step_for_improvement"] = 0
+            values["improvement_start_time"] = values["start_time"]
+            values["no_improvement"] = 0
+            return True
+        if action == "update":
+            values["step"] += 1
+            values["step_for_improvement"] += 1
+            return True
+        if action == "improvement":
+            if self._bound_mode == "per_improvement":
+                values["step_for_improvement"] = 0
+                values["improvement_start_time"] = time.time()
+            return True
+        if action == "no_improvement":
+            values["no_improvement"] += 1
+            return True
+        if action == "check_stop":
+            return (
+                self._bound_type == "steps"
+                and values["step_for_improvement"] >= values["bound"]
+            ) or (
+                self._bound_type == "time"
+                and time.time() - values["improvement_start_time"] >= values["bound"]
+            )
+        return False
+
+    def check_stop(self, values: Dict[str, Any]) -> bool:
+        """
+        Check whether LNS should be stopped.
+
+        :param values: Dictionary containing all values used for keeping track of the LNS.
+        :type values: Dict[str, Any]
+        :return: Whether LNS should be stopped or not.
+        :rtype: bool
+        """
+        return self.handle_limit(values, "check_stop") or self._best_val == 0
+
     def main(self) -> None:
         """
         Run Large-Neighbourhood Search according to set parameters.
@@ -363,18 +441,13 @@ class LNS:
             return
 
         # perform LNS
-        # overall step counter and time
-        step = 0
-        start_time = time.time()
-        # step counter and time per improvement
-        step_for_improvement = 0
-        improvement_start_time = start_time
-        # unsat counter
-        unsat_counter = 0
+        limit_dict: Dict[str, Any] = {}
+        self.handle_limit(limit_dict, "init")
         while True:
-            step += 1
-            step_for_improvement += 1
-            self.print_step(step_for_improvement, improvement_start_time)
+            self.handle_limit(limit_dict, "update")
+            self.print_step(
+                limit_dict["step_for_improvement"], limit_dict["improvement_start_time"]
+            )
 
             # relax model
             assumptions = self.relax(self._best_model, self._relax_rate)
@@ -384,44 +457,34 @@ class LNS:
                 # check acceptance
                 if self.check_acceptance(self._model):
 
-                    new_opt_val = self.get_opt_val(self._model)
-                    self._best_val = new_opt_val
-                    self._best_model = self._model.copy()
-                    print(f"New opt_val: {self._best_val}")
+                    self.better_solution_found(ctl)
 
-                    if self._search_mode == "hard_constraint":
-                        # update boundary
-                        ctl.ground([("opt_val", [Number(self._best_val)])])
-
-                    if self._bound_mode == "per_improvement":
-                        step_for_improvement = 0
-                        improvement_start_time = time.time()
+                    self.handle_limit(limit_dict, "improvement")
+                else:
+                    self.handle_limit(limit_dict, "no_improvement")
             else:
-                unsat_counter += 1
+                self.handle_limit(limit_dict, "no_improvement")
             # change relax_rate after unsat_threshold amount of unsat solutions
             self._relax_rate = self._relax_rates[
-                unsat_counter // self._unsat_threshold % len(self._relax_rates)
+                limit_dict["no_improvement"]
+                // self._unsat_threshold
+                % len(self._relax_rates)
             ]
             # stop criterion, WIP
-            if (
-                (self._bound_type == "steps" and step_for_improvement >= self._bound)
-                or (
-                    self._bound_type == "time"
-                    and time.time() - improvement_start_time >= self._bound
-                )
-                or self._best_val == 0
-            ):
+            if self.check_stop(limit_dict):
                 end_time = time.time()
                 answer_string = " ".join(
                     [str(atom) for atom in self._best_model["shown"]]
                 )
+                step = limit_dict["step"]
+                overall_time = end_time - limit_dict["start_time"]
                 print(
                     (
                         "Answer\n"
                         f"{answer_string}\n"
                         f"Final opt_val: { self._best_val}\n"
                         f"Overall steps: {step}\n"
-                        f"Overall time: {end_time - start_time:.3f}s"
+                        f"Overall time: {overall_time:.3f}s"
                     )
                 )
                 break
