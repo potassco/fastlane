@@ -353,20 +353,47 @@ class TestMain(TestCase):
         }
         self.assertEqual(lns_f.calculate_opt_val(model), 4)
 
-    def test_acceptance(self):
+    def test_check_better(self):
         """
-        Test acceptance check.
+        Test check_better.
         """
-        model = {
+        best_model = {
             "shown": [
                 Function("plays", [Number(3), Number(1), Number(1)], True),
-                Function("plays", [Number(5), Number(1), Number(1)], True),
-                Function("plays", [Number(9), Number(1), Number(1)], True),
             ],
             "true": [
                 Function("meets", [Number(7), Number(8), Number(3)], True),
-                Function("meets", [Number(7), Number(9), Number(3)], True),
-                Function("meets", [Number(8), Number(9), Number(3)], True),
+                Function(
+                    "_minimize",
+                    [Number(1), Function("", [Number(1), Number(2)], True)],
+                    True,
+                ),
+                Function(
+                    "_minimize",
+                    [Number(1), Function("", [Number(3), Number(5)], True)],
+                    True,
+                ),
+            ],
+        }
+        better_model = {
+            "shown": [
+                Function("plays", [Number(3), Number(1), Number(1)], True),
+            ],
+            "true": [
+                Function("meets", [Number(7), Number(8), Number(3)], True),
+                Function(
+                    "_minimize",
+                    [Number(1), Function("", [Number(1), Number(2)], True)],
+                    True,
+                ),
+            ],
+        }
+        worse_model = {
+            "shown": [
+                Function("plays", [Number(3), Number(1), Number(1)], True),
+            ],
+            "true": [
+                Function("meets", [Number(7), Number(8), Number(3)], True),
                 Function(
                     "_minimize",
                     [Number(1), Function("", [Number(1), Number(2)], True)],
@@ -384,12 +411,51 @@ class TestMain(TestCase):
                 ),
             ],
         }
-        lns = LNS(["./tests/ref/golf.lp"], seed=123)
-        lns.lns_values["best_opt_val"] = 4
-        self.assertEqual(lns_f.check_acceptance_classic(lns, model), True)
-        lns.lns_values["best_opt_val"] = 3
-        self.assertEqual(lns_f.check_acceptance_classic(lns, model), False)
-        self.assertEqual(lns_f.check_acceptance_always(lns, model), True)
+        lns = LNS(["./tests/ref/golf.lp"])
+
+        self.assertTrue(lns_f.check_better_classic(lns, better_model, best_model))
+        self.assertFalse(lns_f.check_better_classic(lns, worse_model, best_model))
+
+        self.assertTrue(lns_f.check_better_always(lns, better_model, best_model))
+        self.assertTrue(lns_f.check_better_always(lns, worse_model, best_model))
+
+    def test_check_acceptance(self):
+        """
+        Test check_accept.
+        """
+        best_model = {
+            "shown": [
+                Function("plays", [Number(3), Number(1), Number(1)], True),
+            ],
+            "true": [
+                Function("meets", [Number(7), Number(8), Number(3)], True),
+                Function(
+                    "_minimize",
+                    [Number(1), Function("", [Number(1), Number(2)], True)],
+                    True,
+                ),
+                Function(
+                    "_minimize",
+                    [Number(1), Function("", [Number(3), Number(5)], True)],
+                    True,
+                ),
+            ],
+        }
+        new_model = {
+            "shown": [
+                Function("plays", [Number(3), Number(1), Number(1)], True),
+            ],
+            "true": [
+                Function("meets", [Number(7), Number(8), Number(3)], True),
+                Function(
+                    "_minimize",
+                    [Number(1), Function("", [Number(1), Number(2)], True)],
+                    True,
+                ),
+            ],
+        }
+        lns = LNS(["./tests/ref/golf.lp"])
+        self.assertTrue(lns_f.check_better_always(lns, new_model, best_model))
 
     def test_first_solution(self):
         """
@@ -399,12 +465,12 @@ class TestMain(TestCase):
         ctl = lns.setup()
         lns._search_mode = "hard_constraint"
         self.assertEqual(lns.get_first_solution(ctl), True)
-        self.assertIsNotNone(lns.lns_values["best_opt_val"])
-        self.assertEqual(type(lns.lns_values["best_opt_val"]), int)
-        self.assertIsNotNone(lns.lns_values["model"])
-        self.assertEqual(type(lns.lns_values["model"]), dict)
-        self.assertIsNotNone(lns.lns_values["best_model"])
-        self.assertEqual(type(lns.lns_values["best_model"]), dict)
+        self.assertIsNotNone(lns.models["new_model"])
+        self.assertEqual(type(lns.models["new_model"]), dict)
+        self.assertIsNotNone(lns.models["current_model"])
+        self.assertEqual(type(lns.models["current_model"]), dict)
+        self.assertIsNotNone(lns.models["best_model"])
+        self.assertEqual(type(lns.models["best_model"]), dict)
 
         lns = LNS(["./tests/ref/bad_encoding.lp"], seed=123)
         ctl = lns.setup()
@@ -420,7 +486,7 @@ class TestMain(TestCase):
         lns.get_first_solution(ctl)
 
         assumptions = lns_f.relax_random(
-            lns.lns_values["best_model"], lns.config_values["current_relax_rate"]
+            lns.models["best_model"], lns.config_values["current_relax_rate"]
         )
         res = lns_f.repair(lns, ctl, assumptions)
         self.assertIsNotNone(res)
@@ -428,7 +494,7 @@ class TestMain(TestCase):
 
         assumptions_atoms = list(map(lambda x: x[0], assumptions))
         for atom in assumptions_atoms:
-            self.assertIn(atom, lns.lns_values["model"]["true"])
+            self.assertIn(atom, lns.models["new_model"]["true"])
 
     def test_boundary_overall_init(self):
         """
@@ -535,15 +601,19 @@ class TestMain(TestCase):
         lns = LNS(
             ["./tests/ref/golf.lp"],
             None,
-            123,
+            122,
             0.2,
             False,
         )
-        lns._bound_mode = "per_improvement"
         lns._search_mode = "classic"
-        lns.callable_dict["check_acceptance"] = lns_f.check_acceptance_classic
-        lns.callable_dict["better_solution_found"] = lns_f.better_solution_found_classic
+        lns.callables["check_better"] = lns_f.check_better_classic
+        lns.callables["better_solution_found"] = lns_f.better_solution_found_classic
         lns.main()
 
+        lns = LNS(["./tests/ref/golf.lp"], seed=123)
+        lns.callables["check_stop"] = lns_f.check_stop_time
+        lns.main()
+
+        # faulty encoding
         lns = LNS(["./tests/ref/bad_encoding.lp"], seed=123)
         lns.main()
