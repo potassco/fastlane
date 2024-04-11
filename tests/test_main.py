@@ -156,31 +156,29 @@ class TestMain(TestCase):
             None,
             0.2,
             False,
-            False,
             "./tests/ref/example_params_ref.json",
         )
         lns.load_params(lns.param_path)
         self.assertEqual(lns._relax_mode, "declarative")
-        self.assertEqual(lns._relax_rates, [0.2, 0.4, 0.6])
-        self.assertEqual(lns._relax_rate, 0.2)
+        self.assertEqual(lns.config_values["relax_rates"], [0.2, 0.4, 0.6])
+        self.assertEqual(lns.config_values["current_relax_rate"], 0.2)
         self.assertEqual(lns._unsat_threshold, 3)
         self.assertEqual(lns._search_mode, "hard_constraint")
         self.assertEqual(lns._bound_mode, "overall")
         self.assertEqual(lns._bound_type, "steps")
-        self.assertEqual(lns._bound, 2000)
-        self.assertEqual(lns._seed, None)
+        self.assertEqual(lns.config_values["bound"], 2000)
+        self.assertEqual(lns.config_values["seed"], None)
 
     def test_lns_init(self):
         """
         Test LNS initialization.
         """
         lns = LNS(["./tests/ref/golf.lp"])
-        self.assertEqual(lns._files, ["./tests/ref/golf.lp"])
-        self.assertEqual(lns._clingo_args, [])
-        self.assertEqual(lns._seed, None)
-        self.assertEqual(lns._relax_rate, 0.2)
-        self.assertEqual(lns._relax_rates, [0.2])
-        self.assertEqual(lns._bnb_search, False)
+        self.assertEqual(lns.config_values["files"], ["./tests/ref/golf.lp"])
+        self.assertEqual(lns.config_values["clingo_args"], [])
+        self.assertEqual(lns.config_values["seed"], None)
+        self.assertEqual(lns.config_values["current_relax_rate"], 0.2)
+        self.assertEqual(lns.config_values["relax_rates"], [0.2])
         self.assertEqual(lns._relax_mode, "random")
         self.assertEqual(lns.param_path, None)
 
@@ -190,15 +188,13 @@ class TestMain(TestCase):
             123,
             0.4,
             True,
-            True,
             "./tests/test.json",
         )
-        self.assertEqual(lns._files, ["./tests/ref/golf.lp"])
-        self.assertEqual(lns._clingo_args, ["--test"])
-        self.assertEqual(lns._seed, 123)
-        self.assertEqual(lns._relax_rate, 0.4)
-        self.assertEqual(lns._relax_rates, [0.4])
-        self.assertEqual(lns._bnb_search, True)
+        self.assertEqual(lns.config_values["files"], ["./tests/ref/golf.lp"])
+        self.assertEqual(lns.config_values["clingo_args"], ["--test"])
+        self.assertEqual(lns.config_values["seed"], 123)
+        self.assertEqual(lns.config_values["current_relax_rate"], 0.4)
+        self.assertEqual(lns.config_values["relax_rates"], [0.4])
         self.assertEqual(lns._relax_mode, "declarative")
         self.assertEqual(lns.param_path, "./tests/test.json")
 
@@ -211,7 +207,6 @@ class TestMain(TestCase):
             None,
             123,
             0.2,
-            False,
             False,
             "./tests/test.json",
         )
@@ -230,7 +225,7 @@ class TestMain(TestCase):
         }
         save_param_file(params, "./tests/test.json")
         test_ctl = lns.setup()
-        self.assertEqual(lns._clingo_args, ["--seed=123"])
+        self.assertEqual(lns.config_values["clingo_args"], ["--seed=123"])
         self.assertIsInstance(test_ctl, clingo.control.Control)
 
         lns = LNS(
@@ -238,7 +233,6 @@ class TestMain(TestCase):
             None,
             None,
             0.2,
-            False,
             False,
             "./tests/test.json",
         )
@@ -246,22 +240,8 @@ class TestMain(TestCase):
         params["search"]["mode"] = "classic"
         save_param_file(params, "./tests/test.json")
         test_ctl = lns.setup()
-        self.assertEqual(lns._clingo_args, ["--rand-freq=0.8"])
+        self.assertEqual(lns.config_values["clingo_args"], ["--rand-freq=0.8"])
         self.assertIsInstance(test_ctl, clingo.control.Control)
-
-        lns = LNS(
-            ["./tests/ref/golf.lp"],
-            None,
-            123,
-            0.2,
-            True,
-            False,
-            "./tests/test.json",
-        )
-        test_ctl = lns.setup()
-        self.assertEqual(lns._relax_rate, 1)
-        self.assertIsInstance(test_ctl, clingo.control.Control)
-        os.remove("./tests/test.json")
 
     def test_variability(self):
         """
@@ -406,9 +386,9 @@ class TestMain(TestCase):
             ],
         }
         lns = LNS(["./tests/ref/golf.lp"], seed=123)
-        lns._best_val = 4
+        lns.lns_values["best_opt_val"] = 4
         self.assertEqual(lns_f.check_acceptance_classic(lns, model), True)
-        lns._best_val = 3
+        lns.lns_values["best_opt_val"] = 3
         self.assertEqual(lns_f.check_acceptance_classic(lns, model), False)
         self.assertEqual(lns_f.check_acceptance_always(lns, model), True)
 
@@ -420,12 +400,12 @@ class TestMain(TestCase):
         ctl = lns.setup()
         lns._search_mode = "hard_constraint"
         self.assertEqual(lns.get_first_solution(ctl), True)
-        self.assertIsNotNone(lns._best_val)
-        self.assertEqual(type(lns._best_val), int)
-        self.assertIsNotNone(lns._model)
-        self.assertEqual(type(lns._model), dict)
-        self.assertIsNotNone(lns._best_model)
-        self.assertEqual(type(lns._best_model), dict)
+        self.assertIsNotNone(lns.lns_values["best_opt_val"])
+        self.assertEqual(type(lns.lns_values["best_opt_val"]), int)
+        self.assertIsNotNone(lns.lns_values["model"])
+        self.assertEqual(type(lns.lns_values["model"]), dict)
+        self.assertIsNotNone(lns.lns_values["best_model"])
+        self.assertEqual(type(lns.lns_values["best_model"]), dict)
 
         lns = LNS(["./tests/ref/bad_encoding.lp"], seed=123)
         ctl = lns.setup()
@@ -440,14 +420,14 @@ class TestMain(TestCase):
         ctl = lns.setup()
         lns.get_first_solution(ctl)
 
-        assumptions = lns_f.relax_random(lns._best_model, lns._relax_rate)
+        assumptions = lns_f.relax_random(lns.lns_values["best_model"], lns.config_values["current_relax_rate"])
         res = lns_f.repair(lns, ctl, assumptions)
         self.assertIsNotNone(res)
         self.assertEqual(type(res), clingo.solving.SolveResult)
 
         assumptions_atoms = list(map(lambda x: x[0], assumptions))
         for atom in assumptions_atoms:
-            self.assertIn(atom, lns._model["true"])
+            self.assertIn(atom, lns.lns_values["model"]["true"])
 
     def test_print_step(self):
         """
@@ -455,7 +435,7 @@ class TestMain(TestCase):
         """
         lns = LNS(["./tests/ref/golf.lp"], seed=123)
         lns.setup()
-        lns._bound = 2
+        lns.config_values["bound"] = 2
         lns._bound_type = "steps"
         self.assertEqual(lns.print_step(1, 1.23456), "1|2, relax rate 0.2:")
         lns._bound_type = "time"
@@ -468,7 +448,7 @@ class TestMain(TestCase):
         lns = LNS(["./tests/ref/golf.lp"])
         limit = {}
         self.assertTrue(lns.handle_limit(limit, "init"))
-        self.assertEqual(limit["bound"], lns._bound)
+        self.assertEqual(limit["bound"], lns.config_values["bound"])
         self.assertEqual(limit["step"], 0)
         s_time = limit["start_time"]
         self.assertEqual(type(s_time), float)
@@ -485,7 +465,7 @@ class TestMain(TestCase):
         lns.handle_limit(limit, "init")
         s_time = limit["start_time"]
         self.assertTrue(lns.handle_limit(limit, "update"))
-        self.assertEqual(limit["bound"], lns._bound)
+        self.assertEqual(limit["bound"], lns.config_values["bound"])
         self.assertEqual(limit["step"], 1)
         self.assertEqual(limit["start_time"], s_time)
         self.assertEqual(limit["step_for_improvement"], 1)
@@ -503,7 +483,7 @@ class TestMain(TestCase):
         s_time = limit["start_time"]
         lns._bound_mode = "overall"
         self.assertTrue(lns.handle_limit(limit, "improvement"))
-        self.assertEqual(limit["bound"], lns._bound)
+        self.assertEqual(limit["bound"], lns.config_values["bound"])
         self.assertEqual(limit["step"], 1)
         self.assertEqual(limit["start_time"], s_time)
         self.assertEqual(limit["step_for_improvement"], 1)
@@ -513,7 +493,7 @@ class TestMain(TestCase):
         time.sleep(0.1)
         lns._bound_mode = "per_improvement"
         self.assertTrue(lns.handle_limit(limit, "improvement"))
-        self.assertEqual(limit["bound"], lns._bound)
+        self.assertEqual(limit["bound"], lns.config_values["bound"])
         self.assertEqual(limit["step"], 1)
         self.assertEqual(limit["start_time"], s_time)
         self.assertEqual(limit["step_for_improvement"], 0)
@@ -529,7 +509,7 @@ class TestMain(TestCase):
         lns.handle_limit(limit, "init")
         s_time = limit["start_time"]
         self.assertTrue(lns.handle_limit(limit, "no_improvement"))
-        self.assertEqual(limit["bound"], lns._bound)
+        self.assertEqual(limit["bound"], lns.config_values["bound"])
         self.assertEqual(limit["step"], 0)
         self.assertEqual(limit["start_time"], s_time)
         self.assertEqual(limit["step_for_improvement"], 0)
@@ -565,7 +545,6 @@ class TestMain(TestCase):
             123,
             0.2,
             False,
-            False,
             "./tests/ref/example_params_ref.json",
         )
         lns.main()
@@ -575,7 +554,6 @@ class TestMain(TestCase):
             None,
             123,
             0.2,
-            False,
             False,
         )
         lns._bound_mode = "per_improvement"
