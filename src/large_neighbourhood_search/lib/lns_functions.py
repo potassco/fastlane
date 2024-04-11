@@ -18,15 +18,15 @@ def on_model(lns_object, model: clingo.solving.Model) -> None:
     :param model: Model found during solving.
     :type model: clingo.solving.Model
     """
-    lns_object.lns_values["model"] = {}
-    lns_object.lns_values["model"]["shown"] = model.symbols(shown=True)
-    lns_object.lns_values["model"]["true"] = model.symbols(atoms=True)
+    lns_object.models["new_model"] = {}
+    lns_object.models["new_model"]["shown"] = model.symbols(shown=True)
+    lns_object.models["new_model"]["true"] = model.symbols(atoms=True)
 
-    # if lns_object.lns_values["best_model"]:
+    # if lns_object.models["best_model"]:
     #    print(
     #        lns_object.get_variability(
-    #            lns_object.lns_values["model"]["shown"],
-    #            lns_object.lns_values["best_model"]["shown"],
+    #            lns_object.models["new_model"]["shown"],
+    #            lns_object.models["best_model"]["shown"],
     #        )
     #    )
 
@@ -116,42 +116,60 @@ def calculate_opt_val(model: Dict[str, Sequence[clingo.symbol.Symbol]]) -> int:
     return opt_val
 
 
-# pylint: disable=dangerous-default-value, unused-argument
-def check_acceptance_classic(
+# pylint: disable=unused-argument
+def check_accept_always(
     lns_object,
     new_model: Dict[str, Sequence[clingo.symbol.Symbol]],
-    old_model: Dict[str, Sequence[clingo.symbol.Symbol]] = {},
+    current_model: Dict[str, Sequence[clingo.symbol.Symbol]],
 ) -> bool:
     """
     Check whether new model is accepted.
 
     :param new_model: New model checked for acceptance.
     :type new_model: Dict[str, Sequence[clingo.symbol.Symbol]]
-    :param old_model: Old model optionally used for comparison.
+    :param old_model: Current model used for comparison.
     :type old_model: Dict[str, Sequence[clingo.symbol.Symbol]]
     :return: Whether new model was accepted or not.
     :rtype: bool
     """
-    new_opt_val = lns_object.callable_dict["calc_opt_value"](new_model)
-    if new_opt_val < lns_object.lns_values["best_opt_val"]:
+    return True
+
+
+def check_better_classic(
+    lns_object,
+    new_model: Dict[str, Sequence[clingo.symbol.Symbol]],
+    best_model: Dict[str, Sequence[clingo.symbol.Symbol]],
+) -> bool:
+    """
+    Check whether new model is better.
+
+    :param new_model: New model being checked.
+    :type new_model: Dict[str, Sequence[clingo.symbol.Symbol]]
+    :param old_model: Best model used for comparison.
+    :type old_model: Dict[str, Sequence[clingo.symbol.Symbol]]
+    :return: Whether new model was better or not.
+    :rtype: bool
+    """
+    new_opt_val = lns_object.callables["calc_opt_value"](new_model)
+    if new_opt_val < lns_object.callables["calc_opt_value"](best_model):
         return True
     return False
 
 
 # pylint: disable=dangerous-default-value, unused-argument
-def check_acceptance_always(
+def check_better_always(
     lns_object,
     new_model: Dict[str, Sequence[clingo.symbol.Symbol]],
-    old_model: Dict[str, Sequence[clingo.symbol.Symbol]] = {},
+    best_model: Dict[str, Sequence[clingo.symbol.Symbol]],
 ) -> bool:
     """
-    Check whether new model is accepted.
+    Check whether new model is better.
 
-    :param new_model: New model checked for acceptance.
+    :param new_model: New model being checked.
     :type new_model: Dict[str, Sequence[clingo.symbol.Symbol]]
-    :param old_model: Old model optionally used for comparison.
+    :param old_model: Best model used for comparison.
     :type old_model: Dict[str, Sequence[clingo.symbol.Symbol]]
-    :return: Whether new model was accepted or not.
+    :return: Whether new model was better or not.
     :rtype: bool
     """
     return True
@@ -164,10 +182,7 @@ def better_solution_found_classic(lns_object, ctl: clingo.control.Control) -> No
     :param ctl: Clingo control object used for solving.
     :type ctl: clingo.control.Control
     """
-    lns_object.lns_values["best_opt_val"] = lns_object.callable_dict["calc_opt_value"](
-        lns_object.lns_values["model"]
-    )
-    lns_object.lns_values["best_model"] = lns_object.lns_values["model"].copy()
+    lns_object.models["best_model"] = lns_object.models["new_model"].copy()
 
 
 def better_solution_found_hard_constraint(
@@ -179,13 +194,11 @@ def better_solution_found_hard_constraint(
     :param ctl: Clingo control object used for solving.
     :type ctl: clingo.control.Control
     """
-    lns_object.lns_values["best_opt_val"] = lns_object.callable_dict["calc_opt_value"](
-        lns_object.lns_values["model"]
-    )
-    lns_object.lns_values["best_model"] = lns_object.lns_values["model"].copy()
+    lns_object.models["best_model"] = lns_object.models["new_model"].copy()
 
     # update boundary
-    ctl.ground([("opt_val", [Number(lns_object.lns_values["best_opt_val"])])])
+    opt_val = lns_object.callables["calc_opt_value"](lns_object.models["best_model"])
+    ctl.ground([("opt_val", [Number(opt_val)])])
 
 
 def boundary_overall(lns_object, values: Dict[str, Any], action: str) -> bool:
@@ -215,7 +228,10 @@ def boundary_overall(lns_object, values: Dict[str, Any], action: str) -> bool:
         return True
     if action == "improvement":
         print(f"{values['step']}|{values['bound']}")
-        print(f"New opt_val: {lns_object.lns_values['best_opt_val']}")
+        if lns_object.models["best_model"] != {}:
+            print(
+                f"New opt_val: {lns_object.callables['calc_opt_value'](lns_object.models['best_model'])}"
+            )
         return True
     if action == "no_improvement":
         values["no_improvement"] += 1
@@ -240,10 +256,13 @@ def check_stop_steps(lns_object, boundary_dict: Dict[str, Any]) -> bool:
     :return: Whether to stop LNS or not.
     :rtype: bool
     """
-    return (
-        boundary_dict["step"] >= boundary_dict["bound"]
-        or lns_object.lns_values["best_opt_val"] == 0
-    )
+    if lns_object.models["best_model"] != {}:
+        return (
+            boundary_dict["step"] >= boundary_dict["bound"]
+            or lns_object.callables["calc_opt_value"](lns_object.models["best_model"])
+            == 0
+        )
+    return boundary_dict["step"] >= boundary_dict["bound"]
 
 
 def check_stop_time(lns_object, boundary_dict: Dict[str, Any]) -> bool:
@@ -255,7 +274,10 @@ def check_stop_time(lns_object, boundary_dict: Dict[str, Any]) -> bool:
     :return: Whether to stop LNS or not.
     :rtype: bool
     """
-    return (
-        time.time() - boundary_dict["start_time"] >= boundary_dict["bound"]
-        or lns_object.lns_values["best_opt_val"] == 0
-    )
+    if lns_object.models["best_model"] != {}:
+        return (
+            time.time() - boundary_dict["start_time"] >= boundary_dict["bound"]
+            or lns_object.callables["calc_opt_value"](lns_object.models["best_model"])
+            == 0
+        )
+    return time.time() - boundary_dict["start_time"] >= boundary_dict["bound"]

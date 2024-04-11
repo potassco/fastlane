@@ -74,27 +74,29 @@ class LNS:
             clingo_args = []
         self.config_values["clingo_args"] = clingo_args
 
-        model: Dict[str, Sequence[clingo.symbol.Symbol]] = {}
+        new_model: Dict[str, Sequence[clingo.symbol.Symbol]] = {}
+        current_model: Dict[str, Sequence[clingo.symbol.Symbol]] = {}
         best_model: Dict[str, Sequence[clingo.symbol.Symbol]] = {}
-        self.lns_values: Dict[str, Any] = {
-            "model": model,
+        self.models: Dict[str, Any] = {
+            "new_model": new_model,
+            "current_model": current_model,
             "best_model": best_model,
-            "best_opt_val": -1,
         }
 
-        self.callable_dict: Dict[str, Callable] = {
+        self.callables: Dict[str, Callable] = {
             "on_model": lns_f.on_model,
             "relax": lns_f.relax_random,
             "repair": lns_f.repair,
             "calc_opt_value": lns_f.calculate_opt_val,
-            "check_acceptance": lns_f.check_acceptance_always,
+            "check_accept": lns_f.check_accept_always,
+            "check_better": lns_f.check_better_always,
             "better_solution_found": lns_f.better_solution_found_hard_constraint,
             "boundary_handling": lns_f.boundary_overall,
             "check_stop": lns_f.check_stop_steps,
         }
         if declarative:
             self._relax_mode = "declarative"
-            self.callable_dict["relax"] = lns_f.relax_declarative
+            self.callables["relax"] = lns_f.relax_declarative
 
     def load_params(self, json_file: str) -> None:
         """
@@ -112,7 +114,7 @@ class LNS:
         if relaxation_parameters["mode"] in ["declarative", "random"]:
             self._relax_mode = relaxation_parameters["mode"]
             if self._relax_mode == "declarative":
-                self.callable_dict["relax"] = lns_f.relax_declarative
+                self.callables["relax"] = lns_f.relax_declarative
 
         self.config_values["relax_rates"] = relaxation_parameters["rates"]
         self.config_values["current_relax_rate"] = self.config_values["relax_rates"][0]
@@ -122,8 +124,8 @@ class LNS:
         if search_parameters["mode"] in ["hard_constraint", "classic"]:
             self._search_mode = search_parameters["mode"]
             if self._search_mode == "classic":
-                self.callable_dict["check_acceptance"] = lns_f.check_acceptance_classic
-                self.callable_dict["better_solution_found"] = (
+                self.callables["check_better"] = lns_f.check_better_classic
+                self.callables["better_solution_found"] = (
                     lns_f.better_solution_found_classic
                 )
 
@@ -146,7 +148,7 @@ class LNS:
         :param model: Model found during solving.
         :type model: clingo.solving.Model
         """
-        return self.callable_dict["on_model"](self, model)
+        return self.callables["on_model"](self, model)
 
     def get_variability(self, list1: Sequence, list2: Sequence) -> float:
         """
@@ -230,12 +232,12 @@ class LNS:
 
         # get first solution
         if ctl.solve(on_model=self._on_model).satisfiable:
-            new_opt_val = self.callable_dict["calc_opt_value"](self.lns_values["model"])
+            new_opt_val = self.callables["calc_opt_value"](self.models["new_model"])
             print(f"Initial solution found with opt_val: {new_opt_val}")
             if self._search_mode == "hard_constraint":
                 ctl.ground([("opt_val", [Number(new_opt_val)])])
-            self.lns_values["best_opt_val"] = new_opt_val
-            self.lns_values["best_model"] = self.lns_values["model"].copy()
+            self.models["current_model"] = self.models["new_model"].copy()
+            self.models["best_model"] = self.models["new_model"].copy()
             return True
         print("No first solution found.")
         return False
@@ -253,36 +255,46 @@ class LNS:
 
         # perform LNS
         boundary_dict: Dict[str, Any] = {}
-        self.callable_dict["boundary_handling"](self, boundary_dict, "init")
+        self.callables["boundary_handling"](self, boundary_dict, "init")
         while True:
-            self.callable_dict["boundary_handling"](self, boundary_dict, "update")
-            # self.print_step(
-            #    limit_dict["step_for_improvement"], limit_dict["improvement_start_time"]
-            # )
+            self.callables["boundary_handling"](self, boundary_dict, "update")
 
             # relax model
-            assumptions = self.callable_dict["relax"](
-                self.lns_values["best_model"], self.config_values["current_relax_rate"]
+            assumptions = self.callables["relax"](
+                self.models["current_model"],
+                self.config_values["current_relax_rate"],
             )
 
             # reconstruct model
-            if self.callable_dict["repair"](self, ctl, assumptions).satisfiable:
-                # check acceptance
-                if self.callable_dict["check_acceptance"](
-                    self, self.lns_values["model"]
+            if self.callables["repair"](self, ctl, assumptions).satisfiable:
+                # check if new model is accepted
+                if self.callables["check_accept"](
+                    self, self.models["new_model"], self.models["current_model"]
                 ):
+                    # print(self.callable_dict["calc_opt_value"](self.lns_values["new_model"]))
+                    self.models["current_model"] = self.models["new_model"].copy()
 
-                    self.callable_dict["better_solution_found"](self, ctl)
+                    # check if new model is better
+                    if self.callables["check_better"](
+                        self,
+                        self.models["new_model"],
+                        self.models["best_model"],
+                    ):
+                        self.callables["better_solution_found"](self, ctl)
 
-                    self.callable_dict["boundary_handling"](
-                        self, boundary_dict, "improvement"
-                    )
-                else:
-                    self.callable_dict["boundary_handling"](
-                        self, boundary_dict, "no_improvement"
-                    )
+                        self.callables["boundary_handling"](
+                            self, boundary_dict, "improvement"
+                        )
+                    else:
+                        self.callables["boundary_handling"](
+                            self, boundary_dict, "no_improvement"
+                        )
+                # else:
+                #    self.callable_dict["boundary_handling"](
+                #        self, boundary_dict, "no_improvement"
+                #    )
             else:
-                self.callable_dict["boundary_handling"](
+                self.callables["boundary_handling"](
                     self, boundary_dict, "no_improvement"
                 )
             # change relax_rate after unsat_threshold amount of unsat solutions
@@ -294,16 +306,16 @@ class LNS:
                 % len(self.config_values["relax_rates"])
             ]
             # stop criterion, WIP
-            if self.callable_dict["check_stop"](self, boundary_dict):
+            if self.callables["check_stop"](self, boundary_dict):
                 end_time = time.time()
                 answer_string = " ".join(
-                    [str(atom) for atom in self.lns_values["best_model"]["shown"]]
+                    [str(atom) for atom in self.models["best_model"]["shown"]]
                 )
                 print(
                     (
                         "Answer\n"
                         f"{answer_string}\n"
-                        f"Final opt_val: { self.lns_values['best_opt_val']}\n"
+                        f"Final opt_val: { self.callables['calc_opt_value'](self.models['best_model'])}\n"
                         f"Overall steps: {boundary_dict['step']}\n"
                         f"Overall time: {end_time - boundary_dict['start_time']:.3f}s"
                     )
