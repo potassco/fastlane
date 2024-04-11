@@ -29,9 +29,6 @@ class LNS:
     :param relax_rate: Singular relax rate used for LNS (1>RR>0).
     :type relax_rate: float
     :default relax_rate: 0.2
-    :param bnb_search: Enables branch-and-bound search instead of LNS (RR=1).
-    :type bnb_search: bool
-    :default bnb_search: False
     :param declarative: Enables declarative relaxation mode. Otherwise random relaxation is used.
     :type declarative: bool
     :default declarative: False
@@ -46,7 +43,6 @@ class LNS:
         clingo_args: Union[List[str], None] = None,
         seed: Union[int, None] = None,
         relax_rate: float = 0.2,
-        bnb_search: bool = False,
         declarative: bool = False,
         param_path: Union[str, None] = None,
     ) -> None:
@@ -56,16 +52,9 @@ class LNS:
         self.program_name = "lns"
         self.version = "0.2"
 
-        self._files = files
-        if clingo_args is None:
-            clingo_args = []
-        self._clingo_args = clingo_args
-        self._seed = seed
-        self._relax_rates = [relax_rate]
-        self._relax_rate = relax_rate
+
         self._unsat_threshold = 3
 
-        self._bnb_search = bnb_search
         self._relax_mode = "random"
 
         self.param_path = param_path
@@ -73,12 +62,27 @@ class LNS:
         self._search_mode = "hard_constraint"
         self._bound_mode = "overall"
         self._bound_type = "steps"
-        self._bound = 2000
 
-        self._model: Dict[str, Sequence[clingo.symbol.Symbol]] = {}
-        self._best_model: Dict[str, Sequence[clingo.symbol.Symbol]] = {}
 
-        self._best_val: int = -1
+        self.config_values: Dict[str, Any] = {
+            "files": files,
+            "seed": seed,
+            "relax_rates": [relax_rate],
+            "current_relax_rate": relax_rate,
+            "bound": 2000,
+            "bound_type": "steps"
+        }
+        if clingo_args is None:
+            clingo_args = []
+        self.config_values["clingo_args"] = clingo_args
+
+        model: Dict[str, Sequence[clingo.symbol.Symbol]] = {}
+        best_model: Dict[str, Sequence[clingo.symbol.Symbol]] = {}
+        self.lns_values: Dict[str, Any] = {
+            "model": model,
+            "best_model": best_model,
+            "best_opt_val": -1
+        }
 
         self.callable_dict: Dict[str, Callable] = {
             "on_model": lns_f.on_model,
@@ -110,8 +114,8 @@ class LNS:
             if self._relax_mode == "declarative":
                 self.callable_dict["relax"] = lns_f.relax_declarative
 
-        self._relax_rates = relaxation_parameters["rates"]
-        self._relax_rate = self._relax_rates[0]
+        self.config_values["relax_rates"] = relaxation_parameters["rates"]
+        self.config_values["current_relax_rate"] = self.config_values["relax_rates"][0]
         self._unsat_threshold = relaxation_parameters["threshold"]
 
         # search mode
@@ -131,9 +135,9 @@ class LNS:
         if bound_parameters["type"] in ["steps", "time"]:
             self._bound_type = bound_parameters["type"]
 
-        self._bound = bound_parameters["value"]
+        self.config_values["bound"] = bound_parameters["value"]
 
-        self._seed = parameters["seed"]
+        self.config_values["seed"] = parameters["seed"]
 
     def _on_model(self, model: clingo.solving.Model) -> None:
         """
@@ -190,31 +194,27 @@ class LNS:
 
         # classic mode
         if self._search_mode == "classic":
-            self._clingo_args.append("--rand-freq=0.8")
+            self.config_values["clingo_args"].append("--rand-freq=0.8")
 
-        ctl = clingo.Control(self._clingo_args)
+        ctl = clingo.Control(self.config_values["clingo_args"])
         # no input files not supported
         # if not self._files:
         #    self._files = ["-"]
-        for path in self._files:
+        for path in self.config_values["files"]:
             ctl.load(path)
 
         # set seed if given
-        if self._seed is not None:
-            random.seed(self._seed)
-            self._clingo_args.append(f"--seed={self._seed}")
+        if self.config_values["seed"] is not None:
+            random.seed(self.config_values["seed"])
+            self.config_values["clingo_args"].append(f"--seed={self.config_values['seed']}")
 
-        if self._bnb_search:
-            print("Running branch-and-bound search.")
-            self._relax_rates = [1]
-            self._relax_rate = 1
-        elif self._relax_mode == "declarative":
+        if self._relax_mode == "declarative":
             print(
-                f"Running with declarative relaxation with a rate of {self._relax_rate}."
+                f"Running with declarative relaxation with a rate of {self.config_values['current_relax_rate']}."
             )
         elif self._relax_mode == "random":
             print(
-                f"Running with random relaxation of shown atoms with a rate of {self._relax_rate}."
+                f"Running with random relaxation of shown atoms with a rate of {self.config_values['current_relax_rate']}."
             )
         return ctl
 
@@ -237,12 +237,12 @@ class LNS:
 
         # get first solution
         if ctl.solve(on_model=self._on_model).satisfiable:
-            new_opt_val = self.callable_dict["calc_opt_value"](self._model)
+            new_opt_val = self.callable_dict["calc_opt_value"](self.lns_values["model"])
             print(f"Initial solution found with opt_val: {new_opt_val}")
             if self._search_mode == "hard_constraint":
                 ctl.ground([("opt_val", [Number(new_opt_val)])])
-            self._best_val = new_opt_val
-            self._best_model = self._model.copy()
+            self.lns_values["best_opt_val"] = new_opt_val
+            self.lns_values["best_model"] = self.lns_values["model"].copy()
             return True
         print("No first solution found.")
         return False
@@ -260,10 +260,10 @@ class LNS:
         """
         if self._bound_type == "steps":
             message = (
-                f"{step_for_improvement}|{self._bound}, relax rate {self._relax_rate}:"
+                f"{step_for_improvement}|{self.config_values['bound']}, relax rate {self.config_values['current_relax_rate']}:"
             )
         if self._bound_type == "time":
-            message = f"{time.time() - improvement_start_time:.3f}s, relax rate {self._relax_rate}:"
+            message = f"{time.time() - improvement_start_time:.3f}s, relax rate {self.config_values['current_relax_rate']}:"
         print(message)
         return message
 
@@ -285,7 +285,7 @@ class LNS:
         # dict call-by-reference
         if action == "init":
             values.clear()
-            values["bound"] = self._bound
+            values["bound"] = self.config_values["bound"]
             values["step"] = 0
             values["start_time"] = time.time()
             values["step_for_improvement"] = 0
@@ -323,7 +323,7 @@ class LNS:
         :return: Whether LNS should be stopped or not.
         :rtype: bool
         """
-        return self.handle_limit(values, "check_stop") or self._best_val == 0
+        return self.handle_limit(values, "check_stop") or self.lns_values["best_opt_val"] == 0
 
     def main(self) -> None:
         """
@@ -347,13 +347,13 @@ class LNS:
 
             # relax model
             assumptions = self.callable_dict["relax"](
-                self._best_model, self._relax_rate
+                self.lns_values["best_model"], self.config_values["current_relax_rate"]
             )
 
             # reconstruct model
             if self.callable_dict["repair"](self, ctl, assumptions).satisfiable:
                 # check acceptance
-                if self.callable_dict["check_acceptance"](self, self._model):
+                if self.callable_dict["check_acceptance"](self, self.lns_values["model"]):
 
                     self.callable_dict["better_solution_found"](self, ctl)
 
@@ -363,26 +363,24 @@ class LNS:
             else:
                 self.handle_limit(limit_dict, "no_improvement")
             # change relax_rate after unsat_threshold amount of unsat solutions
-            self._relax_rate = self._relax_rates[
+            self.config_values["current_relax_rate"] = self.config_values["relax_rates"][
                 limit_dict["no_improvement"]
                 // self._unsat_threshold
-                % len(self._relax_rates)
+                % len(self.config_values["relax_rates"])
             ]
             # stop criterion, WIP
             if self.check_stop(limit_dict):
                 end_time = time.time()
                 answer_string = " ".join(
-                    [str(atom) for atom in self._best_model["shown"]]
+                    [str(atom) for atom in self.lns_values["best_model"]["shown"]]
                 )
-                step = limit_dict["step"]
-                overall_time = end_time - limit_dict["start_time"]
                 print(
                     (
                         "Answer\n"
                         f"{answer_string}\n"
-                        f"Final opt_val: { self._best_val}\n"
-                        f"Overall steps: {step}\n"
-                        f"Overall time: {overall_time:.3f}s"
+                        f"Final opt_val: { self.lns_values['best_opt_val']}\n"
+                        f"Overall steps: {limit_dict['step']}\n"
+                        f"Overall time: {end_time - limit_dict['start_time']:.3f}s"
                     )
                 )
                 break

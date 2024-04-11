@@ -17,14 +17,14 @@ def on_model(lns_object, model: clingo.solving.Model) -> None:
     :param model: Model found during solving.
     :type model: clingo.solving.Model
     """
-    lns_object._model = {}
-    lns_object._model["shown"] = model.symbols(shown=True)
-    lns_object._model["true"] = model.symbols(atoms=True)
+    lns_object.lns_values["model"] = {}
+    lns_object.lns_values["model"]["shown"] = model.symbols(shown=True)
+    lns_object.lns_values["model"]["true"] = model.symbols(atoms=True)
 
-    if lns_object._best_model:
+    if lns_object.lns_values["best_model"]:
         print(
             lns_object.get_variability(
-                lns_object._model["shown"], lns_object._best_model["shown"]
+                lns_object.lns_values["model"]["shown"], lns_object.lns_values["best_model"]["shown"]
             )
         )
 
@@ -131,7 +131,7 @@ def check_acceptance_classic(
     :rtype: bool
     """
     new_opt_val = lns_object.callable_dict["calc_opt_value"](new_model)
-    if new_opt_val < lns_object._best_val:
+    if new_opt_val < lns_object.lns_values["best_opt_val"]:
         return True
     return False
 
@@ -162,9 +162,9 @@ def better_solution_found_classic(lns_object, ctl: clingo.control.Control) -> No
     :param ctl: Clingo control object used for solving.
     :type ctl: clingo.control.Control
     """
-    lns_object._best_val = lns_object.callable_dict["calc_opt_value"](lns_object._model)
-    lns_object._best_model = lns_object._model.copy()
-    print(f"New opt_val: {lns_object._best_val}")
+    lns_object.lns_values["best_opt_val"] = lns_object.callable_dict["calc_opt_value"](lns_object.lns_values["model"])
+    lns_object.lns_values["best_model"] = lns_object.lns_values["model"].copy()
+    print(f"New opt_val: {lns_object.lns_values['best_opt_val']}")
 
 
 def better_solution_found_hard_constraint(
@@ -176,9 +176,9 @@ def better_solution_found_hard_constraint(
     :param ctl: Clingo control object used for solving.
     :type ctl: clingo.control.Control
     """
-    lns_object._best_val = lns_object.callable_dict["calc_opt_value"](lns_object._model)
-    lns_object._best_model = lns_object._model.copy()
-    print(f"New opt_val: {lns_object._best_val}")
+    lns_object.lns_values["best_opt_val"] = lns_object.callable_dict["calc_opt_value"](lns_object.lns_values["model"])
+    lns_object.lns_values["best_model"] = lns_object.lns_values["model"].copy()
+    print(f"New opt_val: {lns_object.lns_values['best_opt_val']}")
 
     # update boundary
-    ctl.ground([("opt_val", [Number(lns_object._best_val)])])
+    ctl.ground([("opt_val", [Number(lns_object.lns_values["best_opt_val"])])])
