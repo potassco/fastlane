@@ -6,7 +6,6 @@ Test cases for main application functionality.
 import logging
 import os
 import random
-import time
 from io import StringIO
 from unittest import TestCase, mock
 
@@ -162,7 +161,7 @@ class TestMain(TestCase):
         self.assertEqual(lns._relax_mode, "declarative")
         self.assertEqual(lns.config_values["relax_rates"], [0.2, 0.4, 0.6])
         self.assertEqual(lns.config_values["current_relax_rate"], 0.2)
-        self.assertEqual(lns._unsat_threshold, 3)
+        self.assertEqual(lns.config_values["switch_rr_after_unsat"], 3)
         self.assertEqual(lns._search_mode, "hard_constraint")
         self.assertEqual(lns._bound_mode, "overall")
         self.assertEqual(lns._bound_type, "steps")
@@ -420,7 +419,9 @@ class TestMain(TestCase):
         ctl = lns.setup()
         lns.get_first_solution(ctl)
 
-        assumptions = lns_f.relax_random(lns.lns_values["best_model"], lns.config_values["current_relax_rate"])
+        assumptions = lns_f.relax_random(
+            lns.lns_values["best_model"], lns.config_values["current_relax_rate"]
+        )
         res = lns_f.repair(lns, ctl, assumptions)
         self.assertIsNotNone(res)
         self.assertEqual(type(res), clingo.solving.SolveResult)
@@ -429,111 +430,93 @@ class TestMain(TestCase):
         for atom in assumptions_atoms:
             self.assertIn(atom, lns.lns_values["model"]["true"])
 
-    def test_print_step(self):
+    def test_boundary_overall_init(self):
         """
-        Test message output.
-        """
-        lns = LNS(["./tests/ref/golf.lp"], seed=123)
-        lns.setup()
-        lns.config_values["bound"] = 2
-        lns._bound_type = "steps"
-        self.assertEqual(lns.print_step(1, 1.23456), "1|2, relax rate 0.2:")
-        lns._bound_type = "time"
-        self.assertEqual(type(lns.print_step(1, 1.23456)), str)
-
-    def test_handle_limit_init(self):
-        """
-        Test "init" action of handle_limit.
+        Test "init" action of boundary_overall.
         """
         lns = LNS(["./tests/ref/golf.lp"])
-        limit = {}
-        self.assertTrue(lns.handle_limit(limit, "init"))
-        self.assertEqual(limit["bound"], lns.config_values["bound"])
-        self.assertEqual(limit["step"], 0)
-        s_time = limit["start_time"]
+        boundary_dict = {}
+        self.assertTrue(lns_f.boundary_overall(lns, boundary_dict, "init"))
+        self.assertEqual(boundary_dict["bound"], lns.config_values["bound"])
+        self.assertEqual(boundary_dict["step"], 0)
+        s_time = boundary_dict["start_time"]
         self.assertEqual(type(s_time), float)
-        self.assertEqual(limit["step_for_improvement"], 0)
-        self.assertEqual(limit["improvement_start_time"], s_time)
-        self.assertEqual(limit["no_improvement"], 0)
+        self.assertEqual(boundary_dict["no_improvement"], 0)
 
-    def test_handle_limit_update(self):
+    def test_boundary_overall_update(self):
         """
-        Test "update" action of handle_limit.
+        Test "update" action of boundary_overall.
         """
         lns = LNS(["./tests/ref/golf.lp"])
-        limit = {}
-        lns.handle_limit(limit, "init")
-        s_time = limit["start_time"]
-        self.assertTrue(lns.handle_limit(limit, "update"))
-        self.assertEqual(limit["bound"], lns.config_values["bound"])
-        self.assertEqual(limit["step"], 1)
-        self.assertEqual(limit["start_time"], s_time)
-        self.assertEqual(limit["step_for_improvement"], 1)
-        self.assertEqual(limit["improvement_start_time"], limit["start_time"])
-        self.assertEqual(limit["no_improvement"], 0)
+        boundary_dict = {}
+        lns_f.boundary_overall(lns, boundary_dict, "init")
+        s_time = boundary_dict["start_time"]
+        self.assertTrue(lns_f.boundary_overall(lns, boundary_dict, "update"))
+        self.assertEqual(boundary_dict["bound"], lns.config_values["bound"])
+        self.assertEqual(boundary_dict["step"], 1)
+        self.assertEqual(boundary_dict["start_time"], s_time)
+        self.assertEqual(boundary_dict["no_improvement"], 0)
 
-    def test_handle_limit_improvement(self):
+    def test_boundary_overall_improvement(self):
         """
-        Test "improvement" action of handle_limit.
+        Test "improvement" action of boundary_overall.
         """
         lns = LNS(["./tests/ref/golf.lp"])
-        limit = {}
-        lns.handle_limit(limit, "init")
-        lns.handle_limit(limit, "update")
-        s_time = limit["start_time"]
+        boundary_dict = {}
+        lns_f.boundary_overall(lns, boundary_dict, "init")
+        lns_f.boundary_overall(lns, boundary_dict, "update")
+        s_time = boundary_dict["start_time"]
         lns._bound_mode = "overall"
-        self.assertTrue(lns.handle_limit(limit, "improvement"))
-        self.assertEqual(limit["bound"], lns.config_values["bound"])
-        self.assertEqual(limit["step"], 1)
-        self.assertEqual(limit["start_time"], s_time)
-        self.assertEqual(limit["step_for_improvement"], 1)
-        self.assertEqual(limit["improvement_start_time"], limit["start_time"])
-        self.assertEqual(limit["no_improvement"], 0)
+        self.assertTrue(lns_f.boundary_overall(lns, boundary_dict, "improvement"))
+        self.assertEqual(boundary_dict["bound"], lns.config_values["bound"])
+        self.assertEqual(boundary_dict["step"], 1)
+        self.assertEqual(boundary_dict["start_time"], s_time)
+        self.assertEqual(boundary_dict["no_improvement"], 0)
 
-        time.sleep(0.1)
-        lns._bound_mode = "per_improvement"
-        self.assertTrue(lns.handle_limit(limit, "improvement"))
-        self.assertEqual(limit["bound"], lns.config_values["bound"])
-        self.assertEqual(limit["step"], 1)
-        self.assertEqual(limit["start_time"], s_time)
-        self.assertEqual(limit["step_for_improvement"], 0)
-        self.assertNotEqual(limit["improvement_start_time"], limit["start_time"])
-        self.assertEqual(limit["no_improvement"], 0)
-
-    def test_handle_limit_no_improvement(self):
+    def test_boundary_overall_no_improvement(self):
         """
-        Test "no_improvement" action of handle_limit.
+        Test "no_improvement" action of boundary_overall.
         """
         lns = LNS(["./tests/ref/golf.lp"])
-        limit = {}
-        lns.handle_limit(limit, "init")
-        s_time = limit["start_time"]
-        self.assertTrue(lns.handle_limit(limit, "no_improvement"))
-        self.assertEqual(limit["bound"], lns.config_values["bound"])
-        self.assertEqual(limit["step"], 0)
-        self.assertEqual(limit["start_time"], s_time)
-        self.assertEqual(limit["step_for_improvement"], 0)
-        self.assertEqual(limit["improvement_start_time"], limit["start_time"])
-        self.assertEqual(limit["no_improvement"], 1)
+        lns.config_values["relax_rates"] = [0.2, 0.4]
+        lns.config_values["current_relax_rate"] = 0.2
+        lns.config_values["switch_rr_after_unsat"] = 1
+        boundary_dict = {}
+        lns_f.boundary_overall(lns, boundary_dict, "init")
+        s_time = boundary_dict["start_time"]
+        self.assertTrue(lns_f.boundary_overall(lns, boundary_dict, "no_improvement"))
+        self.assertEqual(boundary_dict["bound"], lns.config_values["bound"])
+        self.assertEqual(boundary_dict["step"], 0)
+        self.assertEqual(boundary_dict["start_time"], s_time)
+        self.assertEqual(boundary_dict["no_improvement"], 1)
+        self.assertEqual(lns.config_values["current_relax_rate"], 0.4)
+        self.assertTrue(lns_f.boundary_overall(lns, boundary_dict, "no_improvement"))
+        self.assertEqual(lns.config_values["current_relax_rate"], 0.2)
 
-    def test_handle_limit_check_stop(self):
+        self.assertFalse(lns_f.boundary_overall(lns, boundary_dict, "invalid_action"))
+
+    def test_check_stop_steps(self):
         """
-        Test "check_stop" action of handle_limit.
+        Test check_stop_steps.
         """
         lns = LNS(["./tests/ref/golf.lp"])
-        limit = {}
-        lns.handle_limit(limit, "init")
-        lns._bound_type = "steps"
-        limit["step_for_improvement"] = 1
-        self.assertFalse(lns.handle_limit(limit, "check_stop"))
-        limit["bound"] = 0
-        self.assertTrue(lns.handle_limit(limit, "check_stop"))
-        lns._bound_type = "time"
-        self.assertTrue(lns.handle_limit(limit, "check_stop"))
-        limit["bound"] = 10
-        self.assertFalse(lns.handle_limit(limit, "check_stop"))
+        boundary_dict = {}
+        lns_f.boundary_overall(lns, boundary_dict, "init")
+        boundary_dict["step"] = 1
+        self.assertFalse(lns_f.check_stop_steps(lns, boundary_dict))
+        boundary_dict["bound"] = 0
+        self.assertTrue(lns_f.check_stop_steps(lns, boundary_dict))
 
-        self.assertFalse(lns.handle_limit(limit, "invalid_action"))
+    def test_check_stop_time(self):
+        """
+        Test check_stop_time.
+        """
+        lns = LNS(["./tests/ref/golf.lp"])
+        boundary_dict = {}
+        lns_f.boundary_overall(lns, boundary_dict, "init")
+        self.assertFalse(lns_f.check_stop_time(lns, boundary_dict))
+        boundary_dict["bound"] = 0
+        self.assertTrue(lns_f.check_stop_time(lns, boundary_dict))
 
     def test_main(self):
         """
