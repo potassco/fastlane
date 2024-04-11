@@ -4,18 +4,19 @@ The large_neighbourhood_search project.
 
 import random
 import time
-from typing import Any, Dict, List, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Sequence, Union
 
 import clingo
-from clingo.symbol import Number, SymbolType
+from clingo.symbol import Number
 
+from .lib import lns_functions as lns_f
 from .utils.pf_handling import load_param_file
 
 
 # pylint: disable=too-many-instance-attributes
 class LNS:
     """
-    Clingo application performing LNS.
+    Class handling and  performing LNS.
 
     :param files: Problem encoding.
     :type files: List[str]
@@ -66,8 +67,6 @@ class LNS:
 
         self._bnb_search = bnb_search
         self._relax_mode = "random"
-        if declarative:
-            self._relax_mode = "declarative"
 
         self.param_path = param_path
 
@@ -80,6 +79,18 @@ class LNS:
         self._best_model: Dict[str, Sequence[clingo.symbol.Symbol]] = {}
 
         self._best_val: int = -1
+
+        self.callable_dict: Dict[str, Callable] = {
+            "on_model": lns_f.on_model,
+            "relax": lns_f.relax_random,
+            "repair": lns_f.repair,
+            "calc_opt_value": lns_f.calculate_opt_val,
+            "check_acceptance": lns_f.check_acceptance_always,
+            "better_solution_found": lns_f.better_solution_found_hard_constraint,
+        }
+        if declarative:
+            self._relax_mode = "declarative"
+            self.callable_dict["relax"] = lns_f.relax_declarative
 
     def load_params(self, json_file: str) -> None:
         """
@@ -96,6 +107,8 @@ class LNS:
         # relaxation
         if relaxation_parameters["mode"] in ["declarative", "random"]:
             self._relax_mode = relaxation_parameters["mode"]
+            if self._relax_mode == "declarative":
+                self.callable_dict["relax"] = lns_f.relax_declarative
 
         self._relax_rates = relaxation_parameters["rates"]
         self._relax_rate = self._relax_rates[0]
@@ -104,6 +117,11 @@ class LNS:
         # search mode
         if search_parameters["mode"] in ["hard_constraint", "classic"]:
             self._search_mode = search_parameters["mode"]
+            if self._search_mode == "classic":
+                self.callable_dict["check_acceptance"] = lns_f.check_acceptance_classic
+                self.callable_dict["better_solution_found"] = (
+                    lns_f.better_solution_found_classic
+                )
 
         # bound mode
         if bound_parameters["mode"] in ["overall", "per_improvement"]:
@@ -119,134 +137,12 @@ class LNS:
 
     def _on_model(self, model: clingo.solving.Model) -> None:
         """
-        Saves shown and true atoms of model and aggregates optimization values.
+        Call on_model method.
 
         :param model: Model found during solving.
         :type model: clingo.solving.Model
         """
-        self._model = {}
-        self._model["shown"] = model.symbols(shown=True)
-        self._model["true"] = model.symbols(atoms=True)
-
-        if self._best_model:
-            print(self.get_variability(self._model["shown"], self._best_model["shown"]))
-
-    def relax(
-        self, model: Dict[str, Sequence[clingo.symbol.Symbol]], relax_rate: float
-    ) -> List[Tuple[clingo.symbol.Symbol, bool]]:
-        """
-        Relax random number of shown or selected (declarative mode) atoms given by the relax_rate.
-
-        :param model: Dictionary containing list of shown and true atoms.
-        :type model: Dict[str, Sequence[clingo.symbol.Symbol]]
-        :param relax_rate: Percentage of atoms to be relaxed.
-        :type relax_rate: float
-        :return: Fixed (not relaxed) atoms.
-        :rtype: List[Tuple[clingo.symbol.Symbol, bool]]
-        """
-        fixed_atoms = []
-        if self._relax_mode == "declarative":
-            selected_atoms = []
-            declared_fixed_atoms: dict[
-                clingo.symbol.Symbol, list[tuple[clingo.symbol.Symbol, bool]]
-            ] = {}
-            for atom in model["true"]:
-                if atom.match("_lns_select", 1):
-                    selected_atoms.append(atom.arguments[0])
-                    declared_fixed_atoms[atom.arguments[0]] = []
-                elif atom.match("_lns_fix", 2):
-                    declared_fixed_atoms[atom.arguments[1]].append(
-                        (atom.arguments[0], True)
-                    )
-            for symbol in selected_atoms:
-                if random.randint(0, 100) >= relax_rate * 100:
-                    fixed_atoms += declared_fixed_atoms[symbol]
-        elif self._relax_mode == "random":
-            for atom in model["shown"]:
-                if random.randint(0, 100) >= relax_rate * 100:
-                    fixed_atoms.append((atom, True))
-        return fixed_atoms
-
-    def repair(
-        self,
-        ctl: clingo.control.Control,
-        assumptions: List[Tuple[clingo.symbol.Symbol, bool]],
-    ) -> clingo.solving.SolveResult:
-        """
-        Solve under given assumptions.
-
-        :param ctl: Clingo Control object used for solving.
-        :type ctl: clingo..control.Control
-        :param assumptions: Assumptions for solving (fixed atoms).
-        :type assumptions: List[Tuple[clingo.symbol.Symbol, bool]]
-        :return: Result of solving call.
-        :rtype: clingo.solving.SolveResult
-        """
-        x = ctl.solve(assumptions=assumptions, on_model=self._on_model)
-        return x
-
-    def get_opt_val(self, model: Dict[str, Sequence[clingo.symbol.Symbol]]) -> int:
-        """
-        Get opt value of given model.
-
-        :param model: Model.
-        :type model: Dict[str, Sequence[clingo.symbol.Symbol]]
-        :return: Opt value of given model.
-        :rtype: int
-        """
-        opt_val = 0
-        for atom in model["true"]:
-            if (
-                atom.match("_minimize", 2)
-                and atom.arguments[0].type is SymbolType.Number
-            ):
-                opt_val += atom.arguments[0].number
-        return opt_val
-
-    # pylint: disable=dangerous-default-value, unused-argument
-    def check_acceptance(
-        self,
-        new_model: Dict[str, Sequence[clingo.symbol.Symbol]],
-        old_model: Dict[str, Sequence[clingo.symbol.Symbol]] = {},
-    ) -> bool:
-        """
-        Check whether new model is accepted.
-
-        :param new_model: New model checked for acceptance.
-        :type new_model: Dict[str, Sequence[clingo.symbol.Symbol]]
-        :param old_model: Old model optionally used for comparison.
-        :type old_model: Dict[str, Sequence[clingo.symbol.Symbol]]
-        :return: Whether new model was accepted or not.
-        :rtype: bool
-        """
-        new_opt_val = self.get_opt_val(new_model)
-        # hard_cons mode: if new solution is satisfiable -> better solution
-        # classic mode: check if opt value better
-        if self._search_mode == "hard_constraint" or (
-            self._search_mode == "classic" and new_opt_val < self._best_val
-        ):
-            return True
-        return False
-
-    def better_solution_found(self, ctl: clingo.control.Control) -> None:
-        """
-        What to do if better solution was found.
-
-        # (
-                # (self._bound_type == "steps" and step_for_improvement >= self._bound)
-                # or (
-                #    self._bound_type == "time"
-                #    and time.time() - improvement_start_time >= self._bound
-                # ):param ctl: Clingo control object used for solving.
-        :type ctl: clingo.control.Control
-        """
-        self._best_val = self.get_opt_val(self._model)
-        self._best_model = self._model.copy()
-        print(f"New opt_val: {self._best_val}")
-
-        if self._search_mode == "hard_constraint":
-            # update boundary
-            ctl.ground([("opt_val", [Number(self._best_val)])])
+        return self.callable_dict["on_model"](self, model)
 
     def get_variability(self, list1: Sequence, list2: Sequence) -> float:
         """
@@ -341,7 +237,7 @@ class LNS:
 
         # get first solution
         if ctl.solve(on_model=self._on_model).satisfiable:
-            new_opt_val = self.get_opt_val(self._model)
+            new_opt_val = self.callable_dict["calc_opt_value"](self._model)
             print(f"Initial solution found with opt_val: {new_opt_val}")
             if self._search_mode == "hard_constraint":
                 ctl.ground([("opt_val", [Number(new_opt_val)])])
@@ -450,14 +346,16 @@ class LNS:
             )
 
             # relax model
-            assumptions = self.relax(self._best_model, self._relax_rate)
+            assumptions = self.callable_dict["relax"](
+                self._best_model, self._relax_rate
+            )
 
             # reconstruct model
-            if self.repair(ctl, assumptions).satisfiable:
+            if self.callable_dict["repair"](self, ctl, assumptions).satisfiable:
                 # check acceptance
-                if self.check_acceptance(self._model):
+                if self.callable_dict["check_acceptance"](self, self._model):
 
-                    self.better_solution_found(ctl)
+                    self.callable_dict["better_solution_found"](self, ctl)
 
                     self.handle_limit(limit_dict, "improvement")
                 else:
