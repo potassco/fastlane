@@ -5,6 +5,8 @@ Test cases for main application functionality.
 # pylint: disable=protected-access, too-many-public-methods
 import logging
 import os
+import random
+import time
 from io import StringIO
 from unittest import TestCase, mock
 
@@ -12,6 +14,7 @@ import clingo
 from clingo.symbol import Function, Number
 
 from large_neighbourhood_search import LNS
+from large_neighbourhood_search.lib import lns_functions as lns_f
 from large_neighbourhood_search.utils.logger import setup_logger
 from large_neighbourhood_search.utils.parser import get_parser
 from large_neighbourhood_search.utils.pf_handling import (
@@ -322,20 +325,18 @@ class TestMain(TestCase):
             ],
         }
         seed = 123
-        lns = LNS(["./tests/ref/golf.lp"], seed=seed)
-        lns.setup()
+        random.seed(seed)
         ref = [
             (Function("plays", [Number(5), Number(1), Number(1)], True), True),
             (Function("plays", [Number(1), Number(2), Number(1)], True), True),
         ]
-        self.assertListEqual(lns.relax(model, 0.2), ref)
+        self.assertListEqual(lns_f.relax_random(model, 0.2), ref)
 
-        lns = LNS(["./tests/ref/golf.lp"], declarative=True, seed=seed)
-        lns.setup()
+        random.seed(seed)
         ref = [(Function("plays", [Number(2), Number(1), Number(3)], True), True)]
-        self.assertListEqual(lns.relax(model, 0.2), ref)
+        self.assertListEqual(lns_f.relax_declarative(model, 0.2), ref)
 
-    def test_get_opt_val(self):
+    def test_calc_opt_val(self):
         """
         Test optimization value calculation.
         """
@@ -371,8 +372,7 @@ class TestMain(TestCase):
                 ),
             ],
         }
-        lns = LNS(["./tests/ref/golf.lp"], seed=123)
-        self.assertEqual(lns.get_opt_val(model), 4)
+        self.assertEqual(lns_f.calculate_opt_val(model), 4)
 
     def test_acceptance(self):
         """
@@ -406,13 +406,11 @@ class TestMain(TestCase):
             ],
         }
         lns = LNS(["./tests/ref/golf.lp"], seed=123)
-        lns._search_mode = "classic"
         lns._best_val = 4
-        self.assertEqual(lns.check_acceptance(model), True)
+        self.assertEqual(lns_f.check_acceptance_classic(lns, model), True)
         lns._best_val = 3
-        self.assertEqual(lns.check_acceptance(model), False)
-        lns._search_mode = "hard_constraint"
-        self.assertEqual(lns.check_acceptance(model), True)
+        self.assertEqual(lns_f.check_acceptance_classic(lns, model), False)
+        self.assertEqual(lns_f.check_acceptance_always(lns, model), True)
 
     def test_first_solution(self):
         """
@@ -442,8 +440,8 @@ class TestMain(TestCase):
         ctl = lns.setup()
         lns.get_first_solution(ctl)
 
-        assumptions = lns.relax(lns._best_model, lns._relax_rate)
-        res = lns.repair(ctl, assumptions)
+        assumptions = lns_f.relax_random(lns._best_model, lns._relax_rate)
+        res = lns_f.repair(lns, ctl, assumptions)
         self.assertIsNotNone(res)
         self.assertEqual(type(res), clingo.solving.SolveResult)
 
@@ -512,6 +510,7 @@ class TestMain(TestCase):
         self.assertEqual(limit["improvement_start_time"], limit["start_time"])
         self.assertEqual(limit["no_improvement"], 0)
 
+        time.sleep(0.1)
         lns._bound_mode = "per_improvement"
         self.assertTrue(lns.handle_limit(limit, "improvement"))
         self.assertEqual(limit["bound"], lns._bound)
@@ -581,6 +580,8 @@ class TestMain(TestCase):
         )
         lns._bound_mode = "per_improvement"
         lns._search_mode = "classic"
+        lns.callable_dict["check_acceptance"] = lns_f.check_acceptance_classic
+        lns.callable_dict["better_solution_found"] = lns_f.better_solution_found_classic
         lns.main()
 
         lns = LNS(["./tests/ref/bad_encoding.lp"], seed=123)
