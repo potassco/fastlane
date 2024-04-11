@@ -52,7 +52,6 @@ class LNS:
         self.program_name = "lns"
         self.version = "0.2"
 
-
         self._unsat_threshold = 3
 
         self._relax_mode = "random"
@@ -63,14 +62,13 @@ class LNS:
         self._bound_mode = "overall"
         self._bound_type = "steps"
 
-
         self.config_values: Dict[str, Any] = {
             "files": files,
             "seed": seed,
             "relax_rates": [relax_rate],
             "current_relax_rate": relax_rate,
             "bound": 2000,
-            "bound_type": "steps"
+            "switch_rr_after_unsat": 3,
         }
         if clingo_args is None:
             clingo_args = []
@@ -81,7 +79,7 @@ class LNS:
         self.lns_values: Dict[str, Any] = {
             "model": model,
             "best_model": best_model,
-            "best_opt_val": -1
+            "best_opt_val": -1,
         }
 
         self.callable_dict: Dict[str, Callable] = {
@@ -91,6 +89,8 @@ class LNS:
             "calc_opt_value": lns_f.calculate_opt_val,
             "check_acceptance": lns_f.check_acceptance_always,
             "better_solution_found": lns_f.better_solution_found_hard_constraint,
+            "boundary_handling": lns_f.boundary_overall,
+            "check_stop": lns_f.check_stop_steps,
         }
         if declarative:
             self._relax_mode = "declarative"
@@ -116,7 +116,7 @@ class LNS:
 
         self.config_values["relax_rates"] = relaxation_parameters["rates"]
         self.config_values["current_relax_rate"] = self.config_values["relax_rates"][0]
-        self._unsat_threshold = relaxation_parameters["threshold"]
+        self.config_values["switch_rr_after_unsat"] = relaxation_parameters["threshold"]
 
         # search mode
         if search_parameters["mode"] in ["hard_constraint", "classic"]:
@@ -206,15 +206,8 @@ class LNS:
         # set seed if given
         if self.config_values["seed"] is not None:
             random.seed(self.config_values["seed"])
-            self.config_values["clingo_args"].append(f"--seed={self.config_values['seed']}")
-
-        if self._relax_mode == "declarative":
-            print(
-                f"Running with declarative relaxation with a rate of {self.config_values['current_relax_rate']}."
-            )
-        elif self._relax_mode == "random":
-            print(
-                f"Running with random relaxation of shown atoms with a rate of {self.config_values['current_relax_rate']}."
+            self.config_values["clingo_args"].append(
+                f"--seed={self.config_values['seed']}"
             )
         return ctl
 
@@ -247,84 +240,6 @@ class LNS:
         print("No first solution found.")
         return False
 
-    def print_step(self, step_for_improvement, improvement_start_time) -> str:
-        """
-        Print current step statistics.
-
-        :param step_for_improvement: Step of current improvement.
-        :type step_for_improvement: int
-        :param improvement_start_time: Start time of current improvement
-        :type improvement_start_time: float
-        :return: Printed message.
-        :rtype: str
-        """
-        if self._bound_type == "steps":
-            message = (
-                f"{step_for_improvement}|{self.config_values['bound']}, relax rate {self.config_values['current_relax_rate']}:"
-            )
-        if self._bound_type == "time":
-            message = f"{time.time() - improvement_start_time:.3f}s, relax rate {self.config_values['current_relax_rate']}:"
-        print(message)
-        return message
-
-    def handle_limit(self, values: Dict[str, Any], action: str) -> bool:
-        """
-        Handle all actions regarding the limit/bound.
-        Has to support the following actions:
-        - "init"
-        - "update"
-        - "improvement"
-        - "no_improvement"
-        - "check_stop"
-
-        :param values: Dictionary containing all values used for keeping track of the LNS.
-        :type values: Dict[str, Any]
-        :return: Whether action succeeded or not.
-        :rtype: bool
-        """
-        # dict call-by-reference
-        if action == "init":
-            values.clear()
-            values["bound"] = self.config_values["bound"]
-            values["step"] = 0
-            values["start_time"] = time.time()
-            values["step_for_improvement"] = 0
-            values["improvement_start_time"] = values["start_time"]
-            values["no_improvement"] = 0
-            return True
-        if action == "update":
-            values["step"] += 1
-            values["step_for_improvement"] += 1
-            return True
-        if action == "improvement":
-            if self._bound_mode == "per_improvement":
-                values["step_for_improvement"] = 0
-                values["improvement_start_time"] = time.time()
-            return True
-        if action == "no_improvement":
-            values["no_improvement"] += 1
-            return True
-        if action == "check_stop":
-            return (
-                self._bound_type == "steps"
-                and values["step_for_improvement"] >= values["bound"]
-            ) or (
-                self._bound_type == "time"
-                and time.time() - values["improvement_start_time"] >= values["bound"]
-            )
-        return False
-
-    def check_stop(self, values: Dict[str, Any]) -> bool:
-        """
-        Check whether LNS should be stopped.
-
-        :param values: Dictionary containing all values used for keeping track of the LNS.
-        :type values: Dict[str, Any]
-        :return: Whether LNS should be stopped or not.
-        :rtype: bool
-        """
-        return self.handle_limit(values, "check_stop") or self.lns_values["best_opt_val"] == 0
-
     def main(self) -> None:
         """
         Run Large-Neighbourhood Search according to set parameters.
@@ -337,13 +252,13 @@ class LNS:
             return
 
         # perform LNS
-        limit_dict: Dict[str, Any] = {}
-        self.handle_limit(limit_dict, "init")
+        boundary_dict: Dict[str, Any] = {}
+        self.callable_dict["boundary_handling"](self, boundary_dict, "init")
         while True:
-            self.handle_limit(limit_dict, "update")
-            self.print_step(
-                limit_dict["step_for_improvement"], limit_dict["improvement_start_time"]
-            )
+            self.callable_dict["boundary_handling"](self, boundary_dict, "update")
+            # self.print_step(
+            #    limit_dict["step_for_improvement"], limit_dict["improvement_start_time"]
+            # )
 
             # relax model
             assumptions = self.callable_dict["relax"](
@@ -353,23 +268,33 @@ class LNS:
             # reconstruct model
             if self.callable_dict["repair"](self, ctl, assumptions).satisfiable:
                 # check acceptance
-                if self.callable_dict["check_acceptance"](self, self.lns_values["model"]):
+                if self.callable_dict["check_acceptance"](
+                    self, self.lns_values["model"]
+                ):
 
                     self.callable_dict["better_solution_found"](self, ctl)
 
-                    self.handle_limit(limit_dict, "improvement")
+                    self.callable_dict["boundary_handling"](
+                        self, boundary_dict, "improvement"
+                    )
                 else:
-                    self.handle_limit(limit_dict, "no_improvement")
+                    self.callable_dict["boundary_handling"](
+                        self, boundary_dict, "no_improvement"
+                    )
             else:
-                self.handle_limit(limit_dict, "no_improvement")
+                self.callable_dict["boundary_handling"](
+                    self, boundary_dict, "no_improvement"
+                )
             # change relax_rate after unsat_threshold amount of unsat solutions
-            self.config_values["current_relax_rate"] = self.config_values["relax_rates"][
-                limit_dict["no_improvement"]
-                // self._unsat_threshold
+            self.config_values["current_relax_rate"] = self.config_values[
+                "relax_rates"
+            ][
+                boundary_dict["no_improvement"]
+                // self.config_values["switch_rr_after_unsat"]
                 % len(self.config_values["relax_rates"])
             ]
             # stop criterion, WIP
-            if self.check_stop(limit_dict):
+            if self.callable_dict["check_stop"](self, boundary_dict):
                 end_time = time.time()
                 answer_string = " ".join(
                     [str(atom) for atom in self.lns_values["best_model"]["shown"]]
@@ -379,8 +304,8 @@ class LNS:
                         "Answer\n"
                         f"{answer_string}\n"
                         f"Final opt_val: { self.lns_values['best_opt_val']}\n"
-                        f"Overall steps: {limit_dict['step']}\n"
-                        f"Overall time: {end_time - limit_dict['start_time']:.3f}s"
+                        f"Overall steps: {boundary_dict['step']}\n"
+                        f"Overall time: {end_time - boundary_dict['start_time']:.3f}s"
                     )
                 )
                 break

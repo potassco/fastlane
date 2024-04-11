@@ -4,7 +4,8 @@ Library of functions used for LNS.
 
 # pylint: disable=protected-access
 import random
-from typing import Dict, List, Sequence, Tuple
+import time
+from typing import Any, Dict, List, Sequence, Tuple
 
 import clingo
 from clingo.symbol import Number, SymbolType
@@ -21,12 +22,13 @@ def on_model(lns_object, model: clingo.solving.Model) -> None:
     lns_object.lns_values["model"]["shown"] = model.symbols(shown=True)
     lns_object.lns_values["model"]["true"] = model.symbols(atoms=True)
 
-    if lns_object.lns_values["best_model"]:
-        print(
-            lns_object.get_variability(
-                lns_object.lns_values["model"]["shown"], lns_object.lns_values["best_model"]["shown"]
-            )
-        )
+    # if lns_object.lns_values["best_model"]:
+    #    print(
+    #        lns_object.get_variability(
+    #            lns_object.lns_values["model"]["shown"],
+    #            lns_object.lns_values["best_model"]["shown"],
+    #        )
+    #    )
 
 
 def relax_declarative(
@@ -162,9 +164,10 @@ def better_solution_found_classic(lns_object, ctl: clingo.control.Control) -> No
     :param ctl: Clingo control object used for solving.
     :type ctl: clingo.control.Control
     """
-    lns_object.lns_values["best_opt_val"] = lns_object.callable_dict["calc_opt_value"](lns_object.lns_values["model"])
+    lns_object.lns_values["best_opt_val"] = lns_object.callable_dict["calc_opt_value"](
+        lns_object.lns_values["model"]
+    )
     lns_object.lns_values["best_model"] = lns_object.lns_values["model"].copy()
-    print(f"New opt_val: {lns_object.lns_values['best_opt_val']}")
 
 
 def better_solution_found_hard_constraint(
@@ -176,9 +179,83 @@ def better_solution_found_hard_constraint(
     :param ctl: Clingo control object used for solving.
     :type ctl: clingo.control.Control
     """
-    lns_object.lns_values["best_opt_val"] = lns_object.callable_dict["calc_opt_value"](lns_object.lns_values["model"])
+    lns_object.lns_values["best_opt_val"] = lns_object.callable_dict["calc_opt_value"](
+        lns_object.lns_values["model"]
+    )
     lns_object.lns_values["best_model"] = lns_object.lns_values["model"].copy()
-    print(f"New opt_val: {lns_object.lns_values['best_opt_val']}")
 
     # update boundary
     ctl.ground([("opt_val", [Number(lns_object.lns_values["best_opt_val"])])])
+
+
+def boundary_overall(lns_object, values: Dict[str, Any], action: str) -> bool:
+    """
+    Handle LNS boundary.
+    Has to support the following actions:
+    - "init"
+    - "update"
+    - "improvement"
+    - "no_improvement"
+
+    :param values: Dictionary containing all values used for keeping track of the LNS.
+    :type values: Dict[str, Any]
+    :return: Whether action succeeded or not.
+    :rtype: bool
+    """
+    # dict call-by-reference
+    if action == "init":
+        values.clear()
+        values["bound"] = lns_object.config_values["bound"]
+        values["step"] = 0
+        values["start_time"] = time.time()
+        values["no_improvement"] = 0
+        return True
+    if action == "update":
+        values["step"] += 1
+        return True
+    if action == "improvement":
+        print(f"{values['step']}|{values['bound']}")
+        print(f"New opt_val: {lns_object.lns_values['best_opt_val']}")
+        return True
+    if action == "no_improvement":
+        values["no_improvement"] += 1
+        # change relax rate
+        lns_object.config_values["current_relax_rate"] = lns_object.config_values[
+            "relax_rates"
+        ][
+            values["no_improvement"]
+            // lns_object.config_values["switch_rr_after_unsat"]
+            % len(lns_object.config_values["relax_rates"])
+        ]
+        return True
+    return False
+
+
+def check_stop_steps(lns_object, boundary_dict: Dict[str, Any]) -> bool:
+    """
+    Check whether to stop LNS depending on steps made.
+
+    :param boundary_dict: Dictionary containing all values used for keeping track of the LNS.
+    :type boundary_dict: Dict[str, Any]
+    :return: Whether to stop LNS or not.
+    :rtype: bool
+    """
+    return (
+        boundary_dict["step"] >= boundary_dict["bound"]
+        or lns_object.lns_values["best_opt_val"] == 0
+    )
+
+
+def check_stop_time(lns_object, boundary_dict: Dict[str, Any]) -> bool:
+    """
+    Check whether to stop LNS depending on passed time.
+
+    :param boundary_dict: Dictionary containing all values used for keeping track of the LNS.
+    :type boundary_dict: Dict[str, Any]
+    :return: Whether to stop LNS or not.
+    :rtype: bool
+    """
+    return (
+        time.time() - boundary_dict["start_time"] >= boundary_dict["bound"]
+        or lns_object.lns_values["best_opt_val"] == 0
+    )
