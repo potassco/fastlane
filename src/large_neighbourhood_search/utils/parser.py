@@ -73,12 +73,6 @@ def get_parser() -> ArgumentParser:
     )
 
     parser.add_argument(
-        "--bnb-search",
-        help="Perform standard branch-and-bound search (no LNS).",
-        action="store_true",
-    )
-
-    parser.add_argument(
         "--declarative",
         help="Perform LNS using declarative neighbourhood.",
         action="store_true",

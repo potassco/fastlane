@@ -34,7 +34,6 @@ def main():
         rest,
         args.lns_seed,
         args.relax_rate,
-        args.bnb_search,
         args.declarative,
         args.load_param_file,
     )
