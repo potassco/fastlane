@@ -2,7 +2,7 @@
 Test cases for main application functionality.
 """
 
-# pylint: disable=protected-access, too-many-public-methods
+# pylint: disable=protected-access, too-many-public-methods, duplicate-code
 import logging
 import os
 import random
@@ -145,57 +145,76 @@ class TestMain(TestCase):
         }
         self.assertDictEqual(test_content, ref_content)
 
-    def test_lns_load_params(self):
-        """
-        Test the loading of parameters for LNS.
-        """
-        lns = LNS(
-            ["./tests/ref/golf.lp"],
-            None,
-            None,
-            0.2,
-            False,
-            "./tests/ref/example_params_ref.json",
-        )
-        lns.load_params(lns.param_path)
-        self.assertEqual(lns._relax_mode, "declarative")
-        self.assertEqual(lns.config_values["relax_rates"], [0.2, 0.4, 0.6])
-        self.assertEqual(lns.config_values["current_relax_rate"], 0.2)
-        self.assertEqual(lns.config_values["switch_rr_after_unsat"], 3)
-        self.assertEqual(lns._search_mode, "hard_constraint")
-        self.assertEqual(lns._bound_mode, "overall")
-        self.assertEqual(lns._bound_type, "steps")
-        self.assertEqual(lns.config_values["bound"], 2000)
-        self.assertEqual(lns.config_values["seed"], None)
-
     def test_lns_init(self):
         """
         Test LNS initialization.
         """
-        lns = LNS(["./tests/ref/golf.lp"])
-        self.assertEqual(lns.config_values["files"], ["./tests/ref/golf.lp"])
-        self.assertEqual(lns.config_values["clingo_args"], [])
-        self.assertEqual(lns.config_values["seed"], None)
-        self.assertEqual(lns.config_values["current_relax_rate"], 0.2)
-        self.assertEqual(lns.config_values["relax_rates"], [0.2])
-        self.assertEqual(lns._relax_mode, "random")
-        self.assertEqual(lns.param_path, None)
+        ref_config_values = {
+            "files": ["./tests/ref/golf.lp"],
+            "seed": None,
+            "relax_rates": [0.2],
+            "current_relax_rate": 0.2,
+            "bound": 2000,
+            "switch_rr_after_no_improv": 3,
+            "clingo_args": ["--rand-freq=0.8"],
+        }
 
+        ref_callables = {
+            "on_model": lns_f.on_model,
+            "relax": lns_f.relax_random,
+            "repair": lns_f.repair,
+            "calc_opt_value": lns_f.calculate_opt_val,
+            "get_first_solution": lns_f.get_first_solution_hard_constraint,
+            "check_accept": lns_f.check_accept_always,
+            "check_better": lns_f.check_better_always,
+            "better_solution_found": lns_f.better_solution_found_hard_constraint,
+            "boundary_handling": lns_f.boundary_overall,
+            "check_stop": lns_f.check_stop_steps,
+        }
+
+        lns = LNS(["./tests/ref/golf.lp"])
+        self.assertDictEqual(lns.config_values, ref_config_values)
+        self.assertDictEqual(lns.callables, ref_callables)
+
+        ref_config_values = {
+            **ref_config_values,
+            **{
+                "seed": 123,
+                "relax_rates": [0.4],
+                "current_relax_rate": 0.4,
+                "clingo_args": ["--test"],
+            },
+        }
+        ref_callables = {**ref_callables, **{"test": print, "on_model": print}}
         lns = LNS(
             ["./tests/ref/golf.lp"],
-            ["--test"],
+            {"test": print, "on_model": print},
             123,
-            0.4,
-            True,
-            "./tests/test.json",
+            [0.4],
+            ["--test"],
         )
-        self.assertEqual(lns.config_values["files"], ["./tests/ref/golf.lp"])
-        self.assertEqual(lns.config_values["clingo_args"], ["--test"])
-        self.assertEqual(lns.config_values["seed"], 123)
-        self.assertEqual(lns.config_values["current_relax_rate"], 0.4)
-        self.assertEqual(lns.config_values["relax_rates"], [0.4])
-        self.assertEqual(lns._relax_mode, "declarative")
-        self.assertEqual(lns.param_path, "./tests/test.json")
+        self.assertDictEqual(lns.config_values, ref_config_values)
+        self.assertDictEqual(lns.callables, ref_callables)
+
+    def test_get_set_params(self):
+        """
+        Test parameter getter and setter.
+        """
+        ref_config_values = {
+            "files": ["./tests/ref/golf.lp"],
+            "seed": None,
+            "relax_rates": [0.2],
+            "current_relax_rate": 0.2,
+            "bound": 2000,
+            "switch_rr_after_no_improv": 3,
+            "clingo_args": ["--rand-freq=0.8"],
+        }
+        lns = LNS(["./tests/ref/golf.lp"])
+        self.assertDictEqual(lns.get_params(), ref_config_values)
+        lns.set_params({"seed": 123, "new_param": "new"})
+        self.assertDictEqual(
+            lns.get_params(), {**ref_config_values, **{"seed": 123, "new_param": "new"}}
+        )
 
     def test_lns_setup(self):
         """
@@ -203,41 +222,15 @@ class TestMain(TestCase):
         """
         lns = LNS(
             ["./tests/ref/golf.lp"],
-            None,
-            123,
-            0.2,
-            False,
-            "./tests/test.json",
+            seed=123,
         )
-        params = {
-            "name": "example_params",
-            "relaxation": {
-                "mode": "declarative",
-                "rates": [0.2, 0.4, 0.6],
-                "threshold": 3,
-            },
-            "search": {
-                "mode": "hard_constraint",
-                "bound": {"mode": "overall", "type": "steps", "value": 2000},
-            },
-            "seed": 123,
-        }
-        save_param_file(params, "./tests/test.json")
         test_ctl = lns.setup()
-        self.assertEqual(lns.config_values["clingo_args"], ["--seed=123"])
+        self.assertListEqual(
+            lns.config_values["clingo_args"], ["--rand-freq=0.8", "--seed=123"]
+        )
         self.assertIsInstance(test_ctl, clingo.control.Control)
 
-        lns = LNS(
-            ["./tests/ref/golf.lp"],
-            None,
-            None,
-            0.2,
-            False,
-            "./tests/test.json",
-        )
-        params["seed"] = None
-        params["search"]["mode"] = "classic"
-        save_param_file(params, "./tests/test.json")
+        lns = LNS(["./tests/ref/golf.lp"])
         test_ctl = lns.setup()
         self.assertEqual(lns.config_values["clingo_args"], ["--rand-freq=0.8"])
         self.assertIsInstance(test_ctl, clingo.control.Control)
@@ -463,8 +456,7 @@ class TestMain(TestCase):
         """
         lns = LNS(["./tests/ref/golf.lp"], seed=123)
         ctl = lns.setup()
-        lns._search_mode = "hard_constraint"
-        self.assertEqual(lns.get_first_solution(ctl), True)
+        self.assertEqual(lns_f.get_first_solution_hard_constraint(lns, ctl), True)
         self.assertIsNotNone(lns.models["new_model"])
         self.assertEqual(type(lns.models["new_model"]), dict)
         self.assertIsNotNone(lns.models["current_model"])
@@ -474,16 +466,30 @@ class TestMain(TestCase):
 
         lns = LNS(["./tests/ref/bad_encoding.lp"], seed=123)
         ctl = lns.setup()
-        self.assertEqual(lns.get_first_solution(ctl), False)
+        self.assertEqual(lns_f.get_first_solution_hard_constraint(lns, ctl), False)
+
+        lns = LNS(["./tests/ref/golf.lp"], seed=123)
+        ctl = lns.setup()
+        self.assertEqual(lns_f.get_first_solution_classic(lns, ctl), True)
+        self.assertIsNotNone(lns.models["new_model"])
+        self.assertEqual(type(lns.models["new_model"]), dict)
+        self.assertIsNotNone(lns.models["current_model"])
+        self.assertEqual(type(lns.models["current_model"]), dict)
+        self.assertIsNotNone(lns.models["best_model"])
+        self.assertEqual(type(lns.models["best_model"]), dict)
+
+        lns = LNS(["./tests/ref/bad_encoding.lp"], seed=123)
+        ctl = lns.setup()
+        self.assertEqual(lns_f.get_first_solution_classic(lns, ctl), False)
 
     def test_repair(self):
         """
         Test reparation of solution.
         """
         lns = LNS(["./tests/ref/golf.lp"], seed=123)
-        lns._search_mode = "classic"
+
         ctl = lns.setup()
-        lns.get_first_solution(ctl)
+        lns_f.get_first_solution_classic(lns, ctl)
 
         assumptions = lns_f.relax_random(
             lns.models["best_model"], lns.config_values["current_relax_rate"]
@@ -532,7 +538,6 @@ class TestMain(TestCase):
         lns_f.boundary_overall(lns, boundary_dict, "init")
         lns_f.boundary_overall(lns, boundary_dict, "update")
         s_time = boundary_dict["start_time"]
-        lns._bound_mode = "overall"
         self.assertTrue(lns_f.boundary_overall(lns, boundary_dict, "improvement"))
         self.assertEqual(boundary_dict["bound"], lns.config_values["bound"])
         self.assertEqual(boundary_dict["step"], 1)
@@ -546,7 +551,7 @@ class TestMain(TestCase):
         lns = LNS(["./tests/ref/golf.lp"])
         lns.config_values["relax_rates"] = [0.2, 0.4]
         lns.config_values["current_relax_rate"] = 0.2
-        lns.config_values["switch_rr_after_unsat"] = 1
+        lns.config_values["switch_rr_after_no_improv"] = 1
         boundary_dict = {}
         lns_f.boundary_overall(lns, boundary_dict, "init")
         s_time = boundary_dict["start_time"]
@@ -588,30 +593,25 @@ class TestMain(TestCase):
         """
         Test main method.
         """
-        lns = LNS(
-            ["./tests/ref/golf.lp"],
-            None,
-            123,
-            0.2,
-            False,
-            "./tests/ref/example_params_ref.json",
-        )
+        lns = LNS(["./tests/ref/golf.lp"])
         lns.main()
 
         lns = LNS(
             ["./tests/ref/golf.lp"],
-            None,
+            {
+                "check_better": lns_f.check_better_classic,
+                "better_solution_found": lns_f.better_solution_found_classic,
+                "get_first_solution": lns_f.get_first_solution_classic,
+            },
             122,
-            0.2,
-            False,
         )
         lns._search_mode = "classic"
-        lns.callables["check_better"] = lns_f.check_better_classic
-        lns.callables["better_solution_found"] = lns_f.better_solution_found_classic
+        # lns.callables["check_better"] = lns_f.check_better_classic
+        # lns.callables["better_solution_found"] = lns_f.better_solution_found_classic
         lns.main()
 
-        lns = LNS(["./tests/ref/golf.lp"], seed=123)
-        lns.callables["check_stop"] = lns_f.check_stop_time
+        lns = LNS(["./tests/ref/golf.lp"], {"check_stop": lns_f.check_stop_time}, 123)
+        # lns.callables["check_stop"] = lns_f.check_stop_time
         lns.main()
 
         # faulty encoding
