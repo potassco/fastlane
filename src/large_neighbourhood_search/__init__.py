@@ -7,71 +7,56 @@ import time
 from typing import Any, Callable, Dict, List, Sequence, Union
 
 import clingo
-from clingo.symbol import Number
 
 from .lib import lns_functions as lns_f
-from .utils.pf_handling import load_param_file
 
 
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=dangerous-default-value
 class LNS:
     """
     Class handling and  performing LNS.
 
-    :param files: Problem encoding.
+    :param files: Problem encodings.
     :type files: List[str]
-    :param clingo_args: Additional clingo arguments.
-    :type clingo_args: Union[List[str], None]
-    :default clingo_args: None
+    :param callables: Functions used during LNS.
+    :type callables: Dict[str, Callables]
+    :default callables: {}
     :param seed: Seed used for random relaxation.
     :type seed: Union[int, None]
     :default seed: None
-    :param relax_rate: Singular relax rate used for LNS (1>RR>0).
-    :type relax_rate: float
-    :default relax_rate: 0.2
-    :param declarative: Enables declarative relaxation mode. Otherwise random relaxation is used.
-    :type declarative: bool
-    :default declarative: False
-    :param param_path: Location of parameter file.
-    :type param_path: Union[str, None]
-    :default param_path: None
+    :param relax_rates: Relax rates used during LNS (1>RR>0).
+    :type relax_rate: List[float]
+    :default relax_rate: [0.2]
+    :param clingo_args: Additional clingo arguments.
+    :type clingo_args: Union[List[str], None]
+    :default clingo_args: None
     """
 
     def __init__(
         self,
         files: List[str],
-        clingo_args: Union[List[str], None] = None,
+        callables: Dict[str, Callable] = {},
         seed: Union[int, None] = None,
-        relax_rate: float = 0.2,
-        declarative: bool = False,
-        param_path: Union[str, None] = None,
+        relax_rates: List[float] = [0.2],
+        clingo_args: Union[List[str], None] = None,
     ) -> None:
         """
         Initialize application.
         """
         self.program_name = "lns"
-        self.version = "0.2"
-
-        self._unsat_threshold = 3
-
-        self._relax_mode = "random"
-
-        self.param_path = param_path
-
-        self._search_mode = "hard_constraint"
-        self._bound_mode = "overall"
-        self._bound_type = "steps"
+        self.version = "1.0"
 
         self.config_values: Dict[str, Any] = {
             "files": files,
             "seed": seed,
-            "relax_rates": [relax_rate],
-            "current_relax_rate": relax_rate,
+            "relax_rates": relax_rates,
+            "current_relax_rate": relax_rates[0],
             "bound": 2000,
-            "switch_rr_after_unsat": 3,
+            "switch_rr_after_no_improv": 3,
         }
         if clingo_args is None:
-            clingo_args = []
+            # arbitrary value atm
+            clingo_args = ["--rand-freq=0.8"]
         self.config_values["clingo_args"] = clingo_args
 
         new_model: Dict[str, Sequence[clingo.symbol.Symbol]] = {}
@@ -88,58 +73,33 @@ class LNS:
             "relax": lns_f.relax_random,
             "repair": lns_f.repair,
             "calc_opt_value": lns_f.calculate_opt_val,
+            "get_first_solution": lns_f.get_first_solution_hard_constraint,
             "check_accept": lns_f.check_accept_always,
             "check_better": lns_f.check_better_always,
             "better_solution_found": lns_f.better_solution_found_hard_constraint,
             "boundary_handling": lns_f.boundary_overall,
             "check_stop": lns_f.check_stop_steps,
         }
-        if declarative:
-            self._relax_mode = "declarative"
-            self.callables["relax"] = lns_f.relax_declarative
+        if callables:
+            self.callables = {**self.callables, **callables}
 
-    def load_params(self, json_file: str) -> None:
+    def get_params(self) -> Dict[str, Any]:
         """
-        Load parameters from json file, overwriting all other options.
-        Invalid parameters are ignored.
+        Get LNS parameters.
 
-        :param json_file: Parameter file to be loaded.
-        :type json_file: str
+        :return: LNS parameters.
+        :rtype: Dict[str, Any]
         """
-        parameters = load_param_file(json_file)
-        relaxation_parameters = parameters["relaxation"]
-        search_parameters = parameters["search"]
-        bound_parameters = search_parameters["bound"]
-        # relaxation
-        if relaxation_parameters["mode"] in ["declarative", "random"]:
-            self._relax_mode = relaxation_parameters["mode"]
-            if self._relax_mode == "declarative":
-                self.callables["relax"] = lns_f.relax_declarative
+        return self.config_values
 
-        self.config_values["relax_rates"] = relaxation_parameters["rates"]
-        self.config_values["current_relax_rate"] = self.config_values["relax_rates"][0]
-        self.config_values["switch_rr_after_unsat"] = relaxation_parameters["threshold"]
+    def set_params(self, params: Dict[str, Any]) -> None:
+        """
+        Set LNS parameters.
 
-        # search mode
-        if search_parameters["mode"] in ["hard_constraint", "classic"]:
-            self._search_mode = search_parameters["mode"]
-            if self._search_mode == "classic":
-                self.callables["check_better"] = lns_f.check_better_classic
-                self.callables["better_solution_found"] = (
-                    lns_f.better_solution_found_classic
-                )
-
-        # bound mode
-        if bound_parameters["mode"] in ["overall", "per_improvement"]:
-            self._bound_mode = bound_parameters["mode"]
-
-        # bound type
-        if bound_parameters["type"] in ["steps", "time"]:
-            self._bound_type = bound_parameters["type"]
-
-        self.config_values["bound"] = bound_parameters["value"]
-
-        self.config_values["seed"] = parameters["seed"]
+        :param params: LNS parameters.
+        :type params: Dict[str, Any]
+        """
+        self.config_values = {**self.config_values, **params}
 
     def _on_model(self, model: clingo.solving.Model) -> None:
         """
@@ -185,19 +145,11 @@ class LNS:
 
     def setup(self) -> clingo.control.Control:
         """
-        Initialize Control object and prepare LNS.
+        Initialize clingo.Control object.
 
         :return: Control object used for LNS
         :rytpe: clingo.control.Control
         """
-        # load parameters if needed
-        if self.param_path:
-            self.load_params(self.param_path)
-
-        # classic mode
-        if self._search_mode == "classic":
-            self.config_values["clingo_args"].append("--rand-freq=0.8")
-
         ctl = clingo.Control(self.config_values["clingo_args"])
         # no input files not supported
         # if not self._files:
@@ -213,35 +165,6 @@ class LNS:
             )
         return ctl
 
-    def get_first_solution(self, ctl) -> bool:
-        """
-        Find initial solution.
-
-        :param ctl: Control object used for search.
-        :type ctl: clingo.control.Control
-        :return: Whether a solution was found or not
-        :rtype: bool
-        """
-        # hard_cons mode
-        if self._search_mode == "hard_constraint":
-            # add constraint to force better solution with each iteration
-            # encoding has to contain _minimize(V,I) predicates as minimization criteria
-            # where V: value, I: identifier
-            ctl.add("opt_val", ["o"], ":- #sum{V,I: _minimize(V,I)} >= o.")
-        ctl.ground([("base", [])], context=self)
-
-        # get first solution
-        if ctl.solve(on_model=self._on_model).satisfiable:
-            new_opt_val = self.callables["calc_opt_value"](self.models["new_model"])
-            print(f"Initial solution found with opt_val: {new_opt_val}")
-            if self._search_mode == "hard_constraint":
-                ctl.ground([("opt_val", [Number(new_opt_val)])])
-            self.models["current_model"] = self.models["new_model"].copy()
-            self.models["best_model"] = self.models["new_model"].copy()
-            return True
-        print("No first solution found.")
-        return False
-
     def main(self) -> None:
         """
         Run Large-Neighbourhood Search according to set parameters.
@@ -250,7 +173,7 @@ class LNS:
         ctl = self.setup()
 
         # get first solution
-        if not self.get_first_solution(ctl):
+        if not self.callables["get_first_solution"](self, ctl):
             return
 
         # perform LNS
@@ -297,14 +220,6 @@ class LNS:
                 self.callables["boundary_handling"](
                     self, boundary_dict, "no_improvement"
                 )
-            # change relax_rate after unsat_threshold amount of unsat solutions
-            self.config_values["current_relax_rate"] = self.config_values[
-                "relax_rates"
-            ][
-                boundary_dict["no_improvement"]
-                // self.config_values["switch_rr_after_unsat"]
-                % len(self.config_values["relax_rates"])
-            ]
             # stop criterion, WIP
             if self.callables["check_stop"](self, boundary_dict):
                 end_time = time.time()

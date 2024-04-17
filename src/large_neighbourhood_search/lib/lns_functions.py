@@ -201,6 +201,59 @@ def better_solution_found_hard_constraint(
     ctl.ground([("opt_val", [Number(opt_val)])])
 
 
+def get_first_solution_hard_constraint(lns_object, ctl) -> bool:
+    """
+    Find initial solution.
+
+    :param ctl: Control object used for search.
+    :type ctl: clingo.control.Control
+    :return: Whether a solution was found or not
+    :rtype: bool
+    """
+    # add constraint to force better solution with each iteration
+    # encoding has to contain _minimize(V,I) predicates as minimization criteria
+    # where V: value, I: identifier
+    ctl.add("opt_val", ["o"], ":- #sum{V,I: _minimize(V,I)} >= o.")
+    ctl.ground([("base", [])], context=lns_object)
+
+    # get first solution
+    if ctl.solve(on_model=lns_object._on_model).satisfiable:
+        new_opt_val = lns_object.callables["calc_opt_value"](
+            lns_object.models["new_model"]
+        )
+        print(f"Initial solution found with opt_val: {new_opt_val}")
+        ctl.ground([("opt_val", [Number(new_opt_val)])])
+        lns_object.models["current_model"] = lns_object.models["new_model"].copy()
+        lns_object.models["best_model"] = lns_object.models["new_model"].copy()
+        return True
+    print("No first solution found.")
+    return False
+
+
+def get_first_solution_classic(lns_object, ctl) -> bool:
+    """
+    Find initial solution.
+
+    :param ctl: Control object used for search.
+    :type ctl: clingo.control.Control
+    :return: Whether a solution was found or not
+    :rtype: bool
+    """
+    ctl.ground([("base", [])], context=lns_object)
+
+    # get first solution
+    if ctl.solve(on_model=lns_object._on_model).satisfiable:
+        new_opt_val = lns_object.callables["calc_opt_value"](
+            lns_object.models["new_model"]
+        )
+        print(f"Initial solution found with opt_val: {new_opt_val}")
+        lns_object.models["current_model"] = lns_object.models["new_model"].copy()
+        lns_object.models["best_model"] = lns_object.models["new_model"].copy()
+        return True
+    print("No first solution found.")
+    return False
+
+
 def boundary_overall(lns_object, values: Dict[str, Any], action: str) -> bool:
     """
     Handle LNS boundary.
@@ -236,13 +289,14 @@ def boundary_overall(lns_object, values: Dict[str, Any], action: str) -> bool:
     if action == "no_improvement":
         values["no_improvement"] += 1
         # change relax rate
-        lns_object.config_values["current_relax_rate"] = lns_object.config_values[
-            "relax_rates"
-        ][
-            values["no_improvement"]
-            // lns_object.config_values["switch_rr_after_unsat"]
-            % len(lns_object.config_values["relax_rates"])
-        ]
+        if lns_object.config_values["switch_rr_after_no_improv"] > 0:
+            lns_object.config_values["current_relax_rate"] = lns_object.config_values[
+                "relax_rates"
+            ][
+                values["no_improvement"]
+                // lns_object.config_values["switch_rr_after_no_improv"]
+                % len(lns_object.config_values["relax_rates"])
+            ]
         return True
     return False
 

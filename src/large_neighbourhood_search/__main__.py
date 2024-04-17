@@ -5,7 +5,6 @@ The main entry point for the application.
 from . import LNS
 from .utils.logger import setup_logger
 from .utils.parser import get_parser
-from .utils.pf_handling import create_param_file, gen_example_params
 
 
 def main():
@@ -21,22 +20,7 @@ def main():
     log.debug("debug")
     log.error("error")
 
-    if args.gen_example:
-        gen_example_params(args.gen_example)
-        return
-
-    if args.new_param_file:
-        create_param_file(args.new_param_file)
-        return
-
-    lns = LNS(
-        args.i,
-        rest,
-        args.lns_seed,
-        args.relax_rate,
-        args.declarative,
-        args.load_param_file,
-    )
+    lns = LNS(args.i, seed=123, relax_rates=[0.2, 0.4], clingo_args=rest)
     lns.main()
 
 
