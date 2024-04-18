@@ -8,6 +8,7 @@ import large_neighbourhood_search
 import large_neighbourhood_search.lib.lns_functions as lns_f
 
 
+# callables for classic LNS with random relaxation limited by the number of stops
 random_classic: Dict[str, Callable] = {
             "on_model": lns_f.on_model,
             "relax": lns_f.relax_random,
@@ -21,8 +22,10 @@ random_classic: Dict[str, Callable] = {
             "check_stop": lns_f.check_stop_steps,
         }
 
+# set boundary to 3000 (in this case steps)
+# switch to the next relax rate after new models did not improve the solution 3 times
 config: Dict[str, Any] = {
-            "bound": 2000,
+            "bound": 3000,
             "switch_rr_after_no_improv": 3,
         }
 
