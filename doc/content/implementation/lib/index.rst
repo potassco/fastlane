@@ -1,8 +1,7 @@
-Implementation
+lib
 ===============
 
 .. toctree::
     :maxdepth: 1
     
-    lns.rst
-    lib/index.rst
+    lns_functions.rst

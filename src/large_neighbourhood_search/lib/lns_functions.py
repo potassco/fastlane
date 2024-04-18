@@ -35,7 +35,8 @@ def relax_declarative(
     model: Dict[str, Sequence[clingo.symbol.Symbol]], relax_rate: float
 ) -> List[Tuple[clingo.symbol.Symbol, bool]]:
     """
-    Relax selected atoms given by the relax_rate.
+    Relax portion of selected atoms given by the relax_rate.
+    ASP encoding has to contain `_lns_select/1` and `_lns_fix/2` predicates.
 
     :param model: Dictionary containing list of shown and true atoms.
     :type model: Dict[str, Sequence[clingo.symbol.Symbol]]
@@ -102,7 +103,7 @@ def repair(
 
 def calculate_opt_val(model: Dict[str, Sequence[clingo.symbol.Symbol]]) -> int:
     """
-    Get opt value of given model.
+    Get optimization value of given model.
 
     :param model: Model.
     :type model: Dict[str, Sequence[clingo.symbol.Symbol]]
@@ -124,6 +125,7 @@ def check_accept_always(
 ) -> bool:
     """
     Check whether new model is accepted.
+    Always accept.
 
     :param new_model: New model checked for acceptance.
     :type new_model: Dict[str, Sequence[clingo.symbol.Symbol]]
@@ -142,6 +144,7 @@ def check_better_classic(
 ) -> bool:
     """
     Check whether new model is better.
+    Compare optimization values of new and old model.
 
     :param new_model: New model being checked.
     :type new_model: Dict[str, Sequence[clingo.symbol.Symbol]]
@@ -164,6 +167,7 @@ def check_better_always(
 ) -> bool:
     """
     Check whether new model is better.
+    Always better due to added hard constraint during grounding.
 
     :param new_model: New model being checked.
     :type new_model: Dict[str, Sequence[clingo.symbol.Symbol]]
@@ -178,6 +182,7 @@ def check_better_always(
 def better_solution_found_classic(lns_object, ctl: clingo.control.Control) -> None:
     """
     What to do if better solution was found.
+    Assign new best model.
 
     :param ctl: Clingo control object used for solving.
     :type ctl: clingo.control.Control
@@ -190,6 +195,7 @@ def better_solution_found_hard_constraint(
 ) -> None:
     """
     What to do if better solution was found.
+    Assign new best model and ground new hard constraint.
 
     :param ctl: Clingo control object used for solving.
     :type ctl: clingo.control.Control
@@ -204,6 +210,7 @@ def better_solution_found_hard_constraint(
 def get_first_solution_hard_constraint(lns_object, ctl) -> bool:
     """
     Find initial solution.
+    And ground found optimization value as hard constraint.
 
     :param ctl: Control object used for search.
     :type ctl: clingo.control.Control
@@ -258,6 +265,7 @@ def boundary_overall(lns_object, values: Dict[str, Any], action: str) -> bool:
     """
     Handle LNS boundary.
     Has to support the following actions:
+
     - "init"
     - "update"
     - "improvement"
