@@ -3,15 +3,20 @@ Library of functions used for LNS.
 """
 
 # pylint: disable=protected-access
+from __future__ import annotations
+
 import random
 import time
-from typing import Any, Dict, List, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple
 
 import clingo
 from clingo.symbol import Number, SymbolType
 
+if TYPE_CHECKING:
+    from large_neighbourhood_search import LNS  # nocoverage
 
-def on_model(lns_object, model: clingo.solving.Model) -> None:
+
+def on_model(lns_object: LNS, model: clingo.solving.Model) -> None:
     """
     Saves shown and true atoms of model and aggregates optimization values.
 
@@ -83,7 +88,7 @@ def relax_random(
 
 
 def repair(
-    lns_object,
+    lns_object: LNS,
     ctl: clingo.control.Control,
     assumptions: List[Tuple[clingo.symbol.Symbol, bool]],
 ) -> clingo.solving.SolveResult:
@@ -119,7 +124,7 @@ def calculate_opt_val(model: Dict[str, Sequence[clingo.symbol.Symbol]]) -> int:
 
 # pylint: disable=unused-argument
 def check_accept_always(
-    lns_object,
+    lns_object: LNS,
     new_model: Dict[str, Sequence[clingo.symbol.Symbol]],
     current_model: Dict[str, Sequence[clingo.symbol.Symbol]],
 ) -> bool:
@@ -138,7 +143,7 @@ def check_accept_always(
 
 
 def check_better_classic(
-    lns_object,
+    lns_object: LNS,
     new_model: Dict[str, Sequence[clingo.symbol.Symbol]],
     best_model: Dict[str, Sequence[clingo.symbol.Symbol]],
 ) -> bool:
@@ -161,7 +166,7 @@ def check_better_classic(
 
 # pylint: disable=dangerous-default-value, unused-argument
 def check_better_always(
-    lns_object,
+    lns_object: LNS,
     new_model: Dict[str, Sequence[clingo.symbol.Symbol]],
     best_model: Dict[str, Sequence[clingo.symbol.Symbol]],
 ) -> bool:
@@ -179,7 +184,7 @@ def check_better_always(
     return True
 
 
-def better_solution_found_classic(lns_object, ctl: clingo.control.Control) -> None:
+def better_solution_found_classic(lns_object: LNS, ctl: clingo.control.Control) -> None:
     """
     What to do if better solution was found.
     Assign new best model.
@@ -191,7 +196,7 @@ def better_solution_found_classic(lns_object, ctl: clingo.control.Control) -> No
 
 
 def better_solution_found_hard_constraint(
-    lns_object, ctl: clingo.control.Control
+    lns_object: LNS, ctl: clingo.control.Control
 ) -> None:
     """
     What to do if better solution was found.
@@ -207,7 +212,7 @@ def better_solution_found_hard_constraint(
     ctl.ground([("opt_val", [Number(opt_val)])])
 
 
-def get_first_solution_hard_constraint(lns_object, ctl) -> bool:
+def get_first_solution_hard_constraint(lns_object: LNS, ctl) -> bool:
     """
     Find initial solution.
     And ground found optimization value as hard constraint.
@@ -237,7 +242,7 @@ def get_first_solution_hard_constraint(lns_object, ctl) -> bool:
     return False
 
 
-def get_first_solution_classic(lns_object, ctl) -> bool:
+def get_first_solution_classic(lns_object: LNS, ctl) -> bool:
     """
     Find initial solution.
 
@@ -261,7 +266,7 @@ def get_first_solution_classic(lns_object, ctl) -> bool:
     return False
 
 
-def boundary_overall(lns_object, values: Dict[str, Any], action: str) -> bool:
+def boundary_overall(lns_object: LNS, values: Dict[str, Any], action: str) -> bool:
     """
     Handle LNS boundary.
     Has to support the following actions:
@@ -309,7 +314,7 @@ def boundary_overall(lns_object, values: Dict[str, Any], action: str) -> bool:
     return False
 
 
-def check_stop_steps(lns_object, boundary_dict: Dict[str, Any]) -> bool:
+def check_stop_steps(lns_object: LNS, boundary_dict: Dict[str, Any]) -> bool:
     """
     Check whether to stop LNS depending on steps made.
 
@@ -327,7 +332,7 @@ def check_stop_steps(lns_object, boundary_dict: Dict[str, Any]) -> bool:
     return boundary_dict["step"] >= boundary_dict["bound"]
 
 
-def check_stop_time(lns_object, boundary_dict: Dict[str, Any]) -> bool:
+def check_stop_time(lns_object: LNS, boundary_dict: Dict[str, Any]) -> bool:
     """
     Check whether to stop LNS depending on passed time.
 
