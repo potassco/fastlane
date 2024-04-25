@@ -9,6 +9,7 @@ from io import StringIO
 from unittest import TestCase
 
 import clingo
+import clingodl
 from clingo.symbol import Function, Number
 
 from large_neighbourhood_search import LNS
@@ -56,9 +57,9 @@ class TestMain(TestCase):
         }
 
         ref_callables = {
-            "on_model": lns_f.on_model,
+            "setup": lns_f.setup_clingo,
             "relax": lns_f.relax_random,
-            "repair": lns_f.repair,
+            "repair": lns_f.repair_clingo,
             "calc_opt_value": lns_f.calculate_opt_val,
             "get_first_solution": lns_f.get_first_solution_hard_constraint,
             "check_accept": lns_f.check_accept_always,
@@ -112,7 +113,7 @@ class TestMain(TestCase):
             lns.get_params(), {**ref_config_values, **{"seed": 123, "new_param": "new"}}
         )
 
-    def test_lns_setup(self):
+    def test_setup_clingo(self):
         """
         Test the clingo setup for LNS.
         """
@@ -120,16 +121,39 @@ class TestMain(TestCase):
             ["./tests/ref/golf.lp"],
             seed=123,
         )
-        test_ctl = lns.setup()
+        test_ctl, test_thy = lns_f.setup_clingo(lns)
         self.assertListEqual(
             lns.config_values["clingo_args"], ["--rand-freq=0.8", "--seed=123"]
         )
         self.assertIsInstance(test_ctl, clingo.control.Control)
+        self.assertIsNone(test_thy)
 
         lns = LNS(["./tests/ref/golf.lp"])
-        test_ctl = lns.setup()
+        test_ctl, test_thy = lns_f.setup_clingo(lns)
         self.assertEqual(lns.config_values["clingo_args"], ["--rand-freq=0.8"])
         self.assertIsInstance(test_ctl, clingo.control.Control)
+        self.assertIsNone(test_thy)
+
+    def test_setup_clingo_dl(self):
+        """
+        Test the clingo-dl setup for LNS.
+        """
+        lns = LNS(
+            ["./tests/ref/golf.lp"],
+            seed=123,
+        )
+        test_ctl, test_thy = lns_f.setup_clingo_dl(lns)
+        self.assertListEqual(
+            lns.config_values["clingo_args"], ["--rand-freq=0.8", "--seed=123"]
+        )
+        self.assertIsInstance(test_ctl, clingo.control.Control)
+        self.assertIsInstance(test_thy, clingodl.ClingoDLTheory)
+
+        lns = LNS(["./tests/ref/golf.lp"])
+        test_ctl, test_thy = lns_f.setup_clingo_dl(lns)
+        self.assertEqual(lns.config_values["clingo_args"], ["--rand-freq=0.8"])
+        self.assertIsInstance(test_ctl, clingo.control.Control)
+        self.assertIsInstance(test_thy, clingodl.ClingoDLTheory)
 
     def test_variability(self):
         """
@@ -148,7 +172,7 @@ class TestMain(TestCase):
         Test stats getter. WIP
         """
         lns = lns = LNS(["./tests/ref/golf.lp"])
-        test_ctl = lns.setup()
+        test_ctl = lns_f.setup_clingo(lns)[0]
         self.assertEqual(type(lns.get_stats(test_ctl)), dict)
 
     def test_relax(self):
@@ -351,8 +375,8 @@ class TestMain(TestCase):
         Test finding of first solution.
         """
         lns = LNS(["./tests/ref/golf.lp"], seed=123)
-        ctl = lns.setup()
-        self.assertEqual(lns_f.get_first_solution_hard_constraint(lns, ctl), True)
+        ctl, thy = lns_f.setup_clingo(lns)
+        self.assertEqual(lns_f.get_first_solution_hard_constraint(lns, ctl, thy), True)
         self.assertIsNotNone(lns.models["new_model"])
         self.assertEqual(type(lns.models["new_model"]), dict)
         self.assertIsNotNone(lns.models["current_model"])
@@ -361,12 +385,12 @@ class TestMain(TestCase):
         self.assertEqual(type(lns.models["best_model"]), dict)
 
         lns = LNS(["./tests/ref/bad_encoding.lp"], seed=123)
-        ctl = lns.setup()
-        self.assertEqual(lns_f.get_first_solution_hard_constraint(lns, ctl), False)
+        ctl = lns_f.setup_clingo(lns)[0]
+        self.assertEqual(lns_f.get_first_solution_hard_constraint(lns, ctl, thy), False)
 
         lns = LNS(["./tests/ref/golf.lp"], seed=123)
-        ctl = lns.setup()
-        self.assertEqual(lns_f.get_first_solution_classic(lns, ctl), True)
+        ctl, thy = lns_f.setup_clingo(lns)
+        self.assertEqual(lns_f.get_first_solution_classic(lns, ctl, thy), True)
         self.assertIsNotNone(lns.models["new_model"])
         self.assertEqual(type(lns.models["new_model"]), dict)
         self.assertIsNotNone(lns.models["current_model"])
@@ -375,28 +399,62 @@ class TestMain(TestCase):
         self.assertEqual(type(lns.models["best_model"]), dict)
 
         lns = LNS(["./tests/ref/bad_encoding.lp"], seed=123)
-        ctl = lns.setup()
-        self.assertEqual(lns_f.get_first_solution_classic(lns, ctl), False)
+        ctl, thy = lns_f.setup_clingo(lns)
+        self.assertEqual(lns_f.get_first_solution_classic(lns, ctl, thy), False)
 
-    def test_repair(self):
+    def test_repair_clingo(self):
         """
-        Test reparation of solution.
+        Test reparation of solution using clingo.
         """
         lns = LNS(["./tests/ref/golf.lp"], seed=123)
 
-        ctl = lns.setup()
-        lns_f.get_first_solution_classic(lns, ctl)
+        ctl = lns_f.setup_clingo(lns)[0]
+        lns_f.ground_base(lns, ctl)
+        self.assertTrue(lns_f.repair_clingo(lns, ctl, [], None))
+        self.assertTrue(lns.models["new_model"])
 
         assumptions = lns_f.relax_random(
-            lns.models["best_model"], lns.config_values["current_relax_rate"]
+            lns.models["new_model"], lns.config_values["current_relax_rate"]
         )
-        res = lns_f.repair(lns, ctl, assumptions)
-        self.assertIsNotNone(res)
-        self.assertEqual(type(res), clingo.solving.SolveResult)
+        lns.models["new_model"] = {}
+        self.assertTrue(lns_f.repair_clingo(lns, ctl, assumptions, None))
+        self.assertTrue(lns.models["new_model"])
 
         assumptions_atoms = list(map(lambda x: x[0], assumptions))
         for atom in assumptions_atoms:
             self.assertIn(atom, lns.models["new_model"]["true"])
+
+        lns = LNS(["./tests/ref/bad_encoding.lp"], seed=123)
+        ctl, thy = lns_f.setup_clingo(lns)
+        lns_f.ground_base(lns, ctl)
+        self.assertFalse(lns_f.repair_clingo(lns, ctl, [], thy))
+
+    def test_repair_clingo_dl(self):
+        """
+        Test reparation of solution using clingo-dl.
+        """
+        lns = LNS(["./tests/ref/golf.lp"], seed=123)
+
+        ctl, thy = lns_f.setup_clingo_dl(lns)
+        lns_f.ground_base(lns, ctl)
+        self.assertTrue(lns_f.repair_clingo_dl(lns, ctl, [], thy))
+        self.assertTrue(lns.models["new_model"])
+
+        assumptions = lns_f.relax_random(
+            lns.models["new_model"], lns.config_values["current_relax_rate"]
+        )
+        lns.models["new_model"] = {}
+        self.assertTrue(lns_f.repair_clingo_dl(lns, ctl, assumptions, thy))
+        self.assertTrue(lns.models["new_model"])
+
+        assumptions_atoms = list(map(lambda x: x[0], assumptions))
+        for atom in assumptions_atoms:
+            self.assertIn(atom, lns.models["new_model"]["true"])
+
+        lns = LNS(["./tests/ref/bad_encoding.lp"], seed=123)
+        ctl, thy = lns_f.setup_clingo_dl(lns)
+        lns_f.ground_base(lns, ctl)
+        self.assertFalse(lns_f.repair_clingo_dl(lns, ctl, [], thy))
 
     def test_boundary_overall_init(self):
         """
@@ -501,9 +559,6 @@ class TestMain(TestCase):
             },
             122,
         )
-        lns._search_mode = "classic"
-        # lns.callables["check_better"] = lns_f.check_better_classic
-        # lns.callables["better_solution_found"] = lns_f.better_solution_found_classic
         lns.main()
 
         lns = LNS(["./tests/ref/golf.lp"], {"check_stop": lns_f.check_stop_time}, 123)
@@ -512,4 +567,15 @@ class TestMain(TestCase):
 
         # faulty encoding
         lns = LNS(["./tests/ref/bad_encoding.lp"], seed=123)
+        lns.main()
+
+        # clingo-dl
+        lns = LNS(
+            ["./tests/ref/golf.lp"],
+            {
+                "setup": lns_f.setup_clingo_dl,
+                "repair": lns_f.repair_clingo_dl,
+            },
+            123,
+        )
         lns.main()
