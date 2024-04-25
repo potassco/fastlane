@@ -10,30 +10,80 @@ import time
 from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple
 
 import clingo
+from clingo import ast
 from clingo.symbol import Number, SymbolType
+from clingodl import ClingoDLTheory
 
 if TYPE_CHECKING:
     from large_neighbourhood_search import LNS  # nocoverage
 
 
-def on_model(lns_object: LNS, model: clingo.solving.Model) -> None:
+def setup_clingo(lns_object: LNS) -> Tuple[clingo.control.Control, None]:
     """
-    Saves shown and true atoms of model and aggregates optimization values.
+    Initialize clingo.Control object using clingo.
 
-    :param model: Model found during solving.
-    :type model: clingo.solving.Model
+    :param lns_object: LNS object.
+    :type lns_object: large_neighbourhood_search.LNS
+    :return: Control and theory object used for LNS
+    :rytpe: Tuple[clingo.control.Control, clingodl.ClingoDlTheory]
     """
-    lns_object.models["new_model"] = {}
-    lns_object.models["new_model"]["shown"] = model.symbols(shown=True)
-    lns_object.models["new_model"]["true"] = model.symbols(atoms=True)
+    ctl = clingo.Control(lns_object.config_values["clingo_args"])
+    # no input files not supported
+    # if not lns_object._files:
+    #    lns_object._files = ["-"]
+    for path in lns_object.config_values["files"]:
+        ctl.load(path)
 
-    # if lns_object.models["best_model"]:
-    #    print(
-    #        lns_object.get_variability(
-    #            lns_object.models["new_model"]["shown"],
-    #            lns_object.models["best_model"]["shown"],
-    #        )
-    #    )
+    # set seed if given
+    if lns_object.config_values["seed"] is not None:
+        random.seed(lns_object.config_values["seed"])
+        lns_object.config_values["clingo_args"].append(
+            f"--seed={lns_object.config_values['seed']}"
+        )
+    return (ctl, None)
+
+
+def setup_clingo_dl(lns_object: LNS) -> Tuple[clingo.control.Control, ClingoDLTheory]:
+    """
+    Initialize clingo.Control object using clingo-dl.
+
+    :param lns_object: LNS object.
+    :type lns_object: large_neighbourhood_search.LNS
+    :return: Control and theory object used for LNS
+    :rytpe: Tuple[clingo.control.Control, clingodl.ClingoDlTheory]
+    """
+    thy = ClingoDLTheory()
+    ctl = clingo.Control(lns_object.config_values["clingo_args"])
+    thy.register(ctl)
+    # no input files not supported
+    # if not lns_object._files:
+    #    lns_object._files = ["-"]
+    # for path in lns_object.config_values["files"]:
+    with ast.ProgramBuilder(ctl) as builder:
+        ast.parse_files(
+            lns_object.config_values["files"],
+            lambda ast: thy.rewrite_ast(ast, builder.add),
+        )
+
+    # set seed if given
+    if lns_object.config_values["seed"] is not None:
+        random.seed(lns_object.config_values["seed"])
+        lns_object.config_values["clingo_args"].append(
+            f"--seed={lns_object.config_values['seed']}"
+        )
+    return ctl, thy
+
+
+def ground_base(lns_object: LNS, ctl: clingo.Control) -> None:
+    """
+    Ground base using control object.
+
+    :param lns_object: LNS object.
+    :type lns_object: large_neighbourhood_search.LNS
+    :param ctl: Clingo Control object used for solving.
+    :type ctl: clingo.control.Control
+    """
+    ctl.ground([("base", [])], context=lns_object)
 
 
 def relax_declarative(
@@ -87,23 +137,71 @@ def relax_random(
     return fixed_atoms
 
 
-def repair(
+# pylint: disable=unused-argument
+def repair_clingo(
     lns_object: LNS,
     ctl: clingo.control.Control,
     assumptions: List[Tuple[clingo.symbol.Symbol, bool]],
-) -> clingo.solving.SolveResult:
+    thy: Any,
+) -> bool:
     """
-    Solve under given assumptions.
+    Solve under given assumptions using clingo.
 
+    :param lns_object: LNS object.
+    :type lns_object: large_neighbourhood_search.LNS
     :param ctl: Clingo Control object used for solving.
-    :type ctl: clingo..control.Control
+    :type ctl: clingo.control.Control
     :param assumptions: Assumptions for solving (fixed atoms).
     :type assumptions: List[Tuple[clingo.symbol.Symbol, bool]]
-    :return: Result of solving call.
-    :rtype: clingo.solving.SolveResult
+    :param thy: Theory object.
+    :type thy: Any
+    :return: Whether model was found.
+    :rtype: bool
     """
-    x = ctl.solve(assumptions=assumptions, on_model=lns_object._on_model)
-    return x
+    with ctl.solve(assumptions=assumptions, yield_=True) as handle:
+        for model in handle:
+            lns_object.models["new_model"] = {}
+            lns_object.models["new_model"]["shown"] = model.symbols(shown=True)
+            lns_object.models["new_model"]["true"] = model.symbols(atoms=True)
+            if model:
+                return True
+    return False
+
+
+def repair_clingo_dl(
+    lns_object: LNS,
+    ctl: clingo.control.Control,
+    assumptions: List[Tuple[clingo.symbol.Symbol, bool]],
+    thy: ClingoDLTheory,
+) -> bool:
+    """
+    Solve under given assumptions using clingo.
+
+    :param lns_object: LNS object.
+    :type lns_object: large_neighbourhood_search.LNS
+    :param ctl: Clingo Control object used for solving.
+    :type ctl: clingo.control.Control
+    :param assumptions: Assumptions for solving (fixed atoms).
+    :type assumptions: List[Tuple[clingo.symbol.Symbol, bool]]
+    :param thy: clingo-dl theory object.
+    :type thy: clingodl.ClingoDlTheory
+    :return: Whether model was found.
+    :rtype: bool
+    """
+    thy.prepare(ctl)
+    with ctl.solve(
+        assumptions=assumptions, yield_=True, on_model=thy.on_model
+    ) as handle:
+        for model in handle:
+            lns_object.models["new_model"] = {}
+            lns_object.models["new_model"]["shown"] = model.symbols(shown=True)
+            lns_object.models["new_model"]["true"] = model.symbols(atoms=True)
+            lns_object.models["new_model"]["assignments"] = [
+                f"{key}={val}" for key, val in thy.assignment(model.thread_id)
+            ]
+            if model:
+                return True
+    return False
 
 
 def calculate_opt_val(model: Dict[str, Sequence[clingo.symbol.Symbol]]) -> int:
@@ -132,6 +230,8 @@ def check_accept_always(
     Check whether new model is accepted.
     Always accept.
 
+    :param lns_object: LNS object.
+    :type lns_object: large_neighbourhood_search.LNS
     :param new_model: New model checked for acceptance.
     :type new_model: Dict[str, Sequence[clingo.symbol.Symbol]]
     :param old_model: Current model used for comparison.
@@ -151,6 +251,8 @@ def check_better_classic(
     Check whether new model is better.
     Compare optimization values of new and old model.
 
+    :param lns_object: LNS object.
+    :type lns_object: large_neighbourhood_search.LNS
     :param new_model: New model being checked.
     :type new_model: Dict[str, Sequence[clingo.symbol.Symbol]]
     :param old_model: Best model used for comparison.
@@ -164,7 +266,7 @@ def check_better_classic(
     return False
 
 
-# pylint: disable=dangerous-default-value, unused-argument
+# pylint: disable=unused-argument
 def check_better_always(
     lns_object: LNS,
     new_model: Dict[str, Sequence[clingo.symbol.Symbol]],
@@ -174,6 +276,8 @@ def check_better_always(
     Check whether new model is better.
     Always better due to added hard constraint during grounding.
 
+    :param lns_object: LNS object.
+    :type lns_object: large_neighbourhood_search.LNS
     :param new_model: New model being checked.
     :type new_model: Dict[str, Sequence[clingo.symbol.Symbol]]
     :param old_model: Best model used for comparison.
@@ -189,6 +293,8 @@ def better_solution_found_classic(lns_object: LNS, ctl: clingo.control.Control) 
     What to do if better solution was found.
     Assign new best model.
 
+    :param lns_object: LNS object.
+    :type lns_object: large_neighbourhood_search.LNS
     :param ctl: Clingo control object used for solving.
     :type ctl: clingo.control.Control
     """
@@ -202,6 +308,8 @@ def better_solution_found_hard_constraint(
     What to do if better solution was found.
     Assign new best model and ground new hard constraint.
 
+    :param lns_object: LNS object.
+    :type lns_object: large_neighbourhood_search.LNS
     :param ctl: Clingo control object used for solving.
     :type ctl: clingo.control.Control
     """
@@ -212,13 +320,17 @@ def better_solution_found_hard_constraint(
     ctl.ground([("opt_val", [Number(opt_val)])])
 
 
-def get_first_solution_hard_constraint(lns_object: LNS, ctl) -> bool:
+def get_first_solution_hard_constraint(lns_object: LNS, ctl, thy: Any) -> bool:
     """
     Find initial solution.
     And ground found optimization value as hard constraint.
 
+    :param lns_object: LNS object.
+    :type lns_object: large_neighbourhood_search.LNS
     :param ctl: Control object used for search.
     :type ctl: clingo.control.Control
+    :param thy: Theory object used for search.
+    :type thy: Any
     :return: Whether a solution was found or not
     :rtype: bool
     """
@@ -226,10 +338,10 @@ def get_first_solution_hard_constraint(lns_object: LNS, ctl) -> bool:
     # encoding has to contain _minimize(V,I) predicates as minimization criteria
     # where V: value, I: identifier
     ctl.add("opt_val", ["o"], ":- #sum{V,I: _minimize(V,I)} >= o.")
-    ctl.ground([("base", [])], context=lns_object)
+    ground_base(lns_object, ctl)
 
     # get first solution
-    if ctl.solve(on_model=lns_object._on_model).satisfiable:
+    if lns_object.callables["repair"](lns_object, ctl, [], thy):
         new_opt_val = lns_object.callables["calc_opt_value"](
             lns_object.models["new_model"]
         )
@@ -242,19 +354,23 @@ def get_first_solution_hard_constraint(lns_object: LNS, ctl) -> bool:
     return False
 
 
-def get_first_solution_classic(lns_object: LNS, ctl) -> bool:
+def get_first_solution_classic(lns_object: LNS, ctl, thy: Any) -> bool:
     """
     Find initial solution.
 
+    :param lns_object: LNS object.
+    :type lns_object: large_neighbourhood_search.LNS
     :param ctl: Control object used for search.
     :type ctl: clingo.control.Control
+    :param thy: Theory object used for search.
+    :type thy: Any
     :return: Whether a solution was found or not
     :rtype: bool
     """
     ctl.ground([("base", [])], context=lns_object)
 
     # get first solution
-    if ctl.solve(on_model=lns_object._on_model).satisfiable:
+    if lns_object.callables["repair"](lns_object, ctl, [], thy):
         new_opt_val = lns_object.callables["calc_opt_value"](
             lns_object.models["new_model"]
         )
@@ -276,6 +392,8 @@ def boundary_overall(lns_object: LNS, values: Dict[str, Any], action: str) -> bo
     - "improvement"
     - "no_improvement"
 
+    :param lns_object: LNS object.
+    :type lns_object: large_neighbourhood_search.LNS
     :param values: Dictionary containing all values used for keeping track of the LNS.
     :type values: Dict[str, Any]
     :return: Whether action succeeded or not.
@@ -318,6 +436,8 @@ def check_stop_steps(lns_object: LNS, boundary_dict: Dict[str, Any]) -> bool:
     """
     Check whether to stop LNS depending on steps made.
 
+    :param lns_object: LNS object.
+    :type lns_object: large_neighbourhood_search.LNS
     :param boundary_dict: Dictionary containing all values used for keeping track of the LNS.
     :type boundary_dict: Dict[str, Any]
     :return: Whether to stop LNS or not.
@@ -336,6 +456,8 @@ def check_stop_time(lns_object: LNS, boundary_dict: Dict[str, Any]) -> bool:
     """
     Check whether to stop LNS depending on passed time.
 
+    :param lns_object: LNS object.
+    :type lns_object: large_neighbourhood_search.LNS
     :param boundary_dict: Dictionary containing all values used for keeping track of the LNS.
     :type boundary_dict: Dict[str, Any]
     :return: Whether to stop LNS or not.

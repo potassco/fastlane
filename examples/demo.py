@@ -10,9 +10,9 @@ import large_neighbourhood_search.lib.lns_functions as lns_f
 
 # callables for classic LNS with random relaxation limited by the number of stops
 random_classic: Dict[str, Callable] = {
-            "on_model": lns_f.on_model,
+            "setup": lns_f.setup_clingo,
             "relax": lns_f.relax_random,
-            "repair": lns_f.repair,
+            "repair": lns_f.repair_clingo,
             "calc_opt_value": lns_f.calculate_opt_val,
             "get_first_solution": lns_f.get_first_solution_classic,
             "check_accept": lns_f.check_accept_always,

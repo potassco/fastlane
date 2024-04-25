@@ -2,7 +2,6 @@
 The large_neighbourhood_search project.
 """
 
-import random
 import time
 from typing import Any, Callable, Dict, List, Sequence, Union
 
@@ -69,9 +68,9 @@ class LNS:
         }
 
         self.callables: Dict[str, Callable] = {
-            "on_model": lns_f.on_model,
+            "setup": lns_f.setup_clingo,
             "relax": lns_f.relax_random,
-            "repair": lns_f.repair,
+            "repair": lns_f.repair_clingo,
             "calc_opt_value": lns_f.calculate_opt_val,
             "get_first_solution": lns_f.get_first_solution_hard_constraint,
             "check_accept": lns_f.check_accept_always,
@@ -100,15 +99,6 @@ class LNS:
         :type params: Dict[str, Any]
         """
         self.config_values = {**self.config_values, **params}
-
-    def _on_model(self, model: clingo.solving.Model) -> None:
-        """
-        Call on_model method.
-
-        :param model: Model found during solving.
-        :type model: clingo.solving.Model
-        """
-        return self.callables["on_model"](self, model)
 
     def get_variability(self, list1: Sequence, list2: Sequence) -> float:
         """
@@ -143,37 +133,19 @@ class LNS:
         # conflicts = ctl.statistics["solvers"]["conflicts"]
         return ctl.statistics
 
-    def setup(self) -> clingo.control.Control:
-        """
-        Initialize clingo.Control object.
-
-        :return: Control object used for LNS
-        :rytpe: clingo.control.Control
-        """
-        ctl = clingo.Control(self.config_values["clingo_args"])
-        # no input files not supported
-        # if not self._files:
-        #    self._files = ["-"]
-        for path in self.config_values["files"]:
-            ctl.load(path)
-
-        # set seed if given
-        if self.config_values["seed"] is not None:
-            random.seed(self.config_values["seed"])
-            self.config_values["clingo_args"].append(
-                f"--seed={self.config_values['seed']}"
-            )
-        return ctl
-
     def main(self) -> None:
         """
         Run Large-Neighbourhood Search according to set parameters.
         """
         # prepare clingo control
-        ctl = self.setup()
+        ctl, thy = self.callables["setup"](self)
+
+        # ctl, thy = lns_f.setup_clingo_dl(self)
+        # lns_f.ground_base(self, ctl)
+        # print(lns_f.repair_clingo_dl(self, ctl, [], thy))
 
         # get first solution
-        if not self.callables["get_first_solution"](self, ctl):
+        if not self.callables["get_first_solution"](self, ctl, thy):
             return
 
         # perform LNS
@@ -189,7 +161,7 @@ class LNS:
             )
 
             # reconstruct model
-            if self.callables["repair"](self, ctl, assumptions).satisfiable:
+            if self.callables["repair"](self, ctl, assumptions, thy):
                 # check if new model is accepted
                 if self.callables["check_accept"](
                     self, self.models["new_model"], self.models["current_model"]
