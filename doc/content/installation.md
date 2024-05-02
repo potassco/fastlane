@@ -1,6 +1,6 @@
 # Installation
 
-large_neighbourhood_search requires clingo 5.7 and Python 3.8+. We recommend version 3.10.
+large_neighbourhood_search requires clingo 5.7, clingo-dl 1.5 and Python 3.8+. We recommend version 3.10.
 An introduction to clingo can be found [here](https://potassco.org/doc/start/).
 
 You can check a successful installation by running
@@ -9,28 +9,15 @@ You can check a successful installation by running
 $ large_neighbourhood_search -h
 ```
 
-## Installing with pip
-
-
-The python large_neighbourhood_search package can be found [here](https://pypi.org/project/large_neighbourhood_search/).
-
-```console
-$ pip install large_neighbourhood_search
-```
-
-## Development
-
-### Installing from source
-
-The project is hosted on [github](https://github.com/potassco/large_neighbourhood_search) and can
-also be installed from source.
+The project is hosted on [github](https://github.com/krr-up/large-neighbourhood-search) and should be installed from source.
 
 ```{warning}
-We recommend this only for development purposes.
+This project is still in active development.
 ```
 
 ```{note}
 The `setuptools` package is required to run the commands below.
+We recommend the usage of a clean environment, e.g. using conda.
 ```
 
 Execute the following command in the top level large_neighbourhood_search directory:
