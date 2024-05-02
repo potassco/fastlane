@@ -3,23 +3,22 @@ Example on how to use the LNS api.
 """
 from typing import Any, Callable, Dict
 
-import large_neighbourhood_search
-
-import large_neighbourhood_search.lib.lns_functions as lns_f
+from large_neighbourhood_search import LNS
+from large_neighbourhood_search.lib import boundary, lns_utils, search, theory
 
 
 # callables for classic LNS with random relaxation limited by the number of stops
 random_classic: Dict[str, Callable] = {
-            "setup": lns_f.setup_clingo,
-            "relax": lns_f.relax_random,
-            "repair": lns_f.repair_clingo,
-            "calc_opt_value": lns_f.calculate_opt_val,
-            "get_first_solution": lns_f.get_first_solution_classic,
-            "check_accept": lns_f.check_accept_always,
-            "check_better": lns_f.check_better_classic,
-            "better_solution_found": lns_f.better_solution_found_classic,
-            "boundary_handling": lns_f.boundary_overall,
-            "check_stop": lns_f.check_stop_steps,
+            "setup": theory.setup_clingo,
+            "relax": search.relax_random,
+            "repair": theory.repair_clingo,
+            "calc_opt_value": lns_utils.calculate_opt_val,
+            "get_first_solution": search.get_first_solution_classic,
+            "check_accept": search.check_accept_always,
+            "check_better": search.check_better_classic,
+            "better_solution_found": search.better_solution_found_classic,
+            "boundary_handling": boundary.boundary_overall,
+            "check_stop": boundary.check_stop_steps,
         }
 
 # set boundary to 3000 (in this case steps)
@@ -30,7 +29,7 @@ config: Dict[str, Any] = {
         }
 
 def main():
-    lns = large_neighbourhood_search.LNS(["./examples/golf.lp"], random_classic, 42, [0.2, 0.4, 0.6])
+    lns = LNS(["./examples/golf.lp"], random_classic, None, [0.2, 0.4, 0.6])
     lns.set_params(config)
     lns.main()
 

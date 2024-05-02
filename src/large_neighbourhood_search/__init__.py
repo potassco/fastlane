@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, List, Sequence, Union
 
 import clingo
 
-from .lib import lns_functions as lns_f
+from .lib import boundary, lns_utils, search, theory
 
 
 # pylint: disable=dangerous-default-value
@@ -68,16 +68,16 @@ class LNS:
         }
 
         self.callables: Dict[str, Callable] = {
-            "setup": lns_f.setup_clingo,
-            "relax": lns_f.relax_random,
-            "repair": lns_f.repair_clingo,
-            "calc_opt_value": lns_f.calculate_opt_val,
-            "get_first_solution": lns_f.get_first_solution_hard_constraint,
-            "check_accept": lns_f.check_accept_always,
-            "check_better": lns_f.check_better_always,
-            "better_solution_found": lns_f.better_solution_found_hard_constraint,
-            "boundary_handling": lns_f.boundary_overall,
-            "check_stop": lns_f.check_stop_steps,
+            "setup": theory.setup_clingo,
+            "relax": search.relax_random,
+            "repair": theory.repair_clingo,
+            "calc_opt_value": lns_utils.calculate_opt_val,
+            "get_first_solution": search.get_first_solution_hard_constraint,
+            "check_accept": search.check_accept_always,
+            "check_better": search.check_better_always,
+            "better_solution_found": search.better_solution_found_hard_constraint,
+            "boundary_handling": boundary.boundary_overall,
+            "check_stop": boundary.check_stop_steps,
         }
         if callables:
             self.callables = {**self.callables, **callables}
@@ -99,27 +99,6 @@ class LNS:
         :type params: Dict[str, Any]
         """
         self.config_values = {**self.config_values, **params}
-
-    def get_variability(self, list1: Sequence, list2: Sequence) -> float:
-        """
-        Calculate variability of two lists.
-
-        0 - no variability (same lists or bigger one contains smaller one)
-
-        1 - completely different
-
-        :param list1: First list.
-        :type list1: Sequence
-        :param list2: Second list.
-        :type list2: Sequence
-        :return: Variability of both lists.
-        :rtype: float
-        """
-        len1 = len(list1)
-        len2 = len(list2)
-        if len1 < len2:
-            return 1 - len(set(list1).intersection(list2)) / len1
-        return 1 - len(set(list2).intersection(list1)) / len2
 
     def get_stats(self, ctl: clingo.control.Control) -> Dict:
         """

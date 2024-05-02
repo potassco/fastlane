@@ -12,8 +12,8 @@ import clingo
 import clingodl
 from clingo.symbol import Function, Number
 
+import large_neighbourhood_search as lns_pkg
 from large_neighbourhood_search import LNS
-from large_neighbourhood_search.lib import lns_functions as lns_f
 from large_neighbourhood_search.utils.logger import setup_logger
 from large_neighbourhood_search.utils.parser import get_parser
 
@@ -57,16 +57,16 @@ class TestMain(TestCase):
         }
 
         ref_callables = {
-            "setup": lns_f.setup_clingo,
-            "relax": lns_f.relax_random,
-            "repair": lns_f.repair_clingo,
-            "calc_opt_value": lns_f.calculate_opt_val,
-            "get_first_solution": lns_f.get_first_solution_hard_constraint,
-            "check_accept": lns_f.check_accept_always,
-            "check_better": lns_f.check_better_always,
-            "better_solution_found": lns_f.better_solution_found_hard_constraint,
-            "boundary_handling": lns_f.boundary_overall,
-            "check_stop": lns_f.check_stop_steps,
+            "setup": lns_pkg.lib.theory.setup_clingo,
+            "relax": lns_pkg.lib.search.relax_random,
+            "repair": lns_pkg.lib.theory.repair_clingo,
+            "calc_opt_value": lns_pkg.lib.lns_utils.calculate_opt_val,
+            "get_first_solution": lns_pkg.lib.search.get_first_solution_hard_constraint,
+            "check_accept": lns_pkg.lib.search.check_accept_always,
+            "check_better": lns_pkg.lib.search.check_better_always,
+            "better_solution_found": lns_pkg.lib.search.better_solution_found_hard_constraint,
+            "boundary_handling": lns_pkg.lib.boundary.boundary_overall,
+            "check_stop": lns_pkg.lib.boundary.check_stop_steps,
         }
 
         lns = LNS(["./tests/ref/golf.lp"])
@@ -121,7 +121,7 @@ class TestMain(TestCase):
             ["./tests/ref/golf.lp"],
             seed=123,
         )
-        test_ctl, test_thy = lns_f.setup_clingo(lns)
+        test_ctl, test_thy = lns_pkg.lib.theory.setup_clingo(lns)
         self.assertListEqual(
             lns.config_values["clingo_args"], ["--rand-freq=0.8", "--seed=123"]
         )
@@ -129,7 +129,7 @@ class TestMain(TestCase):
         self.assertIsNone(test_thy)
 
         lns = LNS(["./tests/ref/golf.lp"])
-        test_ctl, test_thy = lns_f.setup_clingo(lns)
+        test_ctl, test_thy = lns_pkg.lib.theory.setup_clingo(lns)
         self.assertEqual(lns.config_values["clingo_args"], ["--rand-freq=0.8"])
         self.assertIsInstance(test_ctl, clingo.control.Control)
         self.assertIsNone(test_thy)
@@ -142,7 +142,7 @@ class TestMain(TestCase):
             ["./tests/ref/golf.lp"],
             seed=123,
         )
-        test_ctl, test_thy = lns_f.setup_clingo_dl(lns)
+        test_ctl, test_thy = lns_pkg.lib.theory.setup_clingo_dl(lns)
         self.assertListEqual(
             lns.config_values["clingo_args"], ["--rand-freq=0.8", "--seed=123"]
         )
@@ -150,7 +150,7 @@ class TestMain(TestCase):
         self.assertIsInstance(test_thy, clingodl.ClingoDLTheory)
 
         lns = LNS(["./tests/ref/golf.lp"])
-        test_ctl, test_thy = lns_f.setup_clingo_dl(lns)
+        test_ctl, test_thy = lns_pkg.lib.theory.setup_clingo_dl(lns)
         self.assertEqual(lns.config_values["clingo_args"], ["--rand-freq=0.8"])
         self.assertIsInstance(test_ctl, clingo.control.Control)
         self.assertIsInstance(test_thy, clingodl.ClingoDLTheory)
@@ -159,20 +159,20 @@ class TestMain(TestCase):
         """
         Test variability calculation.
         """
-        lns = LNS(["./tests/ref/golf.lp"])
+        LNS(["./tests/ref/golf.lp"])
         l1 = [0, 1, 2, 3, 4, 5]
         l2 = [1, 3]
-        self.assertEqual(lns.get_variability(l1, l2), 0)
+        self.assertEqual(lns_pkg.lib.lns_utils.calculate_variability(l1, l2), 0)
         l2 = [0, 2, 6, 7]
-        self.assertEqual(lns.get_variability(l1, l2), 0.5)
-        self.assertEqual(lns.get_variability(l2, l1), 0.5)
+        self.assertEqual(lns_pkg.lib.lns_utils.calculate_variability(l1, l2), 0.5)
+        self.assertEqual(lns_pkg.lib.lns_utils.calculate_variability(l2, l1), 0.5)
 
     def test_stats(self):
         """
         Test stats getter. WIP
         """
         lns = lns = LNS(["./tests/ref/golf.lp"])
-        test_ctl = lns_f.setup_clingo(lns)[0]
+        test_ctl = lns_pkg.lib.theory.setup_clingo(lns)[0]
         self.assertEqual(type(lns.get_stats(test_ctl)), dict)
 
     def test_relax(self):
@@ -222,11 +222,11 @@ class TestMain(TestCase):
             (Function("plays", [Number(5), Number(1), Number(1)], True), True),
             (Function("plays", [Number(1), Number(2), Number(1)], True), True),
         ]
-        self.assertListEqual(lns_f.relax_random(model, 0.2), ref)
+        self.assertListEqual(lns_pkg.lib.search.relax_random(model, 0.2), ref)
 
         random.seed(seed)
         ref = [(Function("plays", [Number(2), Number(1), Number(3)], True), True)]
-        self.assertListEqual(lns_f.relax_declarative(model, 0.2), ref)
+        self.assertListEqual(lns_pkg.lib.search.relax_declarative(model, 0.2), ref)
 
     def test_calc_opt_val(self):
         """
@@ -264,7 +264,7 @@ class TestMain(TestCase):
                 ),
             ],
         }
-        self.assertEqual(lns_f.calculate_opt_val(model), 4)
+        self.assertEqual(lns_pkg.lib.lns_utils.calculate_opt_val(model), 4)
 
     def test_check_better(self):
         """
@@ -326,15 +326,23 @@ class TestMain(TestCase):
         }
         lns = LNS(["./tests/ref/golf.lp"])
 
-        self.assertTrue(lns_f.check_better_classic(lns, better_model, best_model))
-        self.assertFalse(lns_f.check_better_classic(lns, worse_model, best_model))
+        self.assertTrue(
+            lns_pkg.lib.search.check_better_classic(lns, better_model, best_model)
+        )
+        self.assertFalse(
+            lns_pkg.lib.search.check_better_classic(lns, worse_model, best_model)
+        )
 
-        self.assertTrue(lns_f.check_better_always(lns, better_model, best_model))
-        self.assertTrue(lns_f.check_better_always(lns, worse_model, best_model))
+        self.assertTrue(
+            lns_pkg.lib.search.check_better_always(lns, better_model, best_model)
+        )
+        self.assertTrue(
+            lns_pkg.lib.search.check_better_always(lns, worse_model, best_model)
+        )
 
     def test_check_acceptance(self):
         """
-        Test check_accept.
+        Test acceptance checks.
         """
         best_model = {
             "shown": [
@@ -368,15 +376,39 @@ class TestMain(TestCase):
             ],
         }
         lns = LNS(["./tests/ref/golf.lp"])
-        self.assertTrue(lns_f.check_better_always(lns, new_model, best_model))
+        self.assertTrue(
+            lns_pkg.lib.search.check_better_always(lns, new_model, best_model)
+        )
+
+        self.assertFalse(
+            lns_pkg.lib.search.check_accept_variability(lns, new_model, best_model)
+        )
+        new_model = {
+            "shown": [
+                Function("plays", [Number(2), Number(1), Number(1)], True),
+            ],
+            "true": [
+                Function("meets", [Number(6), Number(8), Number(3)], True),
+                Function(
+                    "_minimize",
+                    [Number(1), Function("", [Number(1), Number(2)], True)],
+                    True,
+                ),
+            ],
+        }
+        self.assertTrue(
+            lns_pkg.lib.search.check_accept_variability(lns, new_model, best_model)
+        )
 
     def test_first_solution(self):
         """
         Test finding of first solution.
         """
         lns = LNS(["./tests/ref/golf.lp"], seed=123)
-        ctl, thy = lns_f.setup_clingo(lns)
-        self.assertEqual(lns_f.get_first_solution_hard_constraint(lns, ctl, thy), True)
+        ctl, thy = lns_pkg.lib.theory.setup_clingo(lns)
+        self.assertEqual(
+            lns_pkg.lib.search.get_first_solution_hard_constraint(lns, ctl, thy), True
+        )
         self.assertIsNotNone(lns.models["new_model"])
         self.assertEqual(type(lns.models["new_model"]), dict)
         self.assertIsNotNone(lns.models["current_model"])
@@ -385,12 +417,16 @@ class TestMain(TestCase):
         self.assertEqual(type(lns.models["best_model"]), dict)
 
         lns = LNS(["./tests/ref/bad_encoding.lp"], seed=123)
-        ctl = lns_f.setup_clingo(lns)[0]
-        self.assertEqual(lns_f.get_first_solution_hard_constraint(lns, ctl, thy), False)
+        ctl = lns_pkg.lib.theory.setup_clingo(lns)[0]
+        self.assertEqual(
+            lns_pkg.lib.search.get_first_solution_hard_constraint(lns, ctl, thy), False
+        )
 
         lns = LNS(["./tests/ref/golf.lp"], seed=123)
-        ctl, thy = lns_f.setup_clingo(lns)
-        self.assertEqual(lns_f.get_first_solution_classic(lns, ctl, thy), True)
+        ctl, thy = lns_pkg.lib.theory.setup_clingo(lns)
+        self.assertEqual(
+            lns_pkg.lib.search.get_first_solution_classic(lns, ctl, thy), True
+        )
         self.assertIsNotNone(lns.models["new_model"])
         self.assertEqual(type(lns.models["new_model"]), dict)
         self.assertIsNotNone(lns.models["current_model"])
@@ -399,8 +435,10 @@ class TestMain(TestCase):
         self.assertEqual(type(lns.models["best_model"]), dict)
 
         lns = LNS(["./tests/ref/bad_encoding.lp"], seed=123)
-        ctl, thy = lns_f.setup_clingo(lns)
-        self.assertEqual(lns_f.get_first_solution_classic(lns, ctl, thy), False)
+        ctl, thy = lns_pkg.lib.theory.setup_clingo(lns)
+        self.assertEqual(
+            lns_pkg.lib.search.get_first_solution_classic(lns, ctl, thy), False
+        )
 
     def test_repair_clingo(self):
         """
@@ -408,16 +446,16 @@ class TestMain(TestCase):
         """
         lns = LNS(["./tests/ref/golf.lp"], seed=123)
 
-        ctl = lns_f.setup_clingo(lns)[0]
-        lns_f.ground_base(lns, ctl)
-        self.assertTrue(lns_f.repair_clingo(lns, ctl, [], None))
+        ctl = lns_pkg.lib.theory.setup_clingo(lns)[0]
+        lns_pkg.lib.theory.ground_base(lns, ctl)
+        self.assertTrue(lns_pkg.lib.theory.repair_clingo(lns, ctl, [], None))
         self.assertTrue(lns.models["new_model"])
 
-        assumptions = lns_f.relax_random(
+        assumptions = lns_pkg.lib.search.relax_random(
             lns.models["new_model"], lns.config_values["current_relax_rate"]
         )
         lns.models["new_model"] = {}
-        self.assertTrue(lns_f.repair_clingo(lns, ctl, assumptions, None))
+        self.assertTrue(lns_pkg.lib.theory.repair_clingo(lns, ctl, assumptions, None))
         self.assertTrue(lns.models["new_model"])
 
         assumptions_atoms = list(map(lambda x: x[0], assumptions))
@@ -425,9 +463,9 @@ class TestMain(TestCase):
             self.assertIn(atom, lns.models["new_model"]["true"])
 
         lns = LNS(["./tests/ref/bad_encoding.lp"], seed=123)
-        ctl, thy = lns_f.setup_clingo(lns)
-        lns_f.ground_base(lns, ctl)
-        self.assertFalse(lns_f.repair_clingo(lns, ctl, [], thy))
+        ctl, thy = lns_pkg.lib.theory.setup_clingo(lns)
+        lns_pkg.lib.theory.ground_base(lns, ctl)
+        self.assertFalse(lns_pkg.lib.theory.repair_clingo(lns, ctl, [], thy))
 
     def test_repair_clingo_dl(self):
         """
@@ -435,16 +473,16 @@ class TestMain(TestCase):
         """
         lns = LNS(["./tests/ref/golf.lp"], seed=123)
 
-        ctl, thy = lns_f.setup_clingo_dl(lns)
-        lns_f.ground_base(lns, ctl)
-        self.assertTrue(lns_f.repair_clingo_dl(lns, ctl, [], thy))
+        ctl, thy = lns_pkg.lib.theory.setup_clingo_dl(lns)
+        lns_pkg.lib.theory.ground_base(lns, ctl)
+        self.assertTrue(lns_pkg.lib.theory.repair_clingo_dl(lns, ctl, [], thy))
         self.assertTrue(lns.models["new_model"])
 
-        assumptions = lns_f.relax_random(
+        assumptions = lns_pkg.lib.search.relax_random(
             lns.models["new_model"], lns.config_values["current_relax_rate"]
         )
         lns.models["new_model"] = {}
-        self.assertTrue(lns_f.repair_clingo_dl(lns, ctl, assumptions, thy))
+        self.assertTrue(lns_pkg.lib.theory.repair_clingo_dl(lns, ctl, assumptions, thy))
         self.assertTrue(lns.models["new_model"])
 
         assumptions_atoms = list(map(lambda x: x[0], assumptions))
@@ -452,9 +490,9 @@ class TestMain(TestCase):
             self.assertIn(atom, lns.models["new_model"]["true"])
 
         lns = LNS(["./tests/ref/bad_encoding.lp"], seed=123)
-        ctl, thy = lns_f.setup_clingo_dl(lns)
-        lns_f.ground_base(lns, ctl)
-        self.assertFalse(lns_f.repair_clingo_dl(lns, ctl, [], thy))
+        ctl, thy = lns_pkg.lib.theory.setup_clingo_dl(lns)
+        lns_pkg.lib.theory.ground_base(lns, ctl)
+        self.assertFalse(lns_pkg.lib.theory.repair_clingo_dl(lns, ctl, [], thy))
 
     def test_boundary_overall_init(self):
         """
@@ -462,7 +500,9 @@ class TestMain(TestCase):
         """
         lns = LNS(["./tests/ref/golf.lp"])
         boundary_dict = {}
-        self.assertTrue(lns_f.boundary_overall(lns, boundary_dict, "init"))
+        self.assertTrue(
+            lns_pkg.lib.boundary.boundary_overall(lns, boundary_dict, "init")
+        )
         self.assertEqual(boundary_dict["bound"], lns.config_values["bound"])
         self.assertEqual(boundary_dict["step"], 0)
         s_time = boundary_dict["start_time"]
@@ -475,9 +515,11 @@ class TestMain(TestCase):
         """
         lns = LNS(["./tests/ref/golf.lp"])
         boundary_dict = {}
-        lns_f.boundary_overall(lns, boundary_dict, "init")
+        lns_pkg.lib.boundary.boundary_overall(lns, boundary_dict, "init")
         s_time = boundary_dict["start_time"]
-        self.assertTrue(lns_f.boundary_overall(lns, boundary_dict, "update"))
+        self.assertTrue(
+            lns_pkg.lib.boundary.boundary_overall(lns, boundary_dict, "update")
+        )
         self.assertEqual(boundary_dict["bound"], lns.config_values["bound"])
         self.assertEqual(boundary_dict["step"], 1)
         self.assertEqual(boundary_dict["start_time"], s_time)
@@ -489,10 +531,12 @@ class TestMain(TestCase):
         """
         lns = LNS(["./tests/ref/golf.lp"])
         boundary_dict = {}
-        lns_f.boundary_overall(lns, boundary_dict, "init")
-        lns_f.boundary_overall(lns, boundary_dict, "update")
+        lns_pkg.lib.boundary.boundary_overall(lns, boundary_dict, "init")
+        lns_pkg.lib.boundary.boundary_overall(lns, boundary_dict, "update")
         s_time = boundary_dict["start_time"]
-        self.assertTrue(lns_f.boundary_overall(lns, boundary_dict, "improvement"))
+        self.assertTrue(
+            lns_pkg.lib.boundary.boundary_overall(lns, boundary_dict, "improvement")
+        )
         self.assertEqual(boundary_dict["bound"], lns.config_values["bound"])
         self.assertEqual(boundary_dict["step"], 1)
         self.assertEqual(boundary_dict["start_time"], s_time)
@@ -507,18 +551,24 @@ class TestMain(TestCase):
         lns.config_values["current_relax_rate"] = 0.2
         lns.config_values["switch_rr_after_no_improv"] = 1
         boundary_dict = {}
-        lns_f.boundary_overall(lns, boundary_dict, "init")
+        lns_pkg.lib.boundary.boundary_overall(lns, boundary_dict, "init")
         s_time = boundary_dict["start_time"]
-        self.assertTrue(lns_f.boundary_overall(lns, boundary_dict, "no_improvement"))
+        self.assertTrue(
+            lns_pkg.lib.boundary.boundary_overall(lns, boundary_dict, "no_improvement")
+        )
         self.assertEqual(boundary_dict["bound"], lns.config_values["bound"])
         self.assertEqual(boundary_dict["step"], 0)
         self.assertEqual(boundary_dict["start_time"], s_time)
         self.assertEqual(boundary_dict["no_improvement"], 1)
         self.assertEqual(lns.config_values["current_relax_rate"], 0.4)
-        self.assertTrue(lns_f.boundary_overall(lns, boundary_dict, "no_improvement"))
+        self.assertTrue(
+            lns_pkg.lib.boundary.boundary_overall(lns, boundary_dict, "no_improvement")
+        )
         self.assertEqual(lns.config_values["current_relax_rate"], 0.2)
 
-        self.assertFalse(lns_f.boundary_overall(lns, boundary_dict, "invalid_action"))
+        self.assertFalse(
+            lns_pkg.lib.boundary.boundary_overall(lns, boundary_dict, "invalid_action")
+        )
 
     def test_check_stop_steps(self):
         """
@@ -526,11 +576,11 @@ class TestMain(TestCase):
         """
         lns = LNS(["./tests/ref/golf.lp"])
         boundary_dict = {}
-        lns_f.boundary_overall(lns, boundary_dict, "init")
+        lns_pkg.lib.boundary.boundary_overall(lns, boundary_dict, "init")
         boundary_dict["step"] = 1
-        self.assertFalse(lns_f.check_stop_steps(lns, boundary_dict))
+        self.assertFalse(lns_pkg.lib.boundary.check_stop_steps(lns, boundary_dict))
         boundary_dict["bound"] = 0
-        self.assertTrue(lns_f.check_stop_steps(lns, boundary_dict))
+        self.assertTrue(lns_pkg.lib.boundary.check_stop_steps(lns, boundary_dict))
 
     def test_check_stop_time(self):
         """
@@ -538,10 +588,10 @@ class TestMain(TestCase):
         """
         lns = LNS(["./tests/ref/golf.lp"])
         boundary_dict = {}
-        lns_f.boundary_overall(lns, boundary_dict, "init")
-        self.assertFalse(lns_f.check_stop_time(lns, boundary_dict))
+        lns_pkg.lib.boundary.boundary_overall(lns, boundary_dict, "init")
+        self.assertFalse(lns_pkg.lib.boundary.check_stop_time(lns, boundary_dict))
         boundary_dict["bound"] = 0
-        self.assertTrue(lns_f.check_stop_time(lns, boundary_dict))
+        self.assertTrue(lns_pkg.lib.boundary.check_stop_time(lns, boundary_dict))
 
     def test_main(self):
         """
@@ -553,15 +603,19 @@ class TestMain(TestCase):
         lns = LNS(
             ["./tests/ref/golf.lp"],
             {
-                "check_better": lns_f.check_better_classic,
-                "better_solution_found": lns_f.better_solution_found_classic,
-                "get_first_solution": lns_f.get_first_solution_classic,
+                "check_better": lns_pkg.lib.search.check_better_classic,
+                "better_solution_found": lns_pkg.lib.search.better_solution_found_classic,
+                "get_first_solution": lns_pkg.lib.search.get_first_solution_classic,
             },
             122,
         )
         lns.main()
 
-        lns = LNS(["./tests/ref/golf.lp"], {"check_stop": lns_f.check_stop_time}, 123)
+        lns = LNS(
+            ["./tests/ref/golf.lp"],
+            {"check_stop": lns_pkg.lib.boundary.check_stop_time},
+            123,
+        )
         # lns.callables["check_stop"] = lns_f.check_stop_time
         lns.main()
 
@@ -573,8 +627,8 @@ class TestMain(TestCase):
         lns = LNS(
             ["./tests/ref/golf.lp"],
             {
-                "setup": lns_f.setup_clingo_dl,
-                "repair": lns_f.repair_clingo_dl,
+                "setup": lns_pkg.lib.theory.setup_clingo_dl,
+                "repair": lns_pkg.lib.theory.repair_clingo_dl,
             },
             123,
         )
