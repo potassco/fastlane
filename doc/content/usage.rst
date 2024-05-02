@@ -14,7 +14,7 @@ The search is limited to 2000 steps and relax rates of 0.2 and 0.4, which are sw
 failed attempts to improve the solution. Additional clingo arguments can be set after the default options.
 
 For finer control over the performed Large-Neighbourhood-Search (LNS) this module should be used as an api.
-During initialization of the LNS object, all callables, which should be used during execution can be replaced.
+During initialization of the LNS object, all callables, which should be used during execution, can be replaced.
 Some example callables can be found in the :code:`lib` submodule. An example of the LNS initialization can be seen below
 or in :code:`./examples/demo.py`:
 
@@ -25,10 +25,13 @@ or in :code:`./examples/demo.py`:
 
     lns = LNS(
         ["./examples/golf.lp"],             # ASP encoding
-        {"check_stop": check_stop_time},    # Callable dictionary
+        {"check_stop": check_stop_time},    # Callables dictionary
         42,                                 # Seed
         [0.2],                              # Relax rate(s)
         None                                # clingo arguments
     )
 
 Additional parameters such as the step limit for the LNS can be set using the :code:`set_params()` method.
+
+At the moment clingo and clingo-dl are supported via their respective functions :code:`setup_clingo()`, :code:`repair_clingo()` 
+and `setup_clingo_dl()`, :code:`repair_clingo_dl()`.
