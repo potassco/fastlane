@@ -88,7 +88,9 @@ class LNS:
         self.boundary_dict: Dict[str, Any] = {}
 
     # pylint: disable=unused-argument
-    def interrupt_handler(self, sig: int, frame: Union[None, FrameType]) -> None:
+    def interrupt_handler(
+        self, sig: int, frame: Union[None, FrameType]
+    ) -> None:  # nocoverage
         """
         Signal handler for interrupts (SIGINT)
 
@@ -101,7 +103,7 @@ class LNS:
         print("==================")
         print("INTERRUPTED:")
         boundary.finish(self)
-        sys.exit(0)
+        raise SystemExit
 
     def get_params(self) -> Dict[str, Any]:
         """
