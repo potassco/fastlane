@@ -92,7 +92,7 @@ def repair_clingo(
     :return: Whether model was found.
     :rtype: bool
     """
-    with ctl.solve(assumptions=assumptions, yield_=True) as handle:
+    with ctl.solve(assumptions=assumptions, yield_=True, async_=True) as handle:
         for model in handle:
             lns_object.models["new_model"] = {}
             lns_object.models["new_model"]["shown"] = model.symbols(shown=True)
@@ -124,7 +124,7 @@ def repair_clingo_dl(
     """
     thy.prepare(ctl)
     with ctl.solve(
-        assumptions=assumptions, yield_=True, on_model=thy.on_model
+        assumptions=assumptions, yield_=True, on_model=thy.on_model, async_=True
     ) as handle:
         for model in handle:
             lns_object.models["new_model"] = {}

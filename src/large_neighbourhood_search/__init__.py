@@ -2,7 +2,9 @@
 The large_neighbourhood_search project.
 """
 
-import time
+import signal
+import sys
+from types import FrameType
 from typing import Any, Callable, Dict, List, Sequence, Union
 
 import clingo
@@ -78,9 +80,28 @@ class LNS:
             "better_solution_found": search.better_solution_found_hard_constraint,
             "boundary_handling": boundary.boundary_overall,
             "check_stop": boundary.check_stop_steps,
+            "finish": boundary.finish,
         }
         if callables:
             self.callables = {**self.callables, **callables}
+
+        self.boundary_dict: Dict[str, Any] = {}
+
+    # pylint: disable=unused-argument
+    def interrupt_handler(self, sig: int, frame: Union[None, FrameType]) -> None:
+        """
+        Signal handler for interrupts (SIGINT)
+
+        :param sig: Signal number.
+        :type sig: int
+        :param frame: Current stack frame.
+        :type frame: Frame
+        :rtype: Dict[str, Any]
+        """
+        print("==================")
+        print("INTERRUPTED:")
+        boundary.finish(self)
+        sys.exit(0)
 
     def get_params(self) -> Dict[str, Any]:
         """
@@ -116,6 +137,7 @@ class LNS:
         """
         Run Large-Neighbourhood Search according to set parameters.
         """
+        signal.signal(signal.SIGINT, self.interrupt_handler)
         # prepare clingo control
         ctl, thy = self.callables["setup"](self)
 
@@ -128,10 +150,9 @@ class LNS:
             return
 
         # perform LNS
-        boundary_dict: Dict[str, Any] = {}
-        self.callables["boundary_handling"](self, boundary_dict, "init")
+        self.callables["boundary_handling"](self, "init")
         while True:
-            self.callables["boundary_handling"](self, boundary_dict, "update")
+            self.callables["boundary_handling"](self, "update")
 
             # relax model
             assumptions = self.callables["relax"](
@@ -156,34 +177,16 @@ class LNS:
                     ):
                         self.callables["better_solution_found"](self, ctl)
 
-                        self.callables["boundary_handling"](
-                            self, boundary_dict, "improvement"
-                        )
+                        self.callables["boundary_handling"](self, "improvement")
                     else:
-                        self.callables["boundary_handling"](
-                            self, boundary_dict, "no_improvement"
-                        )
+                        self.callables["boundary_handling"](self, "no_improvement")
                 # else:
                 #    self.callable_dict["boundary_handling"](
                 #        self, boundary_dict, "no_improvement"
                 #    )
             else:
-                self.callables["boundary_handling"](
-                    self, boundary_dict, "no_improvement"
-                )
+                self.callables["boundary_handling"](self, "no_improvement")
             # stop criterion, WIP
-            if self.callables["check_stop"](self, boundary_dict):
-                end_time = time.time()
-                answer_string = " ".join(
-                    [str(atom) for atom in self.models["best_model"]["shown"]]
-                )
-                print(
-                    (
-                        "Answer\n"
-                        f"{answer_string}\n"
-                        f"Final opt_val: { self.callables['calc_opt_value'](self.models['best_model'])}\n"
-                        f"Overall steps: {boundary_dict['step']}\n"
-                        f"Overall time: {end_time - boundary_dict['start_time']:.3f}s"
-                    )
-                )
+            if self.callables["check_stop"](self):
+                self.callables["finish"](self)
                 break
