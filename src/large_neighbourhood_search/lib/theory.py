@@ -25,7 +25,7 @@ def setup_clingo_dl(lns_object: LNS) -> Tuple[clingo.control.Control, ClingoDLTh
     :rytpe: Tuple[clingo.control.Control, clingodl.ClingoDlTheory]
     """
     thy = ClingoDLTheory()
-    ctl = clingo.Control(lns_object.config_values["clingo_args"])
+    ctl = clingo.Control(lns_object.param_values["clingo_args"])
     thy.register(ctl)
     # no input files not supported
     # if not lns_object._files:
@@ -33,15 +33,15 @@ def setup_clingo_dl(lns_object: LNS) -> Tuple[clingo.control.Control, ClingoDLTh
     # for path in lns_object.config_values["files"]:
     with ast.ProgramBuilder(ctl) as builder:
         ast.parse_files(
-            lns_object.config_values["files"],
+            lns_object.param_values["files"],
             lambda ast: thy.rewrite_ast(ast, builder.add),
         )
 
     # set seed if given
-    if lns_object.config_values["seed"] is not None:
-        random.seed(lns_object.config_values["seed"])
-        lns_object.config_values["clingo_args"].append(
-            f"--seed={lns_object.config_values['seed']}"
+    if lns_object.param_values["seed"] is not None:
+        random.seed(lns_object.param_values["seed"])
+        lns_object.param_values["clingo_args"].append(
+            f"--seed={lns_object.param_values['seed']}"
         )
     return ctl, thy
 
@@ -55,18 +55,18 @@ def setup_clingo(lns_object: LNS) -> Tuple[clingo.control.Control, None]:
     :return: Control and theory object used for LNS
     :rytpe: Tuple[clingo.control.Control, clingodl.ClingoDlTheory]
     """
-    ctl = clingo.Control(lns_object.config_values["clingo_args"])
+    ctl = clingo.Control(lns_object.param_values["clingo_args"])
     # no input files not supported
     # if not lns_object._files:
     #    lns_object._files = ["-"]
-    for path in lns_object.config_values["files"]:
+    for path in lns_object.param_values["files"]:
         ctl.load(path)
 
     # set seed if given
-    if lns_object.config_values["seed"] is not None:
-        random.seed(lns_object.config_values["seed"])
-        lns_object.config_values["clingo_args"].append(
-            f"--seed={lns_object.config_values['seed']}"
+    if lns_object.param_values["seed"] is not None:
+        random.seed(lns_object.param_values["seed"])
+        lns_object.param_values["clingo_args"].append(
+            f"--seed={lns_object.param_values['seed']}"
         )
     return (ctl, None)
 

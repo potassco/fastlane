@@ -30,7 +30,7 @@ def boundary_overall(lns_object: LNS, action: str) -> bool:
     # dict call-by-reference
     if action == "init":
         values.clear()
-        values["bound"] = lns_object.config_values["bound"]
+        values["bound"] = lns_object.param_values["bound"]
         values["step"] = 0
         values["start_time"] = time.time()
         values["no_improvement"] = 0
@@ -50,13 +50,13 @@ def boundary_overall(lns_object: LNS, action: str) -> bool:
     if action == "no_improvement":
         values["no_improvement"] += 1
         # change relax rate
-        if lns_object.config_values["switch_rr_after_no_improv"] > 0:
-            lns_object.config_values["current_relax_rate"] = lns_object.config_values[
+        if lns_object.param_values["switch_rr_after_no_improv"] > 0:
+            lns_object.param_values["current_relax_rate"] = lns_object.param_values[
                 "relax_rates"
             ][
                 values["no_improvement"]
-                // lns_object.config_values["switch_rr_after_no_improv"]
-                % len(lns_object.config_values["relax_rates"])
+                // lns_object.param_values["switch_rr_after_no_improv"]
+                % len(lns_object.param_values["relax_rates"])
             ]
         return True
     return False

@@ -20,7 +20,7 @@ def main():
     log.debug("debug")
     log.error("error")
 
-    lns = LNS(args.i, seed=None, relax_rates=[0.2, 0.4], clingo_args=rest)
+    lns = LNS(args.i, clingo_args=rest)
     lns.main()
 
 

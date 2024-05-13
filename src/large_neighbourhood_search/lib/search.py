@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 def relax_declarative(
-    model: Dict[str, Sequence[clingo.symbol.Symbol]], relax_rate: float
+    model: Dict[str, Sequence[clingo.symbol.Symbol]], relax_parameters: Dict[str, Any]
 ) -> List[Tuple[clingo.symbol.Symbol, bool]]:
     """
     Relax portion of selected atoms given by the relax_rate.
@@ -26,8 +26,8 @@ def relax_declarative(
 
     :param model: Dictionary containing list of shown and true atoms.
     :type model: Dict[str, Sequence[clingo.symbol.Symbol]]
-    :param relax_rate: Percentage of atoms to be relaxed.
-    :type relax_rate: float
+    :param relax_parameters: Parameters used to determine relaxed atoms.
+    :type relax_parameters: Dict[str, Any]
     :return: Fixed (not relaxed) atoms.
     :rtype: List[Tuple[clingo.symbol.Symbol, bool]]
     """
@@ -43,27 +43,27 @@ def relax_declarative(
         elif atom.match("_lns_fix", 2):
             declared_fixed_atoms[atom.arguments[1]].append((atom.arguments[0], True))
     for symbol in selected_atoms:
-        if random.randint(0, 100) >= relax_rate * 100:
+        if random.randint(0, 100) >= relax_parameters["relax_rate"] * 100:
             fixed_atoms += declared_fixed_atoms[symbol]
     return fixed_atoms
 
 
 def relax_random(
-    model: Dict[str, Sequence[clingo.symbol.Symbol]], relax_rate: float
+    model: Dict[str, Sequence[clingo.symbol.Symbol]], relax_parameters: Dict[str, Any]
 ) -> List[Tuple[clingo.symbol.Symbol, bool]]:
     """
     Relax random number of shown atoms given by the relax_rate.
 
     :param model: Dictionary containing list of shown and true atoms.
     :type model: Dict[str, Sequence[clingo.symbol.Symbol]]
-    :param relax_rate: Percentage of atoms to be relaxed.
-    :type relax_rate: float
+    :param relax_parameters: Parameters used to determine relaxed atoms.
+    :type relax_parameters: Dict[str, Any]
     :return: Fixed (not relaxed) atoms.
     :rtype: List[Tuple[clingo.symbol.Symbol, bool]]
     """
     fixed_atoms = []
     for atom in model["shown"]:
-        if random.randint(0, 100) >= relax_rate * 100:
+        if random.randint(0, 100) >= relax_parameters["relax_rate"] * 100:
             fixed_atoms.append((atom, True))
     return fixed_atoms
 

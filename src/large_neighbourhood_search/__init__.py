@@ -3,7 +3,6 @@ The large_neighbourhood_search project.
 """
 
 import signal
-import sys
 from types import FrameType
 from typing import Any, Callable, Dict, List, Sequence, Union
 
@@ -22,12 +21,6 @@ class LNS:
     :param callables: Functions used during LNS.
     :type callables: Dict[str, Callables]
     :default callables: {}
-    :param seed: Seed used for random relaxation.
-    :type seed: Union[int, None]
-    :default seed: None
-    :param relax_rates: Relax rates used during LNS (1>RR>0).
-    :type relax_rate: List[float]
-    :default relax_rate: [0.2]
     :param clingo_args: Additional clingo arguments.
     :type clingo_args: Union[List[str], None]
     :default clingo_args: None
@@ -37,8 +30,6 @@ class LNS:
         self,
         files: List[str],
         callables: Dict[str, Callable] = {},
-        seed: Union[int, None] = None,
-        relax_rates: List[float] = [0.2],
         clingo_args: Union[List[str], None] = None,
     ) -> None:
         """
@@ -47,18 +38,17 @@ class LNS:
         self.program_name = "lns"
         self.version = "1.0"
 
-        self.config_values: Dict[str, Any] = {
+        self.param_values: Dict[str, Any] = {
             "files": files,
-            "seed": seed,
-            "relax_rates": relax_rates,
-            "current_relax_rate": relax_rates[0],
+            "seed": None,
+            "relax_rates": [0.2, 0.4, 0.6],
             "bound": 2000,
             "switch_rr_after_no_improv": 3,
         }
         if clingo_args is None:
             # arbitrary value atm
             clingo_args = ["--rand-freq=0.8"]
-        self.config_values["clingo_args"] = clingo_args
+        self.param_values["clingo_args"] = clingo_args
 
         new_model: Dict[str, Sequence[clingo.symbol.Symbol]] = {}
         current_model: Dict[str, Sequence[clingo.symbol.Symbol]] = {}
@@ -88,9 +78,7 @@ class LNS:
         self.boundary_dict: Dict[str, Any] = {}
 
     # pylint: disable=unused-argument
-    def interrupt_handler(
-        self, sig: int, frame: Union[None, FrameType]
-    ) -> None:  # nocoverage
+    def interrupt_handler(self, sig: int, frame: Union[None, FrameType]) -> None:
         """
         Signal handler for interrupts (SIGINT)
 
@@ -102,7 +90,7 @@ class LNS:
         """
         print("==================")
         print("INTERRUPTED:")
-        boundary.finish(self)
+        self.callables["finish"](self)
         raise SystemExit
 
     def get_params(self) -> Dict[str, Any]:
@@ -112,7 +100,7 @@ class LNS:
         :return: LNS parameters.
         :rtype: Dict[str, Any]
         """
-        return self.config_values
+        return self.param_values
 
     def set_params(self, params: Dict[str, Any]) -> None:
         """
@@ -121,7 +109,7 @@ class LNS:
         :param params: LNS parameters.
         :type params: Dict[str, Any]
         """
-        self.config_values = {**self.config_values, **params}
+        self.param_values = {**self.param_values, **params}
 
     def get_stats(self, ctl: clingo.control.Control) -> Dict:
         """
@@ -139,6 +127,23 @@ class LNS:
         """
         Run Large-Neighbourhood Search according to set parameters.
         """
+
+        def init_fail():
+            print("Failed to init relax rate.")
+            raise SystemExit
+
+        if "relax_rates" in self.param_values:
+            if (
+                isinstance(self.param_values["relax_rates"], list)
+                and self.param_values["relax_rates"]
+            ):
+                self.param_values["current_relax_rate"] = self.param_values[
+                    "relax_rates"
+                ][0]
+            else:
+                init_fail()
+        else:
+            init_fail()
         signal.signal(signal.SIGINT, self.interrupt_handler)
         # prepare clingo control
         ctl, thy = self.callables["setup"](self)
@@ -159,7 +164,7 @@ class LNS:
             # relax model
             assumptions = self.callables["relax"](
                 self.models["current_model"],
-                self.config_values["current_relax_rate"],
+                {"relax_rate": self.param_values["current_relax_rate"]},
             )
 
             # reconstruct model

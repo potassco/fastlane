@@ -24,12 +24,14 @@ random_classic: Dict[str, Callable] = {
 # set boundary to 3000 (in this case steps)
 # switch to the next relax rate after new models did not improve the solution 3 times
 config: Dict[str, Any] = {
+            "seed": None,
+            "relax_rates": [0.2, 0.4, 0.6],
             "bound": 3000,
             "switch_rr_after_no_improv": 3,
         }
 
 def main():
-    lns = LNS(["./examples/golf.lp"], random_classic, None, [0.2, 0.4, 0.6])
+    lns = LNS(["./examples/golf.lp"], random_classic)
     lns.set_params(config)
     lns.main()
 
