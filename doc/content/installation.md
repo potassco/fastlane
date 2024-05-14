@@ -1,6 +1,6 @@
 # Installation
 
-large_neighbourhood_search requires clingo 5.7, clingo-dl 1.5 and Python 3.8+. We recommend version 3.10.
+large_neighbourhood_search requires clingo 5.7, clingo-dl 1.5 and Python 3.10+. We recommend version 3.10.
 An introduction to clingo can be found [here](https://potassco.org/doc/start/).
 
 You can check a successful installation by running
