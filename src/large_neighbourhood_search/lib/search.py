@@ -252,7 +252,7 @@ def get_first_solution_classic(lns_object: LNS, ctl, thy: Any) -> bool:
     return False
 
 
-def never_stuck(lns_object: LNS) -> bool:
+def check_stuck_never(lns_object: LNS) -> bool:
     """
     Search is never stuck.
 

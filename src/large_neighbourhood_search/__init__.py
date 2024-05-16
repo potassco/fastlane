@@ -71,7 +71,7 @@ class LNS:
             "boundary_handling": boundary.boundary_overall,
             "check_stop": boundary.check_stop_steps,
             "finish": boundary.finish,
-            "check_stuck": search.never_stuck,
+            "check_stuck": search.check_stuck_never,
             "is_stuck": search.is_stuck,
         }
         if callables:

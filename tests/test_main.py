@@ -68,7 +68,7 @@ class TestMain(TestCase):
             "boundary_handling": lns_pkg.lib.boundary.boundary_overall,
             "check_stop": lns_pkg.lib.boundary.check_stop_steps,
             "finish": lns_pkg.lib.boundary.finish,
-            "check_stuck": lns_pkg.lib.search.never_stuck,
+            "check_stuck": lns_pkg.lib.search.check_stuck_never,
             "is_stuck": lns_pkg.lib.search.is_stuck,
         }
 
