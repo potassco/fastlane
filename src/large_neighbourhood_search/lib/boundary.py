@@ -41,6 +41,7 @@ def boundary_overall(lns_object: LNS, action: str) -> bool:
             print(f"{values['step']}|{values['bound']}")
         return True
     if action == "improvement":
+        values["no_improvement"] = 0
         print(f"{values['step']}|{values['bound']}")
         if lns_object.models["best_model"] != {}:
             print(

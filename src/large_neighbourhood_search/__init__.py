@@ -71,6 +71,8 @@ class LNS:
             "boundary_handling": boundary.boundary_overall,
             "check_stop": boundary.check_stop_steps,
             "finish": boundary.finish,
+            "check_stuck": search.never_stuck,
+            "is_stuck": search.is_stuck,
         }
         if callables:
             self.callables = {**self.callables, **callables}
@@ -148,10 +150,6 @@ class LNS:
         # prepare clingo control
         ctl, thy = self.callables["setup"](self)
 
-        # ctl, thy = lns_f.setup_clingo_dl(self)
-        # lns_f.ground_base(self, ctl)
-        # print(lns_f.repair_clingo_dl(self, ctl, [], thy))
-
         # get first solution
         if not self.callables["get_first_solution"](self, ctl, thy):
             return
@@ -160,6 +158,7 @@ class LNS:
         self.callables["boundary_handling"](self, "init")
         while True:
             self.callables["boundary_handling"](self, "update")
+            improvement_found: bool = False
 
             # relax model
             assumptions = self.callables["relax"](
@@ -173,7 +172,6 @@ class LNS:
                 if self.callables["check_accept"](
                     self, self.models["new_model"], self.models["current_model"]
                 ):
-                    # print(self.callable_dict["calc_opt_value"](self.lns_values["new_model"]))
                     self.models["current_model"] = self.models["new_model"].copy()
 
                     # check if new model is better
@@ -185,14 +183,12 @@ class LNS:
                         self.callables["better_solution_found"](self, ctl)
 
                         self.callables["boundary_handling"](self, "improvement")
-                    else:
-                        self.callables["boundary_handling"](self, "no_improvement")
-                # else:
-                #    self.callable_dict["boundary_handling"](
-                #        self, boundary_dict, "no_improvement"
-                #    )
-            else:
+                        improvement_found = True
+            if not improvement_found:
                 self.callables["boundary_handling"](self, "no_improvement")
+                if self.callables["check_stuck"](self):
+                    self.callables["is_stuck"](self)
+                    break
             # stop criterion, WIP
             if self.callables["check_stop"](self):
                 self.callables["finish"](self)

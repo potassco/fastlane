@@ -19,6 +19,8 @@ random_classic: Dict[str, Callable] = {
             "boundary_handling": boundary.boundary_overall,
             "check_stop": boundary.check_stop_steps,
             "finish": boundary.finish,
+            "check_stuck": search.never_stuck,
+            "is_stuck": search.is_stuck,
         }
 
 # set boundary to 3000 (in this case steps)

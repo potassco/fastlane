@@ -250,3 +250,40 @@ def get_first_solution_classic(lns_object: LNS, ctl, thy: Any) -> bool:
         return True
     print("No first solution found.")
     return False
+
+
+def never_stuck(lns_object: LNS) -> bool:
+    """
+    Search is never stuck.
+
+    :param lns_object: LNS object.
+    :type lns_object: large_neighbourhood_search.LNS
+    :return: False.
+    :rtype: bool
+    """
+    return False
+
+
+def check_stuck(lns_object: LNS) -> bool:
+    """
+    Determine if search is stuck.
+
+    :param lns_object: LNS object.
+    :type lns_object: large_neighbourhood_search.LNS
+    :return: Whether search is stuck or not.
+    :rtype: bool
+    """
+    if lns_object.boundary_dict["no_improvement"] >= 1000:
+        return True
+    return False
+
+
+def is_stuck(lns_object: LNS) -> None:
+    """
+    What to do if search is stuck.
+
+    :param lns_object: LNS object.
+    :type lns_object: large_neighbourhood_search.LNS
+    """
+    print("Search stuck. Stopping...")
+    lns_object.callables["finish"](lns_object)
