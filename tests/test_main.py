@@ -68,6 +68,8 @@ class TestMain(TestCase):
             "boundary_handling": lns_pkg.lib.boundary.boundary_overall,
             "check_stop": lns_pkg.lib.boundary.check_stop_steps,
             "finish": lns_pkg.lib.boundary.finish,
+            "check_stuck": lns_pkg.lib.search.never_stuck,
+            "is_stuck": lns_pkg.lib.search.is_stuck,
         }
 
         lns = LNS(["./tests/ref/golf.lp"])
@@ -595,6 +597,22 @@ class TestMain(TestCase):
 
         self.assertTrue(lns.param_values["inter"])
 
+    def test_stuck(self):
+        """
+        Test stuck detection and handling.
+        """
+
+        def helper(lns_object):
+            lns_object.param_values["stuck"] = True
+
+        lns = LNS(["./tests/ref/golf.lp"], {"finish": helper})
+        lns.callables["boundary_handling"](lns, "init")
+        self.assertFalse(lns_pkg.search.check_stuck(lns))
+        lns.boundary_dict["no_improvement"] = 20000
+        self.assertTrue(lns_pkg.search.check_stuck(lns))
+        lns_pkg.lib.search.is_stuck(lns)
+        self.assertTrue(lns.param_values["stuck"])
+
     def test_main(self):
         """
         Test main method.
@@ -636,6 +654,20 @@ class TestMain(TestCase):
         lns.set_params({"seed": 123})
         lns.main()
 
+        # stuck
+        lns = LNS(
+            ["./tests/ref/golf.lp"],
+            {
+                "check_better": lns_pkg.lib.search.check_better_classic,
+                "better_solution_found": lns_pkg.lib.search.better_solution_found_classic,
+                "get_first_solution": lns_pkg.lib.search.get_first_solution_classic,
+                "check_stuck": lns_pkg.lib.search.check_stuck,
+            },
+        )
+        lns.set_params({"seed": 456})
+        lns.main()
+
+        # invalid params
         lns = LNS(["./tests/ref/golf.lp"])
         lns.param_values = {}
         with self.assertRaises(SystemExit):
