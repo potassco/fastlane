@@ -207,7 +207,7 @@ def get_first_solution_hard_constraint(lns_object: LNS, ctl, thy: Any) -> bool:
     # add constraint to force better solution with each iteration
     # encoding has to contain _minimize(V,I) predicates as minimization criteria
     # where V: value, I: identifier
-    ctl.add("opt_val", ["o"], ":- #sum{V,I: _minimize(V,I)} >= o.")
+    ctl.add("opt_val", ["o"], ":- #sum{W*O,I: _opt(I,(O,W))} >= o.")
     ground_base(lns_object, ctl)
 
     # get first solution

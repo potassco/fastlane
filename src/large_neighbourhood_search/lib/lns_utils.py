@@ -19,8 +19,10 @@ def calculate_opt_val(model: Dict[str, Sequence[clingo.symbol.Symbol]]) -> int:
     """
     opt_val = 0
     for atom in model["true"]:
-        if atom.match("_minimize", 2) and atom.arguments[0].type is SymbolType.Number:
-            opt_val += atom.arguments[0].number
+        if atom.match("_opt", 2):
+            opt = atom.arguments[1].arguments
+            if opt[0].type is SymbolType.Number and opt[1].type is SymbolType.Number:
+                opt_val += opt[0].number * opt[1].number
     return opt_val
 
 
