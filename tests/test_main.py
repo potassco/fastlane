@@ -242,28 +242,40 @@ class TestMain(TestCase):
                 Function("meets", [Number(7), Number(9), Number(3)], True),
                 Function("meets", [Number(8), Number(9), Number(3)], True),
                 Function(
-                    "_minimize",
-                    [Number(1), Function("", [Number(1), Number(2)], True)],
+                    "_opt",
+                    [
+                        Function("", [Number(1), Number(2)], True),
+                        Function("", [Number(1), Number(1)], True),
+                    ],
                     True,
                 ),
                 Function(
-                    "_minimize",
-                    [Number(1), Function("", [Number(3), Number(5)], True)],
+                    "_opt",
+                    [
+                        Function("", [Number(3), Number(5)], True),
+                        Function("", [Number(1), Number(2)], True),
+                    ],
                     True,
                 ),
                 Function(
-                    "_minimize",
-                    [Number(1), Function("", [Number(4), Number(5)], True)],
+                    "_opt",
+                    [
+                        Function("", [Number(4), Number(5)], True),
+                        Function("", [Number(3), Number(1)], True),
+                    ],
                     True,
                 ),
                 Function(
-                    "_minimize",
-                    [Number(1), Function("", [Number(7), Number(8)], True)],
+                    "_opt",
+                    [
+                        Function("", [Number(7), Number(8)], True),
+                        Function("", [Number(2), Number(2)], True),
+                    ],
                     True,
                 ),
             ],
         }
-        self.assertEqual(lns_pkg.lib.lns_utils.calculate_opt_val(model), 4)
+        self.assertEqual(lns_pkg.lib.lns_utils.calculate_opt_val(model), 10)
 
     def test_check_better(self):
         """
@@ -276,13 +288,19 @@ class TestMain(TestCase):
             "true": [
                 Function("meets", [Number(7), Number(8), Number(3)], True),
                 Function(
-                    "_minimize",
-                    [Number(1), Function("", [Number(1), Number(2)], True)],
+                    "_opt",
+                    [
+                        Function("", [Number(1), Number(2)], True),
+                        Function("", [Number(1), Number(1)], True),
+                    ],
                     True,
                 ),
                 Function(
-                    "_minimize",
-                    [Number(1), Function("", [Number(3), Number(5)], True)],
+                    "_opt",
+                    [
+                        Function("", [Number(3), Number(5)], True),
+                        Function("", [Number(1), Number(1)], True),
+                    ],
                     True,
                 ),
             ],
@@ -294,8 +312,11 @@ class TestMain(TestCase):
             "true": [
                 Function("meets", [Number(7), Number(8), Number(3)], True),
                 Function(
-                    "_minimize",
-                    [Number(1), Function("", [Number(1), Number(2)], True)],
+                    "_opt",
+                    [
+                        Function("", [Number(1), Number(2)], True),
+                        Function("", [Number(1), Number(1)], True),
+                    ],
                     True,
                 ),
             ],
@@ -307,18 +328,27 @@ class TestMain(TestCase):
             "true": [
                 Function("meets", [Number(7), Number(8), Number(3)], True),
                 Function(
-                    "_minimize",
-                    [Number(1), Function("", [Number(1), Number(2)], True)],
+                    "_opt",
+                    [
+                        Function("", [Number(1), Number(2)], True),
+                        Function("", [Number(1), Number(1)], True),
+                    ],
                     True,
                 ),
                 Function(
-                    "_minimize",
-                    [Number(1), Function("", [Number(3), Number(5)], True)],
+                    "_opt",
+                    [
+                        Function("", [Number(3), Number(5)], True),
+                        Function("", [Number(1), Number(1)], True),
+                    ],
                     True,
                 ),
                 Function(
-                    "_minimize",
-                    [Number(1), Function("", [Number(4), Number(5)], True)],
+                    "_opt",
+                    [
+                        Function("", [Number(4), Number(5)], True),
+                        Function("", [Number(1), Number(1)], True),
+                    ],
                     True,
                 ),
             ],
@@ -350,13 +380,19 @@ class TestMain(TestCase):
             "true": [
                 Function("meets", [Number(7), Number(8), Number(3)], True),
                 Function(
-                    "_minimize",
-                    [Number(1), Function("", [Number(1), Number(2)], True)],
+                    "_opt",
+                    [
+                        Function("", [Number(1), Number(2)], True),
+                        Function("", [Number(1), Number(1)], True),
+                    ],
                     True,
                 ),
                 Function(
-                    "_minimize",
-                    [Number(1), Function("", [Number(3), Number(5)], True)],
+                    "_opt",
+                    [
+                        Function("", [Number(3), Number(5)], True),
+                        Function("", [Number(1), Number(1)], True),
+                    ],
                     True,
                 ),
             ],
@@ -368,8 +404,11 @@ class TestMain(TestCase):
             "true": [
                 Function("meets", [Number(7), Number(8), Number(3)], True),
                 Function(
-                    "_minimize",
-                    [Number(1), Function("", [Number(1), Number(2)], True)],
+                    "_opt",
+                    [
+                        Function("", [Number(1), Number(2)], True),
+                        Function("", [Number(1), Number(1)], True),
+                    ],
                     True,
                 ),
             ],
@@ -389,8 +428,11 @@ class TestMain(TestCase):
             "true": [
                 Function("meets", [Number(6), Number(8), Number(3)], True),
                 Function(
-                    "_minimize",
-                    [Number(1), Function("", [Number(1), Number(2)], True)],
+                    "_opt",
+                    [
+                        Function("", [Number(1), Number(2)], True),
+                        Function("", [Number(1), Number(1)], True),
+                    ],
                     True,
                 ),
             ],
