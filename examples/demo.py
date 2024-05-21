@@ -12,6 +12,23 @@ random_classic: Dict[str, Callable] = {
             "relax": search.relax_random,
             "repair": theory.repair_clingo,
             "calc_opt_value": lns_utils.calculate_opt_val,
+            "get_first_solution": search.get_first_solution_classic,
+            "check_accept": search.check_accept_always,
+            "check_better": search.check_better_classic,
+            "better_solution_found": search.better_solution_found_classic,
+            "boundary_handling": boundary.boundary_overall,
+            "check_stop": boundary.check_stop_steps,
+            "finish": boundary.finish,
+            "check_stuck": search.check_stuck_never,
+            "is_stuck": search.is_stuck,
+        }
+
+# callables for LNS using hard constraints with random relaxation limited by the number of stops
+random_hc: Dict[str, Callable] = {
+            "setup": theory.setup_clingo,
+            "relax": search.relax_random,
+            "repair": theory.repair_clingo,
+            "calc_opt_value": lns_utils.calculate_opt_val,
             "get_first_solution": search.get_first_solution_hard_constraint,
             "check_accept": search.check_accept_always,
             "check_better": search.check_better_always,
@@ -33,7 +50,7 @@ config: Dict[str, Any] = {
         }
 
 def main():
-    lns = LNS(["./examples/golf.lp"], random_classic)
+    lns = LNS(["./examples/golf.lp"], random_hc)
     lns.set_params(config)
     lns.main()
 
