@@ -48,6 +48,8 @@ and clingo-dl (:func:`lib.theory.repair_clingo_dl`) respectively.
 
 Used to calculate the optimization value of a model.
 This project includes one example implementation (:func:`lib.lns_utils.calculate_opt_val`).
+Since this function is closely linked to the encoding, please read the corresponding
+:ref:`documentation<ref_enc>` before making changes.
 
 .. code-block:: python
 
@@ -56,6 +58,8 @@ This project includes one example implementation (:func:`lib.lns_utils.calculate
 Used to obtain a first solution/model as a starting point fot LNS.
 This project includes two example implementations, one using hard constraints
 (:func:`lib.search.get_first_solution_hard_constraint`) and one without them (:func:`lib.search.get_first_solution_classic`).
+Since this function is closely linked to the encoding, please read the corresponding
+:ref:`documentation<ref_enc>` before making changes.
 
 .. code-block:: python
 
