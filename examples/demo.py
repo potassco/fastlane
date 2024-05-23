@@ -47,6 +47,7 @@ config: Dict[str, Any] = {
             "relax_rates": [0.2, 0.4, 0.6],
             "bound": 3000,
             "switch_rr_after_no_improv": 3,
+            "clingo_args": {"rand-freq": 0.8},
         }
 
 def main():

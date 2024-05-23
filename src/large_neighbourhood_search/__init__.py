@@ -21,22 +21,14 @@ class LNS:
     :param callables: Functions used during LNS.
     :type callables: Dict[str, Callables]
     :default callables: {}
-    :param clingo_args: Additional clingo arguments.
-    :type clingo_args: Union[List[str], None]
-    :default clingo_args: None
     """
 
-    def __init__(
-        self,
-        files: List[str],
-        callables: Dict[str, Callable] = {},
-        clingo_args: Union[List[str], None] = None,
-    ) -> None:
+    def __init__(self, files: List[str], callables: Dict[str, Callable] = {}) -> None:
         """
         Initialize application.
         """
         self.program_name = "lns"
-        self.version = "1.0"
+        self.version = "2.0"
 
         self.param_values: Dict[str, Any] = {
             "files": files,
@@ -44,11 +36,8 @@ class LNS:
             "relax_rates": [0.2, 0.4, 0.6],
             "bound": 2000,
             "switch_rr_after_no_improv": 3,
+            "clingo_args": {"rand-freq": 0.8},
         }
-        if clingo_args is None:
-            # arbitrary value atm
-            clingo_args = ["--rand-freq=0.8"]
-        self.param_values["clingo_args"] = clingo_args
 
         new_model: Dict[str, Sequence[clingo.symbol.Symbol]] = {}
         current_model: Dict[str, Sequence[clingo.symbol.Symbol]] = {}

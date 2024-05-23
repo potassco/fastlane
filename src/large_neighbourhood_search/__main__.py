@@ -20,7 +20,7 @@ def main():
     log.debug("debug")
     log.error("error")
 
-    lns = LNS(args.i, clingo_args=rest)
+    lns = LNS(args.i)
     lns.main()
 
 

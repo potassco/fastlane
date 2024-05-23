@@ -25,7 +25,8 @@ def setup_clingo_dl(lns_object: LNS) -> Tuple[clingo.control.Control, ClingoDLTh
     :rytpe: Tuple[clingo.control.Control, clingodl.ClingoDlTheory]
     """
     thy = ClingoDLTheory()
-    ctl = clingo.Control(lns_object.param_values["clingo_args"])
+    args = [f"--{i[0]}={i[1]}" for i in lns_object.param_values["clingo_args"].items()]
+    ctl = clingo.Control(args)
     thy.register(ctl)
     # no input files not supported
     # if not lns_object._files:
@@ -55,7 +56,8 @@ def setup_clingo(lns_object: LNS) -> Tuple[clingo.control.Control, None]:
     :return: Control and theory object used for LNS
     :rytpe: Tuple[clingo.control.Control, clingodl.ClingoDlTheory]
     """
-    ctl = clingo.Control(lns_object.param_values["clingo_args"])
+    args = [f"--{i[0]}={i[1]}" for i in lns_object.param_values["clingo_args"].items()]
+    ctl = clingo.Control(args)
     # no input files not supported
     # if not lns_object._files:
     #    lns_object._files = ["-"]
