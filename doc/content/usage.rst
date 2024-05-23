@@ -13,7 +13,7 @@ For all options supported during the default module execution use:
 
 The direct execution supports only a default LNS using hard constraints and a random relaxation of shown atoms.
 The search is limited to 2000 steps and relax rates of 0.2, 0.4 and 0.6, which are switched after 3 consecutive
-failed attempts respectively, to improve the solution. Additional clingo arguments can be set after the default options.
+failed attempts respectively, to improve the solution.
 
 For finer control over the performed Large-Neighbourhood-Search (LNS) this module should be used as an api.
 During initialization of the LNS object, all callables, which will be used during execution, can be replaced and
@@ -30,7 +30,6 @@ or in :file:`./examples/demo.py`:
     lns = LNS(
         ["./examples/golf.lp"],             # ASP encoding
         {"check_stop": check_stop_time},    # Callables dictionary
-        None                                # clingo arguments
     )
     lns.set_params({"seed": 123})
 
