@@ -12,7 +12,7 @@ def main():
     Run the main function.
     """
     parser = get_parser()
-    args, rest = parser.parse_known_args()
+    args, _ = parser.parse_known_args()
     log = setup_logger("main", args.log)
 
     log.info("info")

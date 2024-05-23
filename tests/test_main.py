@@ -53,7 +53,7 @@ class TestMain(TestCase):
             "relax_rates": [0.2, 0.4, 0.6],
             "bound": 2000,
             "switch_rr_after_no_improv": 3,
-            "clingo_args": ["--rand-freq=0.8"],
+            "clingo_args": {"rand-freq": 0.8},
         }
 
         ref_callables = {
@@ -76,19 +76,11 @@ class TestMain(TestCase):
         self.assertDictEqual(lns.param_values, ref_config_values)
         self.assertDictEqual(lns.callables, ref_callables)
 
-        ref_config_values = {
-            **ref_config_values,
-            **{
-                "clingo_args": ["--test"],
-            },
-        }
         ref_callables = {**ref_callables, **{"test": print, "on_model": print}}
         lns = LNS(
             ["./tests/ref/golf.lp"],
             {"test": print, "on_model": print},
-            ["--test"],
         )
-        self.assertDictEqual(lns.param_values, ref_config_values)
         self.assertDictEqual(lns.callables, ref_callables)
 
     def test_get_set_params(self):
@@ -101,13 +93,25 @@ class TestMain(TestCase):
             "relax_rates": [0.2, 0.4, 0.6],
             "bound": 2000,
             "switch_rr_after_no_improv": 3,
-            "clingo_args": ["--rand-freq=0.8"],
+            "clingo_args": {"rand-freq": 0.8},
         }
         lns = LNS(["./tests/ref/golf.lp"])
         self.assertDictEqual(lns.get_params(), ref_config_values)
         lns.set_params({"seed": 123, "new_param": "new"})
         self.assertDictEqual(
             lns.get_params(), {**ref_config_values, **{"seed": 123, "new_param": "new"}}
+        )
+
+    def test_set_seed(self):
+        """
+        Test seed setter.
+        """
+        seed = 42
+        lns = LNS(["./tests/ref/golf.lp"])
+        lns.set_seed(seed)
+        self.assertEqual(lns.param_values["seed"], seed)
+        self.assertDictEqual(
+            lns.param_values["clingo_args"], {"seed": 42, "rand-freq": 0.8}
         )
 
     def test_setup_clingo(self):
@@ -117,15 +121,15 @@ class TestMain(TestCase):
         lns = LNS(["./tests/ref/golf.lp"])
         lns.set_params({"seed": 123})
         test_ctl, test_thy = lns_pkg.lib.theory.setup_clingo(lns)
-        self.assertListEqual(
-            lns.param_values["clingo_args"], ["--rand-freq=0.8", "--seed=123"]
+        self.assertDictEqual(
+            lns.param_values["clingo_args"], {"rand-freq": 0.8, "seed": 123}
         )
         self.assertIsInstance(test_ctl, clingo.control.Control)
         self.assertIsNone(test_thy)
 
         lns = LNS(["./tests/ref/golf.lp"])
         test_ctl, test_thy = lns_pkg.lib.theory.setup_clingo(lns)
-        self.assertEqual(lns.param_values["clingo_args"], ["--rand-freq=0.8"])
+        self.assertDictEqual(lns.param_values["clingo_args"], {"rand-freq": 0.8})
         self.assertIsInstance(test_ctl, clingo.control.Control)
         self.assertIsNone(test_thy)
 
@@ -138,15 +142,15 @@ class TestMain(TestCase):
         )
         lns.set_params({"seed": 123})
         test_ctl, test_thy = lns_pkg.lib.theory.setup_clingo_dl(lns)
-        self.assertListEqual(
-            lns.param_values["clingo_args"], ["--rand-freq=0.8", "--seed=123"]
+        self.assertDictEqual(
+            lns.param_values["clingo_args"], {"rand-freq": 0.8, "seed": 123}
         )
         self.assertIsInstance(test_ctl, clingo.control.Control)
         self.assertIsInstance(test_thy, clingodl.ClingoDLTheory)
 
         lns = LNS(["./tests/ref/golf.lp"])
         test_ctl, test_thy = lns_pkg.lib.theory.setup_clingo_dl(lns)
-        self.assertEqual(lns.param_values["clingo_args"], ["--rand-freq=0.8"])
+        self.assertDictEqual(lns.param_values["clingo_args"], {"rand-freq": 0.8})
         self.assertIsInstance(test_ctl, clingo.control.Control)
         self.assertIsInstance(test_thy, clingodl.ClingoDLTheory)
 
@@ -706,7 +710,7 @@ class TestMain(TestCase):
                 "check_stuck": lns_pkg.lib.search.check_stuck,
             },
         )
-        lns.set_params({"seed": 456})
+        lns.set_params({"seed": 123})
         lns.main()
 
         # invalid params
