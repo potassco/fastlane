@@ -2,6 +2,7 @@
 The large_neighbourhood_search project.
 """
 
+import random
 import signal
 from types import FrameType
 from typing import Any, Callable, Dict, List, Sequence, Union
@@ -101,6 +102,20 @@ class LNS:
         :type params: Dict[str, Any]
         """
         self.param_values = {**self.param_values, **params}
+
+    def set_seed(self, seed: int) -> None:
+        """
+        Set seed.
+
+        :param seed: Seed to be set.
+        :type seed: int
+        """
+        random.seed(self.param_values["seed"])
+        self.param_values["seed"] = seed
+        self.param_values["clingo_args"] = {
+            **self.param_values["clingo_args"],
+            **{"seed": seed},
+        }
 
     def get_stats(self, ctl: clingo.control.Control) -> Dict:
         """

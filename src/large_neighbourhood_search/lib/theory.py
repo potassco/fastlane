@@ -4,7 +4,6 @@ Collection of functions implementing different theories used for LNS.
 
 from __future__ import annotations
 
-import random
 from typing import TYPE_CHECKING, Any, List, Tuple
 
 import clingo
@@ -24,8 +23,12 @@ def setup_clingo_dl(lns_object: LNS) -> Tuple[clingo.control.Control, ClingoDLTh
     :return: Control and theory object used for LNS
     :rytpe: Tuple[clingo.control.Control, clingodl.ClingoDlTheory]
     """
-    thy = ClingoDLTheory()
+    # set seed if given
+    if lns_object.param_values["seed"] is not None:
+        lns_object.set_seed(lns_object.param_values["seed"])
     args = [f"--{i[0]}={i[1]}" for i in lns_object.param_values["clingo_args"].items()]
+
+    thy = ClingoDLTheory()
     ctl = clingo.Control(args)
     thy.register(ctl)
     # no input files not supported
@@ -36,13 +39,6 @@ def setup_clingo_dl(lns_object: LNS) -> Tuple[clingo.control.Control, ClingoDLTh
         ast.parse_files(
             lns_object.param_values["files"],
             lambda ast: thy.rewrite_ast(ast, builder.add),
-        )
-
-    # set seed if given
-    if lns_object.param_values["seed"] is not None:
-        random.seed(lns_object.param_values["seed"])
-        lns_object.param_values["clingo_args"].append(
-            f"--seed={lns_object.param_values['seed']}"
         )
     return ctl, thy
 
@@ -56,21 +52,18 @@ def setup_clingo(lns_object: LNS) -> Tuple[clingo.control.Control, None]:
     :return: Control and theory object used for LNS
     :rytpe: Tuple[clingo.control.Control, clingodl.ClingoDlTheory]
     """
+    # set seed if given
+    if lns_object.param_values["seed"] is not None:
+        lns_object.set_seed(lns_object.param_values["seed"])
     args = [f"--{i[0]}={i[1]}" for i in lns_object.param_values["clingo_args"].items()]
+
     ctl = clingo.Control(args)
     # no input files not supported
     # if not lns_object._files:
     #    lns_object._files = ["-"]
     for path in lns_object.param_values["files"]:
         ctl.load(path)
-
-    # set seed if given
-    if lns_object.param_values["seed"] is not None:
-        random.seed(lns_object.param_values["seed"])
-        lns_object.param_values["clingo_args"].append(
-            f"--seed={lns_object.param_values['seed']}"
-        )
-    return (ctl, None)
+    return ctl, None
 
 
 # pylint: disable=unused-argument
