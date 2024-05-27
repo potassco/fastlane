@@ -5,6 +5,7 @@ Collection of functions used during LNS.
 from __future__ import annotations
 
 import random
+import time
 from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple
 
 import clingo
@@ -211,7 +212,7 @@ def get_first_solution_hard_constraint(lns_object: LNS, ctl, thy: Any) -> bool:
     ground_base(lns_object, ctl)
 
     # get first solution
-    if lns_object.callables["repair"](lns_object, ctl, [], thy):
+    if lns_object.callables["repair"](lns_object, ctl, [], thy).satisfiable:
         new_opt_val = lns_object.callables["calc_opt_value"](
             lns_object.models["new_model"]
         )
@@ -240,7 +241,7 @@ def get_first_solution_classic(lns_object: LNS, ctl, thy: Any) -> bool:
     ctl.ground([("base", [])], context=lns_object)
 
     # get first solution
-    if lns_object.callables["repair"](lns_object, ctl, [], thy):
+    if lns_object.callables["repair"](lns_object, ctl, [], thy).satisfiable:
         new_opt_val = lns_object.callables["calc_opt_value"](
             lns_object.models["new_model"]
         )
@@ -287,3 +288,23 @@ def is_stuck(lns_object: LNS) -> None:
     """
     print("Search stuck. Stopping...")
     lns_object.callables["finish"](lns_object)
+
+
+def time_out(lns_object: LNS) -> None:
+    """
+    Time out handling.
+
+    :param lns_object: LNS object.
+    :type lns_object: large_neighbourhood_search.LNS
+    """
+    if "timeout" not in lns_object.boundary_dict:
+        lns_object.boundary_dict["timeout"] = 0
+    timelimit = lns_object.param_values["time_limit"]
+    print(
+        f"{time.time() - lns_object.boundary_dict['start_time']:.3f}s: "
+        f"Unable to repair model during time limit ({timelimit}s)."
+    )
+    lns_object.boundary_dict["timeout"] += 1
+    if lns_object.boundary_dict["timeout"] >= 5:
+        lns_object.callables["is_stuck"](lns_object)
+        raise SystemExit

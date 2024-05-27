@@ -29,6 +29,7 @@ def setup_clingo_dl(lns_object: LNS) -> Tuple[clingo.control.Control, ClingoDLTh
     args = [f"--{i[0]}={i[1]}" for i in lns_object.param_values["clingo_args"].items()]
 
     thy = ClingoDLTheory()
+    lns_object.theory = thy
     ctl = clingo.Control(args)
     thy.register(ctl)
     # no input files not supported
@@ -72,7 +73,7 @@ def repair_clingo(
     ctl: clingo.control.Control,
     assumptions: List[Tuple[clingo.symbol.Symbol, bool]],
     thy: Any,
-) -> bool:
+) -> clingo.solving.SolveResult:
     """
     Solve under given assumptions using clingo.
 
@@ -84,17 +85,18 @@ def repair_clingo(
     :type assumptions: List[Tuple[clingo.symbol.Symbol, bool]]
     :param thy: Theory object.
     :type thy: Any
-    :return: Whether model was found.
-    :rtype: bool
+    :return: Solve result.
+    :rtype: clingo.solving.SolveResult
     """
-    with ctl.solve(assumptions=assumptions, yield_=True, async_=True) as handle:
-        for model in handle:
-            lns_object.models["new_model"] = {}
-            lns_object.models["new_model"]["shown"] = model.symbols(shown=True)
-            lns_object.models["new_model"]["true"] = model.symbols(atoms=True)
-            if model:
-                return True
-    return False
+    with ctl.solve(
+        assumptions=assumptions, on_model=lns_object.on_model, async_=True
+    ) as handle:
+        done = handle.wait(lns_object.param_values["time_limit"])
+        if not done:
+            handle.cancel()
+            lns_object.callables["time_out"](lns_object)
+        res = handle.get()
+    return res
 
 
 def repair_clingo_dl(
@@ -102,7 +104,7 @@ def repair_clingo_dl(
     ctl: clingo.control.Control,
     assumptions: List[Tuple[clingo.symbol.Symbol, bool]],
     thy: ClingoDLTheory,
-) -> bool:
+) -> clingo.solving.SolveResult:
     """
     Solve under given assumptions using clingo.
 
@@ -114,23 +116,19 @@ def repair_clingo_dl(
     :type assumptions: List[Tuple[clingo.symbol.Symbol, bool]]
     :param thy: clingo-dl theory object.
     :type thy: clingodl.ClingoDlTheory
-    :return: Whether model was found.
-    :rtype: bool
+    :return: Solve result.
+    :rtype: clingo.solving.SolveResult
     """
     thy.prepare(ctl)
     with ctl.solve(
-        assumptions=assumptions, yield_=True, on_model=thy.on_model, async_=True
+        assumptions=assumptions, yield_=True, on_model=lns_object.on_model, async_=True
     ) as handle:
-        for model in handle:
-            lns_object.models["new_model"] = {}
-            lns_object.models["new_model"]["shown"] = model.symbols(shown=True)
-            lns_object.models["new_model"]["true"] = model.symbols(atoms=True)
-            lns_object.models["new_model"]["assignments"] = [
-                f"{key}={val}" for key, val in thy.assignment(model.thread_id)
-            ]
-            if model:
-                return True
-    return False
+        done = handle.wait(lns_object.param_values["time_limit"])
+        if not done:
+            handle.cancel()
+            lns_object.callables["time_out"](lns_object)
+        res = handle.get()
+    return res
 
 
 def ground_base(lns_object: LNS, ctl: clingo.Control) -> None:

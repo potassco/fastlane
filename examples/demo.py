@@ -21,6 +21,7 @@ random_classic: Dict[str, Callable] = {
             "finish": boundary.finish,
             "check_stuck": search.check_stuck_never,
             "is_stuck": search.is_stuck,
+            "time_out": search.time_out,
         }
 
 # callables for LNS using hard constraints with random relaxation limited by the number of stops
@@ -38,16 +39,18 @@ random_hc: Dict[str, Callable] = {
             "finish": boundary.finish,
             "check_stuck": search.check_stuck_never,
             "is_stuck": search.is_stuck,
+            "time_out": search.time_out,
         }
 
-# set boundary to 3000 (in this case steps)
-# switch to the next relax rate after new models did not improve the solution 3 times
+# set parameters
 config: Dict[str, Any] = {
             "seed": None,
             "relax_rates": [0.2, 0.4, 0.6],
             "bound": 3000,
             "switch_rr_after_no_improv": 3,
             "clingo_args": {"rand-freq": 0.8},
+            "time_limit": 2,
+            "overall_time_limit": 600,
         }
 
 def main():

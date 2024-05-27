@@ -27,6 +27,7 @@ def boundary_overall(lns_object: LNS, action: str) -> bool:
     :rtype: bool
     """
     values = lns_object.boundary_dict
+
     # dict call-by-reference
     if action == "init":
         values.clear()
@@ -35,19 +36,29 @@ def boundary_overall(lns_object: LNS, action: str) -> bool:
         values["start_time"] = time.time()
         values["no_improvement"] = 0
         return True
+
+    def get_step_str():
+        if values["bound"] is None:
+            s = f"{time.time() - lns_object.boundary_dict['start_time']:.3f}s: {values['step']}"
+        else:
+            s = f"{time.time() - lns_object.boundary_dict['start_time']:.3f}s: {values['step']}|{values['bound']}"
+        return s
+
     if action == "update":
         values["step"] += 1
         if values["step"] % 50 == 0:
-            print(f"{values['step']}|{values['bound']}")
+            print(get_step_str())
         return True
+
     if action == "improvement":
         values["no_improvement"] = 0
-        print(f"{values['step']}|{values['bound']}")
+        print(get_step_str())
         if lns_object.models["best_model"] != {}:
             print(
                 f"New opt_val: {lns_object.callables['calc_opt_value'](lns_object.models['best_model'])}"
             )
         return True
+
     if action == "no_improvement":
         values["no_improvement"] += 1
         # change relax rate
@@ -93,17 +104,17 @@ def check_stop_time(lns_object: LNS) -> bool:
     if lns_object.models["best_model"] != {}:
         return (
             time.time() - lns_object.boundary_dict["start_time"]
-            >= lns_object.boundary_dict["bound"]
+            >= lns_object.param_values["overall_time_limit"]
             or lns_object.callables["calc_opt_value"](lns_object.models["best_model"])
             == 0
         )
     return (
         time.time() - lns_object.boundary_dict["start_time"]
-        >= lns_object.boundary_dict["bound"]
+        >= lns_object.param_values["overall_time_limit"]
     )
 
 
-def finish(lns_object) -> None:
+def finish(lns_object: LNS) -> None:
     """
     Print results on finished search.
 

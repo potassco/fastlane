@@ -8,6 +8,7 @@ from types import FrameType
 from typing import Any, Callable, Dict, List, Sequence, Union
 
 import clingo
+from clingodl import ClingoDLTheory
 
 from .lib import boundary, lns_utils, search, theory
 
@@ -31,6 +32,7 @@ class LNS:
         self.program_name = "lns"
         self.version = "2.0"
 
+        self.theory: Union[ClingoDLTheory, None] = None
         self.param_values: Dict[str, Any] = {
             "files": files,
             "seed": None,
@@ -38,6 +40,8 @@ class LNS:
             "bound": 2000,
             "switch_rr_after_no_improv": 3,
             "clingo_args": {"rand-freq": 0.8},
+            "time_limit": 20,
+            "overall_time_limit": 600,
         }
 
         new_model: Dict[str, Sequence[clingo.symbol.Symbol]] = {}
@@ -63,11 +67,30 @@ class LNS:
             "finish": boundary.finish,
             "check_stuck": search.check_stuck_never,
             "is_stuck": search.is_stuck,
+            "time_out": search.time_out,
         }
         if callables:
             self.callables = {**self.callables, **callables}
 
         self.boundary_dict: Dict[str, Any] = {}
+
+    def on_model(self, model: clingo.solving.Model) -> None:  # nocoverage
+        """
+        Saves model for later use.
+
+        :param model: Model found during solving.
+        :type model: clingo.solving.Model
+        """
+        # dl
+        if self.theory:
+            self.theory.on_model(model=model)
+            self.models["new_model"]["assignments"] = [
+                f"{key}={val}" for key, val in self.theory.assignment(model.thread_id)
+            ]
+
+        self.models["new_model"] = {}
+        self.models["new_model"]["shown"] = model.symbols(shown=True)
+        self.models["new_model"]["true"] = model.symbols(atoms=True)
 
     # pylint: disable=unused-argument
     def interrupt_handler(self, sig: int, frame: Union[None, FrameType]) -> None:
@@ -129,6 +152,7 @@ class LNS:
         # conflicts = ctl.statistics["solvers"]["conflicts"]
         return ctl.statistics
 
+    # pylint: disable=too-many-branches
     def main(self) -> None:
         """
         Run Large-Neighbourhood Search according to set parameters.
@@ -171,7 +195,9 @@ class LNS:
             )
 
             # reconstruct model
-            if self.callables["repair"](self, ctl, assumptions, thy):
+            if self.callables["repair"](self, ctl, assumptions, thy).satisfiable:
+                if "timeout" not in self.boundary_dict:
+                    self.boundary_dict["timeout"] = 0
                 # check if new model is accepted
                 if self.callables["check_accept"](
                     self, self.models["new_model"], self.models["current_model"]
@@ -193,7 +219,6 @@ class LNS:
                 if self.callables["check_stuck"](self):
                     self.callables["is_stuck"](self)
                     break
-            # stop criterion, WIP
             if self.callables["check_stop"](self):
                 self.callables["finish"](self)
                 break
