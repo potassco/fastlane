@@ -54,6 +54,8 @@ class TestMain(TestCase):
             "bound": 2000,
             "switch_rr_after_no_improv": 3,
             "clingo_args": {"rand-freq": 0.8},
+            "time_limit": 20,
+            "overall_time_limit": 600,
         }
 
         ref_callables = {
@@ -70,6 +72,7 @@ class TestMain(TestCase):
             "finish": lns_pkg.lib.boundary.finish,
             "check_stuck": lns_pkg.lib.search.check_stuck_never,
             "is_stuck": lns_pkg.lib.search.is_stuck,
+            "time_out": lns_pkg.lib.search.time_out,
         }
 
         lns = LNS(["./tests/ref/golf.lp"])
@@ -94,6 +97,8 @@ class TestMain(TestCase):
             "bound": 2000,
             "switch_rr_after_no_improv": 3,
             "clingo_args": {"rand-freq": 0.8},
+            "time_limit": 20,
+            "overall_time_limit": 600,
         }
         lns = LNS(["./tests/ref/golf.lp"])
         self.assertDictEqual(lns.get_params(), ref_config_values)
@@ -498,14 +503,18 @@ class TestMain(TestCase):
 
         ctl = lns_pkg.lib.theory.setup_clingo(lns)[0]
         lns_pkg.lib.theory.ground_base(lns, ctl)
-        self.assertTrue(lns_pkg.lib.theory.repair_clingo(lns, ctl, [], None))
+        self.assertTrue(
+            lns_pkg.lib.theory.repair_clingo(lns, ctl, [], None).satisfiable
+        )
         self.assertTrue(lns.models["new_model"])
 
         assumptions = lns_pkg.lib.search.relax_random(
             lns.models["new_model"], {"relax_rate": 0.2}
         )
         lns.models["new_model"] = {}
-        self.assertTrue(lns_pkg.lib.theory.repair_clingo(lns, ctl, assumptions, None))
+        self.assertTrue(
+            lns_pkg.lib.theory.repair_clingo(lns, ctl, assumptions, None).satisfiable
+        )
         self.assertTrue(lns.models["new_model"])
 
         assumptions_atoms = list(map(lambda x: x[0], assumptions))
@@ -516,7 +525,9 @@ class TestMain(TestCase):
         lns.set_params({"seed": 123})
         ctl, thy = lns_pkg.lib.theory.setup_clingo(lns)
         lns_pkg.lib.theory.ground_base(lns, ctl)
-        self.assertFalse(lns_pkg.lib.theory.repair_clingo(lns, ctl, [], thy))
+        self.assertFalse(
+            lns_pkg.lib.theory.repair_clingo(lns, ctl, [], thy).satisfiable
+        )
 
     def test_repair_clingo_dl(self):
         """
@@ -527,14 +538,18 @@ class TestMain(TestCase):
 
         ctl, thy = lns_pkg.lib.theory.setup_clingo_dl(lns)
         lns_pkg.lib.theory.ground_base(lns, ctl)
-        self.assertTrue(lns_pkg.lib.theory.repair_clingo_dl(lns, ctl, [], thy))
+        self.assertTrue(
+            lns_pkg.lib.theory.repair_clingo_dl(lns, ctl, [], thy).satisfiable
+        )
         self.assertTrue(lns.models["new_model"])
 
         assumptions = lns_pkg.lib.search.relax_random(
             lns.models["new_model"], {"relax_rate": 0.2}
         )
         lns.models["new_model"] = {}
-        self.assertTrue(lns_pkg.lib.theory.repair_clingo_dl(lns, ctl, assumptions, thy))
+        self.assertTrue(
+            lns_pkg.lib.theory.repair_clingo_dl(lns, ctl, assumptions, thy).satisfiable
+        )
         self.assertTrue(lns.models["new_model"])
 
         assumptions_atoms = list(map(lambda x: x[0], assumptions))
@@ -545,7 +560,9 @@ class TestMain(TestCase):
         lns.set_params({"seed": 123})
         ctl, thy = lns_pkg.lib.theory.setup_clingo_dl(lns)
         lns_pkg.lib.theory.ground_base(lns, ctl)
-        self.assertFalse(lns_pkg.lib.theory.repair_clingo_dl(lns, ctl, [], thy))
+        self.assertFalse(
+            lns_pkg.lib.theory.repair_clingo_dl(lns, ctl, [], thy).satisfiable
+        )
 
     def test_boundary_overall_init(self):
         """
@@ -578,6 +595,22 @@ class TestMain(TestCase):
         """
         lns = LNS(["./tests/ref/golf.lp"])
         lns_pkg.lib.boundary.boundary_overall(lns, "init")
+        lns_pkg.lib.boundary.boundary_overall(lns, "update")
+        s_time = lns.boundary_dict["start_time"]
+        self.assertTrue(lns_pkg.lib.boundary.boundary_overall(lns, "improvement"))
+        self.assertEqual(lns.boundary_dict["bound"], lns.param_values["bound"])
+        self.assertEqual(lns.boundary_dict["step"], 1)
+        self.assertEqual(lns.boundary_dict["start_time"], s_time)
+        self.assertEqual(lns.boundary_dict["no_improvement"], 0)
+
+    def test_boundary_overall_improvement_nobound(self):
+        """
+        Test "improvement" action of boundary_overall without bound.
+        """
+        lns = LNS(["./tests/ref/golf.lp"])
+        lns.set_params({"bound": None})
+        lns_pkg.lib.boundary.boundary_overall(lns, "init")
+        self.assertIsNone(lns.boundary_dict["bound"])
         lns_pkg.lib.boundary.boundary_overall(lns, "update")
         s_time = lns.boundary_dict["start_time"]
         self.assertTrue(lns_pkg.lib.boundary.boundary_overall(lns, "improvement"))
@@ -625,7 +658,7 @@ class TestMain(TestCase):
         lns = LNS(["./tests/ref/golf.lp"])
         lns_pkg.lib.boundary.boundary_overall(lns, "init")
         self.assertFalse(lns_pkg.lib.boundary.check_stop_time(lns))
-        lns.boundary_dict["bound"] = 0
+        lns.param_values["overall_time_limit"] = 0
         self.assertTrue(lns_pkg.lib.boundary.check_stop_time(lns))
 
     def test_interrupt_handling(self):
@@ -658,6 +691,41 @@ class TestMain(TestCase):
         self.assertTrue(lns_pkg.search.check_stuck(lns))
         lns_pkg.lib.search.is_stuck(lns)
         self.assertTrue(lns.param_values["stuck"])
+
+    def test_finish(self):
+        """
+        Test finishing of search.
+        """
+
+        def helper(model):
+            _ = model
+            return 2
+
+        lns = LNS(["./tests/ref/golf.lp"], {"calc_opt_value": helper})
+        lns.callables["boundary_handling"](lns, "init")
+        lns.models["best_model"] = {"shown": ["shown_test"]}
+        lns_pkg.boundary.finish(lns)
+        lns.models["best_model"] = {
+            "shown": ["shown_test"],
+            "assignments": ["assignment_test"],
+        }
+        lns_pkg.boundary.finish(lns)
+
+    def test_timeout(self):
+        """
+        Test timeout handling.
+        """
+
+        def helper(lns_object):
+            _ = lns_object
+
+        lns = LNS(["./tests/ref/golf.lp"], {"is_stuck": helper})
+        lns.callables["boundary_handling"](lns, "init")
+        lns_pkg.search.time_out(lns)
+        self.assertEqual(lns.boundary_dict["timeout"], 1)
+        lns.boundary_dict["timeout"] = 5
+        with self.assertRaises(SystemExit):
+            lns_pkg.search.time_out(lns)
 
     def test_main(self):
         """
@@ -712,6 +780,25 @@ class TestMain(TestCase):
         )
         lns.set_params({"seed": 123})
         lns.main()
+
+        # timeout
+        lns = LNS(
+            ["./tests/ref/golf_big.lp"],
+        )
+        lns.set_params({"seed": 123, "time_limit": 1})
+        with self.assertRaises(SystemExit):
+            lns.main()
+
+        lns = LNS(
+            ["./tests/ref/golf_big.lp"],
+            {
+                "setup": lns_pkg.lib.theory.setup_clingo_dl,
+                "repair": lns_pkg.lib.theory.repair_clingo_dl,
+            },
+        )
+        lns.set_params({"seed": 123, "time_limit": 1})
+        with self.assertRaises(SystemExit):
+            lns.main()
 
         # invalid params
         lns = LNS(["./tests/ref/golf.lp"])
