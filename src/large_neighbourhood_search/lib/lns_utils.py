@@ -8,9 +8,9 @@ import clingo
 from clingo.symbol import SymbolType
 
 
-def calculate_opt_val(model: Dict[str, Sequence[clingo.symbol.Symbol]]) -> int:
+def calc_opt_val_weighted_sum(model: Dict[str, Sequence[clingo.symbol.Symbol]]) -> int:
     """
-    Get optimization value of given model.
+    Get optimization value of given model using weighted sum.
 
     :param model: Model.
     :type model: Dict[str, Sequence[clingo.symbol.Symbol]]
@@ -21,9 +21,48 @@ def calculate_opt_val(model: Dict[str, Sequence[clingo.symbol.Symbol]]) -> int:
     for atom in model["true"]:
         if atom.match("_opt", 2):
             opt = atom.arguments[1].arguments
-            if opt[0].type is SymbolType.Number and opt[1].type is SymbolType.Number:
-                opt_val += opt[0].number * opt[1].number
+            if opt[1].type is SymbolType.Number:
+                opt_val += opt[1].number
     return opt_val
+
+
+def calc_opt_val_lexicographic(
+    model: Dict[str, Sequence[clingo.symbol.Symbol]]
+) -> Dict[int, int]:
+    """
+    Get optimization value of given model using lexicographic ordering.
+
+    :param model: Model.
+    :type model: Dict[str, Sequence[clingo.symbol.Symbol]]
+    :return: Opt value of given model.
+    :rtype: Dict[int, int]
+    """
+    opt_val: Dict[int, int] = {}
+    for atom in model["true"]:
+        if atom.match("_opt", 2):
+            opt = atom.arguments[1].arguments
+            if opt[0].type is SymbolType.Number and opt[1].type is SymbolType.Number:
+                opt_val[opt[0].number] = opt_val.get(opt[0].number, 0) + opt[1].number
+    return opt_val
+
+
+def check_smaller_lexicographic(
+    opt_val1: Dict[int, int], opt_val2: Dict[int, int]
+) -> bool:
+    """
+    Check whether opt_val1 is smaller than opt_val2.
+
+    :param opt_val1: Optimization dictionary.
+    :type opt_val1: Dict[int, int]
+    :param opt_val2: Optimization dictionary.
+    :type opt_val2: Dict[int, int]
+    :return: whether opt_val1 is smaller than opt_val2.
+    :rtype: bool
+    """
+    for i in sorted(list(set(opt_val1.keys()) | set(opt_val2.keys())), reverse=True):
+        if opt_val1.get(i, 0) != opt_val2.get(i, 0):
+            return opt_val1.get(i, 0) < opt_val2.get(i, 0)
+    return False
 
 
 def calculate_variability(list1: Sequence, list2: Sequence) -> float:

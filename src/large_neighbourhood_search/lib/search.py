@@ -11,7 +11,10 @@ from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple
 import clingo
 from clingo.symbol import Number
 
-from large_neighbourhood_search.lib.lns_utils import calculate_variability
+from large_neighbourhood_search.lib.lns_utils import (
+    calculate_variability,
+    check_smaller_lexicographic,
+)
 from large_neighbourhood_search.lib.theory import ground_base
 
 if TYPE_CHECKING:
@@ -83,8 +86,8 @@ def check_accept_always(
     :type lns_object: large_neighbourhood_search.LNS
     :param new_model: New model checked for acceptance.
     :type new_model: Dict[str, Sequence[clingo.symbol.Symbol]]
-    :param old_model: Current model used for comparison.
-    :type old_model: Dict[str, Sequence[clingo.symbol.Symbol]]
+    :param current_model: Current model used for comparison.
+    :type current_model: Dict[str, Sequence[clingo.symbol.Symbol]]
     :return: Whether new model was accepted or not.
     :rtype: bool
     """
@@ -105,18 +108,18 @@ def check_accept_variability(
     :type lns_object: large_neighbourhood_search.LNS
     :param new_model: New model checked for acceptance.
     :type new_model: Dict[str, Sequence[clingo.symbol.Symbol]]
-    :param old_model: Current model used for comparison.
-    :type old_model: Dict[str, Sequence[clingo.symbol.Symbol]]
+    :param current_model: Current model used for comparison.
+    :type current_model: Dict[str, Sequence[clingo.symbol.Symbol]]
     :return: Whether new model was accepted or not.
     :rtype: bool
     """
     return calculate_variability(new_model["true"], current_model["true"]) >= 0.5
 
 
-def check_better_classic(
+def check_better_weighted_sum(
     lns_object: LNS,
     new_model: Dict[str, Sequence[clingo.symbol.Symbol]],
-    best_model: Dict[str, Sequence[clingo.symbol.Symbol]],
+    current_model: Dict[str, Sequence[clingo.symbol.Symbol]],
 ) -> bool:
     """
     Check whether new model is better.
@@ -126,22 +129,44 @@ def check_better_classic(
     :type lns_object: large_neighbourhood_search.LNS
     :param new_model: New model being checked.
     :type new_model: Dict[str, Sequence[clingo.symbol.Symbol]]
-    :param old_model: Best model used for comparison.
-    :type old_model: Dict[str, Sequence[clingo.symbol.Symbol]]
+    :param current_model: Current model used for comparison.
+    :type current_model: Dict[str, Sequence[clingo.symbol.Symbol]]
     :return: Whether new model was better or not.
     :rtype: bool
     """
     new_opt_val = lns_object.callables["calc_opt_value"](new_model)
-    if new_opt_val < lns_object.callables["calc_opt_value"](best_model):
-        return True
-    return False
+    return new_opt_val < lns_object.callables["calc_opt_value"](current_model)
+
+
+def check_better_lexicographic(
+    lns_object: LNS,
+    new_model: Dict[str, Sequence[clingo.symbol.Symbol]],
+    current_model: Dict[str, Sequence[clingo.symbol.Symbol]],
+) -> bool:
+    """
+    Check whether new model is better.
+    Compare optimization values of new and old model.
+
+    :param lns_object: LNS object.
+    :type lns_object: large_neighbourhood_search.LNS
+    :param new_model: New model being checked.
+    :type new_model: Dict[str, Sequence[clingo.symbol.Symbol]]
+    :param current_model: Current model used for comparison.
+    :type current_model: Dict[str, Sequence[clingo.symbol.Symbol]]
+    :return: Whether new model was better or not.
+    :rtype: bool
+    """
+    return check_smaller_lexicographic(
+        lns_object.callables["calc_opt_value"](new_model),
+        lns_object.callables["calc_opt_value"](current_model),
+    )
 
 
 # pylint: disable=unused-argument
 def check_better_always(
     lns_object: LNS,
     new_model: Dict[str, Sequence[clingo.symbol.Symbol]],
-    best_model: Dict[str, Sequence[clingo.symbol.Symbol]],
+    current_model: Dict[str, Sequence[clingo.symbol.Symbol]],
 ) -> bool:
     """
     Check whether new model is better.
@@ -151,8 +176,8 @@ def check_better_always(
     :type lns_object: large_neighbourhood_search.LNS
     :param new_model: New model being checked.
     :type new_model: Dict[str, Sequence[clingo.symbol.Symbol]]
-    :param old_model: Best model used for comparison.
-    :type old_model: Dict[str, Sequence[clingo.symbol.Symbol]]
+    :param current_model: Current model used for comparison.
+    :type current_model: Dict[str, Sequence[clingo.symbol.Symbol]]
     :return: Whether new model was better or not.
     :rtype: bool
     """
@@ -172,9 +197,7 @@ def better_solution_found_classic(lns_object: LNS, ctl: clingo.control.Control) 
     lns_object.models["best_model"] = lns_object.models["new_model"].copy()
 
 
-def better_solution_found_hard_constraint(
-    lns_object: LNS, ctl: clingo.control.Control
-) -> None:
+def better_solution_found_hc(lns_object: LNS, ctl: clingo.control.Control) -> None:
     """
     What to do if better solution was found.
     Assign new best model and ground new hard constraint.
@@ -191,10 +214,11 @@ def better_solution_found_hard_constraint(
     ctl.ground([("opt_val", [Number(opt_val)])])
 
 
-def get_first_solution_hard_constraint(lns_object: LNS, ctl, thy: Any) -> bool:
+def get_first_solution_hc_weighted_sum(lns_object: LNS, ctl, thy: Any) -> bool:
     """
     Find initial solution.
-    And ground found optimization value as hard constraint.
+    Ground found optimization value as hard constraint.
+    Use weighted sum as optimization criteria.
 
     :param lns_object: LNS object.
     :type lns_object: large_neighbourhood_search.LNS
@@ -206,9 +230,9 @@ def get_first_solution_hard_constraint(lns_object: LNS, ctl, thy: Any) -> bool:
     :rtype: bool
     """
     # add constraint to force better solution with each iteration
-    # encoding has to contain _minimize(V,I) predicates as minimization criteria
-    # where V: value, I: identifier
-    ctl.add("opt_val", ["o"], ":- #sum{W*O,I: _opt(I,(O,W))} >= o.")
+    # encoding has to contain  _opt(I,(P,V)) predicates as optimization criteria
+    # where I: identifier, P: Priority, V: Value
+    ctl.add("opt_val", ["o"], ":- #sum{V,I: _opt(I,(P,V))} >= o.")
     ground_base(lns_object, ctl)
 
     # get first solution
