@@ -62,11 +62,11 @@ class TestMain(TestCase):
             "setup": lns_pkg.lib.theory.setup_clingo,
             "relax": lns_pkg.lib.search.relax_random,
             "repair": lns_pkg.lib.theory.repair_clingo,
-            "calc_opt_value": lns_pkg.lib.lns_utils.calculate_opt_val,
-            "get_first_solution": lns_pkg.lib.search.get_first_solution_hard_constraint,
+            "calc_opt_value": lns_pkg.lib.lns_utils.calc_opt_val_weighted_sum,
+            "get_first_solution": lns_pkg.lib.search.get_first_solution_hc_weighted_sum,
             "check_accept": lns_pkg.lib.search.check_accept_always,
             "check_better": lns_pkg.lib.search.check_better_always,
-            "better_solution_found": lns_pkg.lib.search.better_solution_found_hard_constraint,
+            "better_solution_found": lns_pkg.lib.search.better_solution_found_hc,
             "boundary_handling": lns_pkg.lib.boundary.boundary_overall,
             "check_stop": lns_pkg.lib.boundary.check_stop_steps,
             "finish": lns_pkg.lib.boundary.finish,
@@ -236,9 +236,9 @@ class TestMain(TestCase):
             lns_pkg.lib.search.relax_declarative(model, {"relax_rate": 0.2}), ref
         )
 
-    def test_calc_opt_val(self):
+    def test_calc_opt_val_weighted_sum(self):
         """
-        Test optimization value calculation.
+        Test optimization value calculation using weighted sum.
         """
         model = {
             "shown": [
@@ -284,18 +284,22 @@ class TestMain(TestCase):
                 ),
             ],
         }
-        self.assertEqual(lns_pkg.lib.lns_utils.calculate_opt_val(model), 10)
+        self.assertEqual(lns_pkg.lib.lns_utils.calc_opt_val_weighted_sum(model), 6)
 
-    def test_check_better(self):
+    def test_calc_opt_val_lexicographic(self):
         """
-        Test check_better.
+        Test optimization value calculation using lexicographic ordering.
         """
-        best_model = {
+        model = {
             "shown": [
                 Function("plays", [Number(3), Number(1), Number(1)], True),
+                Function("plays", [Number(5), Number(1), Number(1)], True),
+                Function("plays", [Number(9), Number(1), Number(1)], True),
             ],
             "true": [
                 Function("meets", [Number(7), Number(8), Number(3)], True),
+                Function("meets", [Number(7), Number(9), Number(3)], True),
+                Function("meets", [Number(8), Number(9), Number(3)], True),
                 Function(
                     "_opt",
                     [
@@ -308,7 +312,77 @@ class TestMain(TestCase):
                     "_opt",
                     [
                         Function("", [Number(3), Number(5)], True),
-                        Function("", [Number(1), Number(1)], True),
+                        Function("", [Number(1), Number(2)], True),
+                    ],
+                    True,
+                ),
+                Function(
+                    "_opt",
+                    [
+                        Function("", [Number(4), Number(5)], True),
+                        Function("", [Number(3), Number(1)], True),
+                    ],
+                    True,
+                ),
+                Function(
+                    "_opt",
+                    [
+                        Function("", [Number(7), Number(8)], True),
+                        Function("", [Number(2), Number(2)], True),
+                    ],
+                    True,
+                ),
+            ],
+        }
+        ref = {1: 3, 3: 1, 2: 2}
+        self.assertDictEqual(
+            lns_pkg.lib.lns_utils.calc_opt_val_lexicographic(model), ref
+        )
+
+    def test_lexi_comparison(self):
+        """
+        Test comparison of lexicographic values.
+        """
+        val1 = {2: 10}
+        val2 = {3: 1, 1: 1}
+        self.assertTrue(lns_pkg.lib.lns_utils.check_smaller_lexicographic(val1, val2))
+        self.assertFalse(lns_pkg.lib.lns_utils.check_smaller_lexicographic(val2, val1))
+        val1 = {3: 2}
+        self.assertFalse(lns_pkg.lib.lns_utils.check_smaller_lexicographic(val1, val2))
+        self.assertTrue(lns_pkg.lib.lns_utils.check_smaller_lexicographic(val2, val1))
+        val1 = {3: 1, 1: 2}
+        self.assertFalse(lns_pkg.lib.lns_utils.check_smaller_lexicographic(val1, val2))
+        self.assertTrue(lns_pkg.lib.lns_utils.check_smaller_lexicographic(val2, val1))
+        val1 = val2
+        self.assertFalse(lns_pkg.lib.lns_utils.check_smaller_lexicographic(val1, val2))
+        self.assertFalse(lns_pkg.lib.lns_utils.check_smaller_lexicographic(val2, val1))
+        val1 = {}
+        self.assertTrue(lns_pkg.lib.lns_utils.check_smaller_lexicographic(val1, val2))
+        self.assertFalse(lns_pkg.lib.lns_utils.check_smaller_lexicographic(val2, val1))
+
+    def test_check_better(self):
+        """
+        Test check_better.
+        """
+        old_model = {
+            "shown": [
+                Function("plays", [Number(3), Number(1), Number(1)], True),
+            ],
+            "true": [
+                Function("meets", [Number(7), Number(8), Number(3)], True),
+                Function(
+                    "_opt",
+                    [
+                        Function("", [Number(1), Number(2)], True),
+                        Function("", [Number(1), Number(2)], True),
+                    ],
+                    True,
+                ),
+                Function(
+                    "_opt",
+                    [
+                        Function("", [Number(3), Number(5)], True),
+                        Function("", [Number(2), Number(1)], True),
                     ],
                     True,
                 ),
@@ -324,7 +398,7 @@ class TestMain(TestCase):
                     "_opt",
                     [
                         Function("", [Number(1), Number(2)], True),
-                        Function("", [Number(1), Number(1)], True),
+                        Function("", [Number(1), Number(2)], True),
                     ],
                     True,
                 ),
@@ -340,7 +414,7 @@ class TestMain(TestCase):
                     "_opt",
                     [
                         Function("", [Number(1), Number(2)], True),
-                        Function("", [Number(1), Number(1)], True),
+                        Function("", [Number(1), Number(2)], True),
                     ],
                     True,
                 ),
@@ -356,7 +430,7 @@ class TestMain(TestCase):
                     "_opt",
                     [
                         Function("", [Number(4), Number(5)], True),
-                        Function("", [Number(1), Number(1)], True),
+                        Function("", [Number(3), Number(1)], True),
                     ],
                     True,
                 ),
@@ -365,17 +439,29 @@ class TestMain(TestCase):
         lns = LNS(["./tests/ref/golf.lp"])
 
         self.assertTrue(
-            lns_pkg.lib.search.check_better_classic(lns, better_model, best_model)
+            lns_pkg.lib.search.check_better_weighted_sum(lns, better_model, old_model)
         )
         self.assertFalse(
-            lns_pkg.lib.search.check_better_classic(lns, worse_model, best_model)
+            lns_pkg.lib.search.check_better_weighted_sum(lns, worse_model, old_model)
+        )
+
+        lns = LNS(
+            ["./tests/ref/golf.lp"],
+            {"calc_opt_value": lns_pkg.lib.lns_utils.calc_opt_val_lexicographic},
         )
 
         self.assertTrue(
-            lns_pkg.lib.search.check_better_always(lns, better_model, best_model)
+            lns_pkg.lib.search.check_better_lexicographic(lns, better_model, old_model)
+        )
+        self.assertFalse(
+            lns_pkg.lib.search.check_better_lexicographic(lns, worse_model, old_model)
+        )
+
+        self.assertTrue(
+            lns_pkg.lib.search.check_better_always(lns, better_model, old_model)
         )
         self.assertTrue(
-            lns_pkg.lib.search.check_better_always(lns, worse_model, best_model)
+            lns_pkg.lib.search.check_better_always(lns, worse_model, old_model)
         )
 
     def test_check_acceptance(self):
@@ -458,7 +544,7 @@ class TestMain(TestCase):
         lns.set_params({"seed": 123})
         ctl, thy = lns_pkg.lib.theory.setup_clingo(lns)
         self.assertEqual(
-            lns_pkg.lib.search.get_first_solution_hard_constraint(lns, ctl, thy), True
+            lns_pkg.lib.search.get_first_solution_hc_weighted_sum(lns, ctl, thy), True
         )
         self.assertIsNotNone(lns.models["new_model"])
         self.assertEqual(type(lns.models["new_model"]), dict)
@@ -471,7 +557,7 @@ class TestMain(TestCase):
         lns.set_params({"seed": 123})
         ctl = lns_pkg.lib.theory.setup_clingo(lns)[0]
         self.assertEqual(
-            lns_pkg.lib.search.get_first_solution_hard_constraint(lns, ctl, thy), False
+            lns_pkg.lib.search.get_first_solution_hc_weighted_sum(lns, ctl, thy), False
         )
 
         lns = LNS(["./tests/ref/golf.lp"])
@@ -737,7 +823,7 @@ class TestMain(TestCase):
         lns = LNS(
             ["./tests/ref/golf.lp"],
             {
-                "check_better": lns_pkg.lib.search.check_better_classic,
+                "check_better": lns_pkg.lib.search.check_better_weighted_sum,
                 "better_solution_found": lns_pkg.lib.search.better_solution_found_classic,
                 "get_first_solution": lns_pkg.lib.search.get_first_solution_classic,
             },
@@ -772,7 +858,7 @@ class TestMain(TestCase):
         lns = LNS(
             ["./tests/ref/golf.lp"],
             {
-                "check_better": lns_pkg.lib.search.check_better_classic,
+                "check_better": lns_pkg.lib.search.check_better_weighted_sum,
                 "better_solution_found": lns_pkg.lib.search.better_solution_found_classic,
                 "get_first_solution": lns_pkg.lib.search.get_first_solution_classic,
                 "check_stuck": lns_pkg.lib.search.check_stuck,
