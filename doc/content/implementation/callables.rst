@@ -47,17 +47,19 @@ and clingo-dl (:func:`lib.theory.repair_clingo_dl`) respectively.
     calc_opt_value(model: Dict[str, Sequence[clingo.symbol.Symbol]]) -> int
 
 Used to calculate the optimization value of a model.
-This project includes one example implementation (:func:`lib.lns_utils.calculate_opt_val`).
+This project includes two example implementations, using weighted sums (:func:`lib.lns_utils.calc_opt_val_weighted_sum`)
+and using lexicographic optimization (:func:`lib.lns_utils.calc_opt_val_lexicographic`).
 Since this function is closely linked to the encoding, please read the corresponding
 :ref:`documentation<ref_enc>` before making changes.
 
 .. code-block:: python
 
-    get_first_solution_classic(lns_object: LNS, ctl, thy: Any) -> bool
+    get_first_solution(lns_object: LNS, ctl, thy: Any) -> bool
 
 Used to obtain a first solution/model as a starting point fot LNS.
-This project includes two example implementations, one using hard constraints
-(:func:`lib.search.get_first_solution_hard_constraint`) and one without them (:func:`lib.search.get_first_solution_classic`).
+This project includes three example implementations, two using hard constraints
+(:func:`lib.search.get_first_solution_hc_weighted_sum`) and (:func:`lib.search.get_first_solution_hc_lexicographic`)
+and one without them (:func:`lib.search.get_first_solution_classic`).
 Since this function is closely linked to the encoding, please read the corresponding
 :ref:`documentation<ref_enc>` before making changes.
 
@@ -83,9 +85,9 @@ This project includes two example implementations, one always accepting
     ) -> bool
 
 Used to determine whether a new solution/model is better than the current best solution/model.
-This project includes two example implementations, one always accepting
-(:func:`lib.search.check_better_always`) and the other accepting, if the new solution/model has a lower optimization value
-(:func:`lib.search.check_better_classic`).
+This project includes three example implementations, one always accepting
+(:func:`lib.search.check_better_always`) and the other two accepting, if the new solution/model has a lower optimization value/vector
+(:func:`lib.search.check_better_weighted_sum` and :func:`lib.search.check_better_lexicographic`).
 
 .. code-block:: python
 
@@ -94,8 +96,9 @@ This project includes two example implementations, one always accepting
     ) -> None
 
 Tasks performed after a better solution/model was found.
-This project includes two example implementations, one for a search using hard constraints
-(:func:`lib.search.better_solution_found_hard_constraint`) and one without them (:func:`lib.search.better_solution_found_classic`).
+This project includes three example implementations, two using hard constraints
+(:func:`lib.search.better_solution_found_hc_weighted_sum`) and (:func:`lib.search.better_solution_found_hc_lexicographic`)
+and one without them (:func:`lib.search.better_solution_found_classic`).
 
 .. code-block:: python
 
@@ -140,3 +143,10 @@ This project includes two example implementations, one never returning True
 
 Tasks performed after the search is stuck.
 This project includes one example implementation (:func:`lib.search.is_stuck`).
+
+.. code-block:: python
+
+    time_out(lns_object: LNS) -> None
+
+Tasks performed when a timeout during solving occurs.
+This project includes one example implementation (:func:`lib.search.time_out`).

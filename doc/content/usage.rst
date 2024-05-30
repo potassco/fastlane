@@ -12,8 +12,8 @@ For all options supported during the default module execution use:
 .. currentmodule:: large_neighbourhood_search.__init__
 
 The direct execution supports only a default LNS using hard constraints and a random relaxation of shown atoms.
-The search is limited to 2000 steps and relax rates of 0.2, 0.4 and 0.6, which are switched after 3 consecutive
-failed attempts respectively, to improve the solution.
+The search is limited to 2000 steps or 10 min with 20s per solve call and relax rates of 0.2, 0.4 and 0.6, which are switched after 3 consecutive
+failed attempts respectively, to improve the solution. After 5 consecutive timeouts the search is terminated.
 
 For finer control over the performed Large-Neighbourhood-Search (LNS) this module should be used as an api.
 During initialization of the LNS object, all callables, which will be used during execution, can be replaced and
@@ -45,7 +45,7 @@ Encoding
 
 .. currentmodule:: large_neighbourhood_search
 
-For a correct program execution the ASP encoding has to contain some form of derivation for the :code:`_opt(I,(O,W))` predicate
+For a correct program execution the ASP encoding has to contain some form of derivation for the :code:`_opt(I,(P,V))` predicate
 to indicate optimization criteria. An example definition can be seen in :file:`./examples/golf.lp`.
 
 .. code-block::
@@ -53,16 +53,16 @@ to indicate optimization criteria. An example definition can be seen in :file:`.
     _opt(
             I,      % Unique identifier
             (
-                M,  % Multiplier, used to implement lexicographic ordering
-                W   % Weight
+                P,  % Priority of the criteria (greater value = higher priority)
+                V   % Value of the criteria
             )
         )
         :- <BODY>.
 
-By default this project performs only minimization. Maximization with only minor changes can be achieved by
-multiplying the weight :code:`W` by -1.
-To make changes, on how the optimization is handled, one has to edit :func:`lib.lns_utils.calculate_opt_val`
-and :func:`lib.search.get_first_solution_hard_constraint` if hard constraints are used.
+By default this project performs minimization using weighted sums.
+Alternatively minimization with lexicographic optimization is also supported.
+To make changes, on how the optimization is handled, one has to edit :func:`calc_opt_value`,
+:func:`get_first_solution` and all other callables using the optimization criteria e.g. :func:`check_better`.
 
 When using :func:`lib.search.relax_declarative`, :code:`_lns_select/1` and :code:`_lns_fix/2` have to be used
 in the encoding. While :code:`_lns_select/1` selects a set of terms, :code:`_lns_fix/2` maps atoms those terms,
