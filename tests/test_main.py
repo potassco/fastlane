@@ -838,6 +838,18 @@ class TestMain(TestCase):
         lns.set_params({"seed": 123})
         lns.main()
 
+        lns = LNS(
+            ["./tests/ref/golf.lp"],
+            {
+                "check_better": lns_pkg.lib.search.check_better_lexicographic,
+                "better_solution_found": lns_pkg.lib.search.better_solution_found_classic,
+                "get_first_solution": lns_pkg.lib.search.get_first_solution_classic,
+                "calc_opt_value": lns_pkg.lib.lns_utils.calc_opt_val_lexicographic,
+            },
+        )
+        lns.set_params({"seed": 123})
+        lns.main()
+
         # faulty encoding
         lns = LNS(["./tests/ref/bad_encoding.lp"])
         lns.set_params({"seed": 123})
