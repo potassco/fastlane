@@ -2,7 +2,7 @@
 Test cases for main application functionality.
 """
 
-# pylint: disable=protected-access, too-many-public-methods, duplicate-code
+# pylint: disable=protected-access, too-many-public-methods, duplicate-code, too-many-lines, too-many-statements
 import logging
 import random
 import signal
@@ -11,7 +11,7 @@ from unittest import TestCase
 
 import clingo
 import clingodl
-from clingo.symbol import Function, Number
+from clingo.symbol import Function, Number, String
 
 import large_neighbourhood_search as lns_pkg
 from large_neighbourhood_search import LNS
@@ -66,7 +66,7 @@ class TestMain(TestCase):
             "get_first_solution": lns_pkg.lib.search.get_first_solution_hc_weighted_sum,
             "check_accept": lns_pkg.lib.search.check_accept_always,
             "check_better": lns_pkg.lib.search.check_better_always,
-            "better_solution_found": lns_pkg.lib.search.better_solution_found_hc,
+            "better_solution_found": lns_pkg.lib.search.better_solution_found_hc_weighted_sum,
             "boundary_handling": lns_pkg.lib.boundary.boundary_overall,
             "check_stop": lns_pkg.lib.boundary.check_stop_steps,
             "finish": lns_pkg.lib.boundary.finish,
@@ -251,34 +251,54 @@ class TestMain(TestCase):
                 Function("meets", [Number(7), Number(9), Number(3)], True),
                 Function("meets", [Number(8), Number(9), Number(3)], True),
                 Function(
-                    "_opt",
+                    "_lns_opt",
                     [
-                        Function("", [Number(1), Number(2)], True),
-                        Function("", [Number(1), Number(1)], True),
+                        String("min"),
+                        Number(1),
                     ],
                     True,
                 ),
                 Function(
-                    "_opt",
+                    "_lns_opt",
                     [
+                        String("min"),
+                        Function("", [Number(1), Number(2)], True),
+                        Number(1),
+                    ],
+                    True,
+                ),
+                Function(
+                    "_lns_opt",
+                    [
+                        String("min"),
                         Function("", [Number(3), Number(5)], True),
+                        Number(2),
+                    ],
+                    True,
+                ),
+                Function(
+                    "_lns_opt",
+                    [
+                        String("min2"),
+                        Number(2),
+                    ],
+                    True,
+                ),
+                Function(
+                    "_lns_opt",
+                    [
+                        String("min2"),
                         Function("", [Number(1), Number(2)], True),
+                        Number(1),
                     ],
                     True,
                 ),
                 Function(
-                    "_opt",
+                    "_lns_opt",
                     [
-                        Function("", [Number(4), Number(5)], True),
-                        Function("", [Number(3), Number(1)], True),
-                    ],
-                    True,
-                ),
-                Function(
-                    "_opt",
-                    [
-                        Function("", [Number(7), Number(8)], True),
-                        Function("", [Number(2), Number(2)], True),
+                        String("min2"),
+                        Function("", [Number(3), Number(5)], True),
+                        Number(2),
                     ],
                     True,
                 ),
@@ -301,34 +321,62 @@ class TestMain(TestCase):
                 Function("meets", [Number(7), Number(9), Number(3)], True),
                 Function("meets", [Number(8), Number(9), Number(3)], True),
                 Function(
-                    "_opt",
+                    "_lns_opt",
                     [
-                        Function("", [Number(1), Number(2)], True),
-                        Function("", [Number(1), Number(1)], True),
+                        String("min"),
+                        Number(1),
                     ],
                     True,
                 ),
                 Function(
-                    "_opt",
+                    "_lns_opt",
                     [
+                        String("min"),
+                        Function("", [Number(1), Number(2)], True),
+                        Number(1),
+                    ],
+                    True,
+                ),
+                Function(
+                    "_lns_opt",
+                    [
+                        String("min"),
                         Function("", [Number(3), Number(5)], True),
+                        Number(2),
+                    ],
+                    True,
+                ),
+                Function(
+                    "_lns_opt",
+                    [
+                        String("min2"),
+                        Number(3),
+                    ],
+                    True,
+                ),
+                Function(
+                    "_lns_opt",
+                    [
+                        String("min2"),
                         Function("", [Number(1), Number(2)], True),
+                        Number(1),
                     ],
                     True,
                 ),
                 Function(
-                    "_opt",
+                    "_lns_opt",
                     [
-                        Function("", [Number(4), Number(5)], True),
-                        Function("", [Number(3), Number(1)], True),
+                        String("min3"),
+                        Number(2),
                     ],
                     True,
                 ),
                 Function(
-                    "_opt",
+                    "_lns_opt",
                     [
-                        Function("", [Number(7), Number(8)], True),
-                        Function("", [Number(2), Number(2)], True),
+                        String("min3"),
+                        Function("", [Number(3), Number(5)], True),
+                        Number(2),
                     ],
                     True,
                 ),
@@ -371,18 +419,36 @@ class TestMain(TestCase):
             "true": [
                 Function("meets", [Number(7), Number(8), Number(3)], True),
                 Function(
-                    "_opt",
+                    "_lns_opt",
                     [
-                        Function("", [Number(1), Number(2)], True),
-                        Function("", [Number(1), Number(2)], True),
+                        String("min"),
+                        Number(1),
                     ],
                     True,
                 ),
                 Function(
-                    "_opt",
+                    "_lns_opt",
                     [
+                        String("min"),
+                        Function("", [Number(1), Number(2)], True),
+                        Number(2),
+                    ],
+                    True,
+                ),
+                Function(
+                    "_lns_opt",
+                    [
+                        String("min2"),
+                        Number(2),
+                    ],
+                    True,
+                ),
+                Function(
+                    "_lns_opt",
+                    [
+                        String("min2"),
                         Function("", [Number(3), Number(5)], True),
-                        Function("", [Number(2), Number(1)], True),
+                        Number(1),
                     ],
                     True,
                 ),
@@ -395,10 +461,19 @@ class TestMain(TestCase):
             "true": [
                 Function("meets", [Number(7), Number(8), Number(3)], True),
                 Function(
-                    "_opt",
+                    "_lns_opt",
                     [
+                        String("min"),
+                        Number(1),
+                    ],
+                    True,
+                ),
+                Function(
+                    "_lns_opt",
+                    [
+                        String("min"),
                         Function("", [Number(1), Number(2)], True),
-                        Function("", [Number(1), Number(2)], True),
+                        Number(2),
                     ],
                     True,
                 ),
@@ -411,26 +486,36 @@ class TestMain(TestCase):
             "true": [
                 Function("meets", [Number(7), Number(8), Number(3)], True),
                 Function(
-                    "_opt",
+                    "_lns_opt",
                     [
-                        Function("", [Number(1), Number(2)], True),
-                        Function("", [Number(1), Number(2)], True),
+                        String("min"),
+                        Number(1),
                     ],
                     True,
                 ),
                 Function(
-                    "_opt",
+                    "_lns_opt",
                     [
+                        String("min"),
+                        Function("", [Number(1), Number(2)], True),
+                        Number(1),
+                    ],
+                    True,
+                ),
+                Function(
+                    "_lns_opt",
+                    [
+                        String("min2"),
+                        Number(3),
+                    ],
+                    True,
+                ),
+                Function(
+                    "_lns_opt",
+                    [
+                        String("min2"),
                         Function("", [Number(3), Number(5)], True),
-                        Function("", [Number(1), Number(1)], True),
-                    ],
-                    True,
-                ),
-                Function(
-                    "_opt",
-                    [
-                        Function("", [Number(4), Number(5)], True),
-                        Function("", [Number(3), Number(1)], True),
+                        Number(4),
                     ],
                     True,
                 ),
@@ -475,18 +560,28 @@ class TestMain(TestCase):
             "true": [
                 Function("meets", [Number(7), Number(8), Number(3)], True),
                 Function(
-                    "_opt",
+                    "_lns_opt",
                     [
-                        Function("", [Number(1), Number(2)], True),
-                        Function("", [Number(1), Number(1)], True),
+                        String("min"),
+                        Number(1),
                     ],
                     True,
                 ),
                 Function(
-                    "_opt",
+                    "_lns_opt",
                     [
+                        String("min"),
+                        Function("", [Number(1), Number(2)], True),
+                        Number(1),
+                    ],
+                    True,
+                ),
+                Function(
+                    "_lns_opt",
+                    [
+                        String("min"),
                         Function("", [Number(3), Number(5)], True),
-                        Function("", [Number(1), Number(1)], True),
+                        Number(1),
                     ],
                     True,
                 ),
@@ -499,10 +594,19 @@ class TestMain(TestCase):
             "true": [
                 Function("meets", [Number(7), Number(8), Number(3)], True),
                 Function(
-                    "_opt",
+                    "_lns_opt",
                     [
+                        String("min"),
+                        Number(1),
+                    ],
+                    True,
+                ),
+                Function(
+                    "_lns_opt",
+                    [
+                        String("min"),
                         Function("", [Number(1), Number(2)], True),
-                        Function("", [Number(1), Number(1)], True),
+                        Number(1),
                     ],
                     True,
                 ),
@@ -523,10 +627,19 @@ class TestMain(TestCase):
             "true": [
                 Function("meets", [Number(6), Number(8), Number(3)], True),
                 Function(
-                    "_opt",
+                    "_lns_opt",
                     [
+                        String("min"),
+                        Number(1),
+                    ],
+                    True,
+                ),
+                Function(
+                    "_lns_opt",
+                    [
+                        String("min"),
                         Function("", [Number(1), Number(2)], True),
-                        Function("", [Number(1), Number(1)], True),
+                        Number(1),
                     ],
                     True,
                 ),
@@ -558,6 +671,29 @@ class TestMain(TestCase):
         ctl = lns_pkg.lib.theory.setup_clingo(lns)[0]
         self.assertEqual(
             lns_pkg.lib.search.get_first_solution_hc_weighted_sum(lns, ctl, thy), False
+        )
+
+        lns = LNS(
+            ["./tests/ref/golf.lp"],
+            {"calc_opt_value": lns_pkg.lib.lns_utils.calc_opt_val_lexicographic},
+        )
+        lns.set_params({"seed": 123})
+        ctl, thy = lns_pkg.lib.theory.setup_clingo(lns)
+        self.assertEqual(
+            lns_pkg.lib.search.get_first_solution_hc_lexicographic(lns, ctl, thy), True
+        )
+        self.assertIsNotNone(lns.models["new_model"])
+        self.assertEqual(type(lns.models["new_model"]), dict)
+        self.assertIsNotNone(lns.models["current_model"])
+        self.assertEqual(type(lns.models["current_model"]), dict)
+        self.assertIsNotNone(lns.models["best_model"])
+        self.assertEqual(type(lns.models["best_model"]), dict)
+
+        lns = LNS(["./tests/ref/bad_encoding.lp"])
+        lns.set_params({"seed": 123})
+        ctl = lns_pkg.lib.theory.setup_clingo(lns)[0]
+        self.assertEqual(
+            lns_pkg.lib.search.get_first_solution_hc_lexicographic(lns, ctl, thy), False
         )
 
         lns = LNS(["./tests/ref/golf.lp"])
@@ -817,9 +953,36 @@ class TestMain(TestCase):
         """
         Test main method.
         """
+        print("default ---------------")
         lns = LNS(["./tests/ref/golf.lp"])
         lns.main()
 
+        print("hc_ws ---------------")
+        lns = LNS(
+            ["./tests/ref/golf.lp"],
+            {
+                "check_better": lns_pkg.lib.search.check_better_always,
+                "better_solution_found": lns_pkg.lib.search.better_solution_found_hc_weighted_sum,
+                "get_first_solution": lns_pkg.lib.search.get_first_solution_hc_weighted_sum,
+            },
+        )
+        lns.set_params({"seed": 123})
+        lns.main()
+
+        print("hc_lexi ---------------")
+        lns = LNS(
+            ["./tests/ref/golf.lp"],
+            {
+                "check_better": lns_pkg.lib.search.check_better_always,
+                "better_solution_found": lns_pkg.lib.search.better_solution_found_hc_lexicographic,
+                "get_first_solution": lns_pkg.lib.search.get_first_solution_hc_lexicographic,
+                "calc_opt_value": lns_pkg.lib.lns_utils.calc_opt_val_lexicographic,
+            },
+        )
+        lns.set_params({"seed": 123})
+        lns.main()
+
+        print("classic_ws ---------------")
         lns = LNS(
             ["./tests/ref/golf.lp"],
             {
@@ -831,13 +994,7 @@ class TestMain(TestCase):
         lns.set_params({"seed": 456})
         lns.main()
 
-        lns = LNS(
-            ["./tests/ref/golf.lp"],
-            {"check_stop": lns_pkg.lib.boundary.check_stop_time},
-        )
-        lns.set_params({"seed": 123})
-        lns.main()
-
+        print("classic_lexi ---------------")
         lns = LNS(
             ["./tests/ref/golf.lp"],
             {
@@ -850,12 +1007,7 @@ class TestMain(TestCase):
         lns.set_params({"seed": 123})
         lns.main()
 
-        # faulty encoding
-        lns = LNS(["./tests/ref/bad_encoding.lp"])
-        lns.set_params({"seed": 123})
-        lns.main()
-
-        # clingo-dl
+        print("clingo-dl ---------------")
         lns = LNS(
             ["./tests/ref/golf.lp"],
             {
@@ -866,7 +1018,15 @@ class TestMain(TestCase):
         lns.set_params({"seed": 123})
         lns.main()
 
-        # stuck
+        print("stop time ---------------")
+        lns = LNS(
+            ["./tests/ref/golf.lp"],
+            {"check_stop": lns_pkg.lib.boundary.check_stop_time},
+        )
+        lns.set_params({"seed": 123})
+        lns.main()
+
+        print("stuck ---------------")
         lns = LNS(
             ["./tests/ref/golf.lp"],
             {
@@ -879,7 +1039,7 @@ class TestMain(TestCase):
         lns.set_params({"seed": 123})
         lns.main()
 
-        # timeout
+        print("timeout ---------------")
         lns = LNS(
             ["./tests/ref/golf_big.lp"],
         )
@@ -887,6 +1047,7 @@ class TestMain(TestCase):
         with self.assertRaises(SystemExit):
             lns.main()
 
+        print("clingo-dl timeout ---------------")
         lns = LNS(
             ["./tests/ref/golf_big.lp"],
             {
@@ -898,7 +1059,7 @@ class TestMain(TestCase):
         with self.assertRaises(SystemExit):
             lns.main()
 
-        # invalid params
+        print("invalid parameters ---------------")
         lns = LNS(["./tests/ref/golf.lp"])
         lns.param_values = {}
         with self.assertRaises(SystemExit):
@@ -913,3 +1074,8 @@ class TestMain(TestCase):
         lns.param_values["relax_rates"] = []
         with self.assertRaises(SystemExit):
             lns.main()
+
+        print("faulty ---------------")
+        lns = LNS(["./tests/ref/bad_encoding.lp"])
+        lns.set_params({"seed": 123})
+        lns.main()
