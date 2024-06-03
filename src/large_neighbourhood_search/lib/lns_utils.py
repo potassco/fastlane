@@ -19,10 +19,9 @@ def calc_opt_val_weighted_sum(model: Dict[str, Sequence[clingo.symbol.Symbol]]) 
     """
     opt_val = 0
     for atom in model["true"]:
-        if atom.match("_opt", 2):
-            opt = atom.arguments[1].arguments
-            if opt[1].type is SymbolType.Number:
-                opt_val += opt[1].number
+        if atom.match("_lns_opt", 3):
+            if atom.arguments[2].type is SymbolType.Number:
+                opt_val += atom.arguments[2].number
     return opt_val
 
 
@@ -37,12 +36,27 @@ def calc_opt_val_lexicographic(
     :return: Opt value of given model.
     :rtype: Dict[int, int]
     """
+    priorities: Dict[str, int] = {}
+    temp_val: Dict[str, int] = {}
     opt_val: Dict[int, int] = {}
     for atom in model["true"]:
-        if atom.match("_opt", 2):
-            opt = atom.arguments[1].arguments
-            if opt[0].type is SymbolType.Number and opt[1].type is SymbolType.Number:
-                opt_val[opt[0].number] = opt_val.get(opt[0].number, 0) + opt[1].number
+        if atom.match("_lns_opt", 2):
+            if (
+                atom.arguments[0].type is SymbolType.String
+                and atom.arguments[1].type is SymbolType.Number
+            ):
+                priorities[atom.arguments[0].string] = atom.arguments[1].number
+        elif atom.match("_lns_opt", 3):
+            if (
+                atom.arguments[0].type is SymbolType.String
+                and atom.arguments[2].type is SymbolType.Number
+            ):
+                temp_val[atom.arguments[0].string] = (
+                    temp_val.get(atom.arguments[0].string, 0) + atom.arguments[2].number
+                )
+
+    for item in priorities.items():
+        opt_val[item[1]] = opt_val.get(item[1], 0) + temp_val.get(item[0], 0)
     return opt_val
 
 

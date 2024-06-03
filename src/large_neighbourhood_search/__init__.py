@@ -30,7 +30,7 @@ class LNS:
         Initialize application.
         """
         self.program_name = "lns"
-        self.version = "2.0"
+        self.version = "2.1.0"
 
         self.theory: Union[ClingoDLTheory, None] = None
         self.param_values: Dict[str, Any] = {
@@ -61,7 +61,7 @@ class LNS:
             "get_first_solution": search.get_first_solution_hc_weighted_sum,
             "check_accept": search.check_accept_always,
             "check_better": search.check_better_always,
-            "better_solution_found": search.better_solution_found_hc,
+            "better_solution_found": search.better_solution_found_hc_weighted_sum,
             "boundary_handling": boundary.boundary_overall,
             "check_stop": boundary.check_stop_steps,
             "finish": boundary.finish,

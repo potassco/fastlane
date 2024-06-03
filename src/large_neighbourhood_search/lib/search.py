@@ -9,7 +9,7 @@ import time
 from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple
 
 import clingo
-from clingo.symbol import Number
+from clingo.symbol import Function, Number
 
 from large_neighbourhood_search.lib.lns_utils import (
     calculate_variability,
@@ -113,7 +113,15 @@ def check_accept_variability(
     :return: Whether new model was accepted or not.
     :rtype: bool
     """
-    return calculate_variability(new_model["true"], current_model["true"]) >= 0.5
+    n_model = []
+    c_model = []
+    for atom in new_model["true"]:
+        if not (atom.match("_lns_opt", 2) or atom.match("_lns_opt", 3)):
+            n_model.append(atom)
+    for atom in current_model["true"]:
+        if not (atom.match("_lns_opt", 2) or atom.match("_lns_opt", 3)):
+            c_model.append(atom)
+    return calculate_variability(n_model, c_model) >= 0.5
 
 
 def check_better_weighted_sum(
@@ -197,10 +205,13 @@ def better_solution_found_classic(lns_object: LNS, ctl: clingo.control.Control) 
     lns_object.models["best_model"] = lns_object.models["new_model"].copy()
 
 
-def better_solution_found_hc(lns_object: LNS, ctl: clingo.control.Control) -> None:
+def better_solution_found_hc_weighted_sum(
+    lns_object: LNS, ctl: clingo.control.Control
+) -> None:
     """
     What to do if better solution was found.
     Assign new best model and ground new hard constraint.
+    For weighted sum as optimization criteria.
 
     :param lns_object: LNS object.
     :type lns_object: large_neighbourhood_search.LNS
@@ -209,9 +220,40 @@ def better_solution_found_hc(lns_object: LNS, ctl: clingo.control.Control) -> No
     """
     lns_object.models["best_model"] = lns_object.models["new_model"].copy()
 
-    # update boundary
+    # update constraint
     opt_val = lns_object.callables["calc_opt_value"](lns_object.models["best_model"])
     ctl.ground([("opt_val", [Number(opt_val)])])
+
+
+def better_solution_found_hc_lexicographic(
+    lns_object: LNS, ctl: clingo.control.Control
+) -> None:
+    """
+    What to do if better solution was found.
+    Assign new best model and ground new hard constraint.
+    Use lexicographic optimization.
+
+    :param lns_object: LNS object.
+    :type lns_object: large_neighbourhood_search.LNS
+    :param ctl: Clingo control object used for solving.
+    :type ctl: clingo.control.Control
+    """
+    lns_object.models["best_model"] = lns_object.models["new_model"].copy()
+
+    # update rules
+    step = lns_object.boundary_dict["step"]
+    ctl.release_external(Function("step", [Number(step - 1)]))
+    opt_val = lns_object.callables["calc_opt_value"](lns_object.models["best_model"])
+    ctl.ground(
+        [
+            (
+                "opt_val",
+                [Number(step)]
+                + [Number(opt_val[prio]) for prio in sorted(opt_val.keys())],
+            )
+        ]
+    )
+    ctl.assign_external(Function("step", [Number(step)]), True)
 
 
 def get_first_solution_hc_weighted_sum(lns_object: LNS, ctl, thy: Any) -> bool:
@@ -230,9 +272,9 @@ def get_first_solution_hc_weighted_sum(lns_object: LNS, ctl, thy: Any) -> bool:
     :rtype: bool
     """
     # add constraint to force better solution with each iteration
-    # encoding has to contain  _opt(I,(P,V)) predicates as optimization criteria
-    # where I: identifier, P: Priority, V: Value
-    ctl.add("opt_val", ["o"], ":- #sum{V,I: _opt(I,(P,V))} >= o.")
+    # encoding has to contain _lns_opt(N,I,W) predicates
+    # where N: name, I: identifier, W: weight
+    ctl.add("opt_val", ["o"], ":- #sum{W,I: _lns_opt(_,I,W)} >= o.")
     ground_base(lns_object, ctl)
 
     # get first solution
@@ -242,6 +284,82 @@ def get_first_solution_hc_weighted_sum(lns_object: LNS, ctl, thy: Any) -> bool:
         )
         print(f"Initial solution found with opt_val: {new_opt_val}")
         ctl.ground([("opt_val", [Number(new_opt_val)])])
+        lns_object.models["current_model"] = lns_object.models["new_model"].copy()
+        lns_object.models["best_model"] = lns_object.models["new_model"].copy()
+        return True
+    print("No first solution found.")
+    return False
+
+
+def get_first_solution_hc_lexicographic(lns_object: LNS, ctl, thy: Any) -> bool:
+    """
+    Find initial solution.
+    Ground found optimization value as hard constraint.
+    Use lexicographic optimization.
+
+    :param lns_object: LNS object.
+    :type lns_object: large_neighbourhood_search.LNS
+    :param ctl: Control object used for search.
+    :type ctl: clingo.control.Control
+    :param thy: Theory object used for search.
+    :type thy: Any
+    :return: Whether a solution was found or not
+    :rtype: bool
+    """
+    ground_base(lns_object, ctl)
+
+    # get first solution
+    if lns_object.callables["repair"](lns_object, ctl, [], thy).satisfiable:
+        new_opt_val = lns_object.callables["calc_opt_value"](
+            lns_object.models["new_model"]
+        )
+        print(f"Initial solution found with opt_val: {new_opt_val}")
+
+        # add rules to force better solution with each iteration
+        # encoding has to contain _lns_opt(N,I,W) predicates and _lns_opt(N,P) facts
+        # where N: name, I: identifier, W: weight, P: priority
+        # example of generated rules with ground values for opt_val={1:2, 2:1}
+        #   #external step(s).
+        #   bettereq(P+1,s) :- _lns_opt(_,P), not _lns_opt(_,P+1), step(s).
+        #   :- not better(_,s), step(s).
+        #   better(1,s) :- _lns_opt(N,1), #sum{V,I: _lns_opt(N,I,V)} < 2, bettereq(2,s).
+        #   bettereq(1,s) :- _lns_opt(N,1), #sum{V,I: _lns_opt(N,I,V)} <= 2.
+        #   better(2,s) :- _lns_opt(N,2), #sum{V,I: _lns_opt(N,I,V)} < 1, bettereq(3,s).
+        #   bettereq(2,s) :- _lns_opt(N,2), #sum{V,I: _lns_opt(N,I,V)} <= 1.
+
+        s = ["s"] + list(map(lambda x: f"opt{x}", new_opt_val.keys()))
+        rules = "#external step(s).\
+        bettereq(P+1,s) :- _lns_opt(_,P), not _lns_opt(_,P+1), step(s).\
+        :- not better(_,s), step(s).".join(
+            list(
+                map(
+                    lambda x: f"better({x},s) :- _lns_opt(N,{x}),\
+                        #sum{{V,I: _lns_opt(N,I,V)}} < opt{x}, bettereq({x+1},s), step(s).",
+                    new_opt_val.keys(),
+                )
+            )
+            + list(
+                map(
+                    lambda x: f"bettereq({x},s) :- _lns_opt(N,{x}),\
+                        #sum{{V,I: _lns_opt(N,I,V)}} <= opt{x}, step(s).",
+                    new_opt_val.keys(),
+                )
+            )
+        )
+        ctl.add("opt_val", s, rules)
+        ctl.ground(
+            [
+                (
+                    "opt_val",
+                    [Number(0)]
+                    + [
+                        Number(new_opt_val[prio]) for prio in sorted(new_opt_val.keys())
+                    ],
+                )
+            ]
+        )
+        ctl.assign_external(Function("step", [Number(0)]), True)
+
         lns_object.models["current_model"] = lns_object.models["new_model"].copy()
         lns_object.models["best_model"] = lns_object.models["new_model"].copy()
         return True
