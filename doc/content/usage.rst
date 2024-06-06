@@ -1,55 +1,72 @@
 Usage
 ============
 
-This project allows a multitude of options to customize the search. For a list of all possible options run:
+While this project is mainly build as its usage as an easily modifiable api, 
+it can still be used on its own, but heavily limited as described below.
+For all options supported during the default module execution use:
 
 .. code-block:: console
 
     $ large_neighbourhood_search -h
 
+.. currentmodule:: large_neighbourhood_search.__init__
 
-For complete control of search parameters, a parameter file has to be used. An example of such parameter file can be created at the target 
-directory using:
+The direct execution supports only a default LNS using hard constraints and a random relaxation of shown atoms.
+The search is limited to 2000 steps or 10 min with 20s per solve call and relax rates of 0.2, 0.4 and 0.6, which are switched after 3 consecutive
+failed attempts respectively, to improve the solution. After 5 consecutive timeouts the search is terminated.
 
-.. code-block:: console
+For finer control over the performed Large-Neighbourhood-Search (LNS) this module should be used as an api.
+During initialization of the LNS object, all callables, which will be used during execution, can be replaced and
+are further explained :ref:`here<ref_call>`.
+Some example callables can be found in the :ref:`lib<ref_lib>` submodule. Additional parameters such as relax rates or
+the step limit for the LNS can be set using the :meth:`set_params` method. An example of the LNS initialization can be seen below
+or in :file:`./examples/demo.py`:
 
-    $ large_neighbourhood_search --gen-example DIR
+.. code-block:: python
 
+    from large_neighbourhood_search import LNS
+    from large_neighbourhood_search.lib.lns_functions import check_stop_time
 
-A new parameter file in the target directory can be created using:
+    lns = LNS(
+        ["./examples/golf.lp"],             # ASP encoding
+        {"check_stop": check_stop_time},    # Callables dictionary
+    )
+    lns.set_params({"seed": 123})
 
-.. code-block:: console
+.. currentmodule:: large_neighbourhood_search.lib.theory
 
-    $ large_neighbourhood_search --new-param-file DIR
+At the moment clingo and clingo-dl are supported via their respective functions :func:`setup_clingo`, :func:`repair_clingo` 
+and :func:`setup_clingo_dl`, :func:`repair_clingo_dl`.
 
-The following search parameters can be set using a parameter file:
- * **Name**: :code:`string`, name of the parameter file.
- * **Relaxation mode**: :code:`decl|rndm`, use declarative or random selection of relaxation atoms. If using declarative mode see :ref:`decl-mode`.
- * **Relax rates**: :code:`float+`, one or more relax rates for LNS. Value between 0 and 1.
- * **Relax threshold**: :code:`positive integer`, if more than 1 relax rate, after how many failures to find better solutions a new relax rate should be selected.
-    Always the next rate in the relax rate list is selected.
- * **Search mode**: :code:`hard_const|classic`, search mode used for LNS. Enforcing better solutions during solving via hard constraints or not (classic).
- * **Bound mode**: :code:`overall|per_improv`, stop LNS after overall bound is reached or no better solution as be found in the given bound.
- * **Bound type**: :code:`steps|time`, bound value is to interpreted as number of steps or time in seconds.
- * **Bound value**: :code:`positive intger`.
- * **Seed**: :code:`positive integer`, seed for LNS, e.g. random relaxation.
-Example
--------
+.. _ref_enc:
 
-An example call for LNS using hard constraints in declarative mode with a constant relax rate of 0.4  on the provided social golfer example would look like this:
+Encoding
+----------
 
-.. code-block:: console
+.. currentmodule:: large_neighbourhood_search
 
-    $ large_neighbourhood_search -i ./examples/golf.lp --declarative --relax-rate 0.4 
+For a correct program execution the ASP encoding has to contain some form of derivation for the :code:`_lns_penalty(N,I,W)` predicate
+to indicate optimization criteria and :code:`_lns_priority(N,P)` facts to denote their priority. An example definition can be seen in :file:`./examples/golf.lp`.
 
-Problem instances have to contain :code:`_minimize/2` predicates to describe optimization criteria. 
-:code:`_minimize(N,O)` sates, that each occurrence of :code:`O` corresponds to an optimization value of N.
+.. code-block::
+    
+    _lns_priority(
+        N,      % Name of the optimization criteria
+        P       % Priority of the criteria (greater value = higher priority)
+    ).
+    _lns_penalty(
+        N,      % Name of the optimization criteria
+        I,      % Unique identifier
+        W       % Weight of the criteria
+    ) :- <BODY>.
 
-.. _decl-mode:
+By default this project performs minimization using weighted sums, where the priority is simply ignored.
+Alternatively minimization with lexicographic optimization is also supported.
+To make changes, on how the optimization is handled, one has to edit :func:`calc_opt_value`,
+:func:`get_first_solution` and all other callables using the optimization criteria e.g. :func:`check_better`.
 
-Declarative mode
-----------------
-
-When using declarative mode to be relaxed atoms have to be selected using :code:`_lns_select/1` and optionally a subset fixed using :code:`_lns_fix/2`.
-An example can be found in :file:`./examples/golf.lp`
-
+When using :func:`lib.search.relax_declarative`, :code:`_lns_select/1` and :code:`_lns_fix/2` have to be used
+in the encoding. While :code:`_lns_select/1` selects a set of terms, :code:`_lns_fix/2` maps atoms those terms,
+that should be fixed if the corresponding atom is selected. During LNS a random number of selected terms is then chosen.
+An example can be found in :file:`./examples/golf.lp`, where weeks :code:`W` are selected and mapped to
+a fixation of all plays in the corresponding week.

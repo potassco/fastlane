@@ -27,8 +27,7 @@ def get_parser() -> ArgumentParser:
         description=dedent(
             """\
             ASP using Large-Neighbourhood Search (LNS).
-            For advanced options a parameter file is required.
-            --new-parameter-file can be used to create one.
+            Advanced paramters can be set using set_params(Dict[str, Any]).
             """
         ),
     )
@@ -61,44 +60,4 @@ def get_parser() -> ArgumentParser:
 
     parser.add_argument("-i", help="Input file(s)", nargs="+")
 
-    parser.add_argument(
-        "--lns-seed", help="Random seed for LNS.", default=None, type=int
-    )
-
-    parser.add_argument(
-        "--relax-rate",
-        help="Relax rate for LNS. Value between 0 and 1",
-        default=0.2,
-        type=float,
-    )
-
-    parser.add_argument(
-        "--bnb-search",
-        help="Perform standard branch-and-bound search (no LNS).",
-        action="store_true",
-    )
-
-    parser.add_argument(
-        "--declarative",
-        help="Perform LNS using declarative neighbourhood.",
-        action="store_true",
-    )
-
-    parser.add_argument(
-        "--gen-example",
-        help="Generate example parameter file at destination and exit.",
-        type=str,
-        metavar="DIR",
-    )
-
-    parser.add_argument(
-        "--new-param-file",
-        help="Create new parameter file at destination and exit.",
-        type=str,
-        metavar="DIR",
-    )
-
-    parser.add_argument(
-        "--load-param-file", help="Load parameters from file.", type=str, metavar="DIR"
-    )
     return parser
