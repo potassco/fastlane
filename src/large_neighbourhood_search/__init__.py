@@ -30,7 +30,7 @@ class LNS:
         Initialize application.
         """
         self.program_name = "lns"
-        self.version = "2.1.0"
+        self.version = "2.1.1"
 
         self.theory: Union[ClingoDLTheory, None] = None
         self.param_values: Dict[str, Any] = {

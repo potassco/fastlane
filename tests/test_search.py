@@ -85,7 +85,7 @@ class TestSearch(TestCase):
             "true": [
                 Function("meets", [Number(7), Number(8), Number(3)], True),
                 Function(
-                    "_lns_opt",
+                    "_lns_priority",
                     [
                         String("min"),
                         Number(1),
@@ -93,7 +93,7 @@ class TestSearch(TestCase):
                     True,
                 ),
                 Function(
-                    "_lns_opt",
+                    "_lns_penalty",
                     [
                         String("min"),
                         Function("", [Number(1), Number(2)], True),
@@ -102,7 +102,7 @@ class TestSearch(TestCase):
                     True,
                 ),
                 Function(
-                    "_lns_opt",
+                    "_lns_priority",
                     [
                         String("min2"),
                         Number(2),
@@ -110,7 +110,7 @@ class TestSearch(TestCase):
                     True,
                 ),
                 Function(
-                    "_lns_opt",
+                    "_lns_penalty",
                     [
                         String("min2"),
                         Function("", [Number(3), Number(5)], True),
@@ -127,7 +127,7 @@ class TestSearch(TestCase):
             "true": [
                 Function("meets", [Number(7), Number(8), Number(3)], True),
                 Function(
-                    "_lns_opt",
+                    "_lns_priority",
                     [
                         String("min"),
                         Number(1),
@@ -135,7 +135,7 @@ class TestSearch(TestCase):
                     True,
                 ),
                 Function(
-                    "_lns_opt",
+                    "_lns_penalty",
                     [
                         String("min"),
                         Function("", [Number(1), Number(2)], True),
@@ -152,7 +152,7 @@ class TestSearch(TestCase):
             "true": [
                 Function("meets", [Number(7), Number(8), Number(3)], True),
                 Function(
-                    "_lns_opt",
+                    "_lns_priority",
                     [
                         String("min"),
                         Number(1),
@@ -160,7 +160,7 @@ class TestSearch(TestCase):
                     True,
                 ),
                 Function(
-                    "_lns_opt",
+                    "_lns_penalty",
                     [
                         String("min"),
                         Function("", [Number(1), Number(2)], True),
@@ -169,7 +169,7 @@ class TestSearch(TestCase):
                     True,
                 ),
                 Function(
-                    "_lns_opt",
+                    "_lns_priority",
                     [
                         String("min2"),
                         Number(3),
@@ -177,7 +177,7 @@ class TestSearch(TestCase):
                     True,
                 ),
                 Function(
-                    "_lns_opt",
+                    "_lns_penalty",
                     [
                         String("min2"),
                         Function("", [Number(3), Number(5)], True),
@@ -226,7 +226,7 @@ class TestSearch(TestCase):
             "true": [
                 Function("meets", [Number(7), Number(8), Number(3)], True),
                 Function(
-                    "_lns_opt",
+                    "_lns_priority",
                     [
                         String("min"),
                         Number(1),
@@ -234,7 +234,7 @@ class TestSearch(TestCase):
                     True,
                 ),
                 Function(
-                    "_lns_opt",
+                    "_lns_penalty",
                     [
                         String("min"),
                         Function("", [Number(1), Number(2)], True),
@@ -243,7 +243,7 @@ class TestSearch(TestCase):
                     True,
                 ),
                 Function(
-                    "_lns_opt",
+                    "_lns_penalty",
                     [
                         String("min"),
                         Function("", [Number(3), Number(5)], True),
@@ -260,7 +260,7 @@ class TestSearch(TestCase):
             "true": [
                 Function("meets", [Number(7), Number(8), Number(3)], True),
                 Function(
-                    "_lns_opt",
+                    "_lns_priority",
                     [
                         String("min"),
                         Number(1),
@@ -268,7 +268,7 @@ class TestSearch(TestCase):
                     True,
                 ),
                 Function(
-                    "_lns_opt",
+                    "_lns_penalty",
                     [
                         String("min"),
                         Function("", [Number(1), Number(2)], True),
@@ -293,7 +293,7 @@ class TestSearch(TestCase):
             "true": [
                 Function("meets", [Number(6), Number(8), Number(3)], True),
                 Function(
-                    "_lns_opt",
+                    "_lns_priority",
                     [
                         String("min"),
                         Number(1),
@@ -301,7 +301,7 @@ class TestSearch(TestCase):
                     True,
                 ),
                 Function(
-                    "_lns_opt",
+                    "_lns_penalty",
                     [
                         String("min"),
                         Function("", [Number(1), Number(2)], True),

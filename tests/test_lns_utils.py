@@ -43,7 +43,7 @@ class TestLNSUtils(TestCase):
                 Function("meets", [Number(7), Number(9), Number(3)], True),
                 Function("meets", [Number(8), Number(9), Number(3)], True),
                 Function(
-                    "_lns_opt",
+                    "_lns_priority",
                     [
                         String("min"),
                         Number(1),
@@ -51,7 +51,7 @@ class TestLNSUtils(TestCase):
                     True,
                 ),
                 Function(
-                    "_lns_opt",
+                    "_lns_penalty",
                     [
                         String("min"),
                         Function("", [Number(1), Number(2)], True),
@@ -60,7 +60,7 @@ class TestLNSUtils(TestCase):
                     True,
                 ),
                 Function(
-                    "_lns_opt",
+                    "_lns_penalty",
                     [
                         String("min"),
                         Function("", [Number(3), Number(5)], True),
@@ -69,7 +69,7 @@ class TestLNSUtils(TestCase):
                     True,
                 ),
                 Function(
-                    "_lns_opt",
+                    "_lns_priority",
                     [
                         String("min2"),
                         Number(2),
@@ -77,7 +77,7 @@ class TestLNSUtils(TestCase):
                     True,
                 ),
                 Function(
-                    "_lns_opt",
+                    "_lns_penalty",
                     [
                         String("min2"),
                         Function("", [Number(1), Number(2)], True),
@@ -86,7 +86,7 @@ class TestLNSUtils(TestCase):
                     True,
                 ),
                 Function(
-                    "_lns_opt",
+                    "_lns_penalty",
                     [
                         String("min2"),
                         Function("", [Number(3), Number(5)], True),
@@ -113,7 +113,7 @@ class TestLNSUtils(TestCase):
                 Function("meets", [Number(7), Number(9), Number(3)], True),
                 Function("meets", [Number(8), Number(9), Number(3)], True),
                 Function(
-                    "_lns_opt",
+                    "_lns_priority",
                     [
                         String("min"),
                         Number(1),
@@ -121,7 +121,7 @@ class TestLNSUtils(TestCase):
                     True,
                 ),
                 Function(
-                    "_lns_opt",
+                    "_lns_penalty",
                     [
                         String("min"),
                         Function("", [Number(1), Number(2)], True),
@@ -130,7 +130,7 @@ class TestLNSUtils(TestCase):
                     True,
                 ),
                 Function(
-                    "_lns_opt",
+                    "_lns_penalty",
                     [
                         String("min"),
                         Function("", [Number(3), Number(5)], True),
@@ -139,7 +139,7 @@ class TestLNSUtils(TestCase):
                     True,
                 ),
                 Function(
-                    "_lns_opt",
+                    "_lns_priority",
                     [
                         String("min2"),
                         Number(3),
@@ -147,7 +147,7 @@ class TestLNSUtils(TestCase):
                     True,
                 ),
                 Function(
-                    "_lns_opt",
+                    "_lns_penalty",
                     [
                         String("min2"),
                         Function("", [Number(1), Number(2)], True),
@@ -156,7 +156,7 @@ class TestLNSUtils(TestCase):
                     True,
                 ),
                 Function(
-                    "_lns_opt",
+                    "_lns_priority",
                     [
                         String("min3"),
                         Number(2),
@@ -164,7 +164,7 @@ class TestLNSUtils(TestCase):
                     True,
                 ),
                 Function(
-                    "_lns_opt",
+                    "_lns_penalty",
                     [
                         String("min3"),
                         Function("", [Number(3), Number(5)], True),

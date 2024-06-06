@@ -19,7 +19,7 @@ def calc_opt_val_weighted_sum(model: Dict[str, Sequence[clingo.symbol.Symbol]]) 
     """
     opt_val = 0
     for atom in model["true"]:
-        if atom.match("_lns_opt", 3):
+        if atom.match("_lns_penalty", 3):
             if atom.arguments[2].type is SymbolType.Number:
                 opt_val += atom.arguments[2].number
     return opt_val
@@ -40,13 +40,13 @@ def calc_opt_val_lexicographic(
     temp_val: Dict[str, int] = {}
     opt_val: Dict[int, int] = {}
     for atom in model["true"]:
-        if atom.match("_lns_opt", 2):
+        if atom.match("_lns_priority", 2):
             if (
                 atom.arguments[0].type is SymbolType.String
                 and atom.arguments[1].type is SymbolType.Number
             ):
                 priorities[atom.arguments[0].string] = atom.arguments[1].number
-        elif atom.match("_lns_opt", 3):
+        elif atom.match("_lns_penalty", 3):
             if (
                 atom.arguments[0].type is SymbolType.String
                 and atom.arguments[2].type is SymbolType.Number

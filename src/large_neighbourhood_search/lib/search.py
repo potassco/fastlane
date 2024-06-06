@@ -103,6 +103,7 @@ def check_accept_variability(
     """
     Check whether new model is accepted.
     Accept if variability of new and current model >= 0.5.
+    Filter optimization atoms from models.
 
     :param lns_object: LNS object.
     :type lns_object: large_neighbourhood_search.LNS
@@ -116,10 +117,10 @@ def check_accept_variability(
     n_model = []
     c_model = []
     for atom in new_model["true"]:
-        if not (atom.match("_lns_opt", 2) or atom.match("_lns_opt", 3)):
+        if not (atom.match("_lns_priority", 2) or atom.match("_lns_penalty", 3)):
             n_model.append(atom)
     for atom in current_model["true"]:
-        if not (atom.match("_lns_opt", 2) or atom.match("_lns_opt", 3)):
+        if not (atom.match("_lns_priority", 2) or atom.match("_lns_penalty", 3)):
             c_model.append(atom)
     return calculate_variability(n_model, c_model) >= 0.5
 
@@ -272,9 +273,9 @@ def get_first_solution_hc_weighted_sum(lns_object: LNS, ctl, thy: Any) -> bool:
     :rtype: bool
     """
     # add constraint to force better solution with each iteration
-    # encoding has to contain _lns_opt(N,I,W) predicates
+    # encoding has to contain _lns_penalty(N,I,W) predicates
     # where N: name, I: identifier, W: weight
-    ctl.add("opt_val", ["o"], ":- #sum{W,I: _lns_opt(_,I,W)} >= o.")
+    ctl.add("opt_val", ["o"], ":- #sum{W,I: _lns_penalty(_,I,W)} >= o.")
     ground_base(lns_object, ctl)
 
     # get first solution
@@ -316,32 +317,32 @@ def get_first_solution_hc_lexicographic(lns_object: LNS, ctl, thy: Any) -> bool:
         print(f"Initial solution found with opt_val: {new_opt_val}")
 
         # add rules to force better solution with each iteration
-        # encoding has to contain _lns_opt(N,I,W) predicates and _lns_opt(N,P) facts
+        # encoding has to contain _lns_penalty(N,I,W) predicates and _lns_priority(N,P) facts
         # where N: name, I: identifier, W: weight, P: priority
         # example of generated rules with ground values for opt_val={1:2, 2:1}
         #   #external step(s).
-        #   bettereq(P+1,s) :- _lns_opt(_,P), not _lns_opt(_,P+1), step(s).
+        #   bettereq(P+1,s) :- _lns_priority(_,P), not _lns_penalty(_,P+1), step(s).
         #   :- not better(_,s), step(s).
-        #   better(1,s) :- _lns_opt(N,1), #sum{V,I: _lns_opt(N,I,V)} < 2, bettereq(2,s).
-        #   bettereq(1,s) :- _lns_opt(N,1), #sum{V,I: _lns_opt(N,I,V)} <= 2.
-        #   better(2,s) :- _lns_opt(N,2), #sum{V,I: _lns_opt(N,I,V)} < 1, bettereq(3,s).
-        #   bettereq(2,s) :- _lns_opt(N,2), #sum{V,I: _lns_opt(N,I,V)} <= 1.
+        #   better(1,s) :- _lns_priority(N,1), #sum{V,I: _lns_penalty(N,I,W)} < 2, bettereq(2,s), step(s).
+        #   bettereq(1,s) :- _lns_priority(N,1), #sum{V,I: _lns_penalty(N,I,W)} <= 2, step(s).
+        #   better(2,s) :- _lns_priority(N,2), #sum{V,I: _lns_penalty(N,I,W)} < 1, bettereq(3,s), step(s).
+        #   bettereq(2,s) :- _lns_priority(N,2), #sum{V,I: _lns_penalty(N,I,W)} <= 1, step(s).
 
         s = ["s"] + list(map(lambda x: f"opt{x}", new_opt_val.keys()))
         rules = "#external step(s).\
-        bettereq(P+1,s) :- _lns_opt(_,P), not _lns_opt(_,P+1), step(s).\
+        bettereq(P+1,s) :- _lns_priority(_,P), not _lns_priority(_,P+1), step(s).\
         :- not better(_,s), step(s).".join(
             list(
                 map(
-                    lambda x: f"better({x},s) :- _lns_opt(N,{x}),\
-                        #sum{{V,I: _lns_opt(N,I,V)}} < opt{x}, bettereq({x+1},s), step(s).",
+                    lambda x: f"better({x},s) :- _lns_priority(N,{x}),\
+                        #sum{{V,I: _lns_penalty(N,I,V)}} < opt{x}, bettereq({x+1},s), step(s).",
                     new_opt_val.keys(),
                 )
             )
             + list(
                 map(
-                    lambda x: f"bettereq({x},s) :- _lns_opt(N,{x}),\
-                        #sum{{V,I: _lns_opt(N,I,V)}} <= opt{x}, step(s).",
+                    lambda x: f"bettereq({x},s) :- _lns_priority(N,{x}),\
+                        #sum{{V,I: _lns_penalty(N,I,V)}} <= opt{x}, step(s).",
                     new_opt_val.keys(),
                 )
             )
