@@ -45,21 +45,22 @@ Encoding
 
 .. currentmodule:: large_neighbourhood_search
 
-For a correct program execution the ASP encoding has to contain some form of derivation for the :code:`_opt(I,(P,V))` predicate
-to indicate optimization criteria. An example definition can be seen in :file:`./examples/golf.lp`.
+For a correct program execution the ASP encoding has to contain some form of derivation for the :code:`_lns_opt(N,I,W)` predicate
+to indicate optimization criteria and :code:`_lns_opt(N,P)` facts to denote their priority. An example definition can be seen in :file:`./examples/golf.lp`.
 
 .. code-block::
     
-    _opt(
-            I,      % Unique identifier
-            (
-                P,  % Priority of the criteria (greater value = higher priority)
-                V   % Value of the criteria
-            )
-        )
-        :- <BODY>.
+    _lns_opt(
+        N,      % Name of the optimization criteria
+        P       % Priority of the criteria (greater value = higher priority)
+    ).
+    _lns_opt(
+        N,      % Name of the optimization criteria
+        I,      % Unique identifier
+        W       % Weight of the criteria
+    ) :- <BODY>.
 
-By default this project performs minimization using weighted sums.
+By default this project performs minimization using weighted sums, where the priority is simply ignored.
 Alternatively minimization with lexicographic optimization is also supported.
 To make changes, on how the optimization is handled, one has to edit :func:`calc_opt_value`,
 :func:`get_first_solution` and all other callables using the optimization criteria e.g. :func:`check_better`.
