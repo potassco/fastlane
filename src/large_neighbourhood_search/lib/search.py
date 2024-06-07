@@ -319,14 +319,16 @@ def get_first_solution_hc_lexicographic(lns_object: LNS, ctl, thy: Any) -> bool:
         # add rules to force better solution with each iteration
         # encoding has to contain _lns_penalty(N,I,W) predicates and _lns_priority(N,P) facts
         # where N: name, I: identifier, W: weight, P: priority
-        # example of generated rules with ground values for opt_val={1:2, 2:1}
+        # higher priority = more important
+        # priorities have to be declared consecutively, e.g. only 1 and 3 not allowed
+        # example of generated rules with ground values for opt_val={1:3, 2:4}
         #   #external step(s).
         #   bettereq(P+1,s) :- _lns_priority(_,P), not _lns_penalty(_,P+1), step(s).
         #   :- not better(_,s), step(s).
-        #   better(1,s) :- _lns_priority(N,1), #sum{V,I: _lns_penalty(N,I,W)} < 2, bettereq(2,s), step(s).
-        #   bettereq(1,s) :- _lns_priority(N,1), #sum{V,I: _lns_penalty(N,I,W)} <= 2, step(s).
-        #   better(2,s) :- _lns_priority(N,2), #sum{V,I: _lns_penalty(N,I,W)} < 1, bettereq(3,s), step(s).
-        #   bettereq(2,s) :- _lns_priority(N,2), #sum{V,I: _lns_penalty(N,I,W)} <= 1, step(s).
+        #   better(1,s) :- _lns_priority(N,1), #sum{V,I: _lns_penalty(N,I,W)} < 3, bettereq(1,s), step(s).
+        #   bettereq(1,s) :- _lns_priority(N,1), #sum{V,I: _lns_penalty(N,I,W)} <= 3, bettereq(2,s), step(s).
+        #   better(2,s) :- _lns_priority(N,2), #sum{V,I: _lns_penalty(N,I,W)} < 4, bettereq(2,s), step(s).
+        #   bettereq(2,s) :- _lns_priority(N,2), #sum{V,I: _lns_penalty(N,I,W)} <= 4, bettereq(3,s), step(s).
 
         s = ["s"] + list(map(lambda x: f"opt{x}", new_opt_val.keys()))
         rules = "#external step(s).\
@@ -335,14 +337,14 @@ def get_first_solution_hc_lexicographic(lns_object: LNS, ctl, thy: Any) -> bool:
             list(
                 map(
                     lambda x: f"better({x},s) :- _lns_priority(N,{x}),\
-                        #sum{{V,I: _lns_penalty(N,I,V)}} < opt{x}, bettereq({x+1},s), step(s).",
+                        #sum{{V,I: _lns_penalty(N,I,V)}} < opt{x}, bettereq({x},s), step(s).",
                     new_opt_val.keys(),
                 )
             )
             + list(
                 map(
                     lambda x: f"bettereq({x},s) :- _lns_priority(N,{x}),\
-                        #sum{{V,I: _lns_penalty(N,I,V)}} <= opt{x}, step(s).",
+                        #sum{{V,I: _lns_penalty(N,I,V)}} <= opt{x}, bettereq({x+1},s), step(s).",
                     new_opt_val.keys(),
                 )
             )
