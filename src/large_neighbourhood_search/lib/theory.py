@@ -94,7 +94,7 @@ def repair_clingo(
         done = handle.wait(lns_object.param_values["time_limit"])
         if not done:
             handle.cancel()
-            lns_object.callables["time_out"](lns_object)
+            lns_object.callables["timeout"](lns_object)
         res = handle.get()
     return res
 
@@ -126,7 +126,7 @@ def repair_clingo_dl(
         done = handle.wait(lns_object.param_values["time_limit"])
         if not done:
             handle.cancel()
-            lns_object.callables["time_out"](lns_object)
+            lns_object.callables["timeout"](lns_object)
         res = handle.get()
     return res
 

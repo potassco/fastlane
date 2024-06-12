@@ -4,6 +4,7 @@ The large_neighbourhood_search project.
 
 import random
 import signal
+import sys
 from types import FrameType
 from typing import Any, Callable, Dict, List, Sequence, Union
 
@@ -37,7 +38,7 @@ class LNS:
             "files": files,
             "seed": None,
             "relax_rates": [0.2, 0.4, 0.6],
-            "bound": 2000,
+            "max_steps": 2000,
             "switch_rr_after_no_improv": 3,
             "clingo_args": {"rand-freq": 0.8},
             "time_limit": 20,
@@ -55,19 +56,19 @@ class LNS:
 
         self.callables: Dict[str, Callable] = {
             "setup": theory.setup_clingo,
+            "get_first_solution": search.get_first_solution_hc_weighted_sum,
             "relax": search.relax_random,
             "repair": theory.repair_clingo,
-            "calc_opt_value": lns_utils.calc_opt_val_weighted_sum,
-            "get_first_solution": search.get_first_solution_hc_weighted_sum,
             "check_accept": search.check_accept_always,
             "check_better": search.check_better_always,
+            "check_stop": boundary.check_stop_steps,
+            "calc_opt_value": lns_utils.calc_opt_val_weighted_sum,
             "better_solution_found": search.better_solution_found_hc_weighted_sum,
             "boundary_handling": boundary.boundary_overall,
-            "check_stop": boundary.check_stop_steps,
             "finish": boundary.finish,
             "check_stuck": search.check_stuck_never,
             "is_stuck": search.is_stuck,
-            "time_out": search.time_out,
+            "timeout": search.timeout,
         }
         if callables:
             self.callables = {**self.callables, **callables}
@@ -160,7 +161,7 @@ class LNS:
 
         def init_fail():
             print("Failed to init relax rate.")
-            raise SystemExit
+            sys.exit(1)
 
         if "relax_rates" in self.param_values:
             if (
@@ -180,7 +181,7 @@ class LNS:
 
         # get first solution
         if not self.callables["get_first_solution"](self, ctl, thy):
-            return
+            sys.exit(1)
 
         # perform LNS
         self.callables["boundary_handling"](self, "init")
@@ -196,8 +197,7 @@ class LNS:
 
             # reconstruct model
             if self.callables["repair"](self, ctl, assumptions, thy).satisfiable:
-                if "timeout" not in self.boundary_dict:
-                    self.boundary_dict["timeout"] = 0
+                self.boundary_dict["timeout"] = 0
                 # check if new model is accepted
                 if self.callables["check_accept"](
                     self, self.models["new_model"], self.models["current_model"]
@@ -205,20 +205,18 @@ class LNS:
                     self.models["current_model"] = self.models["new_model"].copy()
 
                     # check if new model is better
-                    if self.callables["check_better"](
-                        self,
-                        self.models["new_model"],
-                        self.models["best_model"],
-                    ):
-                        self.callables["better_solution_found"](self, ctl)
+                if self.callables["check_better"](
+                    self,
+                    self.models["new_model"],
+                    self.models["best_model"],
+                ):
+                    self.callables["better_solution_found"](self, ctl)
 
-                        self.callables["boundary_handling"](self, "improvement")
-                        improvement_found = True
+                    self.callables["boundary_handling"](self, "improvement")
+                    improvement_found = True
             if not improvement_found:
                 self.callables["boundary_handling"](self, "no_improvement")
                 if self.callables["check_stuck"](self):
                     self.callables["is_stuck"](self)
-                    break
             if self.callables["check_stop"](self):
                 self.callables["finish"](self)
-                break
