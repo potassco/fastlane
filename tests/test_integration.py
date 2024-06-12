@@ -18,7 +18,8 @@ class TestIntegration(TestCase):
         Test default execution.
         """
         lns = LNS(["./tests/ref/golf.lp"])
-        lns.main()
+        with self.assertRaises(SystemExit):
+            lns.main()
 
     def test_hc_weighted_sum(self):
         """
@@ -33,7 +34,8 @@ class TestIntegration(TestCase):
             },
         )
         lns.set_params({"seed": 123})
-        lns.main()
+        with self.assertRaises(SystemExit):
+            lns.main()
 
     def test_hc_lexicographic(self):
         """
@@ -49,7 +51,8 @@ class TestIntegration(TestCase):
             },
         )
         lns.set_params({"seed": 123})
-        lns.main()
+        with self.assertRaises(SystemExit):
+            lns.main()
 
     def test_classic_weighted_sum(self):
         """
@@ -64,7 +67,8 @@ class TestIntegration(TestCase):
             },
         )
         lns.set_params({"seed": 456})
-        lns.main()
+        with self.assertRaises(SystemExit):
+            lns.main()
 
     def test_classic_lexicographic(self):
         """
@@ -80,7 +84,8 @@ class TestIntegration(TestCase):
             },
         )
         lns.set_params({"seed": 123})
-        lns.main()
+        with self.assertRaises(SystemExit):
+            lns.main()
 
     def test_clingo_dl(self):
         """
@@ -94,7 +99,8 @@ class TestIntegration(TestCase):
             },
         )
         lns.set_params({"seed": 123})
-        lns.main()
+        with self.assertRaises(SystemExit):
+            lns.main()
 
     def test_stop_time(self):
         """
@@ -105,7 +111,8 @@ class TestIntegration(TestCase):
             {"check_stop": lns_pkg.lib.boundary.check_stop_time},
         )
         lns.set_params({"seed": 123})
-        lns.main()
+        with self.assertRaises(SystemExit):
+            lns.main()
 
     def test_stuck(self):
         """
@@ -121,7 +128,8 @@ class TestIntegration(TestCase):
             },
         )
         lns.set_params({"seed": 123})
-        lns.main()
+        with self.assertRaises(SystemExit):
+            lns.main()
 
     def test_timeout(self):
         """
@@ -174,4 +182,5 @@ class TestIntegration(TestCase):
         """
         lns = LNS(["./tests/ref/bad_encoding.lp"])
         lns.set_params({"seed": 123})
-        lns.main()
+        with self.assertRaises(SystemExit):
+            lns.main()

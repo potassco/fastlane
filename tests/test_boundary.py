@@ -19,7 +19,7 @@ class TestBoundary(TestCase):
         """
         lns = LNS(["./tests/ref/golf.lp"])
         self.assertTrue(lns_pkg.lib.boundary.boundary_overall(lns, "init"))
-        self.assertEqual(lns.boundary_dict["bound"], lns.param_values["bound"])
+        self.assertEqual(lns.boundary_dict["max_steps"], lns.param_values["max_steps"])
         self.assertEqual(lns.boundary_dict["step"], 0)
         s_time = lns.boundary_dict["start_time"]
         self.assertEqual(type(s_time), float)
@@ -33,7 +33,7 @@ class TestBoundary(TestCase):
         lns_pkg.lib.boundary.boundary_overall(lns, "init")
         s_time = lns.boundary_dict["start_time"]
         self.assertTrue(lns_pkg.lib.boundary.boundary_overall(lns, "update"))
-        self.assertEqual(lns.boundary_dict["bound"], lns.param_values["bound"])
+        self.assertEqual(lns.boundary_dict["max_steps"], lns.param_values["max_steps"])
         self.assertEqual(lns.boundary_dict["step"], 1)
         self.assertEqual(lns.boundary_dict["start_time"], s_time)
         self.assertEqual(lns.boundary_dict["no_improvement"], 0)
@@ -47,23 +47,23 @@ class TestBoundary(TestCase):
         lns_pkg.lib.boundary.boundary_overall(lns, "update")
         s_time = lns.boundary_dict["start_time"]
         self.assertTrue(lns_pkg.lib.boundary.boundary_overall(lns, "improvement"))
-        self.assertEqual(lns.boundary_dict["bound"], lns.param_values["bound"])
+        self.assertEqual(lns.boundary_dict["max_steps"], lns.param_values["max_steps"])
         self.assertEqual(lns.boundary_dict["step"], 1)
         self.assertEqual(lns.boundary_dict["start_time"], s_time)
         self.assertEqual(lns.boundary_dict["no_improvement"], 0)
 
     def test_boundary_overall_improvement_nobound(self):
         """
-        Test "improvement" action of boundary_overall without bound.
+        Test "improvement" action of boundary_overall without max_steps.
         """
         lns = LNS(["./tests/ref/golf.lp"])
-        lns.set_params({"bound": None})
+        lns.set_params({"max_steps": None})
         lns_pkg.lib.boundary.boundary_overall(lns, "init")
-        self.assertIsNone(lns.boundary_dict["bound"])
+        self.assertIsNone(lns.boundary_dict["max_steps"])
         lns_pkg.lib.boundary.boundary_overall(lns, "update")
         s_time = lns.boundary_dict["start_time"]
         self.assertTrue(lns_pkg.lib.boundary.boundary_overall(lns, "improvement"))
-        self.assertEqual(lns.boundary_dict["bound"], lns.param_values["bound"])
+        self.assertEqual(lns.boundary_dict["max_steps"], lns.param_values["max_steps"])
         self.assertEqual(lns.boundary_dict["step"], 1)
         self.assertEqual(lns.boundary_dict["start_time"], s_time)
         self.assertEqual(lns.boundary_dict["no_improvement"], 0)
@@ -79,7 +79,7 @@ class TestBoundary(TestCase):
         lns_pkg.lib.boundary.boundary_overall(lns, "init")
         s_time = lns.boundary_dict["start_time"]
         self.assertTrue(lns_pkg.lib.boundary.boundary_overall(lns, "no_improvement"))
-        self.assertEqual(lns.boundary_dict["bound"], lns.param_values["bound"])
+        self.assertEqual(lns.boundary_dict["max_steps"], lns.param_values["max_steps"])
         self.assertEqual(lns.boundary_dict["step"], 0)
         self.assertEqual(lns.boundary_dict["start_time"], s_time)
         self.assertEqual(lns.boundary_dict["no_improvement"], 1)
@@ -97,7 +97,7 @@ class TestBoundary(TestCase):
         lns_pkg.lib.boundary.boundary_overall(lns, "init")
         lns.boundary_dict["step"] = 1
         self.assertFalse(lns_pkg.lib.boundary.check_stop_steps(lns))
-        lns.boundary_dict["bound"] = 0
+        lns.boundary_dict["max_steps"] = 0
         self.assertTrue(lns_pkg.lib.boundary.check_stop_steps(lns))
 
     def test_check_stop_time(self):
@@ -122,9 +122,11 @@ class TestBoundary(TestCase):
         lns = LNS(["./tests/ref/golf.lp"], {"calc_opt_value": helper})
         lns.callables["boundary_handling"](lns, "init")
         lns.models["best_model"] = {"shown": ["shown_test"]}
-        lns_pkg.boundary.finish(lns)
+        with self.assertRaises(SystemExit):
+            lns_pkg.boundary.finish(lns)
         lns.models["best_model"] = {
             "shown": ["shown_test"],
             "assignments": ["assignment_test"],
         }
-        lns_pkg.boundary.finish(lns)
+        with self.assertRaises(SystemExit):
+            lns_pkg.boundary.finish(lns)

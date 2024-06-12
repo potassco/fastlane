@@ -404,12 +404,12 @@ class TestSearch(TestCase):
         """
 
         def helper(lns_object):
-            _ = lns_object
+            lns_object.param_values["stuck"] = True
 
         lns = LNS(["./tests/ref/golf.lp"], {"is_stuck": helper})
         lns.callables["boundary_handling"](lns, "init")
-        lns_pkg.search.time_out(lns)
+        lns_pkg.search.timeout(lns)
         self.assertEqual(lns.boundary_dict["timeout"], 1)
         lns.boundary_dict["timeout"] = 5
-        with self.assertRaises(SystemExit):
-            lns_pkg.search.time_out(lns)
+        lns_pkg.search.timeout(lns)
+        self.assertTrue(lns.param_values["stuck"])
