@@ -1,7 +1,7 @@
 # large_neighbourhood_search
 
 The goal of this project is to implement a extensive and easily modifiable implementation of LNS using the tools of [potassco](https://potassco.org/).
-A detailed documentation can be build in `./doc` using `make html`.
+A detailed documentation can be build in `./doc` as described in `./doc/README.md`.
 
 ## Installation
 

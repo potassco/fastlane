@@ -146,7 +146,7 @@ This project includes one example implementation (:func:`lib.search.is_stuck`).
 
 .. code-block:: python
 
-    time_out(lns_object: LNS) -> None
+    timeout(lns_object: LNS) -> None
 
 Tasks performed when a timeout during solving occurs.
-This project includes one example implementation (:func:`lib.search.time_out`).
+This project includes one example implementation (:func:`lib.search.timeout`).
