@@ -4,6 +4,7 @@ Collection of functions regarding the boundary of a LNS.
 
 from __future__ import annotations
 
+import sys
 import time
 from typing import TYPE_CHECKING
 
@@ -31,17 +32,17 @@ def boundary_overall(lns_object: LNS, action: str) -> bool:
     # dict call-by-reference
     if action == "init":
         values.clear()
-        values["bound"] = lns_object.param_values["bound"]
+        values["max_steps"] = lns_object.param_values["max_steps"]
         values["step"] = 0
         values["start_time"] = time.time()
         values["no_improvement"] = 0
         return True
 
     def get_step_str():
-        if values["bound"] is None:
+        if values["max_steps"] is None:
             s = f"{time.time() - lns_object.boundary_dict['start_time']:.3f}s: {values['step']}"
         else:
-            s = f"{time.time() - lns_object.boundary_dict['start_time']:.3f}s: {values['step']}|{values['bound']}"
+            s = f"{time.time() - lns_object.boundary_dict['start_time']:.3f}s: {values['step']}|{values['max_steps']}"
         return s
 
     if action == "update":
@@ -85,11 +86,11 @@ def check_stop_steps(lns_object: LNS) -> bool:
     """
     if lns_object.models["best_model"] != {}:
         return (
-            lns_object.boundary_dict["step"] >= lns_object.boundary_dict["bound"]
+            lns_object.boundary_dict["step"] >= lns_object.boundary_dict["max_steps"]
             or lns_object.callables["calc_opt_value"](lns_object.models["best_model"])
             == 0
         )
-    return lns_object.boundary_dict["step"] >= lns_object.boundary_dict["bound"]
+    return lns_object.boundary_dict["step"] >= lns_object.boundary_dict["max_steps"]
 
 
 def check_stop_time(lns_object: LNS) -> bool:
@@ -137,3 +138,4 @@ def finish(lns_object: LNS) -> None:
             f"Overall time: {end_time - lns_object.boundary_dict['start_time']:.3f}s"
         )
     )
+    raise sys.exit()

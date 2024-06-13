@@ -23,7 +23,7 @@ class TestLNS(TestCase):
             "files": ["./tests/ref/golf.lp"],
             "seed": None,
             "relax_rates": [0.2, 0.4, 0.6],
-            "bound": 2000,
+            "max_steps": 2000,
             "switch_rr_after_no_improv": 3,
             "clingo_args": {"rand-freq": 0.8},
             "time_limit": 20,
@@ -44,7 +44,7 @@ class TestLNS(TestCase):
             "finish": lns_pkg.lib.boundary.finish,
             "check_stuck": lns_pkg.lib.search.check_stuck_never,
             "is_stuck": lns_pkg.lib.search.is_stuck,
-            "time_out": lns_pkg.lib.search.time_out,
+            "timeout": lns_pkg.lib.search.timeout,
         }
 
         lns = LNS(["./tests/ref/golf.lp"])
@@ -66,7 +66,7 @@ class TestLNS(TestCase):
             "files": ["./tests/ref/golf.lp"],
             "seed": None,
             "relax_rates": [0.2, 0.4, 0.6],
-            "bound": 2000,
+            "max_steps": 2000,
             "switch_rr_after_no_improv": 3,
             "clingo_args": {"rand-freq": 0.8},
             "time_limit": 20,

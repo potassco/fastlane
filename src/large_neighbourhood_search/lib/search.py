@@ -435,7 +435,7 @@ def is_stuck(lns_object: LNS) -> None:
     lns_object.callables["finish"](lns_object)
 
 
-def time_out(lns_object: LNS) -> None:
+def timeout(lns_object: LNS) -> None:
     """
     Time out handling.
 
@@ -452,4 +452,3 @@ def time_out(lns_object: LNS) -> None:
     lns_object.boundary_dict["timeout"] += 1
     if lns_object.boundary_dict["timeout"] >= 5:
         lns_object.callables["is_stuck"](lns_object)
-        raise SystemExit

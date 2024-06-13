@@ -16,7 +16,7 @@ LNS
             "files": files,                     # Encodings set during initialization
             "seed": None,                       # Seed used both for solving and random relaxation
             "relax_rates": [0.2, 0.4, 0.6],     # Relax rates, search starts with the first one 
-            "bound": 2000,                      # Step limit for the search, None for no limit
+            "max_steps": 2000,                      # Step limit for the search, None for no limit
             "switch_rr_after_no_improv": 3,     # Switch relax rate to the next one after given amount
                                                 #   of no improvements
             "clingo_args": {"rand-freq": 0.8},  # Additional clingo arguments
