@@ -4,6 +4,7 @@ clingo solver for LNS.
 
 from __future__ import annotations
 
+import time
 from typing import TYPE_CHECKING, Any, List, Tuple
 
 import clingo
@@ -37,7 +38,6 @@ class ClingoSolver(SolverInterface):
             ctl.load(path)
         self._ctl, self._thy = ctl, None
 
-    # pylint: disable=unused-argument
     def solve_under_assumptions(
         self,
         lns_object: LNS,
@@ -53,12 +53,18 @@ class ClingoSolver(SolverInterface):
         :return: Solve result.
         :rtype: clingo.solving.SolveResult
         """
-        with self.ctl.solve(
+        start_time = int(time.time())
+        solve_time = self.get_solve_time(lns_object)
+        with self._ctl.solve(
             assumptions=assumptions, on_model=lns_object.on_model, async_=True
         ) as handle:
-            done = handle.wait(lns_object.param_values["time_limit"])
+            done = handle.wait(solve_time)
             if not done:
                 handle.cancel()
-                # lns_object.callables["timeout"](lns_object)
+                print(
+                    f"{time.time() - solve_time:.3f}s: "
+                    f'Unable to repair model during time limit ({lns_object.param_values["solve_time_limit"]}s).'
+                )
             res = handle.get()
+        lns_object._avail_time -= int(time.time()) - start_time
         return res

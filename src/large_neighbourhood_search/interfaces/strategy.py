@@ -5,10 +5,9 @@ Strategy interface used for LNS.
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple, Union
 
 import clingo
-from clingo.symbol import Function, Number
 
 if TYPE_CHECKING:
     from large_neighbourhood_search import LNS  # nocoverage
@@ -24,8 +23,8 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         return (
             hasattr(subclass, "first_solution")
             and callable(subclass.first_solution)
-            and hasattr(subclass, "calc_opt_val")
-            and callable(subclass.calc_opt_val)
+            and hasattr(subclass, "calc_cost")
+            and callable(subclass.calc_cost)
             and hasattr(subclass, "check_stop")
             and callable(subclass.check_stop)
             and hasattr(subclass, "relax")
@@ -42,28 +41,26 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         )
 
     @abc.abstractmethod
-    def calc_opt_val(self, model: Dict[str, Sequence[clingo.symbol.Symbol]]) -> Any:
+    def calc_cost(
+        self, model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]
+    ) -> Any:
         """
-        Calculate optimization value of given model.
+        Calculate cost of given model.
 
         :param model: Model.
-        :type model: Dict[str, Sequence[clingo.symbol.Symbol]]
-        :return: Optimization value of given model.
+        :type model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]
+        :return: Cost of given model.
         :rtype: Any
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def first_solution(self, lns_object: LNS, ctl, thy: Any) -> bool:
+    def first_solution(self, lns_object: LNS) -> bool:
         """
         Find initial solution.
 
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
-        :param ctl: Control object used for search.
-        :type ctl: clingo.control.Control
-        :param thy: Theory object used for search.
-        :type thy: Any
         :return: Whether a solution was found or not
         :rtype: bool
         """
@@ -84,14 +81,14 @@ class StrategyInterface(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def relax(
         self,
-        model: Dict[str, Sequence[clingo.symbol.Symbol]],
+        model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]],
         relax_parameters: Dict[str, Any],
     ) -> List[Tuple[clingo.symbol.Symbol, bool]]:
         """
         Relax portion of atoms given by the relax_parameters.
 
         :param model: Dictionary containing list of shown and true atoms.
-        :type model: Dict[str, Sequence[clingo.symbol.Symbol]]
+        :type model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]
         :param relax_parameters: Parameters used to determine relaxed atoms.
         :type relax_parameters: Dict[str, Any]
         :return: Fixed (not relaxed) atoms.
@@ -108,12 +105,8 @@ class StrategyInterface(metaclass=abc.ABCMeta):
 
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
-        :param ctl: Clingo Control object used for solving.
-        :type ctl: clingo.control.Control
         :param assumptions: Assumptions for solving (fixed atoms).
         :type assumptions: List[Tuple[clingo.symbol.Symbol, bool]]
-        :param thy: Theory object.
-        :type thy: Any
         :return: Solve result.
         :rtype: clingo.solving.SolveResult
         """
@@ -123,18 +116,12 @@ class StrategyInterface(metaclass=abc.ABCMeta):
     def check_accept(
         self,
         lns_object: LNS,
-        new_model: Dict[str, Sequence[clingo.symbol.Symbol]],
-        current_model: Dict[str, Sequence[clingo.symbol.Symbol]],
     ) -> bool:
         """
         Check whether new model is accepted.
 
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
-        :param new_model: New model checked for acceptance.
-        :type new_model: Dict[str, Sequence[clingo.symbol.Symbol]]
-        :param current_model: Current model used for comparison.
-        :type current_model: Dict[str, Sequence[clingo.symbol.Symbol]]
         :return: Whether new model is accepted or not.
         :rtype: bool
         """
@@ -144,31 +131,23 @@ class StrategyInterface(metaclass=abc.ABCMeta):
     def check_better(
         self,
         lns_object: LNS,
-        new_model: Dict[str, Sequence[clingo.symbol.Symbol]],
-        best_model: Dict[str, Sequence[clingo.symbol.Symbol]],
     ) -> bool:
         """
         Check whether new model is better.
 
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
-        :param new_model: New model being checked.
-        :type new_model: Dict[str, Sequence[clingo.symbol.Symbol]]
-        :param best_model: Current model used for comparison.
-        :type best_model: Dict[str, Sequence[clingo.symbol.Symbol]]
         :return: Whether new model is better or not.
         :rtype: bool
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def update_grounding(self, lns_object: LNS, ctl: clingo.control.Control) -> None:
+    def update_grounding(self, lns_object: LNS) -> None:
         """
         Update grounding after new best solution.
 
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
-        :param ctl: Clingo control object used for solving.
-        :type ctl: clingo.control.Control
         """
         raise NotImplementedError
