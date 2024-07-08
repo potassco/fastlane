@@ -72,7 +72,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
         """
         self.ctl.ground([("base", [])], context=lns_object)
 
-    def get_solve_time(self, lns_object: LNS) -> int:
+    def get_avail_solve_time(self, lns_object: LNS) -> int:
         """
         Calculate available solve time.
         (rounded to int)

@@ -54,7 +54,7 @@ class ClingoSolver(SolverInterface):
         :rtype: clingo.solving.SolveResult
         """
         start_time = int(time.time())
-        solve_time = self.get_solve_time(lns_object)
+        solve_time = self.get_avail_solve_time(lns_object)
         with self._ctl.solve(
             assumptions=assumptions, on_model=lns_object.on_model, async_=True
         ) as handle:
