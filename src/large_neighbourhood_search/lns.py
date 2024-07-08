@@ -75,11 +75,23 @@ class LNS:
             **{"seed": seed},
         }
 
-    def print_model(self, model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]):
+    def print_model(
+        self, model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]
+    ) -> str:
+        """
+        Print given model.
+
+        :param model: Model.
+        :type model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]
+        :return: Printed string.
+        :rtype: str
+        """
         answer_string = " ".join([str(atom) for atom in model["shown"]])
         if "assignments" in model:
             answer_string += "\n".join(model["assignments"])
-        print(("Answer\n" f"{answer_string}\n" f'Cost: {model["cost"]}\n'))
+        s = "Answer\n" f"{answer_string}\n" f'Cost: {model["cost"]}\n'
+        print(s)
+        return s
 
     # pylint: disable=unused-argument
     def interrupt_handler(self, sig: int, frame: Union[None, FrameType]) -> None:
@@ -136,6 +148,9 @@ class LNS:
         #       b = n
 
         signal.signal(signal.SIGINT, self.interrupt_handler)
+
+        self._start_time = time.time()
+        self._step_c = 0
 
         self._solver.setup(self)
 

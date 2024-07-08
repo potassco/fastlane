@@ -1,5 +1,5 @@
 """
-Strategy implementing classic LNS with weighted sum as optimization criteria and random relaxation.
+Strategy implementing LNS using hard constraints with weighted sum as optimization criteria and random relaxation.
 """
 
 from __future__ import annotations
@@ -9,16 +9,16 @@ from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple, Union
 
 import clingo
 import lib.relaxation
-from clingo.symbol import SymbolType
+from clingo.symbol import Number, SymbolType
 from interfaces.strategy import StrategyInterface
 
 if TYPE_CHECKING:
     from large_neighbourhood_search import LNS  # nocoverage
 
 
-class ClassicWeightedSumRND(StrategyInterface):
+class HCWeightedSumRND(StrategyInterface):
     """
-    Classic LNS with weighted sum as optimization criteria and random relaxation.
+    LNS using hard constraints with weighted sum as optimization criteria and random relaxation.
     """
 
     def calc_cost(
@@ -42,6 +42,8 @@ class ClassicWeightedSumRND(StrategyInterface):
     def first_solution(self, lns_object: LNS) -> bool:
         """
         Find initial solution.
+        Ground found optimization value as hard constraint.
+        Use weighted sum as optimization criteria.
 
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
@@ -52,9 +54,17 @@ class ClassicWeightedSumRND(StrategyInterface):
 
         # get first solution
         if lns_object._solver.solve_under_assumptions(lns_object, []).satisfiable:
-            print(
-                f'Initial solution found with cost: {lns_object.models["new_model"]["cost"]}'
+            cost = lns_object.models["new_model"]["cost"]
+            print(f"Initial solution found with cost: {cost}")
+
+            # add constraint to force better solution with each iteration
+            # encoding has to contain _lns_penalty(N,I,W) predicates
+            # where N: name, I: identifier, W: weight
+            lns_object._solver._ctl.add(
+                "cost", ["c"], ":- #sum{W,I: _lns_penalty(_,I,W)} >= c."
             )
+            lns_object._solver._ctl.ground([("cost", [Number(cost)])])
+
             lns_object.models["current_model"] = lns_object.models["new_model"].copy()
             lns_object.models["best_model"] = lns_object.models["new_model"].copy()
             return True
@@ -137,16 +147,14 @@ class ClassicWeightedSumRND(StrategyInterface):
     ) -> bool:
         """
         Check whether new model is better.
+        Enforced by constraint.
 
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         :return: Whether new model is better or not.
         :rtype: bool
         """
-        return (
-            lns_object.models["new_model"]["cost"]
-            < lns_object.models["best_model"]["cost"]
-        )
+        return True
 
     # pylint: disable=unused-argument
     def update_grounding(self, lns_object: LNS) -> None:
@@ -156,3 +164,6 @@ class ClassicWeightedSumRND(StrategyInterface):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         """
+        lns_object._solver._ctl.ground(
+            [("cost", [Number(lns_object.models["best_model"]["cost"])])]
+        )
