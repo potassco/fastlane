@@ -26,7 +26,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
         self._thy: Any = None
 
     @classmethod
-    def __subclasshook__(cls, subclass):
+    def __subclasshook__(cls, subclass):    # nocoverage
         return (
             hasattr(subclass, "setup")
             and callable(subclass.setup)
@@ -36,7 +36,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
         )
 
     @abc.abstractmethod
-    def setup(self, lns_object: LNS) -> None:
+    def setup(self, lns_object: LNS) -> None:   # nocoverage
         """
         Initialization of the solver.
 
@@ -50,7 +50,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
         self,
         lns_object: LNS,
         assumptions: List[Tuple[clingo.symbol.Symbol, bool]],
-    ) -> clingo.solving.SolveResult:
+    ) -> clingo.solving.SolveResult:    # nocoverage
         """
         Solve under assumptions.
 
@@ -70,7 +70,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         """
-        self.ctl.ground([("base", [])], context=lns_object)
+        self._ctl.ground([("base", [])], context=lns_object)
 
     def get_avail_solve_time(self, lns_object: LNS) -> int:
         """

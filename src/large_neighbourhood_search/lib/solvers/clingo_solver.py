@@ -8,7 +8,7 @@ import time
 from typing import TYPE_CHECKING, Any, List, Tuple
 
 import clingo
-from interfaces.solver import SolverInterface
+from large_neighbourhood_search.interfaces.solver import SolverInterface
 
 if TYPE_CHECKING:
     from large_neighbourhood_search import LNS  # nocoverage
@@ -62,7 +62,7 @@ class ClingoSolver(SolverInterface):
             if not done:
                 handle.cancel()
                 print(
-                    f"{time.time() - solve_time:.3f}s: "
+                    f"{time.time() - start_time:.3f}s: "
                     f'Unable to repair model during time limit ({lns_object.param_values["solve_time_limit"]}s).'
                 )
             res = handle.get()

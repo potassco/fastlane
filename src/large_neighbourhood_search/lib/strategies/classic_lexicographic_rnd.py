@@ -10,18 +10,19 @@ from typing import TYPE_CHECKING, Any, Dict, Sequence
 
 import clingo
 from clingo.symbol import SymbolType
-from lib.strategies.classic_weighted_sum_rnd import ClassicWeightedSumRND
+from large_neighbourhood_search.lib.utils import check_smaller_lexicographic
+from large_neighbourhood_search.lib.strategies.classic_weighted_sum_rnd import ClassicWeightedSumRnd
 
 if TYPE_CHECKING:
     from large_neighbourhood_search import LNS  # nocoverage
 
 
-class ClassicLexiRND(ClassicWeightedSumRND):
+class ClassicLexiRnd(ClassicWeightedSumRnd):
     """
     Classic LNS with lexicographic optimization criteria and random relaxation.
     """
 
-    def calc_cost(model: Dict[str, Sequence[clingo.symbol.Symbol]]) -> Any:
+    def calc_cost(self, model: Dict[str, Sequence[clingo.symbol.Symbol]]) -> Any:
         """
         Calculate cost of given model using lexicographic ordering.
 
@@ -69,11 +70,10 @@ class ClassicLexiRND(ClassicWeightedSumRND):
         if (
             all(
                 [
-                    lns_object.models["best_model"]["cost"][i]
+                    lns_object.models["best_model"]["cost"][i] == 0
                     for i in lns_object.models["best_model"]["cost"]
                 ]
             )
-            == 0
         ):
             return True
         return (
@@ -94,7 +94,7 @@ class ClassicLexiRND(ClassicWeightedSumRND):
         :return: Whether new model is better or not.
         :rtype: bool
         """
-        return lib.utils.check_smaller_lexicographic(
+        return check_smaller_lexicographic(
             lns_object.models["new_model"]["cost"],
             lns_object.models["best_model"]["cost"],
         )

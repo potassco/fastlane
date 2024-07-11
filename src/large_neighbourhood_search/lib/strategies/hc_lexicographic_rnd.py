@@ -10,13 +10,13 @@ from typing import TYPE_CHECKING, Any, Dict, Sequence
 
 import clingo
 from clingo.symbol import Function, Number, SymbolType
-from lib.strategies.hc_weighted_sum_rnd import HCWeightedSumRND
+from large_neighbourhood_search.lib.strategies.hc_weighted_sum_rnd import HCWeightedSumRnd
 
 if TYPE_CHECKING:
     from large_neighbourhood_search import LNS  # nocoverage
 
 
-class HCLexiRND(HCWeightedSumRND):
+class HCLexiRnd(HCWeightedSumRnd):
     """
     LNS using hard constraints with lexicographic optimization criteria and random relaxation.
     """

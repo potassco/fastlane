@@ -8,15 +8,15 @@ import time
 from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple, Union
 
 import clingo
-import lib.relaxation
+from large_neighbourhood_search.lib.relaxation import relax_random
 from clingo.symbol import SymbolType
-from interfaces.strategy import StrategyInterface
+from large_neighbourhood_search.interfaces.strategy import StrategyInterface
 
 if TYPE_CHECKING:
     from large_neighbourhood_search import LNS  # nocoverage
 
 
-class ClassicWeightedSumRND(StrategyInterface):
+class ClassicWeightedSumRnd(StrategyInterface):
     """
     Classic LNS with weighted sum as optimization criteria and random relaxation.
     """
@@ -98,7 +98,7 @@ class ClassicWeightedSumRND(StrategyInterface):
         :return: Fixed (not relaxed) atoms.
         :rtype: List[Tuple[clingo.symbol.Symbol, bool]]
         """
-        return lib.relaxation.relax_random(model, relax_parameters)
+        return relax_random(model, relax_parameters)
 
     def repair(
         self, lns_object: LNS, fixed_atoms: List[Tuple[clingo.symbol.Symbol, bool]]

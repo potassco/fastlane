@@ -19,7 +19,7 @@ class StrategyInterface(metaclass=abc.ABCMeta):
     """
 
     @classmethod
-    def __subclasshook__(cls, subclass):
+    def __subclasshook__(cls, subclass):    # nocoverage
         return (
             hasattr(subclass, "first_solution")
             and callable(subclass.first_solution)
@@ -43,7 +43,7 @@ class StrategyInterface(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def calc_cost(
         self, model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]
-    ) -> Any:
+    ) -> Any:   # nocoverage
         """
         Calculate cost of given model.
 
@@ -55,7 +55,7 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def first_solution(self, lns_object: LNS) -> bool:
+    def first_solution(self, lns_object: LNS) -> bool:  # nocoverage
         """
         Find initial solution.
 
@@ -67,7 +67,7 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def check_stop(self, lns_object: LNS) -> bool:
+    def check_stop(self, lns_object: LNS) -> bool:  # nocoverage
         """
         Check whether to stop LNS.
 
@@ -83,7 +83,7 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         self,
         model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]],
         relax_parameters: Dict[str, Any],
-    ) -> List[Tuple[clingo.symbol.Symbol, bool]]:
+    ) -> List[Tuple[clingo.symbol.Symbol, bool]]:   # nocoverage
         """
         Relax portion of atoms given by the relax_parameters.
 
@@ -99,7 +99,7 @@ class StrategyInterface(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def repair(
         self, lns_object: LNS, fixed_atoms: List[Tuple[clingo.symbol.Symbol, bool]]
-    ) -> clingo.solving.SolveResult:
+    ) -> clingo.solving.SolveResult:    # nocoverage
         """
         Repair solution.
 
@@ -116,7 +116,7 @@ class StrategyInterface(metaclass=abc.ABCMeta):
     def check_accept(
         self,
         lns_object: LNS,
-    ) -> bool:
+    ) -> bool:  # nocoverage
         """
         Check whether new model is accepted.
 
@@ -131,7 +131,7 @@ class StrategyInterface(metaclass=abc.ABCMeta):
     def check_better(
         self,
         lns_object: LNS,
-    ) -> bool:
+    ) -> bool:  # nocoverage
         """
         Check whether new model is better.
 
@@ -143,7 +143,7 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def update_grounding(self, lns_object: LNS) -> None:
+    def update_grounding(self, lns_object: LNS) -> None:    # nocoverage
         """
         Update grounding after new best solution.
 

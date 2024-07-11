@@ -6,11 +6,11 @@ Based on HCLexiRND class.
 from typing import Any, Dict, List, Sequence, Tuple, Union
 
 import clingo
-import lib.relaxation
-from lib.strategies.hc_lexicographic_rnd import HCLexiRND
+from large_neighbourhood_search.lib.relaxation import relax_declarative
+from large_neighbourhood_search.lib.strategies.hc_lexicographic_rnd import HCLexiRnd
 
 
-class HCLexiDecl(HCLexiRND):
+class HCLexiDecl(HCLexiRnd):
     """
     LNS using hard constraints with lexicographic optimization criteria and random declarative relaxation.
     """
@@ -31,4 +31,4 @@ class HCLexiDecl(HCLexiRND):
         :return: Fixed (not relaxed) atoms.
         :rtype: List[Tuple[clingo.symbol.Symbol, bool]]
         """
-        return lib.relaxation.relax_declarative(model, relax_parameters)
+        return relax_declarative(model, relax_parameters)

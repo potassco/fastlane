@@ -6,11 +6,11 @@ Based on ClassicLexiRND class.
 from typing import Any, Dict, List, Sequence, Tuple, Union
 
 import clingo
-import lib.relaxation
-from lib.strategies.classic_lexicographic_rnd import ClassicLexiRND
+from large_neighbourhood_search.lib.relaxation import relax_declarative
+from large_neighbourhood_search.lib.strategies.classic_lexicographic_rnd import ClassicLexiRnd
 
 
-class ClassicLexiDecl(ClassicLexiRND):
+class ClassicLexiDecl(ClassicLexiRnd):
     """
     Classic LNS with lexicographic optimization criteria and random declarative relaxation.
     """
@@ -31,4 +31,4 @@ class ClassicLexiDecl(ClassicLexiRND):
         :return: Fixed (not relaxed) atoms.
         :rtype: List[Tuple[clingo.symbol.Symbol, bool]]
         """
-        return lib.relaxation.relax_declarative(model, relax_parameters)
+        return relax_declarative(model, relax_parameters)
