@@ -1,19 +1,30 @@
 """
 Test cases for classic strategy classes.
 """
-from unittest import TestCase
-from large_neighbourhood_search.lib.solvers.clingo_solver import ClingoSolver
-from large_neighbourhood_search.lib.strategies.classic_lexicographic_rnd import ClassicLexiRnd
-from large_neighbourhood_search.lib.strategies.classic_lexicographic_declarative import ClassicLexiDecl
-from large_neighbourhood_search.lib.strategies.classic_weighted_sum_rnd import ClassicWeightedSumRnd
-from large_neighbourhood_search import LNS
+
 import time
+from unittest import TestCase
 
 from clingo.symbol import Function, Number, String
+
+from large_neighbourhood_search import LNS
+from large_neighbourhood_search.lib.solvers.clingo_solver import ClingoSolver
+from large_neighbourhood_search.lib.strategies.classic_lexicographic_declarative import (
+    ClassicLexiDecl,
+)
+from large_neighbourhood_search.lib.strategies.classic_lexicographic_rnd import (
+    ClassicLexiRnd,
+)
+from large_neighbourhood_search.lib.strategies.classic_weighted_sum_rnd import (
+    ClassicWeightedSumRnd,
+)
+
+
 class TestStrategyClWsRnd(TestCase):
     """
     Test cases for ClassicWeightedSumRnd class.
     """
+
     def setUp(self) -> None:
         self.solver = ClingoSolver()
         self.strategy = ClassicWeightedSumRnd()
@@ -95,9 +106,7 @@ class TestStrategyClWsRnd(TestCase):
         """
         self.lns.set_seed(123)
         self.solver.setup(self.lns)
-        self.assertTrue(
-            self.strategy.first_solution(self.lns)
-        )
+        self.assertTrue(self.strategy.first_solution(self.lns))
         self.assertIsNotNone(self.lns.models["new_model"])
         self.assertEqual(type(self.lns.models["new_model"]), dict)
         self.assertIsNotNone(self.lns.models["current_model"])
@@ -107,15 +116,13 @@ class TestStrategyClWsRnd(TestCase):
 
         self.lns.set_params({"files": ["./tests/ref/bad_encoding.lp"], "seed": 123})
         self.solver.setup(self.lns)
-        self.assertFalse(
-            self.strategy.first_solution(self.lns)
-        )
+        self.assertFalse(self.strategy.first_solution(self.lns))
 
     def test_check_stop(self):
         """
         Test check_stop.
         """
-        self.lns._start_time = time.time()
+        self.lns.start_time = time.time()
         self.lns.models["best_model"]["cost"] = 0
         self.assertTrue(self.strategy.check_stop(self.lns))
         self.lns.models["best_model"]["cost"] = 1
@@ -123,7 +130,7 @@ class TestStrategyClWsRnd(TestCase):
         self.lns.set_params({"overall_time_limit": 0})
         self.assertTrue(self.strategy.check_stop(self.lns))
         self.lns.set_params({"overall_time_limit": 10000, "max_steps": 1})
-        self.lns._step_c = 2
+        self.lns.step_c = 2
         self.assertTrue(self.strategy.check_stop(self.lns))
 
     def test_relax(self):
@@ -179,8 +186,8 @@ class TestStrategyClWsRnd(TestCase):
         """
         self.solver.setup(self.lns)
         self.solver.ground_base(self.lns)
-        self.assertTrue(self.strategy.repair(self.lns,[]).satisfiable)
-        
+        self.assertTrue(self.strategy.repair(self.lns, []).satisfiable)
+
     def test_check_accept(self):
         """
         Test acceptance check.
@@ -193,17 +200,12 @@ class TestStrategyClWsRnd(TestCase):
         """
         self.lns.models["new_model"]["cost"] = 3
         self.lns.models["best_model"]["cost"] = 5
-        self.assertTrue(
-            self.strategy.check_better(self.lns)
-        )
+        self.assertTrue(self.strategy.check_better(self.lns))
         self.lns.models["new_model"]["cost"] = 8
-        self.assertFalse(
-            self.strategy.check_better(self.lns)
-        )
+        self.assertFalse(self.strategy.check_better(self.lns))
         self.lns.models["new_model"]["cost"] = 5
-        self.assertFalse(
-            self.strategy.check_better(self.lns)
-        )
+        self.assertFalse(self.strategy.check_better(self.lns))
+
 
 class TestStrategyClLexiRnd(TestStrategyClWsRnd):
     """
@@ -211,6 +213,7 @@ class TestStrategyClLexiRnd(TestStrategyClWsRnd):
 
     Remaining test cases inherited from TestStrategyClWsRnd.
     """
+
     def setUp(self) -> None:
         self.solver = ClingoSolver()
         self.strategy = ClassicLexiRnd()
@@ -294,43 +297,36 @@ class TestStrategyClLexiRnd(TestStrategyClWsRnd):
         }
         ref = {1: 3, 3: 1, 2: 2}
         self.assertDictEqual(self.strategy.calc_cost(model), ref)
-        
+
     def test_check_stop(self):
         """
         Test check_stop.
         """
-        self.lns._start_time = time.time()
-        self.lns.models["best_model"]["cost"] = {2:0, 1:0}
+        self.lns.start_time = time.time()
+        self.lns.models["best_model"]["cost"] = {2: 0, 1: 0}
         self.assertTrue(self.strategy.check_stop(self.lns))
-        self.lns.models["best_model"]["cost"] = {2:1, 1:0}
+        self.lns.models["best_model"]["cost"] = {2: 1, 1: 0}
         self.assertFalse(self.strategy.check_stop(self.lns))
         self.lns.set_params({"overall_time_limit": 0})
         self.assertTrue(self.strategy.check_stop(self.lns))
         self.lns.set_params({"overall_time_limit": 10000, "max_steps": 1})
-        self.lns._step_c = 2
+        self.lns.step_c = 2
         self.assertTrue(self.strategy.check_stop(self.lns))
 
     def test_check_better(self):
         """
         Test better check.
         """
-        self.lns.models["new_model"]["cost"] = {2:1, 1:1}
-        self.lns.models["best_model"]["cost"] = {2:1, 1:2}
-        self.assertTrue(
-            self.strategy.check_better(self.lns)
-        )
-        self.lns.models["new_model"]["cost"] = {2:2, 1:0}
-        self.assertFalse(
-            self.strategy.check_better(self.lns)
-        )
-        self.lns.models["new_model"]["cost"] = {2:1, 1:4}
-        self.assertFalse(
-            self.strategy.check_better(self.lns)
-        )
-        self.lns.models["new_model"]["cost"] = {2:1, 1:2}
-        self.assertFalse(
-            self.strategy.check_better(self.lns)
-        )
+        self.lns.models["new_model"]["cost"] = {2: 1, 1: 1}
+        self.lns.models["best_model"]["cost"] = {2: 1, 1: 2}
+        self.assertTrue(self.strategy.check_better(self.lns))
+        self.lns.models["new_model"]["cost"] = {2: 2, 1: 0}
+        self.assertFalse(self.strategy.check_better(self.lns))
+        self.lns.models["new_model"]["cost"] = {2: 1, 1: 4}
+        self.assertFalse(self.strategy.check_better(self.lns))
+        self.lns.models["new_model"]["cost"] = {2: 1, 1: 2}
+        self.assertFalse(self.strategy.check_better(self.lns))
+
 
 class TestStrategyClLexiDecl(TestStrategyClLexiRnd):
     """
@@ -339,9 +335,8 @@ class TestStrategyClLexiDecl(TestStrategyClLexiRnd):
     All test cases inherited from TestStrategyClLexiRnd.
     Relax_declarative tested in test_relaxation.py
     """
+
     def setUp(self) -> None:
         self.solver = ClingoSolver()
         self.strategy = ClassicLexiDecl()
         self.lns = LNS(["./tests/ref/golf.lp"], self.solver, self.strategy)
-
-    

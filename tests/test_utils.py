@@ -1,14 +1,15 @@
 """
 Test utilities.
 """
-from unittest import TestCase
 
-import large_neighbourhood_search as lns_pkg
-from large_neighbourhood_search.lib.utils import check_smaller_lexicographic
-from large_neighbourhood_search.lib.utils import calculate_variability
 import logging
 from io import StringIO
+from unittest import TestCase
 
+from large_neighbourhood_search.lib.utils import (
+    calculate_variability,
+    check_smaller_lexicographic,
+)
 from large_neighbourhood_search.utils.logger import setup_logger
 from large_neighbourhood_search.utils.parser import get_parser
 
@@ -36,6 +37,7 @@ class TestUtils(TestCase):
         parser = get_parser()
         ret = parser.parse_args(["--log", "info"])
         self.assertEqual(ret.log, logging.INFO)
+
 
 class TestLNSUtils(TestCase):
     """
