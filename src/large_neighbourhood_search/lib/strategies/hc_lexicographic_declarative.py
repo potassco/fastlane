@@ -1,11 +1,13 @@
 """
-Strategy implementing LNS using hard constraints with lexicographic optimization criteria and random declarative relaxation.
+Strategy implementing LNS using hard constraints with lexicographic
+optimization criteria and random declarative relaxation.
 Based on HCLexiRND class.
 """
 
 from typing import Any, Dict, List, Sequence, Tuple, Union
 
 import clingo
+
 from large_neighbourhood_search.lib.relaxation import relax_declarative
 from large_neighbourhood_search.lib.strategies.hc_lexicographic_rnd import HCLexiRnd
 

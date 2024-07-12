@@ -10,8 +10,11 @@ from typing import TYPE_CHECKING, Any, Dict, Sequence
 
 import clingo
 from clingo.symbol import SymbolType
+
+from large_neighbourhood_search.lib.strategies.classic_weighted_sum_rnd import (
+    ClassicWeightedSumRnd,
+)
 from large_neighbourhood_search.lib.utils import check_smaller_lexicographic
-from large_neighbourhood_search.lib.strategies.classic_weighted_sum_rnd import ClassicWeightedSumRnd
 
 if TYPE_CHECKING:
     from large_neighbourhood_search import LNS  # nocoverage
@@ -67,18 +70,14 @@ class ClassicLexiRnd(ClassicWeightedSumRnd):
         :return: Whether to stop LNS or not.
         :rtype: bool
         """
-        if (
-            all(
-                [
-                    lns_object.models["best_model"]["cost"][i] == 0
-                    for i in lns_object.models["best_model"]["cost"]
-                ]
-            )
+        if all(
+            lns_object.models["best_model"]["cost"][i] == 0
+            for i in lns_object.models["best_model"]["cost"]
         ):
             return True
         return (
-            lns_object._step_c >= lns_object.param_values["max_steps"]
-            or time.time() - lns_object._start_time
+            lns_object.step_c >= lns_object.param_values["max_steps"]
+            or time.time() - lns_object.start_time
             >= lns_object.param_values["overall_time_limit"]
         )
 

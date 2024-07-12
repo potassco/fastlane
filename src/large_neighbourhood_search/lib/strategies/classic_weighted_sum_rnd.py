@@ -8,14 +8,16 @@ import time
 from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple, Union
 
 import clingo
-from large_neighbourhood_search.lib.relaxation import relax_random
 from clingo.symbol import SymbolType
+
 from large_neighbourhood_search.interfaces.strategy import StrategyInterface
+from large_neighbourhood_search.lib.relaxation import relax_random
 
 if TYPE_CHECKING:
     from large_neighbourhood_search import LNS  # nocoverage
 
 
+# pylint: disable=duplicate-code
 class ClassicWeightedSumRnd(StrategyInterface):
     """
     Classic LNS with weighted sum as optimization criteria and random relaxation.
@@ -48,10 +50,10 @@ class ClassicWeightedSumRnd(StrategyInterface):
         :return: Whether a solution was found or not
         :rtype: bool
         """
-        lns_object._solver.ground_base(lns_object)
+        lns_object.solver.ground_base(lns_object)
 
         # get first solution
-        if lns_object._solver.solve_under_assumptions(lns_object, []).satisfiable:
+        if lns_object.solver.solve_under_assumptions(lns_object, []).satisfiable:
             print(
                 f'Initial solution found with cost: {lns_object.models["new_model"]["cost"]}'
             )
@@ -77,8 +79,8 @@ class ClassicWeightedSumRnd(StrategyInterface):
         if lns_object.models["best_model"]["cost"] == 0:
             return True
         return (
-            lns_object._step_c >= lns_object.param_values["max_steps"]
-            or time.time() - lns_object._start_time
+            lns_object.step_c >= lns_object.param_values["max_steps"]
+            or time.time() - lns_object.start_time
             >= lns_object.param_values["overall_time_limit"]
         )
 
@@ -113,7 +115,7 @@ class ClassicWeightedSumRnd(StrategyInterface):
         :return: Solve result.
         :rtype: clingo.solving.SolveResult
         """
-        return lns_object._solver.solve_under_assumptions(lns_object, fixed_atoms)
+        return lns_object.solver.solve_under_assumptions(lns_object, fixed_atoms)
 
     # pylint: disable=unused-argument
     def check_accept(

@@ -8,6 +8,7 @@ import time
 from typing import TYPE_CHECKING, Any, List, Tuple
 
 import clingo
+
 from large_neighbourhood_search.interfaces.solver import SolverInterface
 
 if TYPE_CHECKING:
@@ -36,7 +37,7 @@ class ClingoSolver(SolverInterface):
         ctl = clingo.Control(args)
         for path in lns_object.param_values["files"]:
             ctl.load(path)
-        self._ctl, self._thy = ctl, None
+        self.ctl, self.thy = ctl, None
 
     def solve_under_assumptions(
         self,
@@ -55,7 +56,7 @@ class ClingoSolver(SolverInterface):
         """
         start_time = int(time.time())
         solve_time = self.get_avail_solve_time(lns_object)
-        with self._ctl.solve(
+        with self.ctl.solve(
             assumptions=assumptions, on_model=lns_object.on_model, async_=True
         ) as handle:
             done = handle.wait(solve_time)
@@ -66,5 +67,5 @@ class ClingoSolver(SolverInterface):
                     f'Unable to repair model during time limit ({lns_object.param_values["solve_time_limit"]}s).'
                 )
             res = handle.get()
-        lns_object._avail_time -= int(time.time()) - start_time
+        lns_object.avail_time -= int(time.time()) - start_time
         return res

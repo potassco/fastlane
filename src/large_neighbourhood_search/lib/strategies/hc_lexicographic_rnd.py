@@ -10,7 +10,10 @@ from typing import TYPE_CHECKING, Any, Dict, Sequence
 
 import clingo
 from clingo.symbol import Function, Number, SymbolType
-from large_neighbourhood_search.lib.strategies.hc_weighted_sum_rnd import HCWeightedSumRnd
+
+from large_neighbourhood_search.lib.strategies.hc_weighted_sum_rnd import (
+    HCWeightedSumRnd,
+)
 
 if TYPE_CHECKING:
     from large_neighbourhood_search import LNS  # nocoverage
@@ -21,7 +24,7 @@ class HCLexiRnd(HCWeightedSumRnd):
     LNS using hard constraints with lexicographic optimization criteria and random relaxation.
     """
 
-    def calc_cost(model: Dict[str, Sequence[clingo.symbol.Symbol]]) -> Any:
+    def calc_cost(self, model: Dict[str, Sequence[clingo.symbol.Symbol]]) -> Any:
         """
         Calculate cost of given model using lexicographic ordering.
 
@@ -64,10 +67,10 @@ class HCLexiRnd(HCWeightedSumRnd):
         :return: Whether a solution was found or not
         :rtype: bool
         """
-        lns_object._solver.ground_base(lns_object)
+        lns_object.solver.ground_base(lns_object)
 
         # get first solution
-        if lns_object._solver.solve_under_assumptions(lns_object, []).satisfiable:
+        if lns_object.solver.solve_under_assumptions(lns_object, []).satisfiable:
             cost = lns_object.models["new_model"]["cost"]
             print(f"Initial solution found with cost: {cost}")
 
@@ -104,8 +107,8 @@ class HCLexiRnd(HCWeightedSumRnd):
                     )
                 )
             )
-            lns_object._solver._ctl.add("cost", s, rules)
-            lns_object._solver._ctl.ground(
+            lns_object.solver.ctl.add("cost", s, rules)
+            lns_object.solver.ctl.ground(
                 [
                     (
                         "cost",
@@ -114,7 +117,7 @@ class HCLexiRnd(HCWeightedSumRnd):
                     )
                 ]
             )
-            lns_object._solver._ctl.assign_external(Function("step", [Number(0)]), True)
+            lns_object.solver.ctl.assign_external(Function("step", [Number(0)]), True)
 
             lns_object.models["current_model"] = lns_object.models["new_model"].copy()
             lns_object.models["best_model"] = lns_object.models["new_model"].copy()
@@ -135,19 +138,14 @@ class HCLexiRnd(HCWeightedSumRnd):
         :return: Whether to stop LNS or not.
         :rtype: bool
         """
-        if (
-            all(
-                [
-                    lns_object.models["best_model"]["cost"][i]
-                    for i in lns_object.models["best_model"]["cost"]
-                ]
-            )
-            == 0
+        if all(
+            lns_object.models["best_model"]["cost"][i] == 0
+            for i in lns_object.models["best_model"]["cost"]
         ):
             return True
         return (
-            lns_object._step_c >= lns_object.param_values["max_steps"]
-            or time.time() - lns_object._start_time
+            lns_object.step_c >= lns_object.param_values["max_steps"]
+            or time.time() - lns_object.start_time
             >= lns_object.param_values["overall_time_limit"]
         )
 
@@ -159,10 +157,10 @@ class HCLexiRnd(HCWeightedSumRnd):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         """
-        step = lns_object._step_c
-        lns_object._solver._ctl.release_external(Function("step", [Number(step - 1)]))
+        step = lns_object.step_c
+        lns_object.solver.ctl.release_external(Function("step", [Number(step - 1)]))
         cost = lns_object.models["best_model"]["cost"]
-        lns_object._solver._ctl.ground(
+        lns_object.solver.ctl.ground(
             [
                 (
                     "cost",
@@ -171,4 +169,4 @@ class HCLexiRnd(HCWeightedSumRnd):
                 )
             ]
         )
-        lns_object._solver._ctl.assign_external(Function("step", [Number(step)]), True)
+        lns_object.solver.ctl.assign_external(Function("step", [Number(step)]), True)

@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, List, Tuple
 import clingo
 from clingo import ast
 from clingodl import ClingoDLTheory
+
 from large_neighbourhood_search.interfaces.solver import SolverInterface
 
 if TYPE_CHECKING:
@@ -44,7 +45,7 @@ class ClingoDLSolver(SolverInterface):
                 lns_object.param_values["files"],
                 lambda ast: thy.rewrite_ast(ast, builder.add),
             )
-        self._ctl, self._thy = ctl, thy
+        self.ctl, self.thy = ctl, thy
 
     def solve_under_assumptions(
         self,
@@ -63,8 +64,8 @@ class ClingoDLSolver(SolverInterface):
         """
         start_time = int(time.time())
         solve_time = self.get_avail_solve_time(lns_object)
-        self._thy.prepare(self._ctl)
-        with self._ctl.solve(
+        self.thy.prepare(self.ctl)
+        with self.ctl.solve(
             assumptions=assumptions,
             on_model=lns_object.on_model,
             async_=True,  # yield_=True
@@ -77,5 +78,5 @@ class ClingoDLSolver(SolverInterface):
                     f'Unable to repair model during time limit ({lns_object.param_values["solve_time_limit"]}s).'
                 )
             res = handle.get()
-        lns_object._avail_time -= int(time.time()) - start_time
+        lns_object.avail_time -= int(time.time()) - start_time
         return res

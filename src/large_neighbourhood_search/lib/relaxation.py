@@ -1,13 +1,11 @@
-from __future__ import annotations
+"""
+Different relaxation methods for LNS.
+"""
 
 import random
-from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple, Union
+from typing import Any, Dict, List, Sequence, Tuple, Union
 
 import clingo
-from clingo.symbol import Function, Number
-
-if TYPE_CHECKING:
-    from large_neighbourhood_search import LNS  # nocoverage
 
 
 def relax_declarative(

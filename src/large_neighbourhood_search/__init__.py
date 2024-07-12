@@ -9,8 +9,11 @@ from types import FrameType
 from typing import Any, Dict, List, Sequence, Type, Union
 
 import clingo
+
 from .interfaces.solver import SolverInterface
 from .interfaces.strategy import StrategyInterface
+from .lib.solvers.clingo_solver import ClingoSolver
+from .lib.strategies.hc_weighted_sum_rnd import HCWeightedSumRnd
 
 
 # pylint: disable=dangerous-default-value
@@ -22,8 +25,10 @@ class LNS:
     :type files: List[str]
     :param solver: Solver class used during LNS.
     :type solver: Type[SolverInterface]
+    :default solver: ClingoSolver
     :param strategy: Strategy class used during LNS.
     :type strategy: Type[StrategyInterface]
+    :default strategy: HCWeightedSumRnd
     :param params: Search parameters.
     :type params: Dict[str, Any]
     :default params: {}
@@ -32,17 +37,17 @@ class LNS:
     def __init__(
         self,
         files: List[str],
-        solver: Type[SolverInterface],
-        strategy: Type[StrategyInterface],
+        solver: Type[SolverInterface] = ClingoSolver(),
+        strategy: Type[StrategyInterface] = HCWeightedSumRnd(),
         params: Dict[str, Any] = {},
     ):
         """
         Initialization of the lns object.
         """
-        self._solver = solver
-        self._strategy = strategy
-        self._start_time = 0
-        self._step_c = 0
+        self.solver = solver
+        self.strategy = strategy
+        self.start_time = 0
+        self.step_c = 0
 
         new_model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]] = {}
         current_model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]] = {}
@@ -63,7 +68,7 @@ class LNS:
             "overall_time_limit": 600,
         }
         self.param_values = {**self.param_values, **params}
-        self._avail_time = self.param_values["overall_time_limit"]
+        self.avail_time = self.param_values["overall_time_limit"]
 
     def set_seed(self, seed: int) -> None:
         """
@@ -74,10 +79,17 @@ class LNS:
         """
         random.seed(self.param_values["seed"])
         self.param_values["seed"] = seed
-        self.param_values["clingo_args"] = {
-            **self.param_values["clingo_args"],
-            **{"seed": seed},
-        }
+        if seed is not None:
+            self.param_values["clingo_args"] = {
+                **self.param_values["clingo_args"],
+                **{"seed": seed},
+            }
+
+    def get_params(self) -> Dict[str, Any]:
+        """
+        Get LNS parameters.
+        """
+        return self.param_values
 
     def set_params(self, params: Dict[str, Any]) -> None:
         """
@@ -102,7 +114,7 @@ class LNS:
         """
         answer_string = " ".join([str(atom) for atom in model["shown"]])
         if "assignments" in model:
-            answer_string += "\n".join(model["assignments"])
+            answer_string += "\n" + " ".join(model["assignments"])
         s = "Answer\n" f"{answer_string}\n" f'Cost: {model["cost"]}\n'
         print(s)
         return s
@@ -121,8 +133,8 @@ class LNS:
         print("==================")
         print("INTERRUPTED:")
         self.print_model(self.models["best_model"])
-        print(f"Overall steps: {self._step_c}")
-        print(f"Overall time: {time.time() - self._start_time:.3f}s")
+        print(f"Overall steps: {self.step_c}")
+        print(f"Overall time: {time.time() - self.start_time:.3f}s")
         raise SystemExit
 
     def on_model(self, model: clingo.solving.Model) -> None:  # nocoverage
@@ -133,17 +145,17 @@ class LNS:
         :type model: clingo.solving.Model
         """
         # dl
-        if self._solver._thy:
-            self._solver._thy.on_model(model=model)
+        if self.solver.thy:
+            self.solver.thy.on_model(model=model)
             self.models["new_model"]["assignments"] = [
                 f"{key}={val}"
-                for key, val in self._solver._thy.assignment(model.thread_id)
+                for key, val in self.solver.thy.assignment(model.thread_id)
             ]
 
         self.models["new_model"] = {}
         self.models["new_model"]["shown"] = model.symbols(shown=True)
         self.models["new_model"]["true"] = model.symbols(atoms=True)
-        self.models["new_model"]["cost"] = self._strategy.calc_cost(
+        self.models["new_model"]["cost"] = self.strategy.calc_cost(
             self.models["new_model"]
         )
 
@@ -163,31 +175,36 @@ class LNS:
 
         signal.signal(signal.SIGINT, self.interrupt_handler)
 
-        self._start_time = time.time()
-        self._step_c = 0
+        self.start_time = time.time()
+        self.step_c = 0
 
-        self._solver.setup(self)
+        self.solver.setup(self)
 
-        if not self._strategy.first_solution(self):
+        if not self.strategy.first_solution(self):
             raise SystemExit
 
-        while not self._strategy.check_stop(self):
-            self._step_c += 1
-            fixed_atoms = self._strategy.relax(
+        while not self.strategy.check_stop(self):
+            self.step_c += 1
+            if self.step_c % 50 == 0:
+                print(
+                    f"{time.time() - self.start_time:.3f}s: {self.step_c}|{self.param_values['max_steps']}"
+                )
+            fixed_atoms = self.strategy.relax(
                 self.models["current_model"],
                 {"relax_rate": self.param_values["relax_rate"]},
             )
-            if self._strategy.repair(self, fixed_atoms).satisfiable:
-                if self._strategy.check_accept(self):
+            if self.strategy.repair(self, fixed_atoms).satisfiable:
+                if self.strategy.check_accept(self):
                     self.models["current_model"] = self.models["new_model"].copy()
-                if self._strategy.check_better(self):
+                if self.strategy.check_better(self):
                     self.models["best_model"] = self.models["new_model"].copy()
-                    self._strategy.update_grounding(self)
+                    print(f'New best solution: {self.models["best_model"]["cost"]}')
+                    self.strategy.update_grounding(self)
         print("==================")
         print("SEARCH FINISHED:")
         self.print_model(self.models["best_model"])
-        print(f"Overall steps: {self._step_c}")
-        print(f"Overall time: {time.time() - self._start_time:.3f}s")
+        print(f"Overall steps: {self.step_c}")
+        print(f"Overall time: {time.time() - self.start_time:.3f}s")
 
         # old callables
         # s     "setup": theory.setup_clingo,
@@ -201,6 +218,6 @@ class LNS:
         # st    "better_solution_found": search.better_solution_found_hc_weighted_sum,
         # --    "boundary_handling": boundary.boundary_overall,
         # --    "finish": boundary.finish,
-        # todo  "check_stuck": search.check_stuck_never,
-        # todo  "is_stuck": search.is_stuck,
+        # !!    "check_stuck": search.check_stuck_never,
+        # !!    "is_stuck": search.is_stuck,
         # --    "timeout": search.timeout,

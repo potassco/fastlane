@@ -5,7 +5,7 @@ Solver interface used for LNS.
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any, List, Tuple, Union
+from typing import TYPE_CHECKING, Any, List, Tuple, Optional
 
 import clingo
 
@@ -22,11 +22,11 @@ class SolverInterface(metaclass=abc.ABCMeta):
         """
         Initialization of the solver object.
         """
-        self._ctl: Union[clingo.control.Control, None] = None
-        self._thy: Any = None
+        self.ctl: Optional[clingo.control.Control] = None
+        self.thy: Any = None
 
     @classmethod
-    def __subclasshook__(cls, subclass):    # nocoverage
+    def __subclasshook__(cls, subclass):  # nocoverage
         return (
             hasattr(subclass, "setup")
             and callable(subclass.setup)
@@ -36,7 +36,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
         )
 
     @abc.abstractmethod
-    def setup(self, lns_object: LNS) -> None:   # nocoverage
+    def setup(self, lns_object: LNS) -> None:  # nocoverage
         """
         Initialization of the solver.
 
@@ -50,7 +50,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
         self,
         lns_object: LNS,
         assumptions: List[Tuple[clingo.symbol.Symbol, bool]],
-    ) -> clingo.solving.SolveResult:    # nocoverage
+    ) -> clingo.solving.SolveResult:  # nocoverage
         """
         Solve under assumptions.
 
@@ -70,7 +70,8 @@ class SolverInterface(metaclass=abc.ABCMeta):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         """
-        self._ctl.ground([("base", [])], context=lns_object)
+        if isinstance(self.ctl, clingo.control.Control):
+            self.ctl.ground([("base", [])], context=lns_object)
 
     def get_avail_solve_time(self, lns_object: LNS) -> int:
         """
@@ -82,7 +83,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
         :return: Available solve time.
         :rtype: int
         """
-        avail_time = lns_object._avail_time
+        avail_time = lns_object.avail_time
         if avail_time >= lns_object.param_values["solve_time_limit"]:
             return lns_object.param_values["solve_time_limit"]
         return avail_time
