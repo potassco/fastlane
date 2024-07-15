@@ -8,6 +8,8 @@ from unittest import TestCase
 from clingo.symbol import Function, Number, String
 
 from large_neighbourhood_search import LNS
+from large_neighbourhood_search.interfaces.solver import SolverInterface
+from large_neighbourhood_search.interfaces.strategy import StrategyInterface
 from large_neighbourhood_search.lib.solvers.clingo_solver import ClingoSolver
 from large_neighbourhood_search.lib.strategies.classic_lexicographic_declarative import (
     ClassicLexiDecl,
@@ -26,8 +28,8 @@ class TestStrategyClWsRnd(TestCase):
     """
 
     def setUp(self) -> None:
-        self.solver = ClingoSolver()
-        self.strategy = ClassicWeightedSumRnd()
+        self.solver: SolverInterface = ClingoSolver()
+        self.strategy: StrategyInterface = ClassicWeightedSumRnd()
         self.lns = LNS(["./tests/ref/golf.lp"], self.solver, self.strategy)
 
     def test_calc_cost(self):

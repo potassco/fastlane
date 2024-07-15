@@ -5,7 +5,7 @@ Solver interface used for LNS.
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any, List, Tuple, Optional
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
 import clingo
 

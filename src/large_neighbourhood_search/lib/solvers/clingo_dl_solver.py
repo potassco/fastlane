@@ -5,7 +5,7 @@ clingo-dl solver for LNS.
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Any, List, Tuple
+from typing import TYPE_CHECKING, List, Tuple
 
 import clingo
 from clingo import ast
@@ -22,7 +22,7 @@ class ClingoDLSolver(SolverInterface):
     clingo-dl solver.
     """
 
-    def setup(self, lns_object: LNS) -> Tuple[clingo.control.Control, Any]:
+    def setup(self, lns_object: LNS) -> None:
         """
         Initialize clingo.Control object using clingo-dl.
 
@@ -37,7 +37,6 @@ class ClingoDLSolver(SolverInterface):
         ]
 
         thy = ClingoDLTheory()
-        lns_object.theory = thy
         ctl = clingo.Control(args)
         thy.register(ctl)
         with ast.ProgramBuilder(ctl) as builder:
@@ -62,21 +61,23 @@ class ClingoDLSolver(SolverInterface):
         :return: Solve result.
         :rtype: clingo.solving.SolveResult
         """
+        res = clingo.solving.SolveResult(2)
         start_time = int(time.time())
         solve_time = self.get_avail_solve_time(lns_object)
-        self.thy.prepare(self.ctl)
-        with self.ctl.solve(
-            assumptions=assumptions,
-            on_model=lns_object.on_model,
-            async_=True,  # yield_=True
-        ) as handle:
-            done = handle.wait(solve_time)
-            if not done:
-                handle.cancel()
-                print(
-                    f"{time.time() - start_time:.3f}s: "
-                    f'Unable to repair model during time limit ({lns_object.param_values["solve_time_limit"]}s).'
-                )
-            res = handle.get()
+        if isinstance(self.ctl, clingo.control.Control):
+            self.thy.prepare(self.ctl)
+            with self.ctl.solve(
+                assumptions=assumptions,
+                on_model=lns_object.on_model,
+                async_=True,  # yield_=True
+            ) as handle:
+                done = handle.wait(solve_time)
+                if not done:
+                    handle.cancel()
+                    print(
+                        f"{time.time() - start_time:.3f}s: "
+                        f'Unable to repair model during time limit ({lns_object.param_values["solve_time_limit"]}s).'
+                    )
+                res = handle.get()
         lns_object.avail_time -= int(time.time()) - start_time
         return res

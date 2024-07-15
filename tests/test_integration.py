@@ -5,6 +5,7 @@ Integration tests.
 from unittest import TestCase
 
 from large_neighbourhood_search import LNS
+from large_neighbourhood_search.interfaces.solver import SolverInterface
 from large_neighbourhood_search.lib.solvers.clingo_dl_solver import ClingoDLSolver
 from large_neighbourhood_search.lib.solvers.clingo_solver import ClingoSolver
 from large_neighbourhood_search.lib.strategies.classic_lexicographic_declarative import (
@@ -52,7 +53,7 @@ class TestIntegrationClingo(TestCase):
     """
 
     def setUp(self) -> None:
-        self.solver = ClingoSolver()
+        self.solver: SolverInterface = ClingoSolver()
 
     def test_classic_weighted_sum(self):
         """

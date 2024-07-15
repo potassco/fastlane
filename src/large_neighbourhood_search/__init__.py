@@ -6,7 +6,7 @@ import random
 import signal
 import time
 from types import FrameType
-from typing import Any, Dict, List, Sequence, Type, Union
+from typing import Any, Dict, List, Sequence, Union
 
 import clingo
 
@@ -24,10 +24,10 @@ class LNS:
     :param files: Problem encodings.
     :type files: List[str]
     :param solver: Solver class used during LNS.
-    :type solver: Type[SolverInterface]
+    :type solver: SolverInterface
     :default solver: ClingoSolver
     :param strategy: Strategy class used during LNS.
-    :type strategy: Type[StrategyInterface]
+    :type strategy: StrategyInterface
     :default strategy: HCWeightedSumRnd
     :param params: Search parameters.
     :type params: Dict[str, Any]
@@ -37,17 +37,17 @@ class LNS:
     def __init__(
         self,
         files: List[str],
-        solver: Type[SolverInterface] = ClingoSolver(),
-        strategy: Type[StrategyInterface] = HCWeightedSumRnd(),
+        solver: SolverInterface = ClingoSolver(),
+        strategy: StrategyInterface = HCWeightedSumRnd(),
         params: Dict[str, Any] = {},
     ):
         """
         Initialization of the lns object.
         """
-        self.solver = solver
-        self.strategy = strategy
-        self.start_time = 0
-        self.step_c = 0
+        self.solver: SolverInterface = solver
+        self.strategy: StrategyInterface = strategy
+        self.start_time: float = 0
+        self.step_c: int = 0
 
         new_model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]] = {}
         current_model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]] = {}
@@ -101,14 +101,12 @@ class LNS:
         self.param_values = {**self.param_values, **params}
         self.set_seed(self.param_values["seed"])
 
-    def print_model(
-        self, model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]
-    ) -> str:
+    def print_model(self, model: Dict[str, Any]) -> str:
         """
         Print given model.
 
         :param model: Model.
-        :type model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]
+        :type model: Dict[str, Any]
         :return: Printed string.
         :rtype: str
         """

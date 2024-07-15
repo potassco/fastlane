@@ -107,17 +107,20 @@ class HCLexiRnd(HCWeightedSumRnd):
                     )
                 )
             )
-            lns_object.solver.ctl.add("cost", s, rules)
-            lns_object.solver.ctl.ground(
-                [
-                    (
-                        "cost",
-                        [Number(0)]
-                        + [Number(cost[prio]) for prio in sorted(cost.keys())],
-                    )
-                ]
-            )
-            lns_object.solver.ctl.assign_external(Function("step", [Number(0)]), True)
+            if isinstance(lns_object.solver.ctl, clingo.control.Control):
+                lns_object.solver.ctl.add("cost", s, rules)
+                lns_object.solver.ctl.ground(
+                    [
+                        (
+                            "cost",
+                            [Number(0)]
+                            + [Number(cost[prio]) for prio in sorted(cost.keys())],
+                        )
+                    ]
+                )
+                lns_object.solver.ctl.assign_external(
+                    Function("step", [Number(0)]), True
+                )
 
             lns_object.models["current_model"] = lns_object.models["new_model"].copy()
             lns_object.models["best_model"] = lns_object.models["new_model"].copy()
@@ -158,15 +161,18 @@ class HCLexiRnd(HCWeightedSumRnd):
         :type lns_object: large_neighbourhood_search.LNS
         """
         step = lns_object.step_c
-        lns_object.solver.ctl.release_external(Function("step", [Number(step - 1)]))
-        cost = lns_object.models["best_model"]["cost"]
-        lns_object.solver.ctl.ground(
-            [
-                (
-                    "cost",
-                    [Number(step)]
-                    + [Number(cost[prio]) for prio in sorted(cost.keys())],
-                )
-            ]
-        )
-        lns_object.solver.ctl.assign_external(Function("step", [Number(step)]), True)
+        if isinstance(lns_object.solver.ctl, clingo.control.Control):
+            lns_object.solver.ctl.release_external(Function("step", [Number(step - 1)]))
+            cost = lns_object.models["best_model"]["cost"]
+            lns_object.solver.ctl.ground(
+                [
+                    (
+                        "cost",
+                        [Number(step)]
+                        + [Number(cost[prio]) for prio in sorted(cost.keys())],
+                    )
+                ]
+            )
+            lns_object.solver.ctl.assign_external(
+                Function("step", [Number(step)]), True
+            )

@@ -62,10 +62,11 @@ class HCWeightedSumRnd(StrategyInterface):
             # add constraint to force better solution with each iteration
             # encoding has to contain _lns_penalty(N,I,W) predicates
             # where N: name, I: identifier, W: weight
-            lns_object.solver.ctl.add(
-                "cost", ["c"], ":- #sum{W,I: _lns_penalty(_,I,W)} >= c."
-            )
-            lns_object.solver.ctl.ground([("cost", [Number(cost)])])
+            if isinstance(lns_object.solver.ctl, clingo.control.Control):
+                lns_object.solver.ctl.add(
+                    "cost", ["c"], ":- #sum{W,I: _lns_penalty(_,I,W)} >= c."
+                )
+                lns_object.solver.ctl.ground([("cost", [Number(cost)])])
 
             lns_object.models["current_model"] = lns_object.models["new_model"].copy()
             lns_object.models["best_model"] = lns_object.models["new_model"].copy()
@@ -166,6 +167,7 @@ class HCWeightedSumRnd(StrategyInterface):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         """
-        lns_object.solver.ctl.ground(
-            [("cost", [Number(lns_object.models["best_model"]["cost"])])]
-        )
+        if isinstance(lns_object.solver.ctl, clingo.control.Control):
+            lns_object.solver.ctl.ground(
+                [("cost", [Number(lns_object.models["best_model"]["cost"])])]
+            )

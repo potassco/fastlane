@@ -7,6 +7,8 @@ import time
 from clingo.symbol import Function, Number, String
 
 from large_neighbourhood_search import LNS
+from large_neighbourhood_search.interfaces.solver import SolverInterface
+from large_neighbourhood_search.interfaces.strategy import StrategyInterface
 from large_neighbourhood_search.lib.solvers.clingo_solver import ClingoSolver
 from large_neighbourhood_search.lib.strategies.hc_lexicographic_declarative import (
     HCLexiDecl,
@@ -27,8 +29,8 @@ class TestStrategyHcWsRnd(TestStrategyClWsRnd):
     """
 
     def setUp(self) -> None:
-        self.solver = ClingoSolver()
-        self.strategy = HCWeightedSumRnd()
+        self.solver: SolverInterface = ClingoSolver()
+        self.strategy: StrategyInterface = HCWeightedSumRnd()
         self.lns = LNS(["./tests/ref/golf.lp"], self.solver, self.strategy)
 
     def test_check_better(self):

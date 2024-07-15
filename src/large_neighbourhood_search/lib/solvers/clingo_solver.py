@@ -5,7 +5,7 @@ clingo solver for LNS.
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Any, List, Tuple
+from typing import TYPE_CHECKING, List, Tuple
 
 import clingo
 
@@ -20,7 +20,7 @@ class ClingoSolver(SolverInterface):
     clingo solver.
     """
 
-    def setup(self, lns_object: LNS) -> Tuple[clingo.control.Control, Any]:
+    def setup(self, lns_object: LNS) -> None:
         """
         Initialize clingo.Control object using clingo.
 
@@ -54,18 +54,20 @@ class ClingoSolver(SolverInterface):
         :return: Solve result.
         :rtype: clingo.solving.SolveResult
         """
+        res = clingo.solving.SolveResult(2)
         start_time = int(time.time())
         solve_time = self.get_avail_solve_time(lns_object)
-        with self.ctl.solve(
-            assumptions=assumptions, on_model=lns_object.on_model, async_=True
-        ) as handle:
-            done = handle.wait(solve_time)
-            if not done:
-                handle.cancel()
-                print(
-                    f"{time.time() - start_time:.3f}s: "
-                    f'Unable to repair model during time limit ({lns_object.param_values["solve_time_limit"]}s).'
-                )
-            res = handle.get()
+        if isinstance(self.ctl, clingo.control.Control):
+            with self.ctl.solve(
+                assumptions=assumptions, on_model=lns_object.on_model, async_=True
+            ) as handle:
+                done = handle.wait(solve_time)
+                if not done:
+                    handle.cancel()
+                    print(
+                        f"{time.time() - start_time:.3f}s: "
+                        f'Unable to repair model during time limit ({lns_object.param_values["solve_time_limit"]}s).'
+                    )
+                res = handle.get()
         lns_object.avail_time -= int(time.time()) - start_time
         return res

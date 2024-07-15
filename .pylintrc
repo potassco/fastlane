@@ -29,3 +29,6 @@ variable-rgx=^[a-z][a-z0-9]*((_[a-z0-9]+)*_?)?$
 
 # Good variable names which should always be accepted, separated by a comma.
 good-names=_,M,N,B,A,Nn,Bn,An
+
+[MESSAGE CONTROL]
+disable=duplicate-code
