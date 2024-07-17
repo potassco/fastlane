@@ -1,6 +1,6 @@
 """
 Strategy implementing classic LNS with lexicographic optimization criteria and random declarative relaxation.
-Based on ClassicLexiRND class.
+Based on ClassicLexiRnd class.
 """
 
 from typing import Any, Dict, List, Sequence, Tuple, Union

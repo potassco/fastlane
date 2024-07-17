@@ -1,6 +1,6 @@
 """
 Strategy implementing classic LNS with lexicographic optimization criteria and random relaxation.
-Based on ClassicWeightedSumRND class.
+Based on ClassicWeightedSumRnd class.
 """
 
 from __future__ import annotations
@@ -60,10 +60,11 @@ class ClassicLexiRnd(ClassicWeightedSumRnd):
     def check_stop(self, lns_object: LNS) -> bool:
         """
         Check whether to stop LNS.
+        
         Stop if:
-            all cost = 0
-            max # of steps exceeded
-            overall time limit exceeded
+        all cost = 0,
+        max # of steps exceeded,
+        overall time limit exceeded
 
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS

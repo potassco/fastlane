@@ -1,6 +1,6 @@
 """
 Strategy implementing LNS using hard constraints with lexicographic optimization criteria and random relaxation.
-Based on HCWeightedSumRND class.
+Based on HCWeightedSumRnd class.
 """
 
 from __future__ import annotations
@@ -131,10 +131,11 @@ class HCLexiRnd(HCWeightedSumRnd):
     def check_stop(self, lns_object: LNS) -> bool:
         """
         Check whether to stop LNS.
+        
         Stop if:
-            cost = 0
-            max # of steps exceeded
-            overall time limit exceeded
+        cost = 0,
+        max # of steps exceeded,
+        overall time limit exceeded
 
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS

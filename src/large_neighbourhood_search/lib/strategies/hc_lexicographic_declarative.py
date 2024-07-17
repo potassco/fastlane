@@ -1,7 +1,7 @@
 """
 Strategy implementing LNS using hard constraints with lexicographic
 optimization criteria and random declarative relaxation.
-Based on HCLexiRND class.
+Based on HCLexiRnd class.
 """
 
 from typing import Any, Dict, List, Sequence, Tuple, Union
