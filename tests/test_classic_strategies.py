@@ -208,6 +208,16 @@ class TestStrategyClWsRnd(TestCase):
         self.lns.models["new_model"]["cost"] = 5
         self.assertFalse(self.strategy.check_better(self.lns))
 
+    def test_stuck_handling(self):
+        """
+        Test stuck handling.
+        """
+        self.strategy.stuck_handling(self.lns)
+        self.assertEqual(self.lns.step_c, 0)
+        self.lns.no_improv_c = 1001
+        self.strategy.stuck_handling(self.lns)
+        self.assertEqual(self.lns.step_c, 2001)
+
 
 class TestStrategyClLexiRnd(TestStrategyClWsRnd):
     """

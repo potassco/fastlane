@@ -53,7 +53,7 @@ class ClassicWeightedSumRnd(StrategyInterface):
         lns_object.solver.ground_base(lns_object)
 
         # get first solution
-        if lns_object.solver.solve_under_assumptions(lns_object, []).satisfiable:
+        if lns_object.solver.solve_fixed(lns_object, []).satisfiable:
             print(
                 f'Initial solution found with cost: {lns_object.models["new_model"]["cost"]}'
             )
@@ -66,7 +66,7 @@ class ClassicWeightedSumRnd(StrategyInterface):
     def check_stop(self, lns_object: LNS) -> bool:
         """
         Check whether to stop LNS.
-        
+
         Stop if:
         cost = 0,
         max # of steps exceeded,
@@ -116,7 +116,7 @@ class ClassicWeightedSumRnd(StrategyInterface):
         :return: Solve result.
         :rtype: clingo.solving.SolveResult
         """
-        return lns_object.solver.solve_under_assumptions(lns_object, fixed_atoms)
+        return lns_object.solver.solve_fixed(lns_object, fixed_atoms)
 
     # pylint: disable=unused-argument
     def check_accept(
@@ -159,3 +159,13 @@ class ClassicWeightedSumRnd(StrategyInterface):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         """
+
+    def stuck_handling(self, lns_object: LNS) -> None:
+        """
+        Stop search after 1000 times in a row no improvement was found.
+
+        :param lns_object: LNS object.
+        :type lns_object: large_neighbourhood_search.LNS
+        """
+        if lns_object.no_improv_c >= 1000:
+            lns_object.step_c = lns_object.param_values["max_steps"] + 1

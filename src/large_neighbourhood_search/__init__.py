@@ -16,7 +16,7 @@ from .lib.solvers.clingo_solver import ClingoSolver
 from .lib.strategies.hc_weighted_sum_rnd import HCWeightedSumRnd
 
 
-# pylint: disable=dangerous-default-value
+# pylint: disable=dangerous-default-value,too-many-instance-attributes
 class LNS:
     """
     Class handling and  performing LNS.
@@ -48,6 +48,7 @@ class LNS:
         self.strategy: StrategyInterface = strategy
         self.start_time: float = 0
         self.step_c: int = 0
+        self.no_improv_c = 0
 
         new_model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]] = {}
         current_model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]] = {}
@@ -198,6 +199,10 @@ class LNS:
                     self.models["best_model"] = self.models["new_model"].copy()
                     print(f'New best solution: {self.models["best_model"]["cost"]}')
                     self.strategy.update_grounding(self)
+                    self.no_improv_c = 0
+                else:
+                    self.no_improv_c += 1
+                    self.strategy.stuck_handling(self)
         print("==================")
         print("SEARCH FINISHED:")
         self.print_model(self.models["best_model"])
@@ -216,6 +221,6 @@ class LNS:
         # st    "better_solution_found": search.better_solution_found_hc_weighted_sum,
         # --    "boundary_handling": boundary.boundary_overall,
         # --    "finish": boundary.finish,
-        # !!    "check_stuck": search.check_stuck_never,
-        # !!    "is_stuck": search.is_stuck,
+        # st    "check_stuck": search.check_stuck_never,
+        # st    "is_stuck": search.is_stuck,
         # --    "timeout": search.timeout,

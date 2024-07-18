@@ -51,6 +51,16 @@ class TestStrategyHcWsRnd(TestStrategyClWsRnd):
         self.solver.setup(self.lns)
         self.assertIsNone(self.strategy.update_grounding(self.lns))
 
+    def test_stuck_handling(self):
+        """
+        Test stuck handling.
+        """
+        self.strategy.stuck_handling(self.lns)
+        self.assertEqual(self.lns.step_c, 0)
+        self.lns.no_improv_c = 1001
+        self.strategy.stuck_handling(self.lns)
+        self.assertEqual(self.lns.step_c, 0)
+
 
 class TestStrategyHcLexiRnd(TestStrategyHcWsRnd):
     """

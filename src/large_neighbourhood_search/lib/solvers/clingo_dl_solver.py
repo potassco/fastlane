@@ -46,10 +46,10 @@ class ClingoDLSolver(SolverInterface):
             )
         self.ctl, self.thy = ctl, thy
 
-    def solve_under_assumptions(
+    def solve_fixed(
         self,
         lns_object: LNS,
-        assumptions: List[Tuple[clingo.symbol.Symbol, bool]],
+        fixed_atoms: List[Tuple[clingo.symbol.Symbol, bool]],
     ) -> clingo.solving.SolveResult:
         """
         Solve under assumptions using clingo-dl.
@@ -67,7 +67,7 @@ class ClingoDLSolver(SolverInterface):
         if isinstance(self.ctl, clingo.control.Control):
             self.thy.prepare(self.ctl)
             with self.ctl.solve(
-                assumptions=assumptions,
+                assumptions=fixed_atoms,
                 on_model=lns_object.on_model,
                 async_=True,  # yield_=True
             ) as handle:

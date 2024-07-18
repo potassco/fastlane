@@ -70,7 +70,7 @@ class HCLexiRnd(HCWeightedSumRnd):
         lns_object.solver.ground_base(lns_object)
 
         # get first solution
-        if lns_object.solver.solve_under_assumptions(lns_object, []).satisfiable:
+        if lns_object.solver.solve_fixed(lns_object, []).satisfiable:
             cost = lns_object.models["new_model"]["cost"]
             print(f"Initial solution found with cost: {cost}")
 
@@ -131,7 +131,7 @@ class HCLexiRnd(HCWeightedSumRnd):
     def check_stop(self, lns_object: LNS) -> bool:
         """
         Check whether to stop LNS.
-        
+
         Stop if:
         cost = 0,
         max # of steps exceeded,
@@ -153,7 +153,6 @@ class HCLexiRnd(HCWeightedSumRnd):
             >= lns_object.param_values["overall_time_limit"]
         )
 
-    # pylint: disable=unused-argument
     def update_grounding(self, lns_object: LNS) -> None:
         """
         Update grounding after new best solution.

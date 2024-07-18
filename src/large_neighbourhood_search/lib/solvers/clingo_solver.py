@@ -39,10 +39,10 @@ class ClingoSolver(SolverInterface):
             ctl.load(path)
         self.ctl, self.thy = ctl, None
 
-    def solve_under_assumptions(
+    def solve_fixed(
         self,
         lns_object: LNS,
-        assumptions: List[Tuple[clingo.symbol.Symbol, bool]],
+        fixed_atoms: List[Tuple[clingo.symbol.Symbol, bool]],
     ) -> clingo.solving.SolveResult:
         """
         Solve under assumptions using clingo.
@@ -59,7 +59,7 @@ class ClingoSolver(SolverInterface):
         solve_time = self.get_avail_solve_time(lns_object)
         if isinstance(self.ctl, clingo.control.Control):
             with self.ctl.solve(
-                assumptions=assumptions, on_model=lns_object.on_model, async_=True
+                assumptions=fixed_atoms, on_model=lns_object.on_model, async_=True
             ) as handle:
                 done = handle.wait(solve_time)
                 if not done:

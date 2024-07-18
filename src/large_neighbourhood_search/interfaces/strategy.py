@@ -151,3 +151,12 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         :type lns_object: large_neighbourhood_search.LNS
         """
         raise NotImplementedError
+
+    # pylint: disable=unused-argument
+    def stuck_handling(self, lns_object: LNS) -> None:
+        """
+        Check whether search is stuck and what to do if it is.
+
+        :param lns_object: LNS object.
+        :type lns_object: large_neighbourhood_search.LNS
+        """

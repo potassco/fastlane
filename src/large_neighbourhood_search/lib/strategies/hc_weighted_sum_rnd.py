@@ -55,7 +55,7 @@ class HCWeightedSumRnd(StrategyInterface):
         lns_object.solver.ground_base(lns_object)
 
         # get first solution
-        if lns_object.solver.solve_under_assumptions(lns_object, []).satisfiable:
+        if lns_object.solver.solve_fixed(lns_object, []).satisfiable:
             cost = lns_object.models["new_model"]["cost"]
             print(f"Initial solution found with cost: {cost}")
 
@@ -77,7 +77,7 @@ class HCWeightedSumRnd(StrategyInterface):
     def check_stop(self, lns_object: LNS) -> bool:
         """
         Check whether to stop LNS.
-        
+
         Stop if:
         cost = 0,
         max # of steps exceeded,
@@ -127,7 +127,7 @@ class HCWeightedSumRnd(StrategyInterface):
         :return: Solve result.
         :rtype: clingo.solving.SolveResult
         """
-        return lns_object.solver.solve_under_assumptions(lns_object, fixed_atoms)
+        return lns_object.solver.solve_fixed(lns_object, fixed_atoms)
 
     # pylint: disable=unused-argument
     def check_accept(
@@ -145,6 +145,7 @@ class HCWeightedSumRnd(StrategyInterface):
         """
         return True
 
+    # pylint: disable=unused-argument
     def check_better(
         self,
         lns_object: LNS,
@@ -160,7 +161,6 @@ class HCWeightedSumRnd(StrategyInterface):
         """
         return True
 
-    # pylint: disable=unused-argument
     def update_grounding(self, lns_object: LNS) -> None:
         """
         Update grounding after new best solution.

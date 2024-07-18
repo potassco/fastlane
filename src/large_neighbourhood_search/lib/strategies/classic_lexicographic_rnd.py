@@ -60,7 +60,7 @@ class ClassicLexiRnd(ClassicWeightedSumRnd):
     def check_stop(self, lns_object: LNS) -> bool:
         """
         Check whether to stop LNS.
-        
+
         Stop if:
         all cost = 0,
         max # of steps exceeded,

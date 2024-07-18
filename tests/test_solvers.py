@@ -53,29 +53,25 @@ class TestSolverClingo(TestCase):
         self.assertIsInstance(self.solver.ctl, clingo.control.Control)
         self.assertIsNone(self.solver.thy)
 
-    def test_solver_under_assumptions(self):
+    def test_solve_fixed(self):
         """
         Test clingo solving under assumptions.
         """
         self.lns.set_seed(123)
         self.solver.setup(self.lns)
         self.solver.ground_base(self.lns)
-        self.assertTrue(self.solver.solve_under_assumptions(self.lns, []).satisfiable)
+        self.assertTrue(self.solver.solve_fixed(self.lns, []).satisfiable)
         self.assertTrue(self.lns.models["new_model"])
 
         assumptions = self.strategy.relax(
             self.lns.models["new_model"], {"relax_rate": 0.2}
         )
         self.lns.models["new_model"] = {}
-        self.assertTrue(
-            self.solver.solve_under_assumptions(self.lns, assumptions).satisfiable
-        )
+        self.assertTrue(self.solver.solve_fixed(self.lns, assumptions).satisfiable)
         self.assertTrue(self.lns.models["new_model"])
 
         self.lns.set_params({"solve_time_limit": 0})
-        self.assertTrue(
-            self.solver.solve_under_assumptions(self.lns, assumptions).interrupted
-        )
+        self.assertTrue(self.solver.solve_fixed(self.lns, assumptions).interrupted)
 
 
 class TestSolverClingoDL(TestSolverClingo):

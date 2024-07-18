@@ -46,13 +46,13 @@ class SolverInterface(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def solve_under_assumptions(
+    def solve_fixed(
         self,
         lns_object: LNS,
-        assumptions: List[Tuple[clingo.symbol.Symbol, bool]],
+        fixed_atoms: List[Tuple[clingo.symbol.Symbol, bool]],
     ) -> clingo.solving.SolveResult:  # nocoverage
         """
-        Solve under assumptions.
+        Solve with fixed atoms.
 
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
