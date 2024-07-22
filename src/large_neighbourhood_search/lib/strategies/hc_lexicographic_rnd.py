@@ -91,7 +91,7 @@ class HCLexiRnd(HCWeightedSumRnd):
             s = ["s"] + list(map(lambda x: f"cost{x}", cost.keys()))
             rules = "#external step(s).\
             bettereq(P+1,s) :- _lns_priority(_,P), not _lns_priority(_,P+1), step(s).\
-            :- not better(_,s), step(s).".join(
+            :- not better(_,s), step(s)." + " ".join(
                 list(
                     map(
                         lambda x: f"better({x},s) :- _lns_priority(N,{x}),\
