@@ -89,21 +89,24 @@ class HCLexiRnd(HCWeightedSumRnd):
             #   bettereq(2,s) :- _lns_priority(N,2), #sum{V,I: _lns_penalty(N,I,W)} <= 4, bettereq(3,s), step(s).
 
             s = ["s"] + list(map(lambda x: f"cost{x}", cost.keys()))
-            rules = "#external step(s).\
+            rules = (
+                "#external step(s).\
             bettereq(P+1,s) :- _lns_priority(_,P), not _lns_priority(_,P+1), step(s).\
-            :- not better(_,s), step(s)." + " ".join(
-                list(
-                    map(
-                        lambda x: f"better({x},s) :- _lns_priority(N,{x}),\
+            :- not better(_,s), step(s)."
+                + " ".join(
+                    list(
+                        map(
+                            lambda x: f"better({x},s) :- _lns_priority(N,{x}),\
                             #sum{{V,I: _lns_penalty(N,I,V)}} < cost{x}, bettereq({x},s), step(s).",
-                        cost.keys(),
+                            cost.keys(),
+                        )
                     )
-                )
-                + list(
-                    map(
-                        lambda x: f"bettereq({x},s) :- _lns_priority(N,{x}),\
+                    + list(
+                        map(
+                            lambda x: f"bettereq({x},s) :- _lns_priority(N,{x}),\
                             #sum{{V,I: _lns_penalty(N,I,V)}} <= cost{x}, bettereq({x+1},s), step(s).",
-                        cost.keys(),
+                            cost.keys(),
+                        )
                     )
                 )
             )
