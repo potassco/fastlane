@@ -111,6 +111,19 @@ class TestIntegrationClingo(TestCase):
         lns.set_seed(123)
         lns.main()
 
+    def test_solve_interrupted(self):
+        """
+        Test execution with hard constraints and lexicographic optimization (declarative).
+        """
+        lns = LNS(
+            ["./tests/ref/golf_big.lp"],
+            self.solver,
+            HCLexiDecl(),
+            {"solve_time_limit": 1},
+        )
+        lns.set_seed(123)
+        lns.main()
+
 
 class TestIntegrationClingoDL(TestIntegrationClingo):
     """

@@ -57,9 +57,9 @@ class TestStrategyHcWsRnd(TestStrategyClWsRnd):
         """
         self.strategy.stuck_handling(self.lns)
         self.assertEqual(self.lns.step_c, 0)
-        self.lns.no_improv_c = 1001
+        self.lns.no_improv_c = 11
         self.strategy.stuck_handling(self.lns)
-        self.assertEqual(self.lns.step_c, 0)
+        self.assertEqual(self.lns.step_c, 2001)
 
 
 class TestStrategyHcLexiRnd(TestStrategyHcWsRnd):

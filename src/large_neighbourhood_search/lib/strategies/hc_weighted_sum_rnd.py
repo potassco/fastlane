@@ -172,3 +172,13 @@ class HCWeightedSumRnd(StrategyInterface):
             lns_object.solver.ctl.ground(
                 [("cost", [Number(lns_object.models["best_model"]["cost"])])]
             )
+
+    def stuck_handling(self, lns_object: LNS) -> None:
+        """
+        Stop search after 10 times in a row no improvement was found.
+
+        :param lns_object: LNS object.
+        :type lns_object: large_neighbourhood_search.LNS
+        """
+        if lns_object.no_improv_c >= 10:
+            lns_object.step_c = lns_object.param_values["max_steps"] + 1

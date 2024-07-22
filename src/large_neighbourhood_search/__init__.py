@@ -184,6 +184,7 @@ class LNS:
 
         while not self.strategy.check_stop(self):
             self.step_c += 1
+            improv = False
             if self.step_c % 50 == 0:
                 print(
                     f"{time.time() - self.start_time:.3f}s: {self.step_c}|{self.param_values['max_steps']}"
@@ -200,9 +201,10 @@ class LNS:
                     print(f'New best solution: {self.models["best_model"]["cost"]}')
                     self.strategy.update_grounding(self)
                     self.no_improv_c = 0
-                else:
-                    self.no_improv_c += 1
-                    self.strategy.stuck_handling(self)
+                    improv = True
+            if not improv:
+                self.no_improv_c += 1
+                self.strategy.stuck_handling(self)
         print("==================")
         print("SEARCH FINISHED:")
         self.print_model(self.models["best_model"])
