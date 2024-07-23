@@ -6,6 +6,7 @@ on:
       - main
       - master
       - dev
+      - 3.0
   pull_request:
 
 env:

@@ -4,94 +4,119 @@ The large_neighbourhood_search project.
 
 import random
 import signal
-import sys
+import time
 from types import FrameType
-from typing import Any, Callable, Dict, List, Sequence, Union
+from typing import Any, Dict, List, Sequence, Union
 
 import clingo
-from clingodl import ClingoDLTheory
 
-from .lib import boundary, lns_utils, search, theory
+from .interfaces.solver import SolverInterface
+from .interfaces.strategy import StrategyInterface
+from .lib.solvers.clingo_solver import ClingoSolver
+from .lib.strategies.hc_weighted_sum_rnd import HCWeightedSumRnd
 
 
-# pylint: disable=dangerous-default-value
+# pylint: disable=dangerous-default-value,too-many-instance-attributes
 class LNS:
     """
     Class handling and  performing LNS.
 
     :param files: Problem encodings.
     :type files: List[str]
-    :param callables: Functions used during LNS.
-    :type callables: Dict[str, Callables]
-    :default callables: {}
+    :param solver: Solver class used during LNS.
+    :type solver: SolverInterface
+    :default solver: ClingoSolver
+    :param strategy: Strategy class used during LNS.
+    :type strategy: StrategyInterface
+    :default strategy: HCWeightedSumRnd
+    :param params: Search parameters.
+    :type params: Dict[str, Any]
+    :default params: {}
     """
 
-    def __init__(self, files: List[str], callables: Dict[str, Callable] = {}) -> None:
+    def __init__(
+        self,
+        files: List[str],
+        solver: SolverInterface = ClingoSolver(),
+        strategy: StrategyInterface = HCWeightedSumRnd(),
+        params: Dict[str, Any] = {},
+    ):
         """
-        Initialize application.
+        Initialization of the lns object.
         """
-        self.program_name = "lns"
-        self.version = "2.1.1"
+        self.solver: SolverInterface = solver
+        self.strategy: StrategyInterface = strategy
+        self.start_time: float = 0
+        self.step_c: int = 0
+        self.no_improv_c = 0
 
-        self.theory: Union[ClingoDLTheory, None] = None
-        self.param_values: Dict[str, Any] = {
-            "files": files,
-            "seed": None,
-            "relax_rates": [0.2, 0.4, 0.6],
-            "max_steps": 2000,
-            "switch_rr_after_no_improv": 3,
-            "clingo_args": {"rand-freq": 0.8},
-            "time_limit": 20,
-            "overall_time_limit": 600,
-        }
-
-        new_model: Dict[str, Sequence[clingo.symbol.Symbol]] = {}
-        current_model: Dict[str, Sequence[clingo.symbol.Symbol]] = {}
-        best_model: Dict[str, Sequence[clingo.symbol.Symbol]] = {}
+        new_model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]] = {}
+        current_model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]] = {}
+        best_model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]] = {}
         self.models: Dict[str, Any] = {
             "new_model": new_model,
             "current_model": current_model,
             "best_model": best_model,
         }
 
-        self.callables: Dict[str, Callable] = {
-            "setup": theory.setup_clingo,
-            "get_first_solution": search.get_first_solution_hc_weighted_sum,
-            "relax": search.relax_random,
-            "repair": theory.repair_clingo,
-            "check_accept": search.check_accept_always,
-            "check_better": search.check_better_always,
-            "check_stop": boundary.check_stop_steps,
-            "calc_opt_value": lns_utils.calc_opt_val_weighted_sum,
-            "better_solution_found": search.better_solution_found_hc_weighted_sum,
-            "boundary_handling": boundary.boundary_overall,
-            "finish": boundary.finish,
-            "check_stuck": search.check_stuck_never,
-            "is_stuck": search.is_stuck,
-            "timeout": search.timeout,
+        self.param_values: Dict[str, Any] = {
+            "files": files,
+            "seed": None,
+            "relax_rate": 0.2,
+            "max_steps": 2000,
+            "clingo_args": {"rand-freq": 0.8},
+            "solve_time_limit": 20,
+            "overall_time_limit": 600,
         }
-        if callables:
-            self.callables = {**self.callables, **callables}
+        self.param_values = {**self.param_values, **params}
+        self.avail_time = self.param_values["overall_time_limit"]
 
-        self.boundary_dict: Dict[str, Any] = {}
-
-    def on_model(self, model: clingo.solving.Model) -> None:  # nocoverage
+    def set_seed(self, seed: int) -> None:
         """
-        Saves model for later use.
+        Set seed.
 
-        :param model: Model found during solving.
-        :type model: clingo.solving.Model
+        :param seed: Seed to be set.
+        :type seed: int
         """
-        # dl
-        if self.theory:
-            self.theory.on_model(model=model)
-            self.models["new_model"]["assignments"] = [
-                f"{key}={val}" for key, val in self.theory.assignment(model.thread_id)
-            ]
+        random.seed(self.param_values["seed"])
+        self.param_values["seed"] = seed
+        if seed is not None:
+            self.param_values["clingo_args"] = {
+                **self.param_values["clingo_args"],
+                **{"seed": seed},
+            }
 
-        self.models["new_model"] = {}
-        self.models["new_model"]["shown"] = model.symbols(shown=True)
-        self.models["new_model"]["true"] = model.symbols(atoms=True)
+    def get_params(self) -> Dict[str, Any]:
+        """
+        Get LNS parameters.
+        """
+        return self.param_values
+
+    def set_params(self, params: Dict[str, Any]) -> None:
+        """
+        Set LNS parameters.
+
+        :param params: LNS parameters.
+        :type params: Dict[str, Any]
+        """
+        self.param_values = {**self.param_values, **params}
+        self.set_seed(self.param_values["seed"])
+
+    def print_model(self, model: Dict[str, Any]) -> str:
+        """
+        Print given model.
+
+        :param model: Model.
+        :type model: Dict[str, Any]
+        :return: Printed string.
+        :rtype: str
+        """
+        answer_string = " ".join([str(atom) for atom in model["shown"]])
+        if "assignments" in model:
+            answer_string += "\n" + " ".join(model["assignments"])
+        s = "Answer\n" f"{answer_string}\n" f'Cost: {model["cost"]}\n'
+        print(s)
+        return s
 
     # pylint: disable=unused-argument
     def interrupt_handler(self, sig: int, frame: Union[None, FrameType]) -> None:
@@ -106,117 +131,98 @@ class LNS:
         """
         print("==================")
         print("INTERRUPTED:")
-        self.callables["finish"](self)
+        self.print_model(self.models["best_model"])
+        print(f"Overall steps: {self.step_c}")
+        print(f"Overall time: {time.time() - self.start_time:.3f}s")
         raise SystemExit
 
-    def get_params(self) -> Dict[str, Any]:
+    def on_model(self, model: clingo.solving.Model) -> None:  # nocoverage
         """
-        Get LNS parameters.
+        Saves model for later use.
 
-        :return: LNS parameters.
-        :rtype: Dict[str, Any]
+        :param model: Model found during solving.
+        :type model: clingo.solving.Model
         """
-        return self.param_values
+        # dl
+        if self.solver.thy:
+            self.solver.thy.on_model(model=model)
+            self.models["new_model"]["assignments"] = [
+                f"{key}={val}"
+                for key, val in self.solver.thy.assignment(model.thread_id)
+            ]
 
-    def set_params(self, params: Dict[str, Any]) -> None:
-        """
-        Set LNS parameters.
+        self.models["new_model"] = {}
+        self.models["new_model"]["shown"] = model.symbols(shown=True)
+        self.models["new_model"]["true"] = model.symbols(atoms=True)
+        self.models["new_model"]["cost"] = self.strategy.calc_cost(
+            self.models["new_model"]
+        )
 
-        :param params: LNS parameters.
-        :type params: Dict[str, Any]
-        """
-        self.param_values = {**self.param_values, **params}
-
-    def set_seed(self, seed: int) -> None:
-        """
-        Set seed.
-
-        :param seed: Seed to be set.
-        :type seed: int
-        """
-        random.seed(self.param_values["seed"])
-        self.param_values["seed"] = seed
-        self.param_values["clingo_args"] = {
-            **self.param_values["clingo_args"],
-            **{"seed": seed},
-        }
-
-    def get_stats(self, ctl: clingo.control.Control) -> Dict:
-        """
-        WIP Method to obtain different stats from the last solver call.
-
-        :param ctl: Clingo Control object used for solving.
-        :type ctl: clingo.control.Control
-        :return: Conflict statistics
-        :rtype: Dict
-        """
-        # conflicts = ctl.statistics["solvers"]["conflicts"]
-        return ctl.statistics
-
-    # pylint: disable=too-many-branches
     def main(self) -> None:
         """
         Run Large-Neighbourhood Search according to set parameters.
         """
+        # c, b, n: current, best, new model
+        # setup
+        # c = first sol
+        # while check_stop
+        #   n = repair(relax(c))
+        #   check accept(n)
+        #       c = n
+        #   check better
+        #       b = n
 
-        def init_fail():
-            print("Failed to init relax rate.")
-            sys.exit(1)
-
-        if "relax_rates" in self.param_values:
-            if (
-                isinstance(self.param_values["relax_rates"], list)
-                and self.param_values["relax_rates"]
-            ):
-                self.param_values["current_relax_rate"] = self.param_values[
-                    "relax_rates"
-                ][0]
-            else:
-                init_fail()
-        else:
-            init_fail()
         signal.signal(signal.SIGINT, self.interrupt_handler)
-        # prepare clingo control
-        ctl, thy = self.callables["setup"](self)
 
-        # get first solution
-        if not self.callables["get_first_solution"](self, ctl, thy):
-            sys.exit(1)
+        self.start_time = time.time()
+        self.step_c = 0
 
-        # perform LNS
-        self.callables["boundary_handling"](self, "init")
-        while True:
-            self.callables["boundary_handling"](self, "update")
-            improvement_found: bool = False
+        self.solver.setup(self)
 
-            # relax model
-            assumptions = self.callables["relax"](
+        if not self.strategy.first_solution(self):
+            raise SystemExit
+
+        while not self.strategy.check_stop(self):
+            self.step_c += 1
+            improv = False
+            if self.step_c % 50 == 0:
+                print(
+                    f"{time.time() - self.start_time:.3f}s: {self.step_c}|{self.param_values['max_steps']}"
+                )
+            fixed_atoms = self.strategy.relax(
                 self.models["current_model"],
-                {"relax_rate": self.param_values["current_relax_rate"]},
+                {"relax_rate": self.param_values["relax_rate"]},
             )
-
-            # reconstruct model
-            if self.callables["repair"](self, ctl, assumptions, thy).satisfiable:
-                self.boundary_dict["timeout"] = 0
-                # check if new model is accepted
-                if self.callables["check_accept"](
-                    self, self.models["new_model"], self.models["current_model"]
-                ):
+            if self.strategy.repair(self, fixed_atoms).satisfiable:
+                if self.strategy.check_accept(self):
                     self.models["current_model"] = self.models["new_model"].copy()
+                if self.strategy.check_better(self):
+                    self.models["best_model"] = self.models["new_model"].copy()
+                    print(f'New best solution: {self.models["best_model"]["cost"]}')
+                    self.strategy.update_grounding(self)
+                    self.no_improv_c = 0
+                    improv = True
+            if not improv:
+                self.no_improv_c += 1
+                self.strategy.stuck_handling(self)
+        print("==================")
+        print("SEARCH FINISHED:")
+        self.print_model(self.models["best_model"])
+        print(f"Overall steps: {self.step_c}")
+        print(f"Overall time: {time.time() - self.start_time:.3f}s")
 
-                    # check if new model is better
-                if self.callables["check_better"](
-                    self,
-                    self.models["new_model"],
-                    self.models["best_model"],
-                ):
-                    self.callables["better_solution_found"](self, ctl)
-
-                    self.callables["boundary_handling"](self, "improvement")
-                    improvement_found = True
-            if not improvement_found:
-                self.callables["boundary_handling"](self, "no_improvement")
-                if self.callables["check_stuck"](self):
-                    self.callables["is_stuck"](self)
-            if self.callables["check_stop"](self):
-                self.callables["finish"](self)
+        # old callables
+        # s     "setup": theory.setup_clingo,
+        # st    "get_first_solution": search.get_first_solution_hc_weighted_sum,
+        # st r  "relax": search.relax_random,
+        # s st  "repair": theory.repair_clingo,
+        # st    "check_accept": search.check_accept_always,
+        # st    "check_better": search.check_better_always,
+        # st    "check_stop": boundary.check_stop_steps,
+        # st    "calc_opt_value": lns_utils.calc_opt_val_weighted_sum,
+        # st    "better_solution_found": search.better_solution_found_hc_weighted_sum,
+        # --    "boundary_handling": boundary.boundary_overall,
+        # --    "finish": boundary.finish,
+        # st    "check_stuck": search.check_stuck_never,
+        # st    "is_stuck": search.is_stuck,
+        # --    "timeout": search.timeout,

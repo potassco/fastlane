@@ -2,12 +2,16 @@
 Test cases for LNS class.
 """
 
-# pylint: disable=duplicate-code
 import signal
 from unittest import TestCase
 
-import large_neighbourhood_search as lns_pkg
+from clingo.symbol import Function, Number
+
 from large_neighbourhood_search import LNS
+from large_neighbourhood_search.lib.solvers.clingo_solver import ClingoSolver
+from large_neighbourhood_search.lib.strategies.hc_weighted_sum_rnd import (
+    HCWeightedSumRnd,
+)
 
 
 class TestLNS(TestCase):
@@ -22,61 +26,54 @@ class TestLNS(TestCase):
         ref_config_values = {
             "files": ["./tests/ref/golf.lp"],
             "seed": None,
-            "relax_rates": [0.2, 0.4, 0.6],
+            "relax_rate": 0.2,
             "max_steps": 2000,
-            "switch_rr_after_no_improv": 3,
             "clingo_args": {"rand-freq": 0.8},
-            "time_limit": 20,
+            "solve_time_limit": 20,
             "overall_time_limit": 600,
         }
 
-        ref_callables = {
-            "setup": lns_pkg.lib.theory.setup_clingo,
-            "relax": lns_pkg.lib.search.relax_random,
-            "repair": lns_pkg.lib.theory.repair_clingo,
-            "calc_opt_value": lns_pkg.lib.lns_utils.calc_opt_val_weighted_sum,
-            "get_first_solution": lns_pkg.lib.search.get_first_solution_hc_weighted_sum,
-            "check_accept": lns_pkg.lib.search.check_accept_always,
-            "check_better": lns_pkg.lib.search.check_better_always,
-            "better_solution_found": lns_pkg.lib.search.better_solution_found_hc_weighted_sum,
-            "boundary_handling": lns_pkg.lib.boundary.boundary_overall,
-            "check_stop": lns_pkg.lib.boundary.check_stop_steps,
-            "finish": lns_pkg.lib.boundary.finish,
-            "check_stuck": lns_pkg.lib.search.check_stuck_never,
-            "is_stuck": lns_pkg.lib.search.is_stuck,
-            "timeout": lns_pkg.lib.search.timeout,
-        }
+        solver = ClingoSolver()
+        strategy = HCWeightedSumRnd()
 
         lns = LNS(["./tests/ref/golf.lp"])
         self.assertDictEqual(lns.param_values, ref_config_values)
-        self.assertDictEqual(lns.callables, ref_callables)
+        self.assertIsInstance(lns.solver, ClingoSolver)
+        self.assertIsInstance(lns.strategy, HCWeightedSumRnd)
 
-        ref_callables = {**ref_callables, **{"test": print, "on_model": print}}
-        lns = LNS(
-            ["./tests/ref/golf.lp"],
-            {"test": print, "on_model": print},
+        lns = LNS(["./tests/ref/golf.lp"], solver, strategy, {"relax_rate": 0.4})
+        self.assertDictEqual(
+            lns.param_values, {**ref_config_values, **{"relax_rate": 0.4}}
         )
-        self.assertDictEqual(lns.callables, ref_callables)
+        self.assertEqual(lns.solver, solver)
+        self.assertEqual(lns.strategy, strategy)
 
-    def test_get_set_params(self):
+    def test_set_params(self):
         """
         Test parameter getter and setter.
         """
         ref_config_values = {
             "files": ["./tests/ref/golf.lp"],
             "seed": None,
-            "relax_rates": [0.2, 0.4, 0.6],
+            "relax_rate": 0.2,
             "max_steps": 2000,
-            "switch_rr_after_no_improv": 3,
             "clingo_args": {"rand-freq": 0.8},
-            "time_limit": 20,
+            "solve_time_limit": 20,
             "overall_time_limit": 600,
         }
         lns = LNS(["./tests/ref/golf.lp"])
         self.assertDictEqual(lns.get_params(), ref_config_values)
         lns.set_params({"seed": 123, "new_param": "new"})
         self.assertDictEqual(
-            lns.get_params(), {**ref_config_values, **{"seed": 123, "new_param": "new"}}
+            lns.get_params(),
+            {
+                **ref_config_values,
+                **{
+                    "seed": 123,
+                    "new_param": "new",
+                    "clingo_args": {**lns.param_values["clingo_args"], **{"seed": 123}},
+                },
+            },
         )
 
     def test_set_seed(self):
@@ -91,25 +88,44 @@ class TestLNS(TestCase):
             lns.param_values["clingo_args"], {"seed": 42, "rand-freq": 0.8}
         )
 
-    def test_stats(self):
+    def test_print_model(self):
         """
-        Test stats getter. WIP
+        Test print model.
         """
-        lns = lns = LNS(["./tests/ref/golf.lp"])
-        test_ctl = lns_pkg.lib.theory.setup_clingo(lns)[0]
-        self.assertEqual(type(lns.get_stats(test_ctl)), dict)
+        lns = LNS(["./tests/ref/golf_big.lp"])
+        model = {
+            "shown": [
+                Function("plays", [Number(3), Number(1), Number(1)], True),
+            ],
+            "true": [
+                Function("meets", [Number(7), Number(8), Number(3)], True),
+            ],
+            "assignments": [
+                "test=42",
+            ],
+            "cost": 2,
+        }
+        ref_str = "Answer\nplays(3,1,1)\ntest=42\nCost: 2\n"
+        self.assertEqual(lns.print_model(model), ref_str)
 
     def test_interrupt_handling(self):
         """
         Test interrupt handling.
         """
-
-        def helper(lns_object):
-            lns_object.param_values["inter"] = True
-
-        lns = LNS(["./tests/ref/golf_big.lp"], {"finish": helper})
+        model = {
+            "shown": [
+                Function("plays", [Number(3), Number(1), Number(1)], True),
+            ],
+            "true": [
+                Function("meets", [Number(7), Number(8), Number(3)], True),
+            ],
+            "assignments": [
+                "test=42",
+            ],
+            "cost": 2,
+        }
+        lns = LNS(["./tests/ref/golf_big.lp"])
+        lns.models["best_model"] = model
         signal.signal(signal.SIGINT, lns.interrupt_handler)
         with self.assertRaises(SystemExit):
             signal.raise_signal(signal.SIGINT)
-
-        self.assertTrue(lns.param_values["inter"])
