@@ -67,6 +67,7 @@ class LNS:
             "clingo_args": {"rand-freq": 0.8},
             "solve_time_limit": 20,
             "overall_time_limit": 600,
+            "stuck_after_no_improv": 1000,
         }
         self.param_values = {**self.param_values, **params}
         self.avail_time = self.param_values["overall_time_limit"]
@@ -198,7 +199,9 @@ class LNS:
                     self.models["current_model"] = self.models["new_model"].copy()
                 if self.strategy.check_better(self):
                     self.models["best_model"] = self.models["new_model"].copy()
-                    print(f'New best solution: {self.models["best_model"]["cost"]}')
+                    print(
+                        f'{time.time() - self.start_time:.3f}s: New best solution: {self.models["best_model"]["cost"]}'
+                    )
                     self.strategy.update_grounding(self)
                     self.no_improv_c = 0
                     improv = True
