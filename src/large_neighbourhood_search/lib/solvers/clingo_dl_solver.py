@@ -75,7 +75,7 @@ class ClingoDLSolver(SolverInterface):
                 if not done:
                     handle.cancel()
                     print(
-                        f"{time.time() - start_time:.3f}s: "
+                        f"{time.time() - lns_object.start_time:.3f}s: "
                         f'Unable to repair model during time limit ({lns_object.param_values["solve_time_limit"]}s).'
                     )
                 res = handle.get()
