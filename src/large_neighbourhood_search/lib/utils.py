@@ -4,6 +4,9 @@ Collection of utility functions used for LNS.
 
 from typing import Dict, Sequence
 
+import clingo
+from clingo.symbol import SymbolType
+
 
 def check_smaller_lexicographic(cost1: Dict[int, int], cost2: Dict[int, int]) -> bool:
     """
@@ -42,3 +45,28 @@ def calculate_variability(list1: Sequence, list2: Sequence) -> float:
     if len1 < len2:
         return 1 - len(set(list1).intersection(list2)) / len1
     return 1 - len(set(list2).intersection(list1)) / len2
+
+
+def symbol_to_str(symbol: clingo.Symbol) -> str:
+    """
+    Convert clingo.Symbol to String.
+
+    :param symbol: Symbol to be converted.
+    :type symbol: clingo.Symbol
+    :return: Symbol as string.
+    :rtype: str
+    """
+    if symbol.type == SymbolType.Function:
+        return (
+            symbol.name
+            + "("
+            + ",".join([symbol_to_str(s) for s in symbol.arguments])
+            + ")"
+        )
+    if symbol.type == SymbolType.Number:
+        return str(symbol.number)
+    if symbol.type == SymbolType.String:
+        return '"' + symbol.string + '"'
+    if symbol.type == SymbolType.Infimum:
+        return "#inf"
+    return "#sup"
