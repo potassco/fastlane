@@ -10,7 +10,11 @@ import clingodl
 from large_neighbourhood_search import LNS
 from large_neighbourhood_search.interfaces.solver import SolverInterface
 from large_neighbourhood_search.interfaces.strategy import StrategyInterface
+from large_neighbourhood_search.lib.solvers.clingo_dl_heu_solver import (
+    ClingoDLHeuSolver,
+)
 from large_neighbourhood_search.lib.solvers.clingo_dl_solver import ClingoDLSolver
+from large_neighbourhood_search.lib.solvers.clingo_heu_solver import ClingoHeuSolver
 from large_neighbourhood_search.lib.solvers.clingo_solver import ClingoSolver
 from large_neighbourhood_search.lib.strategies.classic_weighted_sum_rnd import (
     ClassicWeightedSumRnd,
@@ -75,12 +79,25 @@ class TestSolverClingo(TestCase):
         # self.assertTrue(self.solver.solve_fixed(self.lns, assumptions).interrupted)
 
 
+class TestSolverClingoHeu(TestSolverClingo):
+    """
+    Test cases for ClingoHeuSolver class.
+
+    Test cases inherited from TestSolverClingo.
+    """
+
+    def setUp(self) -> None:
+        self.solver = ClingoHeuSolver()
+        self.strategy = ClassicWeightedSumRnd()
+        self.lns = LNS(["./tests/ref/golf.lp"], self.solver, self.strategy)
+
+
 class TestSolverClingoDL(TestSolverClingo):
     """
     Test cases for ClingoDLSolver class.
 
     Test cases for get_avail_solve_time() and solve_under_assumptions()
-    inherited from TestSolverclingo.
+    inherited from TestSolverClingo.
     """
 
     def setUp(self) -> None:
@@ -104,3 +121,16 @@ class TestSolverClingoDL(TestSolverClingo):
         )
         self.assertIsInstance(self.solver.ctl, clingo.control.Control)
         self.assertIsInstance(self.solver.thy, clingodl.ClingoDLTheory)
+
+
+class TestSolverClingoDLHeu(TestSolverClingoDL):
+    """
+    Test cases for ClingoDLHeuSolver class.
+
+    Test cases inherited from TestSolverClingoDL.
+    """
+
+    def setUp(self) -> None:
+        self.solver = ClingoDLHeuSolver()
+        self.strategy = ClassicWeightedSumRnd()
+        self.lns = LNS(["./tests/ref/golf.lp"], self.solver, self.strategy)
