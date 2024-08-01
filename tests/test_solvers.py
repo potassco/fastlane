@@ -74,9 +74,21 @@ class TestSolverClingo(TestCase):
         self.assertTrue(self.solver.solve_fixed(self.lns, assumptions).satisfiable)
         self.assertTrue(self.lns.models["new_model"])
 
-        # flaky covered by integration test instead
+        # flaky, covered by integration test instead
         # self.lns.set_params({"solve_time_limit": 0})
         # self.assertTrue(self.solver.solve_fixed(self.lns, assumptions).interrupted)
+
+    def test_get_stats(self):
+        """
+        Test get_statistics method.
+        """
+        self.lns.set_seed(123)
+        self.solver.setup(self.lns)
+        self.solver.ground_base(self.lns)
+        self.solver.ctl.solve(on_model=print)
+        stats = self.solver.get_stats()
+        self.assertIsNotNone(stats)
+        self.assertIsInstance(stats["solving"]["solvers"]["choices"], float)
 
 
 class TestSolverClingoHeu(TestSolverClingo):
