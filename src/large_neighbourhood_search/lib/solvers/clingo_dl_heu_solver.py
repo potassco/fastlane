@@ -35,7 +35,7 @@ class ClingoDLHeuSolver(SolverInterface):
             lns_object.set_seed(lns_object.param_values["seed"])
         args = [
             f"--{i[0]}={i[1]}" for i in lns_object.param_values["clingo_args"].items()
-        ]
+        ] + ["--heuristic=Domain"]
 
         thy = ClingoDLTheory()
         ctl = clingo.Control(args)
@@ -44,7 +44,7 @@ class ClingoDLHeuSolver(SolverInterface):
             ctl.load(path)
 
         # used for heuristics, see solve_fixed()
-        ctl.add("h_step", ["s"], "#external h_step(s).")
+        ctl.add("_lns_h_step", ["s"], "#external _lns_h_step(s).")
 
         self.ctl, self.thy = ctl, thy
 
@@ -65,24 +65,24 @@ class ClingoDLHeuSolver(SolverInterface):
         """
         # add rules for heuristics
         # to correctly enable and disable heuristics at each step
-        # #external h_step(s) is used
+        # #external _lns_h_step(s) is used
         # example for step=1, fixed_atoms=[
         #   Function("meets", [Number(2), Number(3), Number(4)], True),
         #   Function("meets", [Number(5), Number(6), Number(7)], True),] :
-        # #external step(1).
-        # #heuristic meets(2,3,4) : step(1). [1, sign]
-        # #heuristic meets(5,6,7) : step(1). [1, sign]
+        # #external _lns_h_step(1).
+        # #heuristic meets(2,3,4) : _lns_h_step(1). [1, sign]
+        # #heuristic meets(5,6,7) : _lns_h_step(1). [1, sign]
 
         # setup external of current step
         step = lns_object.step_c
         if isinstance(self.ctl, clingo.control.Control):
-            self.ctl.ground([("h_step", [Number(step)])])
-            self.ctl.assign_external(Function("h_step", [Number(step)]), True)
+            self.ctl.ground([("_lns_h_step", [Number(step)])])
+            self.ctl.assign_external(Function("_lns_h_step", [Number(step)]), True)
 
             # set heuristics
             rules = " ".join(
                 [
-                    f"#heuristic {symbol_to_str(atom[0])} : h_step({step}). [1, sign]"
+                    f"#heuristic {symbol_to_str(atom[0])} : _lns_h_step({step}). [1, sign]"
                     for atom in fixed_atoms
                 ]
             )
@@ -108,6 +108,6 @@ class ClingoDLHeuSolver(SolverInterface):
 
         # release externals
         if isinstance(self.ctl, clingo.control.Control):
-            self.ctl.release_external(Function("h_step", [Number(step)]))
+            self.ctl.release_external(Function("_lns_h_step", [Number(step)]))
 
         return res
