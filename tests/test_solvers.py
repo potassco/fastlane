@@ -90,6 +90,9 @@ class TestSolverClingo(TestCase):
         self.assertIsNotNone(stats)
         self.assertIsInstance(stats["solving"]["solvers"]["choices"], float)
 
+        self.solver.ctl = None
+        self.assertDictEqual(self.solver.get_stats(), {})
+
 
 class TestSolverClingoHeu(TestSolverClingo):
     """
