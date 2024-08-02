@@ -88,13 +88,13 @@ class SolverInterface(metaclass=abc.ABCMeta):
             return lns_object.param_values["solve_time_limit"]
         return avail_time
 
-    def get_stats(self) -> Optional[Dict]:
+    def get_stats(self) -> Dict:
         """
         Get statistics of the last solve call.
 
         :return: Statistics dictionary.
-        :rtype: Optional[Dict]
+        :rtype: Dict
         """
         if isinstance(self.ctl, clingo.control.Control):
             return self.ctl.statistics
-        return None
+        return {}
