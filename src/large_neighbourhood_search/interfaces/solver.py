@@ -5,7 +5,7 @@ Solver interface used for LNS.
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import clingo
 
@@ -87,3 +87,14 @@ class SolverInterface(metaclass=abc.ABCMeta):
         if avail_time >= lns_object.param_values["solve_time_limit"]:
             return lns_object.param_values["solve_time_limit"]
         return avail_time
+
+    def get_stats(self) -> Dict:
+        """
+        Get statistics of the last solve call.
+
+        :return: Statistics dictionary.
+        :rtype: Dict
+        """
+        if isinstance(self.ctl, clingo.control.Control):
+            return self.ctl.statistics
+        return {}

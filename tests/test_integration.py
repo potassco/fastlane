@@ -6,7 +6,11 @@ from unittest import TestCase
 
 from large_neighbourhood_search import LNS
 from large_neighbourhood_search.interfaces.solver import SolverInterface
+from large_neighbourhood_search.lib.solvers.clingo_dl_heu_solver import (
+    ClingoDLHeuSolver,
+)
 from large_neighbourhood_search.lib.solvers.clingo_dl_solver import ClingoDLSolver
+from large_neighbourhood_search.lib.solvers.clingo_heu_solver import ClingoHeuSolver
 from large_neighbourhood_search.lib.solvers.clingo_solver import ClingoSolver
 from large_neighbourhood_search.lib.strategies.classic_lexicographic_declarative import (
     ClassicLexiDecl,
@@ -59,7 +63,12 @@ class TestIntegrationClingo(TestCase):
         """
         Test classic execution with weighted sum.
         """
-        lns = LNS(["./tests/ref/golf.lp"], self.solver, ClassicWeightedSumRnd())
+        lns = LNS(
+            ["./tests/ref/golf.lp"],
+            self.solver,
+            ClassicWeightedSumRnd(),
+            {"max_steps": 500},
+        )
         lns.set_seed(456)
         lns.main()
 
@@ -67,7 +76,9 @@ class TestIntegrationClingo(TestCase):
         """
         Test classic execution with lexicographic optimization.
         """
-        lns = LNS(["./tests/ref/golf.lp"], self.solver, ClassicLexiRnd())
+        lns = LNS(
+            ["./tests/ref/golf.lp"], self.solver, ClassicLexiRnd(), {"max_steps": 500}
+        )
         lns.set_seed(123)
         lns.main()
 
@@ -75,7 +86,9 @@ class TestIntegrationClingo(TestCase):
         """
         Test classic execution with lexicographic optimization (declarative).
         """
-        lns = LNS(["./tests/ref/golf.lp"], self.solver, ClassicLexiDecl())
+        lns = LNS(
+            ["./tests/ref/golf.lp"], self.solver, ClassicLexiDecl(), {"max_steps": 500}
+        )
         lns.set_seed(123)
         lns.main()
 
@@ -83,7 +96,9 @@ class TestIntegrationClingo(TestCase):
         """
         Test execution with hard constraints and weighted sum.
         """
-        lns = LNS(["./tests/ref/golf.lp"], self.solver, HCWeightedSumRnd())
+        lns = LNS(
+            ["./tests/ref/golf.lp"], self.solver, HCWeightedSumRnd(), {"max_steps": 50}
+        )
         lns.set_seed(123)
         lns.main()
 
@@ -91,11 +106,7 @@ class TestIntegrationClingo(TestCase):
         """
         Test execution with hard constraints and lexicographic optimization.
         """
-        lns = LNS(
-            ["./tests/ref/golf.lp"],
-            self.solver,
-            HCLexiRnd(),
-        )
+        lns = LNS(["./tests/ref/golf.lp"], self.solver, HCLexiRnd(), {"max_steps": 50})
         lns.set_seed(123)
         lns.main()
 
@@ -103,32 +114,46 @@ class TestIntegrationClingo(TestCase):
         """
         Test execution with hard constraints and lexicographic optimization (declarative).
         """
-        lns = LNS(
-            ["./tests/ref/golf.lp"],
-            self.solver,
-            HCLexiDecl(),
-        )
+        lns = LNS(["./tests/ref/golf.lp"], self.solver, HCLexiDecl(), {"max_steps": 50})
         lns.set_seed(123)
         lns.main()
 
-    def test_solve_interrupted(self):
+    def test_stuck(self):
         """
-        Test execution with hard constraints and lexicographic optimization (declarative).
+        Test execution being stuck.
         """
         lns = LNS(
             ["./tests/ref/golf_big.lp"],
             self.solver,
             HCLexiDecl(),
-            {"solve_time_limit": 1},
+            {"solve_time_limit": 1, "stuck_after_no_improv": 5},
         )
         lns.set_seed(123)
         lns.main()
 
 
+class TestIntegrationClingoHeu(TestIntegrationClingo):
+    """
+    Integration tests using heuristic clingo.
+    """
+
+    def setUp(self) -> None:
+        self.solver = ClingoHeuSolver()
+
+
 class TestIntegrationClingoDL(TestIntegrationClingo):
     """
-    Integration tests using clingoDL.
+    Integration tests using clingo-dl.
     """
 
     def setUp(self) -> None:
         self.solver = ClingoDLSolver()
+
+
+class TestIntegrationClingoDLHeu(TestIntegrationClingo):
+    """
+    Integration tests using heuristic clingo-dl.
+    """
+
+    def setUp(self) -> None:
+        self.solver = ClingoDLHeuSolver()

@@ -8,7 +8,7 @@ Implementations of :class:`StrategyInterface`
 Listed below are multiple strategy implementations, which describe different combinations
 of the following approaches:
 
-| **Classic vs. Hard constrainted search:**
+| **Classic vs. Hard constrained search:**
 | While during a classic search the cost of solutions are compared after they are calculated, in the hard constrained mode, a constraint enforcing a better solution is added to the grounding.
 
 | **Weighted sum vs. Lexicographic optimization**
@@ -16,6 +16,10 @@ of the following approaches:
 
 | **Random vs. Declarative random relaxation**
 | While with random relaxation a part of all true atoms is relaxed, with declarative random relaxation the group of atoms, from which the random selection is made, can be specified. 
+
+
+.. note::
+    When using lexicographic optimization priorities have to be consecutive, e.g. only priorities 1 and 3 are not supported.
 
 ClassicWeightedSumRnd
 ----------------------

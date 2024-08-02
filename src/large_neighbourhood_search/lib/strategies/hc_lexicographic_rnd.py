@@ -80,31 +80,35 @@ class HCLexiRnd(HCWeightedSumRnd):
             # higher priority = more important
             # priorities have to be declared consecutively, e.g. only 1 and 3 not allowed
             # example of generated rules with ground values for cost={1:3, 2:4}
-            #   #external step(s).
-            #   bettereq(P+1,s) :- _lns_priority(_,P), not _lns_penalty(_,P+1), step(s).
-            #   :- not better(_,s), step(s).
-            #   better(1,s) :- _lns_priority(N,1), #sum{V,I: _lns_penalty(N,I,W)} < 3, bettereq(1,s), step(s).
-            #   bettereq(1,s) :- _lns_priority(N,1), #sum{V,I: _lns_penalty(N,I,W)} <= 3, bettereq(2,s), step(s).
-            #   better(2,s) :- _lns_priority(N,2), #sum{V,I: _lns_penalty(N,I,W)} < 4, bettereq(2,s), step(s).
-            #   bettereq(2,s) :- _lns_priority(N,2), #sum{V,I: _lns_penalty(N,I,W)} <= 4, bettereq(3,s), step(s).
+            #   #external _lns_l_step(s).
+            #   _lns_bettereq(P+1,s) :- _lns_priority(_,P), not _lns_penalty(_,P+1), _lns_l_step(s).
+            #   :- not _lns_better(_,s), _lns_l_step(s).
+            #   _lns_better(1,s) :- _lns_priority(N,1), #sum{V,I: _lns_penalty(N,I,W)} < 3,
+            #                       _lns_bettereq(1,s), _lns_l_step(s).
+            #   _lns_bettereq(1,s) :- _lns_priority(N,1), #sum{V,I: _lns_penalty(N,I,W)} <= 3,
+            #                         _lns_bettereq(2,s), _lns_l_step(s).
+            #   _lns_better(2,s) :- _lns_priority(N,2), #sum{V,I: _lns_penalty(N,I,W)} < 4,
+            #                       _lns_bettereq(2,s), _lns_l_step(s).
+            #   _lns_bettereq(2,s) :- _lns_priority(N,2), #sum{V,I: _lns_penalty(N,I,W)} <= 4,
+            #                         _lns_bettereq(3,s), _lns_l_step(s).
 
             s = ["s"] + list(map(lambda x: f"cost{x}", cost.keys()))
             rules = (
-                "#external step(s).\
-            bettereq(P+1,s) :- _lns_priority(_,P), not _lns_priority(_,P+1), step(s).\
-            :- not better(_,s), step(s)."
+                "#external _lns_l_step(s).\
+            _lns_bettereq(P+1,s) :- _lns_priority(_,P), not _lns_priority(_,P+1), _lns_l_step(s).\
+            :- not _lns_better(_,s), _lns_l_step(s)."
                 + " ".join(
                     list(
                         map(
-                            lambda x: f"better({x},s) :- _lns_priority(N,{x}),\
-                            #sum{{V,I: _lns_penalty(N,I,V)}} < cost{x}, bettereq({x},s), step(s).",
+                            lambda x: f"_lns_better({x},s) :- _lns_priority(N,{x}),\
+                            #sum{{V,I: _lns_penalty(N,I,V)}} < cost{x}, _lns_bettereq({x},s), _lns_l_step(s).",
                             cost.keys(),
                         )
                     )
                     + list(
                         map(
-                            lambda x: f"bettereq({x},s) :- _lns_priority(N,{x}),\
-                            #sum{{V,I: _lns_penalty(N,I,V)}} <= cost{x}, bettereq({x+1},s), step(s).",
+                            lambda x: f"_lns_bettereq({x},s) :- _lns_priority(N,{x}),\
+                            #sum{{V,I: _lns_penalty(N,I,V)}} <= cost{x}, _lns_bettereq({x+1},s), _lns_l_step(s).",
                             cost.keys(),
                         )
                     )
@@ -122,7 +126,7 @@ class HCLexiRnd(HCWeightedSumRnd):
                     ]
                 )
                 lns_object.solver.ctl.assign_external(
-                    Function("step", [Number(0)]), True
+                    Function("_lns_l_step", [Number(0)]), True
                 )
 
             lns_object.models["current_model"] = lns_object.models["new_model"].copy()
@@ -165,7 +169,9 @@ class HCLexiRnd(HCWeightedSumRnd):
         """
         step = lns_object.step_c
         if isinstance(lns_object.solver.ctl, clingo.control.Control):
-            lns_object.solver.ctl.release_external(Function("step", [Number(step - 1)]))
+            lns_object.solver.ctl.release_external(
+                Function("_lns_l_step", [Number(step - 1)])
+            )
             cost = lns_object.models["best_model"]["cost"]
             lns_object.solver.ctl.ground(
                 [
@@ -177,5 +183,5 @@ class HCLexiRnd(HCWeightedSumRnd):
                 ]
             )
             lns_object.solver.ctl.assign_external(
-                Function("step", [Number(step)]), True
+                Function("_lns_l_step", [Number(step)]), True
             )

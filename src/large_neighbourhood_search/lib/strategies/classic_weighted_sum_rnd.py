@@ -162,10 +162,13 @@ class ClassicWeightedSumRnd(StrategyInterface):
 
     def stuck_handling(self, lns_object: LNS) -> None:
         """
-        Stop search after 1000 times in a row no improvement was found.
+        Stop search after specific amount of no improvements in a row.
 
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         """
-        if lns_object.no_improv_c >= 1000:
+        if lns_object.no_improv_c >= lns_object.param_values["stuck_after_no_improv"]:
+            print(
+                f"{time.time() - lns_object.start_time:.3f}s: Search stuck at step {lns_object.step_c}!"
+            )
             lns_object.step_c = lns_object.param_values["max_steps"] + 1

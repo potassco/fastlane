@@ -9,6 +9,7 @@ from large_neighbourhood_search.lib.solvers.clingo_dl_solver import ClingoDLSolv
 from large_neighbourhood_search.lib.strategies.classic_weighted_sum_rnd import (
     ClassicWeightedSumRnd
 )
+from large_neighbourhood_search.lib.solvers.clingo_heu_solver import ClingoHeuSolver
 from large_neighbourhood_search.lib.strategies.hc_weighted_sum_rnd import HCWeightedSumRnd
 from large_neighbourhood_search.lib.strategies.classic_lexicographic_declarative import (
     ClassicLexiDecl
@@ -20,7 +21,7 @@ def config1():
     strategy = ClassicWeightedSumRnd()
     return solver, strategy
 
-# LNS using clingo-dl and hard constraints with random relaxation and weighted usm
+# LNS using clingo-dl and hard constraints with random relaxation and weighted sum
 def config2():
     solver = ClingoDLSolver()
     strategy = HCWeightedSumRnd()
@@ -30,6 +31,12 @@ def config2():
 def config3():
     solver = ClingoSolver()
     strategy = ClassicLexiDecl()
+    return solver, strategy
+
+# LNS using heuristic clingo and hard constraints with random relaxation and weighted sum
+def config4():
+    solver = ClingoHeuSolver()
+    strategy = HCWeightedSumRnd()
     return solver, strategy
 
 # additional parameters
@@ -43,7 +50,7 @@ params: Dict[str, Any] = {
         }
 
 def main():
-    solver, strategy = config2()
+    solver, strategy = config4()
     lns = LNS(["./examples/golf.lp"], solver, strategy, params)
     lns.main()
 

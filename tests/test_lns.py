@@ -31,6 +31,7 @@ class TestLNS(TestCase):
             "clingo_args": {"rand-freq": 0.8},
             "solve_time_limit": 20,
             "overall_time_limit": 600,
+            "stuck_after_no_improv": 1000,
         }
 
         solver = ClingoSolver()
@@ -60,6 +61,7 @@ class TestLNS(TestCase):
             "clingo_args": {"rand-freq": 0.8},
             "solve_time_limit": 20,
             "overall_time_limit": 600,
+            "stuck_after_no_improv": 1000,
         }
         lns = LNS(["./tests/ref/golf.lp"])
         self.assertDictEqual(lns.get_params(), ref_config_values)

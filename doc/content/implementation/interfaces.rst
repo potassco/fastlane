@@ -4,7 +4,7 @@ Interfaces
 ===========
 
 This page describes the interfaces provided to customize the LNS search.
-Example implementations of these interface are provided :ref:`here<ref_solv>` and :ref:`here<ref_strat>`.
+Example implementations of these interfaces are provided :ref:`here<ref_solv>` and :ref:`here<ref_strat>`.
 
 SolverInterface
 ----------------

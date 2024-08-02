@@ -6,9 +6,12 @@ import logging
 from io import StringIO
 from unittest import TestCase
 
+from clingo.symbol import Function, Infimum, Number, String, Supremum
+
 from large_neighbourhood_search.lib.utils import (
     calculate_variability,
     check_smaller_lexicographic,
+    symbol_to_str,
 )
 from large_neighbourhood_search.utils.logger import setup_logger
 from large_neighbourhood_search.utils.parser import get_parser
@@ -75,3 +78,13 @@ class TestLNSUtils(TestCase):
         val1 = {}
         self.assertTrue(check_smaller_lexicographic(val1, val2))
         self.assertFalse(check_smaller_lexicographic(val2, val1))
+
+    def test_symbol_to_str(self):
+        """
+        Test symbol to str conversion.
+        """
+        s = Function(
+            "test",
+            [Function("inner", [Number(2)]), String("string"), Infimum, Supremum],
+        )
+        self.assertEqual(symbol_to_str(s), 'test(inner(2),"string",#inf,#sup)')
