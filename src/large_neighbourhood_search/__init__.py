@@ -68,6 +68,7 @@ class LNS:
             "solve_time_limit": 20,
             "overall_time_limit": 600,
             "stuck_after_no_improv": 1000,
+            "start_sol": None,
         }
         self.param_values = {**self.param_values, **params}
         self.avail_time = self.param_values["overall_time_limit"]

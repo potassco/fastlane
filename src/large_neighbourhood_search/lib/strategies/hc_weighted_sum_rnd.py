@@ -12,6 +12,7 @@ from clingo.symbol import Number, SymbolType
 
 from large_neighbourhood_search.interfaces.strategy import StrategyInterface
 from large_neighbourhood_search.lib.relaxation import relax_random
+from large_neighbourhood_search.lib.utils import fix_symbols, str_to_symbols
 
 if TYPE_CHECKING:
     from large_neighbourhood_search import LNS  # nocoverage
@@ -54,8 +55,14 @@ class HCWeightedSumRnd(StrategyInterface):
         """
         lns_object.solver.ground_base(lns_object)
 
+        start_sol = []
+        if lns_object.param_values["start_sol"]:
+            start_sol = fix_symbols(
+                str_to_symbols(lns_object.param_values["start_sol"])
+            )
+
         # get first solution
-        if lns_object.solver.solve_fixed(lns_object, []).satisfiable:
+        if lns_object.solver.solve_fixed(lns_object, start_sol).satisfiable:
             cost = lns_object.models["new_model"]["cost"]
             print(f"Initial solution found with cost: {cost}")
 
