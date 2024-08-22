@@ -11,6 +11,8 @@ from clingo.symbol import Function, Infimum, Number, String, Supremum
 from large_neighbourhood_search.lib.utils import (
     calculate_variability,
     check_smaller_lexicographic,
+    fix_symbols,
+    str_to_symbols,
     symbol_to_str,
 )
 from large_neighbourhood_search.utils.logger import setup_logger
@@ -88,3 +90,60 @@ class TestLNSUtils(TestCase):
             [Function("inner", [Number(2)]), String("string"), Infimum, Supremum],
         )
         self.assertEqual(symbol_to_str(s), 'test(inner(2),"string",#inf,#sup)')
+
+    def test_str_to_symbols(self):
+        """
+        Test str to symbols conversion.
+        """
+        s = 'test(inner(2),"string",#inf,#sup) second(3)'
+        self.assertEqual(
+            str_to_symbols(s),
+            [
+                Function(
+                    "test",
+                    [
+                        Function("inner", [Number(2)]),
+                        String("string"),
+                        Infimum,
+                        Supremum,
+                    ],
+                    True,
+                ),
+                Function("second", [Number(3)], True),
+            ],
+        )
+
+    def test_fix_symbols(self):
+        """
+        test fix_symbols function.
+        """
+        s = [
+            Function(
+                "test",
+                [Function("inner", [Number(2)]), String("string"), Infimum, Supremum],
+                True,
+            ),
+            Function("second", [Number(3)], True),
+        ]
+        self.assertEqual(
+            fix_symbols(s),
+            [
+                (
+                    Function(
+                        "test",
+                        [
+                            Function("inner", [Number(2)]),
+                            String("string"),
+                            Infimum,
+                            Supremum,
+                        ],
+                        True,
+                    ),
+                    True,
+                ),
+                (
+                    Function("second", [Number(3)], True),
+                    True,
+                ),
+            ],
+        )
