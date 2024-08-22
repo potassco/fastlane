@@ -25,5 +25,5 @@ Execute the following commands in the top level large_neighbourhood_search direc
 ```console
 $ git clone https://github.com/potassco/large_neighbourhood_search
 $ cd large_neighbourhood_search
-$ pip install -e .[all]
+$ pip install .[all]
 ```

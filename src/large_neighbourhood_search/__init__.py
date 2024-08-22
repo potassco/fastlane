@@ -114,7 +114,7 @@ class LNS:
         """
         answer_string = " ".join([str(atom) for atom in model["shown"]])
         if "assignments" in model:
-            answer_string += "\n" + " ".join(model["assignments"])
+            answer_string += "\nAssignments:\n" + " ".join(model["assignments"])
         s = "Answer\n" f"{answer_string}\n" f'Cost: {model["cost"]}\n'
         print(s)
         return s
@@ -144,6 +144,12 @@ class LNS:
         :param model: Model found during solving.
         :type model: clingo.solving.Model
         """
+        self.models["new_model"] = {}
+        self.models["new_model"]["shown"] = model.symbols(shown=True)
+        self.models["new_model"]["true"] = model.symbols(atoms=True)
+        self.models["new_model"]["cost"] = self.strategy.calc_cost(
+            self.models["new_model"]
+        )
         # dl
         if self.solver.thy:
             self.solver.thy.on_model(model=model)
@@ -151,13 +157,6 @@ class LNS:
                 f"{key}={val}"
                 for key, val in self.solver.thy.assignment(model.thread_id)
             ]
-
-        self.models["new_model"] = {}
-        self.models["new_model"]["shown"] = model.symbols(shown=True)
-        self.models["new_model"]["true"] = model.symbols(atoms=True)
-        self.models["new_model"]["cost"] = self.strategy.calc_cost(
-            self.models["new_model"]
-        )
 
     def main(self) -> None:
         """
