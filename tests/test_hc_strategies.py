@@ -56,10 +56,10 @@ class TestStrategyHcWsRnd(TestStrategyClWsRnd):
         Test stuck handling.
         """
         self.strategy.stuck_handling(self.lns)
-        self.assertEqual(self.lns.step_c, 0)
+        self.assertFalse(self.lns.stopped)
         self.lns.no_improv_c = 1001
         self.strategy.stuck_handling(self.lns)
-        self.assertEqual(self.lns.step_c, 2001)
+        self.assertTrue(self.lns.stopped)
 
 
 class TestStrategyHcLexiRnd(TestStrategyHcWsRnd):
