@@ -49,6 +49,7 @@ class LNS:
         self.start_time: float = 0
         self.step_c: int = 0
         self.no_improv_c = 0
+        self.stopped = False
 
         new_model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]] = {}
         current_model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]] = {}
@@ -183,7 +184,7 @@ class LNS:
         if not self.strategy.first_solution(self):
             raise SystemExit
 
-        while not self.strategy.check_stop(self):
+        while not (self.strategy.check_stop(self) or self.stopped):
             self.step_c += 1
             improv = False
             if self.step_c % 50 == 0:
@@ -200,7 +201,8 @@ class LNS:
                 if self.strategy.check_better(self):
                     self.models["best_model"] = self.models["new_model"].copy()
                     print(
-                        f'{time.time() - self.start_time:.3f}s: New best solution: {self.models["best_model"]["cost"]}'
+                        f'{time.time() - self.start_time:.3f}s: {self.step_c}|{self.param_values["max_steps"]} '
+                        f'New best solution: {self.models["best_model"]["cost"]}'
                     )
                     self.strategy.update_grounding(self)
                     self.no_improv_c = 0

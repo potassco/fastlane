@@ -191,4 +191,4 @@ class HCWeightedSumRnd(StrategyInterface):
             print(
                 f"{time.time() - lns_object.start_time:.3f}s: Search stuck at step {lns_object.step_c}!"
             )
-            lns_object.step_c = lns_object.param_values["max_steps"] + 1
+            lns_object.stopped = True
