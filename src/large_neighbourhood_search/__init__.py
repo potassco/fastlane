@@ -49,6 +49,7 @@ class LNS:
         self.start_time: float = 0
         self.step_c: int = 0
         self.no_improv_c = 0
+        self.stopped = False
 
         new_model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]] = {}
         current_model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]] = {}
@@ -68,6 +69,7 @@ class LNS:
             "solve_time_limit": 20,
             "overall_time_limit": 600,
             "stuck_after_no_improv": 1000,
+            "start_sol": None,
         }
         self.param_values = {**self.param_values, **params}
         self.avail_time = self.param_values["overall_time_limit"]
@@ -114,7 +116,7 @@ class LNS:
         """
         answer_string = " ".join([str(atom) for atom in model["shown"]])
         if "assignments" in model:
-            answer_string += "\n" + " ".join(model["assignments"])
+            answer_string += "\nAssignments:\n" + " ".join(model["assignments"])
         s = "Answer\n" f"{answer_string}\n" f'Cost: {model["cost"]}\n'
         print(s)
         return s
@@ -144,6 +146,12 @@ class LNS:
         :param model: Model found during solving.
         :type model: clingo.solving.Model
         """
+        self.models["new_model"] = {}
+        self.models["new_model"]["shown"] = model.symbols(shown=True)
+        self.models["new_model"]["true"] = model.symbols(atoms=True)
+        self.models["new_model"]["cost"] = self.strategy.calc_cost(
+            self.models["new_model"]
+        )
         # dl
         if self.solver.thy:
             self.solver.thy.on_model(model=model)
@@ -151,13 +159,6 @@ class LNS:
                 f"{key}={val}"
                 for key, val in self.solver.thy.assignment(model.thread_id)
             ]
-
-        self.models["new_model"] = {}
-        self.models["new_model"]["shown"] = model.symbols(shown=True)
-        self.models["new_model"]["true"] = model.symbols(atoms=True)
-        self.models["new_model"]["cost"] = self.strategy.calc_cost(
-            self.models["new_model"]
-        )
 
     def main(self) -> None:
         """
@@ -183,7 +184,7 @@ class LNS:
         if not self.strategy.first_solution(self):
             raise SystemExit
 
-        while not self.strategy.check_stop(self):
+        while not (self.strategy.check_stop(self) or self.stopped):
             self.step_c += 1
             improv = False
             if self.step_c % 50 == 0:
@@ -200,7 +201,8 @@ class LNS:
                 if self.strategy.check_better(self):
                     self.models["best_model"] = self.models["new_model"].copy()
                     print(
-                        f'{time.time() - self.start_time:.3f}s: New best solution: {self.models["best_model"]["cost"]}'
+                        f'{time.time() - self.start_time:.3f}s: {self.step_c}|{self.param_values["max_steps"]} '
+                        f'New best solution: {self.models["best_model"]["cost"]}'
                     )
                     self.strategy.update_grounding(self)
                     self.no_improv_c = 0

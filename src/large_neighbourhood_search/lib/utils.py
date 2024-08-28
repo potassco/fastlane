@@ -2,10 +2,10 @@
 Collection of utility functions used for LNS.
 """
 
-from typing import Dict, Sequence
+from typing import Dict, List, Sequence, Tuple
 
 import clingo
-from clingo.symbol import SymbolType
+from clingo.symbol import SymbolType, parse_term
 
 
 def check_smaller_lexicographic(cost1: Dict[int, int], cost2: Dict[int, int]) -> bool:
@@ -70,3 +70,36 @@ def symbol_to_str(symbol: clingo.Symbol) -> str:
     if symbol.type == SymbolType.Infimum:
         return "#inf"
     return "#sup"
+
+
+def str_to_symbols(string: str) -> List[clingo.symbol.Symbol]:
+    """
+    Convert String to List of clingo.Symbol.
+
+    :param string: String to be converted.
+    :type string: str
+    :return: List of symbols.
+    :rtype:  List[clingo.symbol.Symbol]
+    """
+    terms = string.split()
+    symbols = []
+    for term in terms:
+        symbols.append(parse_term(term))
+    return symbols
+
+
+def fix_symbols(
+    symbols: List[clingo.symbol.Symbol],
+) -> List[Tuple[clingo.symbol.Symbol, bool]]:
+    """
+    Prepare symbols to be used as assumptions (being fixed).
+
+    :param symbols: Symbols to be used.
+    :type symbols: List[clingo.symbol.Symbol]
+    :return: Fixed symbols/atoms.
+    :rtype:  List[Tuple[clingo.symbol.Symbol, bool]]
+    """
+    fixed = []
+    for symbol in symbols:
+        fixed.append((symbol, True))
+    return fixed

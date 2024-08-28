@@ -72,6 +72,23 @@ class TestIntegrationClingo(TestCase):
         lns.set_seed(456)
         lns.main()
 
+    def test_classic_weighted_sum_start_sol(self):
+        """
+        Test classic execution with weighted sum and starting solution.
+        """
+        lns = LNS(
+            ["./tests/ref/golf.lp"],
+            self.solver,
+            ClassicWeightedSumRnd(),
+            {
+                "max_steps": 500,
+                "start_sol": "plays(3,1,1) plays(8,1,1) plays(9,1,1) "
+                "plays(1,2,1) plays(2,2,1) plays(9,2,1) plays(1,3,1)",
+            },
+        )
+        lns.set_seed(456)
+        lns.main()
+
     def test_classic_lexi_rnd(self):
         """
         Test classic execution with lexicographic optimization.
@@ -102,11 +119,45 @@ class TestIntegrationClingo(TestCase):
         lns.set_seed(123)
         lns.main()
 
+    def test_hc_weighted_sum_start_sol(self):
+        """
+        Test execution with hard constraints, weighted sum and starting solution.
+        """
+        lns = LNS(
+            ["./tests/ref/golf.lp"],
+            self.solver,
+            HCWeightedSumRnd(),
+            {
+                "max_steps": 50,
+                "start_sol": "plays(3,1,1) plays(8,1,1) plays(9,1,1) "
+                "plays(1,2,1) plays(2,2,1) plays(9,2,1) plays(1,3,1)",
+            },
+        )
+        lns.set_seed(123)
+        lns.main()
+
     def test_hc_lexi_rnd(self):
         """
         Test execution with hard constraints and lexicographic optimization.
         """
         lns = LNS(["./tests/ref/golf.lp"], self.solver, HCLexiRnd(), {"max_steps": 50})
+        lns.set_seed(123)
+        lns.main()
+
+    def test_hc_lexi_rnd_start_sol(self):
+        """
+        Test execution with hard constraints, lexicographic optimization and starting solution.
+        """
+        lns = LNS(
+            ["./tests/ref/golf.lp"],
+            self.solver,
+            HCLexiRnd(),
+            {
+                "max_steps": 50,
+                "start_sol": "plays(3,1,1) plays(8,1,1) plays(9,1,1) "
+                "plays(1,2,1) plays(2,2,1) plays(9,2,1) plays(1,3,1)",
+            },
+        )
         lns.set_seed(123)
         lns.main()
 

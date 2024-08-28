@@ -32,6 +32,7 @@ class TestLNS(TestCase):
             "solve_time_limit": 20,
             "overall_time_limit": 600,
             "stuck_after_no_improv": 1000,
+            "start_sol": None,
         }
 
         solver = ClingoSolver()
@@ -62,6 +63,7 @@ class TestLNS(TestCase):
             "solve_time_limit": 20,
             "overall_time_limit": 600,
             "stuck_after_no_improv": 1000,
+            "start_sol": None,
         }
         lns = LNS(["./tests/ref/golf.lp"])
         self.assertDictEqual(lns.get_params(), ref_config_values)
@@ -107,7 +109,7 @@ class TestLNS(TestCase):
             ],
             "cost": 2,
         }
-        ref_str = "Answer\nplays(3,1,1)\ntest=42\nCost: 2\n"
+        ref_str = "Answer\nplays(3,1,1)\nAssignments:\ntest=42\nCost: 2\n"
         self.assertEqual(lns.print_model(model), ref_str)
 
     def test_interrupt_handling(self):

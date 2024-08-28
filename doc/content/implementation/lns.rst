@@ -21,6 +21,9 @@ LNS
             "clingo_args": {"rand-freq": 0.8},  # Additional clingo arguments
             "solve_time_limit": 20,             # Time limit for the individual solve call in seconds
             "overall_time_limit": 600,          # Time limit for the entire search in seconds
+            "stuck_after_no_improv": 1000,      # After how many interations without improvement the
+                                                #  search is determined as stuck
+            "start_sol": None,                  # Start solution, fixed during first solve call
         }
 
 .. currentmodule:: large_neighbourhood_search.__init__

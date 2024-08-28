@@ -5,7 +5,8 @@ Large Neighbourhood Search (LNS) is a local search technique for iteratively fin
 ```{toctree}
 :maxdepth: 2
 content/installation.md
-content/usage.md
+content/usage.rst
+content/guide.rst
 content/implementation/index.rst
 ```
 

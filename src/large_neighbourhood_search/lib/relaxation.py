@@ -34,9 +34,11 @@ def relax_declarative(
             declared_fixed_atoms[atom.arguments[0]] = []
         elif atom.match("_lns_fix", 2):
             declared_fixed_atoms[atom.arguments[1]].append((atom.arguments[0], True))
-    for symbol in selected_atoms:
-        if random.randint(0, 100) >= relax_parameters["relax_rate"] * 100:
-            fixed_atoms += declared_fixed_atoms[symbol]
+    symbols = random.sample(
+        selected_atoms, int(len(selected_atoms) * (1 - relax_parameters["relax_rate"]))
+    )
+    for s in symbols:
+        fixed_atoms += declared_fixed_atoms[s]
     return fixed_atoms
 
 
@@ -55,7 +57,9 @@ def relax_random(
     :rtype: List[Tuple[clingo.symbol.Symbol, bool]]
     """
     fixed_atoms = []
-    for atom in model["shown"]:
-        if random.randint(0, 100) >= relax_parameters["relax_rate"] * 100:
-            fixed_atoms.append((atom, True))
+    sample = random.sample(
+        model["shown"], int(len(model["shown"]) * (1 - relax_parameters["relax_rate"]))
+    )
+    for atom in sample:
+        fixed_atoms.append((atom, True))
     return fixed_atoms

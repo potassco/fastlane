@@ -1,4 +1,4 @@
-.. _ref_start:
+.. _ref_strat:
 
 .. currentmodule:: large_neighbourhood_search.interfaces.strategy
 
