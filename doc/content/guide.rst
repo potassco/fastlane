@@ -15,7 +15,7 @@ observe the effects of different approaches.
 Encoding
 ----------
 
-The corresponding encoding is located in :file:`./examples/golf-demo.py` and can be divided into three parts.
+The corresponding encoding is located in :file:`./examples/golf_demo.lp` and can be divided into three parts.
 The first part represents the basic clingo encoding of the problem, seen below.
 
 .. code-block::
