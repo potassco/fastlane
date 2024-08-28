@@ -1,3 +1,5 @@
+.. _ref_usage:
+
 Usage
 ============
 
@@ -24,7 +26,8 @@ Some example implementations can be found in the :ref:`lib<ref_lib>` submodule.
 
 Additional parameters such as the relax rate or
 the step limit for the search can be set during initialization or using the :meth:`set_params` method. 
-An example of the LNS initialization can be seen below or in :file:`./examples/demo.py`:
+An example of the LNS initialization can be seen below or in :file:`./examples/demo.py`. For a more detailed and
+step by step introduction to the framework look :ref:`here<ref_guide>`.
 
 .. code-block:: python
 
