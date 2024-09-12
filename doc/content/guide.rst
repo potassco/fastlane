@@ -152,6 +152,8 @@ example strongly connected to the chosen "solve_time_limit" parameter, try 2s.
 .. note::
     Constrained approach with a relax rate of 1 corresponds to branch-and-bound search.
 
+.. currentmodule:: large_neighbourhood_search.lib.strategies.ClassicWeightedSumRnd
+
 Both of the above approaches use the default clingo solver with assumptions to fix non-relaxed atoms.
 Another approach is to use heuristics instead of assumptions. While assumptions are fixed in stone, heuristics are comparable
 recommendations to the solver. Lets try it out with the :class:`ClassicWeightedSumRnd` strategy.
@@ -195,6 +197,8 @@ lexicographic strategies should be used.
 Advanced
 ---------
 
+.. currentmodule:: large_neighbourhood_search.lib.strategies.ClassicWeightedSumRnd
+
 While we have a strategy using declarative relaxation for lexicographic optimization we do not for weighted sum optimization (yet).
 The purpose of this framework is to not only plug different building blocks together but also allow them to be easily modifiable and
 expandable. Lets try implementing ClassicWeightedSumDecl. When looking at the existing :class:`ClassicWeightedSumRnd`, we really only
@@ -210,7 +214,7 @@ new strategy.
         def relax(self, model, relax_parameters):
             return relax_declarative(model, relax_parameters)
 
- Use our new strategy in a configuration to try it out.
+Use our new strategy in a configuration to try it out.
 
 .. code-block:: python
 
