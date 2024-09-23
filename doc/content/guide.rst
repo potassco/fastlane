@@ -62,7 +62,7 @@ As described in the :ref:`usage<ref_usage>` section, to work this framework requ
 Our :ref:`library<ref_lib>` provides several different solvers and strategies.
 For our first search, lets use the default clingo solver with assumptions :class:`ClingoSolver`.
 
-.. currentmodule:: large_neighbourhood_search.lib.strategies.ClassicWeightedSumRnd
+.. currentmodule:: large_neighbourhood_search.lib.strategies.classic_weighted_sum_rnd
 
 As a strategy we use the basic LNS implementation in :class:`ClassicWeightedSumRnd`. This strategy uses weighted sum optimization
 combined with a fully random relaxation.
@@ -152,7 +152,6 @@ example strongly connected to the chosen "solve_time_limit" parameter, try 2s.
 .. note::
     Constrained approach with a relax rate of 1 corresponds to branch-and-bound search.
 
-.. currentmodule:: large_neighbourhood_search.lib.strategies.ClassicWeightedSumRnd
 
 Both of the above approaches use the default clingo solver with assumptions to fix non-relaxed atoms.
 Another approach is to use heuristics instead of assumptions. While assumptions are fixed in stone, heuristics are comparable
@@ -196,8 +195,6 @@ lexicographic strategies should be used.
 
 Advanced
 ---------
-
-.. currentmodule:: large_neighbourhood_search.lib.strategies.ClassicWeightedSumRnd
 
 While we have a strategy using declarative relaxation for lexicographic optimization we do not for weighted sum optimization (yet).
 The purpose of this framework is to not only plug different building blocks together but also allow them to be easily modifiable and

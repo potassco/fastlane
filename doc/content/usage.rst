@@ -4,7 +4,7 @@ Usage
 ============
 
 While this project is mainly build to be used as an easily modifiable framework, 
-it can still be used on its own, but heavily limited, as described below.
+it can still be used on its own with the provided library classes, as described below.
 For all options supported during the default module execution use:
 
 .. code-block:: console
@@ -13,12 +13,13 @@ For all options supported during the default module execution use:
 
 .. currentmodule:: large_neighbourhood_search.__init__
 
-The direct execution supports only a default classic LNS using weighted sums and a random relaxation of shown atoms.
+The default parameters make use of a classic LNS using weighted sums and a random relaxation of shown atoms.
 The search is limited to 2000 steps or 10 min with 20s per solve call and a relax rate of 0.2. The search is interrupted,
 if no better solutions is found after 1000 consecutive steps.
 
 For finer control over the performed Large-Neighbourhood-Search (LNS) this module should be used as a framework.
-During initialization of the LNS object, the solver and strategy used during execution can be replaced.
+During initialization of the LNS object, the solver and strategy used during execution can be replaced/modified and additional
+search parameters provided.
 
 The solver and strategy should be implemented according to the interfaces described :ref:`here<ref_inter>` and
 have to implement all abstract methods.
