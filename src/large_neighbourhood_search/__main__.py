@@ -20,7 +20,19 @@ def main():
     log.debug("debug")
     log.error("error")
 
-    lns = LNS(args.i)
+    lns = LNS(
+        args.input_files,
+        args.solver,
+        args.strategy,
+        {
+            "seed": args.seed,
+            "relax_rate": args.relax_rate,
+            "overall_time_limit": args.time_limit,
+            "solve_time_limit": args.solve_time_limit,
+            "max_steps": args.max_steps,
+            "stuck_after_no_improv": args.no_improv,
+        },
+    )
     lns.main()
 
 
