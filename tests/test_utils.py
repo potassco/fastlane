@@ -8,6 +8,10 @@ from unittest import TestCase
 
 from clingo.symbol import Function, Infimum, Number, String, Supremum
 
+from large_neighbourhood_search.lib.solvers.clingo_dl_solver import ClingoDLSolver
+from large_neighbourhood_search.lib.strategies.hc_weighted_sum_rnd import (
+    HCWeightedSumRnd,
+)
 from large_neighbourhood_search.lib.utils import (
     calculate_variability,
     check_smaller_lexicographic,
@@ -40,8 +44,26 @@ class TestUtils(TestCase):
         Test the parser.
         """
         parser = get_parser()
-        ret = parser.parse_args(["--log", "info"])
+        ret = parser.parse_args(["--log", "info", "-i", "x.lp"])
         self.assertEqual(ret.log, logging.INFO)
+        ret = parser.parse_args(["-r", "0.4", "-i", "x.lp"])
+        self.assertEqual(ret.relax_rate, 0.4)
+        ret = parser.parse_args(["--relax_rate", "0.5", "-i", "x.lp"])
+        self.assertEqual(ret.relax_rate, 0.5)
+        ret = parser.parse_args(["--solver", "ClingoDLSolver", "-i", "x.lp"])
+        self.assertIsInstance(ret.solver, ClingoDLSolver)
+        ret = parser.parse_args(["--strategy", "HCWeightedSumRnd", "-i", "x.lp"])
+        self.assertIsInstance(ret.strategy, HCWeightedSumRnd)
+        ret = parser.parse_args(["--time_limit", "12", "-i", "x.lp"])
+        self.assertEqual(ret.time_limit, 12)
+        ret = parser.parse_args(["--solve_time_limit", "14", "-i", "x.lp"])
+        self.assertEqual(ret.solve_time_limit, 14)
+        ret = parser.parse_args(["--max_steps", "30", "-i", "x.lp"])
+        self.assertEqual(ret.max_steps, 30)
+        ret = parser.parse_args(["--no_improv", "20", "-i", "x.lp"])
+        self.assertEqual(ret.no_improv, 20)
+        ret = parser.parse_args(["--seed", "213", "-i", "x.lp"])
+        self.assertEqual(ret.seed, 213)
 
 
 class TestLNSUtils(TestCase):
