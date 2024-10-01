@@ -90,16 +90,16 @@ class HCLexiRnd(HCWeightedSumRnd):
             #   #external _lns_l_step(s).
             #   _lns_bettereq(P+1,s) :- _lns_priority(_,P), not _lns_penalty(_,P+1), _lns_l_step(s).
             #   :- not _lns_better(_,s), _lns_l_step(s).
-            #   _lns_better(1,s) :- _lns_priority(N,1), #sum{V,I: _lns_penalty(N,I,W)} < 3,
+            #   _lns_better(1,s) :- _lns_priority(N,1), #sum{W,I: _lns_penalty(N,I,W)} < 3,
             #                       _lns_bettereq(1,s), _lns_l_step(s).
-            #   _lns_bettereq(1,s) :- _lns_priority(N,1), #sum{V,I: _lns_penalty(N,I,W)} <= 3,
+            #   _lns_bettereq(1,s) :- _lns_priority(N,1), #sum{W,I: _lns_penalty(N,I,W)} <= 3,
             #                         _lns_bettereq(2,s), _lns_l_step(s).
-            #   _lns_better(2,s) :- _lns_priority(N,2), #sum{V,I: _lns_penalty(N,I,W)} < 4,
+            #   _lns_better(2,s) :- _lns_priority(N,2), #sum{W,I: _lns_penalty(N,I,W)} < 4,
             #                       _lns_bettereq(2,s), _lns_l_step(s).
-            #   _lns_bettereq(2,s) :- _lns_priority(N,2), #sum{V,I: _lns_penalty(N,I,W)} <= 4,
+            #   _lns_bettereq(2,s) :- _lns_priority(N,2), #sum{W,I: _lns_penalty(N,I,W)} <= 4,
             #                         _lns_bettereq(3,s), _lns_l_step(s).
 
-            s = ["s"] + list(map(lambda x: f"cost{x}", cost.keys()))
+            s = ["s"] + list(map(lambda x: f"cost{x}", sorted(cost.keys())))
             rules = (
                 "#external _lns_l_step(s).\
             _lns_bettereq(P+1,s) :- _lns_priority(_,P), not _lns_priority(_,P+1), _lns_l_step(s).\
@@ -108,14 +108,14 @@ class HCLexiRnd(HCWeightedSumRnd):
                     list(
                         map(
                             lambda x: f"_lns_better({x},s) :- _lns_priority(N,{x}),\
-                            #sum{{V,I: _lns_penalty(N,I,V)}} < cost{x}, _lns_bettereq({x},s), _lns_l_step(s).",
+                            #sum{{W,I: _lns_penalty(N,I,W)}} < cost{x}, _lns_bettereq({x},s), _lns_l_step(s).",
                             cost.keys(),
                         )
                     )
                     + list(
                         map(
                             lambda x: f"_lns_bettereq({x},s) :- _lns_priority(N,{x}),\
-                            #sum{{V,I: _lns_penalty(N,I,V)}} <= cost{x}, _lns_bettereq({x+1},s), _lns_l_step(s).",
+                            #sum{{W,I: _lns_penalty(N,I,W)}} <= cost{x}, _lns_bettereq({x+1},s), _lns_l_step(s).",
                             cost.keys(),
                         )
                     )
