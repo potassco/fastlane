@@ -8,6 +8,7 @@ import time
 from typing import TYPE_CHECKING, List, Tuple
 
 import clingo
+from clingo import ast
 from clingo.symbol import Function, Number
 from clingodl import ClingoDLTheory
 
@@ -40,8 +41,11 @@ class ClingoDLHeuSolver(SolverInterface):
         thy = ClingoDLTheory()
         ctl = clingo.Control(args)
         thy.register(ctl)
-        for path in lns_object.param_values["files"]:
-            ctl.load(path)
+        with ast.ProgramBuilder(ctl) as builder:
+            ast.parse_files(
+                lns_object.param_values["files"],
+                lambda ast: thy.rewrite_ast(ast, builder.add),
+            )
 
         # used for heuristics, see solve_fixed()
         ctl.add("_lns_h_step", ["s"], "#external _lns_h_step(s).")
