@@ -12,7 +12,11 @@ from clingo.symbol import SymbolType
 
 from large_neighbourhood_search.interfaces.strategy import StrategyInterface
 from large_neighbourhood_search.lib.relaxation import relax_random
-from large_neighbourhood_search.lib.utils import fix_symbols, str_to_symbols
+from large_neighbourhood_search.lib.utils import (
+    calculate_variability,
+    fix_symbols,
+    str_to_symbols,
+)
 
 if TYPE_CHECKING:
     from large_neighbourhood_search import LNS  # nocoverage
@@ -132,14 +136,18 @@ class ClassicWeightedSumRnd(StrategyInterface):
     ) -> bool:
         """
         Check whether new model is accepted.
-        Always accept.
+        Accept if desired variability is achieved.
 
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         :return: Whether new model is accepted or not.
         :rtype: bool
         """
-        return True
+        vari = calculate_variability(
+            lns_object.models["new_model"]["shown"],
+            lns_object.models["current_model"]["shown"],
+        )
+        return vari >= lns_object.param_values["vari_accept"]
 
     def check_better(
         self,

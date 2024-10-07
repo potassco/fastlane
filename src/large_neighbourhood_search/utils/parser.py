@@ -162,6 +162,13 @@ def get_parser() -> ArgumentParser:
     )
 
     parser.add_argument(
+        "--vari_accept",
+        help="accept solution if specified variability is achieved 0 <= [%(default)s] < relax_rate",
+        default=0,
+        type=float,
+    )
+
+    parser.add_argument(
         "-i", "--input_files", help="ASP input file(s)", nargs="+", required=True
     )
 
