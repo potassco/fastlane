@@ -194,6 +194,27 @@ class TestStrategyClWsRnd(TestCase):
         """
         Test acceptance check.
         """
+        self.lns.models["current_model"]["shown"] = [
+            Function("plays", [Number(3), Number(1), Number(1)], True),
+            Function("plays", [Number(5), Number(1), Number(1)], True),
+            Function("plays", [Number(9), Number(1), Number(1)], True),
+            Function("plays", [Number(1), Number(2), Number(1)], True),
+        ]
+        self.lns.models["new_model"]["shown"] = [
+            Function("plays", [Number(3), Number(1), Number(1)], True),
+            Function("plays", [Number(5), Number(1), Number(1)], True),
+            Function("plays", [Number(9), Number(1), Number(1)], True),
+            Function("plays", [Number(1), Number(2), Number(1)], True),
+        ]
+        self.assertTrue(self.strategy.check_accept(self.lns))
+        self.lns.param_values["vari_accept"] = 0.4
+        self.assertFalse(self.strategy.check_accept(self.lns))
+        self.lns.models["new_model"]["shown"] = [
+            Function("plays", [Number(3), Number(1), Number(1)], True),
+            Function("plays", [Number(5), Number(1), Number(1)], True),
+            Function("plays", [Number(7), Number(1), Number(1)], True),
+            Function("plays", [Number(8), Number(2), Number(1)], True),
+        ]
         self.assertTrue(self.strategy.check_accept(self.lns))
 
     def test_check_better(self):

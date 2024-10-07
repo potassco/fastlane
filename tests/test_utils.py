@@ -64,6 +64,8 @@ class TestUtils(TestCase):
         self.assertEqual(ret.no_improv, 20)
         ret = parser.parse_args(["--seed", "213", "-i", "x.lp"])
         self.assertEqual(ret.seed, 213)
+        ret = parser.parse_args(["--vari_accept", "0.2", "-i", "x.lp"])
+        self.assertEqual(ret.vari_accept, 0.2)
 
 
 class TestLNSUtils(TestCase):
