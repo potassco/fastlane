@@ -24,6 +24,9 @@ LNS
             "stuck_after_no_improv": 1000,      # After how many interations without improvement the
                                                 #  search is determined as stuck
             "start_sol": None,                  # Start solution, fixed during first solve call
+            "vari_accept": 0,                   # New solution is accepted if given variability is
+                                                # achieved, 0 = always accept, should be lower than 
+                                                # relax rate
         }
 
 .. currentmodule:: large_neighbourhood_search.__init__
