@@ -6,7 +6,7 @@ Based on HCWeightedSumRnd class.
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Any, Dict, Sequence
+from typing import TYPE_CHECKING, Any, Dict, List, Sequence
 
 import clingo
 from clingo.symbol import Function, Number, SymbolType
@@ -14,7 +14,7 @@ from clingo.symbol import Function, Number, SymbolType
 from large_neighbourhood_search.lib.strategies.hc_weighted_sum_rnd import (
     HCWeightedSumRnd,
 )
-from large_neighbourhood_search.lib.utils import fix_symbols, str_to_symbols
+from large_neighbourhood_search.lib.utils import fix_symbols
 
 if TYPE_CHECKING:
     from large_neighbourhood_search import LNS  # nocoverage
@@ -57,7 +57,10 @@ class HCLexiRnd(HCWeightedSumRnd):
             cost[item[1]] = cost.get(item[1], 0) + temp_val.get(item[0], 0)
         return cost
 
-    def first_solution(self, lns_object: LNS) -> bool:
+    # pylint: disable=dangerous-default-value
+    def first_solution(
+        self, lns_object: LNS, start_sol: List[clingo.symbol.Symbol] = []
+    ) -> bool:
         """
         Find initial solution.
         Ground found optimization value as hard constraint.
@@ -65,19 +68,20 @@ class HCLexiRnd(HCWeightedSumRnd):
 
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
+        :param start_sol: optional start solution.
+        :type start_sol: List[clingo.symbol.Symbol]
+        :default start_sol: []
         :return: Whether a solution was found or not
         :rtype: bool
         """
         lns_object.solver.ground_base(lns_object)
 
-        start_sol = []
-        if lns_object.param_values["start_sol"]:
-            start_sol = fix_symbols(
-                str_to_symbols(lns_object.param_values["start_sol"])
-            )
+        fixed_sym = []
+        if start_sol:
+            fixed_sym = fix_symbols(start_sol)
 
         # get first solution
-        if lns_object.solver.solve_fixed(lns_object, start_sol).satisfiable:
+        if lns_object.solver.solve_fixed(lns_object, fixed_sym).satisfiable:
             cost = lns_object.models["new_model"]["cost"]
             print(f"Initial solution found with cost: {cost}")
 

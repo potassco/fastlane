@@ -55,12 +55,16 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def first_solution(self, lns_object: LNS) -> bool:  # nocoverage
+    def first_solution(
+        self, lns_object: LNS, start_sol: List[clingo.symbol.Symbol]
+    ) -> bool:  # nocoverage
         """
         Find initial solution.
 
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
+        :param start_sol: optional start solution.
+        :type lns_object: List[clingo.symbol.Symbol]
         :return: Whether a solution was found or not
         :rtype: bool
         """

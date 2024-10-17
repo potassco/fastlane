@@ -36,12 +36,21 @@ class SolverInterface(metaclass=abc.ABCMeta):
         )
 
     @abc.abstractmethod
-    def setup(self, lns_object: LNS) -> None:  # nocoverage
+    def setup(
+        self,
+        lns_object: LNS,
+        files: Optional[List[str]] = None,
+        args: Optional[Dict[str, Any]] = None,
+    ) -> None:  # nocoverage
         """
         Initialization of the solver.
 
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
+        :param files: ASP files to be loaded.
+        :type files: Optional[List[str]]
+        :param args: clingo arguments.
+        :type args: Optional[Dict[str,Any]]
         """
         raise NotImplementedError
 
@@ -58,6 +67,18 @@ class SolverInterface(metaclass=abc.ABCMeta):
         :type lns_object: large_neighbourhood_search.LNS
         :param assumptions: Assumptions for solving (fixed atoms).
         :type assumptions: List[Tuple[clingo.symbol.Symbol, bool]]
+        :return: Solve result.
+        :rtype: clingo.solving.SolveResult
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def pre_solve(self, lns_object: LNS) -> clingo.solving.SolveResult:  # nocoverage
+        """
+        Pre-solve using clingo.
+
+        :param lns_object: LNS object.
+        :type lns_object: large_neighbourhood_search.LNS
         :return: Solve result.
         :rtype: clingo.solving.SolveResult
         """
