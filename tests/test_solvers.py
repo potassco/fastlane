@@ -57,6 +57,10 @@ class TestSolverClingo(TestCase):
         self.assertIsInstance(self.solver.ctl, clingo.control.Control)
         self.assertIsNone(self.solver.thy)
 
+        self.solver.setup(self.lns, ["./tests/ref/golf.lp"], {"solve-limit": 1000})
+        self.assertIsInstance(self.solver.ctl, clingo.control.Control)
+        self.assertIsNone(self.solver.thy)
+
     def test_solve_fixed(self):
         """
         Test clingo solving under assumptions.
@@ -77,6 +81,16 @@ class TestSolverClingo(TestCase):
         # flaky, covered by integration test instead
         # self.lns.set_params({"solve_time_limit": 0})
         # self.assertTrue(self.solver.solve_fixed(self.lns, assumptions).interrupted)
+
+    def test_pre_solve(self):
+        """
+        Test pre_solve method.
+        """
+        self.lns.set_seed(123)
+        self.lns.solver.setup(self.lns, ["./tests/ref/golf_pre.lp"])
+        self.solver.ground_base(self.lns)
+        self.assertTrue(self.solver.pre_solve(self.lns).satisfiable)
+        self.assertTrue(self.lns.models["new_model"])
 
     def test_get_stats(self):
         """

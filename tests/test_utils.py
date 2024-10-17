@@ -46,6 +46,8 @@ class TestUtils(TestCase):
         parser = get_parser()
         ret = parser.parse_args(["--log", "info", "-i", "x.lp"])
         self.assertEqual(ret.log, logging.INFO)
+        ret = parser.parse_args(["-i", "x.lp"])
+        self.assertEqual(ret.input_files, ["x.lp"])
         ret = parser.parse_args(["-r", "0.4", "-i", "x.lp"])
         self.assertEqual(ret.relax_rate, 0.4)
         ret = parser.parse_args(["--relax_rate", "0.5", "-i", "x.lp"])
@@ -66,6 +68,11 @@ class TestUtils(TestCase):
         self.assertEqual(ret.seed, 213)
         ret = parser.parse_args(["--vari_accept", "0.2", "-i", "x.lp"])
         self.assertEqual(ret.vari_accept, 0.2)
+        ret = parser.parse_args(["--pre_files", "p1.lp", "p2.lp", "-i", "x.lp"])
+        self.assertEqual(ret.pre_files, ["p1.lp", "p2.lp"])
+        ret = parser.parse_args(["--pre_tl", "300", "-i", "x.lp"])
+        self.assertEqual(ret.pre_tl, 300)
+        self.assertEqual(ret.pre_files, [])
 
 
 class TestLNSUtils(TestCase):

@@ -182,6 +182,40 @@ class TestIntegrationClingo(TestCase):
         lns.set_seed(123)
         lns.main()
 
+    def test_pre_solve(self):
+        """
+        Test pre solving.
+        """
+        lns = LNS(
+            ["./tests/ref/golf.lp"],
+            self.solver,
+            params={"pre_files": ["./tests/ref/golf_pre.lp"], "max_steps": 1},
+        )
+        lns.set_seed(123)
+        print(lns.param_values)
+        lns.main()
+
+        lns = LNS(
+            ["./tests/ref/golf_big.lp"],
+            self.solver,
+            params={
+                "pre_files": ["./tests/ref/golf_pre_big.lp"],
+                "pre_tl": 1,
+                "max_steps": 1,
+            },
+        )
+        lns.set_seed(123)
+        lns.main()
+
+        lns = LNS(
+            ["./tests/ref/golf.lp"],
+            self.solver,
+            params={"pre_files": ["./tests/ref/bad_encoding.lp"], "max_steps": 1},
+        )
+        print(lns.param_values)
+        with self.assertRaises(SystemExit):
+            lns.main()
+
 
 class TestIntegrationClingoHeu(TestIntegrationClingo):
     """
