@@ -183,4 +183,11 @@ def get_parser() -> ArgumentParser:
         "--pre_tl", help="pre-solving time-limit [%(default)s]", default=1800, type=int
     )
 
+    parser.add_argument(
+        "--start_sol",
+        help="set initial solution in the form of: 'atom(1) atom(2) ...'",
+        default=None,
+        type=str,
+    )
+
     return parser

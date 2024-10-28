@@ -34,6 +34,7 @@ def main():
             "vari_accept": args.vari_accept,
             "pre_files": args.pre_files,
             "pre_tl": args.pre_tl,
+            "start_sol": args.start_sol,
         },
     )
     lns.main()
