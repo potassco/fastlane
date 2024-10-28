@@ -199,7 +199,7 @@ Advanced
 While we have a strategy using declarative relaxation for lexicographic optimization we do not for weighted sum optimization (yet).
 The purpose of this framework is to not only plug different building blocks together but also allow them to be easily modifiable and
 expandable. Lets try implementing ClassicWeightedSumDecl. When looking at the existing :class:`ClassicWeightedSumRnd`, we really only
-have to edit one part, the relax function. Since we work with assumptions and heuristics, the relax function return the atoms to be fixed.
+have to edit one part, the relax function. Since we work with assumptions and heuristics, the relax function returns the atoms to be fixed.
 Fortunately for us, the relax function used in the other declarative strategies can be found in the library. Lets use it to build our
 new strategy.
 
