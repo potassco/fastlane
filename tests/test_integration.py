@@ -192,7 +192,6 @@ class TestIntegrationClingo(TestCase):
             params={"pre_files": ["./tests/ref/golf_pre.lp"], "max_steps": 1},
         )
         lns.set_seed(123)
-        print(lns.param_values)
         lns.main()
 
         lns = LNS(
@@ -212,9 +211,28 @@ class TestIntegrationClingo(TestCase):
             self.solver,
             params={"pre_files": ["./tests/ref/bad_encoding.lp"], "max_steps": 1},
         )
-        print(lns.param_values)
         with self.assertRaises(SystemExit):
             lns.main()
+
+    def test_start_sol(self):
+        """
+        Test solving with pre-defined start solution.
+        """
+        s = (
+            "plays(4,1,1) plays(6,1,1) plays(7,1,1) plays(1,2,1) plays(3,2,1) plays(6,2,1) plays(1,3,1) "
+            "plays(2,3,1) plays(4,3,1) plays(2,1,2) plays(3,1,2) plays(8,1,2) plays(2,2,2) plays(5,2,2) "
+            "plays(7,2,2) plays(3,3,2) plays(7,3,2) plays(9,3,2) plays(1,1,3) plays(5,1,3) plays(9,1,3) "
+            "plays(4,2,3) plays(8,2,3) plays(9,2,3) plays(5,3,3) plays(6,3,3) plays(8,3,3)"
+        )
+        lns = LNS(
+            ["./tests/ref/golf.lp"],
+            self.solver,
+            params={
+                "start_sol": s,
+            },
+        )
+        lns.set_seed(123)
+        lns.main()
 
 
 class TestIntegrationClingoHeu(TestIntegrationClingo):

@@ -73,6 +73,10 @@ class TestUtils(TestCase):
         ret = parser.parse_args(["--pre_tl", "300", "-i", "x.lp"])
         self.assertEqual(ret.pre_tl, 300)
         self.assertEqual(ret.pre_files, [])
+        ret = parser.parse_args(
+            ["--start_sol", "plays(4,1,1) plays(3,2,2)", "-i", "x.lp"]
+        )
+        self.assertEqual(ret.start_sol, "plays(4,1,1) plays(3,2,2)")
 
 
 class TestLNSUtils(TestCase):
