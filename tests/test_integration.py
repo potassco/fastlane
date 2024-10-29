@@ -182,6 +182,58 @@ class TestIntegrationClingo(TestCase):
         lns.set_seed(123)
         lns.main()
 
+    def test_pre_solve(self):
+        """
+        Test pre solving.
+        """
+        lns = LNS(
+            ["./tests/ref/golf.lp"],
+            self.solver,
+            params={"pre_files": ["./tests/ref/golf_pre.lp"], "max_steps": 1},
+        )
+        lns.set_seed(123)
+        lns.main()
+
+        lns = LNS(
+            ["./tests/ref/golf_big.lp"],
+            self.solver,
+            params={
+                "pre_files": ["./tests/ref/golf_pre_big.lp"],
+                "pre_tl": 1,
+                "max_steps": 1,
+            },
+        )
+        lns.set_seed(123)
+        lns.main()
+
+        lns = LNS(
+            ["./tests/ref/golf.lp"],
+            self.solver,
+            params={"pre_files": ["./tests/ref/bad_encoding.lp"], "max_steps": 1},
+        )
+        with self.assertRaises(SystemExit):
+            lns.main()
+
+    def test_start_sol(self):
+        """
+        Test solving with pre-defined start solution.
+        """
+        s = (
+            "plays(4,1,1) plays(6,1,1) plays(7,1,1) plays(1,2,1) plays(3,2,1) plays(6,2,1) plays(1,3,1) "
+            "plays(2,3,1) plays(4,3,1) plays(2,1,2) plays(3,1,2) plays(8,1,2) plays(2,2,2) plays(5,2,2) "
+            "plays(7,2,2) plays(3,3,2) plays(7,3,2) plays(9,3,2) plays(1,1,3) plays(5,1,3) plays(9,1,3) "
+            "plays(4,2,3) plays(8,2,3) plays(9,2,3) plays(5,3,3) plays(6,3,3) plays(8,3,3)"
+        )
+        lns = LNS(
+            ["./tests/ref/golf.lp"],
+            self.solver,
+            params={
+                "start_sol": s,
+            },
+        )
+        lns.set_seed(123)
+        lns.main()
+
 
 class TestIntegrationClingoHeu(TestIntegrationClingo):
     """

@@ -33,6 +33,9 @@ class TestLNS(TestCase):
             "overall_time_limit": 600,
             "stuck_after_no_improv": 1000,
             "start_sol": None,
+            "vari_accept": 0,
+            "pre_files": [],
+            "pre_tl": 1800,
         }
 
         solver = ClingoSolver()
@@ -64,6 +67,9 @@ class TestLNS(TestCase):
             "overall_time_limit": 600,
             "stuck_after_no_improv": 1000,
             "start_sol": None,
+            "vari_accept": 0,
+            "pre_files": [],
+            "pre_tl": 1800,
         }
         lns = LNS(["./tests/ref/golf.lp"])
         self.assertDictEqual(lns.get_params(), ref_config_values)

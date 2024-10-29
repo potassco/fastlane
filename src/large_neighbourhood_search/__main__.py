@@ -31,6 +31,10 @@ def main():
             "solve_time_limit": args.solve_time_limit,
             "max_steps": args.max_steps,
             "stuck_after_no_improv": args.no_improv,
+            "vari_accept": args.vari_accept,
+            "pre_files": args.pre_files,
+            "pre_tl": args.pre_tl,
+            "start_sol": args.start_sol,
         },
     )
     lns.main()

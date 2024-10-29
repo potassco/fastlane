@@ -101,6 +101,10 @@ def get_parser() -> ArgumentParser:
     )
 
     parser.add_argument(
+        "-i", "--input_files", help="ASP input file(s)", nargs="+", required=True
+    )
+
+    parser.add_argument(
         "--solver",
         default="ClingoSolver",
         choices=[val for _, val in solvers],
@@ -116,6 +120,13 @@ def get_parser() -> ArgumentParser:
         metavar=f"{{{','.join(key for key, _ in strategies)}}}",
         help="set LNS strategy [%(default)s]",
         type=cast(Any, lambda name: get(strategies, name)),
+    )
+
+    parser.add_argument(
+        "--seed",
+        help="set lns seed [%(default)s]",
+        default=None,
+        type=int,
     )
 
     parser.add_argument(
@@ -155,14 +166,28 @@ def get_parser() -> ArgumentParser:
     )
 
     parser.add_argument(
-        "--seed",
-        help="set lns seed [%(default)s]",
-        default=None,
-        type=int,
+        "--vari_accept",
+        help="accept solution if specified variability is achieved 0 <= [%(default)s] < relax_rate",
+        default=0,
+        type=float,
     )
 
     parser.add_argument(
-        "-i", "--input_files", help="ASP input file(s)", nargs="+", required=True
+        "--pre_files",
+        help="ASP input file(s) for pre-solving [%(default)s]",
+        nargs="*",
+        default=[],
+    )
+
+    parser.add_argument(
+        "--pre_tl", help="pre-solving time-limit [%(default)s]", default=1800, type=int
+    )
+
+    parser.add_argument(
+        "--start_sol",
+        help="set initial solution in the form of: 'atom(1) atom(2) ...'",
+        default=None,
+        type=str,
     )
 
     return parser

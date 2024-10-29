@@ -12,7 +12,7 @@ from clingo.symbol import Number, SymbolType
 
 from large_neighbourhood_search.interfaces.strategy import StrategyInterface
 from large_neighbourhood_search.lib.relaxation import relax_random
-from large_neighbourhood_search.lib.utils import fix_symbols, str_to_symbols
+from large_neighbourhood_search.lib.utils import calculate_variability, fix_symbols
 
 if TYPE_CHECKING:
     from large_neighbourhood_search import LNS  # nocoverage
@@ -42,7 +42,10 @@ class HCWeightedSumRnd(StrategyInterface):
                     cost += atom.arguments[2].number
         return cost
 
-    def first_solution(self, lns_object: LNS) -> bool:
+    # pylint: disable=dangerous-default-value
+    def first_solution(
+        self, lns_object: LNS, start_sol: List[clingo.symbol.Symbol] = []
+    ) -> bool:
         """
         Find initial solution.
         Ground found optimization value as hard constraint.
@@ -50,19 +53,20 @@ class HCWeightedSumRnd(StrategyInterface):
 
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
+        :param start_sol: optional start solution.
+        :type start_sol: List[clingo.symbol.Symbol]
+        :default start_sol: []
         :return: Whether a solution was found or not
         :rtype: bool
         """
         lns_object.solver.ground_base(lns_object)
 
-        start_sol = []
-        if lns_object.param_values["start_sol"]:
-            start_sol = fix_symbols(
-                str_to_symbols(lns_object.param_values["start_sol"])
-            )
+        fixed_sym = []
+        if start_sol:
+            fixed_sym = fix_symbols(start_sol)
 
         # get first solution
-        if lns_object.solver.solve_fixed(lns_object, start_sol).satisfiable:
+        if lns_object.solver.solve_fixed(lns_object, fixed_sym).satisfiable:
             cost = lns_object.models["new_model"]["cost"]
             print(f"Initial solution found with cost: {cost}")
 
@@ -143,14 +147,18 @@ class HCWeightedSumRnd(StrategyInterface):
     ) -> bool:
         """
         Check whether new model is accepted.
-        Always accept.
+        Accept if desired variability is achieved.
 
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         :return: Whether new model is accepted or not.
         :rtype: bool
         """
-        return True
+        vari = calculate_variability(
+            lns_object.models["new_model"]["shown"],
+            lns_object.models["current_model"]["shown"],
+        )
+        return vari >= lns_object.param_values["vari_accept"]
 
     # pylint: disable=unused-argument
     def check_better(

@@ -10,6 +10,8 @@ from typing import Any, Dict, List, Sequence, Union
 
 import clingo
 
+from large_neighbourhood_search.lib.utils import str_to_symbols
+
 from .interfaces.solver import SolverInterface
 from .interfaces.strategy import StrategyInterface
 from .lib.solvers.clingo_solver import ClingoSolver
@@ -44,6 +46,7 @@ class LNS:
         """
         Initialization of the lns object.
         """
+        self.pre_solver: SolverInterface = type(solver)()
         self.solver: SolverInterface = solver
         self.strategy: StrategyInterface = strategy
         self.start_time: float = 0
@@ -70,6 +73,9 @@ class LNS:
             "overall_time_limit": 600,
             "stuck_after_no_improv": 1000,
             "start_sol": None,
+            "vari_accept": 0,
+            "pre_files": [],
+            "pre_tl": 1800,
         }
         self.param_values = {**self.param_values, **params}
         self.avail_time = self.param_values["overall_time_limit"]
@@ -159,6 +165,9 @@ class LNS:
                 f"{key}={val}"
                 for key, val in self.solver.thy.assignment(model.thread_id)
             ]
+        # pre solving
+        if self.param_values["pre_files"] and self.step_c == -1:
+            print(model.cost)
 
     def main(self) -> None:
         """
@@ -166,7 +175,7 @@ class LNS:
         """
         # c, b, n: current, best, new model
         # setup
-        # c = first sol
+        # c = first sol/pre-solve
         # while check_stop
         #   n = repair(relax(c))
         #   check accept(n)
@@ -177,11 +186,31 @@ class LNS:
         signal.signal(signal.SIGINT, self.interrupt_handler)
 
         self.start_time = time.time()
-        self.step_c = 0
+        self.step_c = -1
+
+        start_sol = []
+        if self.param_values["start_sol"]:
+            start_sol = str_to_symbols(self.param_values["start_sol"])
 
         self.solver.setup(self)
 
-        if not self.strategy.first_solution(self):
+        # pre solving
+        if self.param_values["pre_files"]:
+            print(f"Start pre-solving ({self.param_values['pre_tl']}s):")
+            self.pre_solver.setup(self, self.param_values["pre_files"])
+            self.pre_solver.ground_base(self)
+            if self.pre_solver.pre_solve(self).satisfiable:
+                print("Pre-solving done.")
+                start_sol = self.models["new_model"]["shown"]
+
+            else:
+                print("Pre-solving failed")
+                raise SystemExit
+
+        self.step_c = 0
+
+        if not self.strategy.first_solution(self, start_sol):
+            print("First solution could not be obtained")
             raise SystemExit
 
         while not (self.strategy.check_stop(self) or self.stopped):
@@ -192,7 +221,7 @@ class LNS:
                     f"{time.time() - self.start_time:.3f}s: {self.step_c}|{self.param_values['max_steps']}"
                 )
             fixed_atoms = self.strategy.relax(
-                self.models["current_model"],
+                self.models["new_model"],
                 {"relax_rate": self.param_values["relax_rate"]},
             )
             if self.strategy.repair(self, fixed_atoms).satisfiable:

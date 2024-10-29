@@ -17,6 +17,11 @@ The default parameters make use of a classic LNS using weighted sums and a rando
 The search is limited to 2000 steps or 10 min with 20s per solve call and a relax rate of 0.2. The search is interrupted,
 if no better solutions is found after 1000 consecutive steps.
 
+.. note::
+
+    When using the pre-solving feature a secondary problem encoding with weak constraints or optimization statements should be provided.
+    This encoding has not to contain LNS specific atoms, see :file:`./examples/golf_pre.lp` as a example.
+
 For finer control over the performed Large-Neighbourhood-Search (LNS) this module should be used as a framework.
 During initialization of the LNS object, the solver and strategy used during execution can be replaced/modified and additional
 search parameters provided.
