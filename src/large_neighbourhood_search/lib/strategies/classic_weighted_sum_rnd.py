@@ -66,7 +66,8 @@ class ClassicWeightedSumRnd(StrategyInterface):
         # get first solution
         if lns_object.solver.solve_fixed(lns_object, fixed_sym).satisfiable:
             print(
-                f'Initial solution found with cost: {lns_object.models["new_model"]["cost"]}'
+                f"{time.time() - lns_object.start_time:.3f}s: Initial solution found with cost: "
+                f'{lns_object.get_cost_str(lns_object.models["new_model"])}'
             )
             lns_object.models["current_model"] = lns_object.models["new_model"].copy()
             lns_object.models["best_model"] = lns_object.models["new_model"].copy()

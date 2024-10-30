@@ -111,6 +111,23 @@ class LNS:
         self.param_values = {**self.param_values, **params}
         self.set_seed(self.param_values["seed"])
 
+    # pylint: disable=unidiomatic-typecheck
+    def get_cost_str(self, model: Dict[str, Any]) -> str:
+        """
+        Get cost of given model as string.
+
+        :param model: Model.
+        :type model: Dict[str, Any]
+        :return: Cost as string.
+        :rtype: str
+        """
+        cost = model["cost"]
+        if type(cost) is int:
+            return str(cost)
+        if type(cost) is dict:
+            return " ".join(list(map(str, cost.values())))
+        return ""
+
     def print_model(self, model: Dict[str, Any]) -> str:
         """
         Print given model.
@@ -123,7 +140,7 @@ class LNS:
         answer_string = " ".join([str(atom) for atom in model["shown"]])
         if "assignments" in model:
             answer_string += "\nAssignments:\n" + " ".join(model["assignments"])
-        s = "Answer\n" f"{answer_string}\n" f'Cost: {model["cost"]}\n'
+        s = "Answer\n" f"{answer_string}\n" f"Cost: {self.get_cost_str(model)}\n"
         print(s)
         return s
 
@@ -231,7 +248,7 @@ class LNS:
                     self.models["best_model"] = self.models["new_model"].copy()
                     print(
                         f'{time.time() - self.start_time:.3f}s: {self.step_c}|{self.param_values["max_steps"]} '
-                        f'New best solution: {self.models["best_model"]["cost"]}'
+                        f'New best solution: {self.get_cost_str(self.models["best_model"])}'
                     )
                     self.strategy.update_grounding(self)
                     self.no_improv_c = 0

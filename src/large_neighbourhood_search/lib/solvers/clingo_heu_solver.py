@@ -111,7 +111,7 @@ class ClingoHeuSolver(SolverInterface):
                     handle.cancel()
                     print(
                         f"{time.time() - lns_object.start_time:.3f}s: "
-                        f'Unable to repair model during time limit ({lns_object.param_values["solve_time_limit"]}s).'
+                        f'Search interrupted after ({lns_object.param_values["solve_time_limit"]}s).'
                     )
                 res = handle.get()
         lns_object.avail_time -= int(time.time()) - start_time
