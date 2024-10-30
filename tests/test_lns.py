@@ -98,6 +98,18 @@ class TestLNS(TestCase):
             lns.param_values["clingo_args"], {"seed": 42, "rand-freq": 0.8}
         )
 
+    def test_get_cost_str(self):
+        """
+        Test get cost str.
+        """
+        lns = LNS(["./tests/ref/golf_big.lp"])
+        model = {"cost": 1}
+        self.assertEqual(lns.get_cost_str(model), "1")
+        model["cost"] = {3: 4, 2: 3, 1: 2}
+        self.assertEqual(lns.get_cost_str(model), "4 3 2")
+        model["cost"] = True
+        self.assertEqual(lns.get_cost_str(model), "")
+
     def test_print_model(self):
         """
         Test print model.
