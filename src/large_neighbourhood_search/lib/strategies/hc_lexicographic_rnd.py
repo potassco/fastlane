@@ -84,7 +84,8 @@ class HCLexiRnd(HCWeightedSumRnd):
         if lns_object.solver.solve_fixed(lns_object, fixed_sym).satisfiable:
             cost = lns_object.models["new_model"]["cost"]
             print(
-                f"{time.time() - lns_object.start_time:.3f}s: Initial solution found with cost: {cost}"
+                f"{time.time() - lns_object.start_time:.3f}s: Initial solution found with cost: "
+                f'{lns_object.get_cost_str(lns_object.models["new_model"])}'
             )
 
             # add rules to force better solution with each iteration
