@@ -134,6 +134,10 @@ class TestStrategyClWsRnd(TestCase):
         self.lns.set_params({"overall_time_limit": 10000, "max_steps": 1})
         self.lns.step_c = 2
         self.assertTrue(self.strategy.check_stop(self.lns))
+        self.lns.set_params({"max_steps": "-"})
+        self.assertFalse(self.strategy.check_stop(self.lns))
+        self.lns.set_params({"overall_time_limit": 0})
+        self.assertTrue(self.strategy.check_stop(self.lns))
 
     def test_relax(self):
         """
@@ -238,6 +242,10 @@ class TestStrategyClWsRnd(TestCase):
         self.lns.no_improv_c = 1001
         self.strategy.stuck_handling(self.lns)
         self.assertTrue(self.lns.stopped)
+        self.lns.stopped = False
+        self.lns.param_values["stuck_after_no_improv"] = "-"
+        self.strategy.stuck_handling(self.lns)
+        self.assertFalse(self.lns.stopped)
 
 
 class TestStrategyClLexiRnd(TestStrategyClWsRnd):
@@ -344,6 +352,10 @@ class TestStrategyClLexiRnd(TestStrategyClWsRnd):
         self.assertTrue(self.strategy.check_stop(self.lns))
         self.lns.set_params({"overall_time_limit": 10000, "max_steps": 1})
         self.lns.step_c = 2
+        self.assertTrue(self.strategy.check_stop(self.lns))
+        self.lns.set_params({"max_steps": "-"})
+        self.assertFalse(self.strategy.check_stop(self.lns))
+        self.lns.set_params({"overall_time_limit": 0})
         self.assertTrue(self.strategy.check_stop(self.lns))
 
     def test_check_better(self):
