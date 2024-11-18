@@ -153,16 +153,16 @@ def get_parser() -> ArgumentParser:
 
     parser.add_argument(
         "--max_steps",
-        help="set maximum number of steps [%(default)s]",
-        default=2000,
-        type=int,
+        help="set maximum number of steps [%(default)s], non-int string for no limit",
+        default="2000",
+        type=str,
     )
 
     parser.add_argument(
         "--no_improv",
-        help="set maximum number of steps without improvement [%(default)s]",
-        default=1000,
-        type=int,
+        help="set maximum number of steps without improvement [%(default)s], non-int string for no limit",
+        default="1000",
+        type=str,
     )
 
     parser.add_argument(

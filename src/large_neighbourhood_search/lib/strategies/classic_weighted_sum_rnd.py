@@ -91,9 +91,14 @@ class ClassicWeightedSumRnd(StrategyInterface):
         """
         if lns_object.models["best_model"]["cost"] == 0:
             return True
+        if isinstance(lns_object.param_values["max_steps"], int):
+            return (
+                lns_object.step_c >= lns_object.param_values["max_steps"]
+                or time.time() - lns_object.start_time
+                >= lns_object.param_values["overall_time_limit"]
+            )
         return (
-            lns_object.step_c >= lns_object.param_values["max_steps"]
-            or time.time() - lns_object.start_time
+            time.time() - lns_object.start_time
             >= lns_object.param_values["overall_time_limit"]
         )
 
@@ -183,8 +188,12 @@ class ClassicWeightedSumRnd(StrategyInterface):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         """
-        if lns_object.no_improv_c >= lns_object.param_values["stuck_after_no_improv"]:
-            print(
-                f"{time.time() - lns_object.start_time:.3f}s: Search stuck at step {lns_object.step_c}!"
-            )
-            lns_object.stopped = True
+        if isinstance(lns_object.param_values["stuck_after_no_improv"], int):
+            if (
+                lns_object.no_improv_c
+                >= lns_object.param_values["stuck_after_no_improv"]
+            ):
+                print(
+                    f"{time.time() - lns_object.start_time:.3f}s: Search stuck at step {lns_object.step_c}!"
+                )
+                lns_object.stopped = True
