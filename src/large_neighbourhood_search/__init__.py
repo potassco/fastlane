@@ -67,11 +67,11 @@ class LNS:
             "files": files,
             "seed": None,
             "relax_rate": 0.2,
-            "max_steps": 2000,
+            "max_steps": "2000",
             "clingo_args": {"rand-freq": 0.8},
             "solve_time_limit": 20,
             "overall_time_limit": 600,
-            "stuck_after_no_improv": 1000,
+            "stuck_after_no_improv": "1000",
             "start_sol": None,
             "vari_accept": 0,
             "pre_files": [],
@@ -79,6 +79,20 @@ class LNS:
         }
         self.param_values = {**self.param_values, **params}
         self.avail_time = self.param_values["overall_time_limit"]
+
+        if not isinstance(self.param_values["max_steps"], int):
+            if self.param_values["max_steps"].isdigit():
+                self.param_values["max_steps"] = int(self.param_values["max_steps"])
+            else:
+                self.param_values["max_steps"] = "-"
+
+        if not isinstance(self.param_values["stuck_after_no_improv"], int):
+            if self.param_values["stuck_after_no_improv"].isdigit():
+                self.param_values["stuck_after_no_improv"] = int(
+                    self.param_values["stuck_after_no_improv"]
+                )
+            else:
+                self.param_values["stuck_after_no_improv"] = "-"
 
     def set_seed(self, seed: int) -> None:
         """
@@ -110,6 +124,18 @@ class LNS:
         """
         self.param_values = {**self.param_values, **params}
         self.set_seed(self.param_values["seed"])
+        if not isinstance(self.param_values["max_steps"], int):
+            if self.param_values["max_steps"].isdigit():
+                self.param_values["max_steps"] = int(self.param_values["max_steps"])
+            else:
+                self.param_values["max_steps"] = "-"
+        if not isinstance(self.param_values["stuck_after_no_improv"], int):
+            if self.param_values["stuck_after_no_improv"].isdigit():
+                self.param_values["stuck_after_no_improv"] = int(
+                    self.param_values["stuck_after_no_improv"]
+                )
+            else:
+                self.param_values["stuck_after_no_improv"] = "-"
 
     # pylint: disable=unidiomatic-typecheck
     def get_cost_str(self, model: Dict[str, Any]) -> str:

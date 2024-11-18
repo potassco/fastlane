@@ -51,16 +51,6 @@ class TestStrategyHcWsRnd(TestStrategyClWsRnd):
         self.solver.setup(self.lns)
         self.assertIsNone(self.strategy.update_grounding(self.lns))
 
-    def test_stuck_handling(self):
-        """
-        Test stuck handling.
-        """
-        self.strategy.stuck_handling(self.lns)
-        self.assertFalse(self.lns.stopped)
-        self.lns.no_improv_c = 1001
-        self.strategy.stuck_handling(self.lns)
-        self.assertTrue(self.lns.stopped)
-
 
 class TestStrategyHcLexiRnd(TestStrategyHcWsRnd):
     """
@@ -166,6 +156,10 @@ class TestStrategyHcLexiRnd(TestStrategyHcWsRnd):
         self.assertTrue(self.strategy.check_stop(self.lns))
         self.lns.set_params({"overall_time_limit": 10000, "max_steps": 1})
         self.lns.step_c = 2
+        self.assertTrue(self.strategy.check_stop(self.lns))
+        self.lns.set_params({"max_steps": "-"})
+        self.assertFalse(self.strategy.check_stop(self.lns))
+        self.lns.set_params({"overall_time_limit": 0})
         self.assertTrue(self.strategy.check_stop(self.lns))
 
     def test_check_better(self):

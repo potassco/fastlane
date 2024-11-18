@@ -168,9 +168,14 @@ class HCLexiRnd(HCWeightedSumRnd):
             for i in lns_object.models["best_model"]["cost"]
         ):
             return True
+        if isinstance(lns_object.param_values["max_steps"], int):
+            return (
+                lns_object.step_c >= lns_object.param_values["max_steps"]
+                or time.time() - lns_object.start_time
+                >= lns_object.param_values["overall_time_limit"]
+            )
         return (
-            lns_object.step_c >= lns_object.param_values["max_steps"]
-            or time.time() - lns_object.start_time
+            time.time() - lns_object.start_time
             >= lns_object.param_values["overall_time_limit"]
         )
 

@@ -46,12 +46,38 @@ class TestLNS(TestCase):
         self.assertIsInstance(lns.solver, ClingoSolver)
         self.assertIsInstance(lns.strategy, HCWeightedSumRnd)
 
-        lns = LNS(["./tests/ref/golf.lp"], solver, strategy, {"relax_rate": 0.4})
+        lns = LNS(
+            ["./tests/ref/golf.lp"],
+            solver,
+            strategy,
+            {"relax_rate": 0.4, "max_steps": 20},
+        )
         self.assertDictEqual(
-            lns.param_values, {**ref_config_values, **{"relax_rate": 0.4}}
+            lns.param_values,
+            {**ref_config_values, **{"relax_rate": 0.4, "max_steps": 20}},
         )
         self.assertEqual(lns.solver, solver)
         self.assertEqual(lns.strategy, strategy)
+
+        lns = LNS(["./tests/ref/golf.lp"], params={"max_steps": "20"})
+        self.assertDictEqual(
+            lns.param_values, {**ref_config_values, **{"max_steps": 20}}
+        )
+
+        lns = LNS(["./tests/ref/golf.lp"], params={"max_steps": "a"})
+        self.assertDictEqual(
+            lns.param_values, {**ref_config_values, **{"max_steps": "-"}}
+        )
+
+        lns = LNS(["./tests/ref/golf.lp"], params={"stuck_after_no_improv": "20"})
+        self.assertDictEqual(
+            lns.param_values, {**ref_config_values, **{"stuck_after_no_improv": 20}}
+        )
+
+        lns = LNS(["./tests/ref/golf.lp"], params={"stuck_after_no_improv": "a"})
+        self.assertDictEqual(
+            lns.param_values, {**ref_config_values, **{"stuck_after_no_improv": "-"}}
+        )
 
     def test_set_params(self):
         """
@@ -73,7 +99,49 @@ class TestLNS(TestCase):
         }
         lns = LNS(["./tests/ref/golf.lp"])
         self.assertDictEqual(lns.get_params(), ref_config_values)
-        lns.set_params({"seed": 123, "new_param": "new"})
+        lns.set_params({"max_steps": 20})
+        self.assertDictEqual(
+            lns.get_params(),
+            {
+                **ref_config_values,
+                **{"max_steps": 20},
+            },
+        )
+        lns.set_params({"max_steps": "20"})
+        self.assertDictEqual(
+            lns.get_params(),
+            {
+                **ref_config_values,
+                **{"max_steps": 20},
+            },
+        )
+        lns.set_params({"max_steps": "a"})
+        self.assertDictEqual(
+            lns.get_params(),
+            {
+                **ref_config_values,
+                **{"max_steps": "-"},
+            },
+        )
+        lns = LNS(["./tests/ref/golf.lp"])
+        self.assertDictEqual(lns.get_params(), ref_config_values)
+        lns.set_params({"stuck_after_no_improv": 20})
+        self.assertDictEqual(
+            lns.get_params(),
+            {
+                **ref_config_values,
+                **{"stuck_after_no_improv": 20},
+            },
+        )
+        lns.set_params({"stuck_after_no_improv": "a"})
+        self.assertDictEqual(
+            lns.get_params(),
+            {
+                **ref_config_values,
+                **{"stuck_after_no_improv": "-"},
+            },
+        )
+        lns.set_params({"seed": 123, "new_param": "new", "stuck_after_no_improv": "20"})
         self.assertDictEqual(
             lns.get_params(),
             {
@@ -81,6 +149,7 @@ class TestLNS(TestCase):
                 **{
                     "seed": 123,
                     "new_param": "new",
+                    "stuck_after_no_improv": 20,
                     "clingo_args": {**lns.param_values["clingo_args"], **{"seed": 123}},
                 },
             },
