@@ -30,6 +30,7 @@ LNS
                                                 # relax rate, Float
             "pre_files": [],                    # ASP files used for pre-solving, List[String]
             "pre_tl": 1800,                     # Time limit for pre-solving in seconds, Int
+            "base_relax_rate": 0                # base relax rate applied on top of declarative relaxation, Float
         }
 
 .. currentmodule:: large_neighbourhood_search.__init__

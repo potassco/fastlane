@@ -35,6 +35,7 @@ def main():
             "pre_files": args.pre_files,
             "pre_tl": args.pre_tl,
             "start_sol": args.start_sol,
+            "base_relax_rate": args.base_relax_rate,
         },
     )
     lns.main()
