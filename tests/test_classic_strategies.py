@@ -182,7 +182,9 @@ class TestStrategyClWsRnd(TestCase):
                 ),
             ],
         }
-        self.assertIsNotNone(self.strategy.relax(model, {"relax_rate": 0.2}))
+        self.assertIsNotNone(
+            self.strategy.relax(model, {"relax_rate": 0.2, "base_relax_rate": 0})
+        )
 
     def test_repair(self):
         """
