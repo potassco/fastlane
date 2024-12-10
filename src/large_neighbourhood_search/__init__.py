@@ -76,6 +76,7 @@ class LNS:
             "vari_accept": 0,
             "pre_files": [],
             "pre_tl": 1800,
+            "base_relax_rate": 0,
         }
         self.param_values = {**self.param_values, **params}
         self.avail_time = self.param_values["overall_time_limit"]
@@ -265,7 +266,10 @@ class LNS:
                 )
             fixed_atoms = self.strategy.relax(
                 self.models["new_model"],
-                {"relax_rate": self.param_values["relax_rate"]},
+                {
+                    "relax_rate": self.param_values["relax_rate"],
+                    "base_relax_rate": self.param_values["base_relax_rate"],
+                },
             )
             if self.strategy.repair(self, fixed_atoms).satisfiable:
                 if self.strategy.check_accept(self):

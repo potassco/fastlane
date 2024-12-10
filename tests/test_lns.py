@@ -36,6 +36,7 @@ class TestLNS(TestCase):
             "vari_accept": 0,
             "pre_files": [],
             "pre_tl": 1800,
+            "base_relax_rate": 0,
         }
 
         solver = ClingoSolver()
@@ -96,6 +97,7 @@ class TestLNS(TestCase):
             "vari_accept": 0,
             "pre_files": [],
             "pre_tl": 1800,
+            "base_relax_rate": 0,
         }
         lns = LNS(["./tests/ref/golf.lp"])
         self.assertDictEqual(lns.get_params(), ref_config_values)

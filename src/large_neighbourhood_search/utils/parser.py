@@ -136,6 +136,12 @@ def get_parser() -> ArgumentParser:
         default=0.2,
         type=float,
     )
+    parser.add_argument(
+        "--base_relax_rate",
+        help="set base relax rate 0 <= [%(default)s] <= 1",
+        default=0,
+        type=float,
+    )
 
     parser.add_argument(
         "--time_limit",

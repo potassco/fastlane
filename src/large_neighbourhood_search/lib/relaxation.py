@@ -30,15 +30,28 @@ def relax_declarative(
     ] = {}
     for atom in model["true"]:
         if atom.match("_lns_select", 1):
-            selected_atoms.append(atom.arguments[0])
-            declared_fixed_atoms[atom.arguments[0]] = []
+            if atom.arguments[0] not in selected_atoms:
+                selected_atoms.append(atom.arguments[0])
+                declared_fixed_atoms[atom.arguments[0]] = []
         elif atom.match("_lns_fix", 2):
-            declared_fixed_atoms[atom.arguments[1]].append((atom.arguments[0], True))
-    symbols = random.sample(
-        selected_atoms, int(len(selected_atoms) * (1 - relax_parameters["relax_rate"]))
-    )
+            if atom.arguments[1] in declared_fixed_atoms:
+                declared_fixed_atoms[atom.arguments[1]].append(
+                    (atom.arguments[0], True)
+                )
+    if len(selected_atoms) == 1:
+        symbols = selected_atoms.copy()
+    else:
+        symbols = random.sample(
+            selected_atoms,
+            int(len(selected_atoms) * (1 - relax_parameters["relax_rate"])),
+        )
     for s in symbols:
-        fixed_atoms += declared_fixed_atoms[s]
+        fixed_atoms += random.sample(
+            declared_fixed_atoms[s],
+            int(
+                len(declared_fixed_atoms[s]) * (1 - relax_parameters["base_relax_rate"])
+            ),
+        )
     return fixed_atoms
 
 

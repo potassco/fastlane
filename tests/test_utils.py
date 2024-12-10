@@ -77,6 +77,8 @@ class TestUtils(TestCase):
             ["--start_sol", "plays(4,1,1) plays(3,2,2)", "-i", "x.lp"]
         )
         self.assertEqual(ret.start_sol, "plays(4,1,1) plays(3,2,2)")
+        ret = parser.parse_args(["--relax_rate", "0.5", "-i", "x.lp"])
+        self.assertEqual(ret.relax_rate, 0.5)
 
 
 class TestLNSUtils(TestCase):
