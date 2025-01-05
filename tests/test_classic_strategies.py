@@ -7,19 +7,13 @@ from unittest import TestCase
 
 from clingo.symbol import Function, Number, String
 
-from large_neighbourhood_search import LNS
-from large_neighbourhood_search.interfaces.solver import SolverInterface
-from large_neighbourhood_search.interfaces.strategy import StrategyInterface
-from large_neighbourhood_search.lib.solvers.clingo_solver import ClingoSolver
-from large_neighbourhood_search.lib.strategies.classic_lexicographic_declarative import (
-    ClassicLexiDecl,
-)
-from large_neighbourhood_search.lib.strategies.classic_lexicographic_rnd import (
-    ClassicLexiRnd,
-)
-from large_neighbourhood_search.lib.strategies.classic_weighted_sum_rnd import (
-    ClassicWeightedSumRnd,
-)
+from mod_lns import LNS
+from mod_lns.interfaces.solver import SolverInterface
+from mod_lns.interfaces.strategy import StrategyInterface
+from mod_lns.lib.solvers.clingo_solver import ClingoSolver
+from mod_lns.lib.strategies.classic_lexicographic_declarative import ClassicLexiDecl
+from mod_lns.lib.strategies.classic_lexicographic_rnd import ClassicLexiRnd
+from mod_lns.lib.strategies.classic_weighted_sum_rnd import ClassicWeightedSumRnd
 
 
 class TestStrategyClWsRnd(TestCase):
@@ -239,13 +233,14 @@ class TestStrategyClWsRnd(TestCase):
         """
         Test stuck handling.
         """
+        self.lns.param_values["stuck_after_no_improv"] = 1000
         self.strategy.stuck_handling(self.lns)
         self.assertFalse(self.lns.stopped)
         self.lns.no_improv_c = 1001
         self.strategy.stuck_handling(self.lns)
         self.assertTrue(self.lns.stopped)
         self.lns.stopped = False
-        self.lns.param_values["stuck_after_no_improv"] = "-"
+        self.lns.param_values["stuck_after_no_improv"] = None
         self.strategy.stuck_handling(self.lns)
         self.assertFalse(self.lns.stopped)
 

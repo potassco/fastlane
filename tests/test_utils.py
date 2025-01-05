@@ -8,19 +8,17 @@ from unittest import TestCase
 
 from clingo.symbol import Function, Infimum, Number, String, Supremum
 
-from large_neighbourhood_search.lib.solvers.clingo_dl_solver import ClingoDLSolver
-from large_neighbourhood_search.lib.strategies.hc_weighted_sum_rnd import (
-    HCWeightedSumRnd,
-)
-from large_neighbourhood_search.lib.utils import (
+from mod_lns.lib.solvers.clingo_dl_solver import ClingoDLSolver
+from mod_lns.lib.strategies.hc_weighted_sum_rnd import HCWeightedSumRnd
+from mod_lns.lib.utils import (
     calculate_variability,
     check_smaller_lexicographic,
     fix_symbols,
     str_to_symbols,
     symbol_to_str,
 )
-from large_neighbourhood_search.utils.logger import setup_logger
-from large_neighbourhood_search.utils.parser import get_parser
+from mod_lns.utils.logger import setup_logger
+from mod_lns.utils.parser import get_parser
 
 
 class TestUtils(TestCase):
