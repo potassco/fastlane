@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Sequence, Union
 
 import clingo
 
-from large_neighbourhood_search.lib.utils import str_to_symbols
+from mod_lns.lib.utils import str_to_symbols
 
 from .interfaces.solver import SolverInterface
 from .interfaces.strategy import StrategyInterface
@@ -66,12 +66,12 @@ class LNS:
         self.param_values: Dict[str, Any] = {
             "files": files,
             "seed": None,
-            "relax_rate": 0.2,
+            "relax_rate": 0.1,
             "max_steps": "2000",
-            "clingo_args": {"rand-freq": 0.8},
+            "clingo_args": {"rand-freq": 0.1},
             "solve_time_limit": 20,
             "overall_time_limit": 600,
-            "stuck_after_no_improv": "1000",
+            "stuck_after_no_improv": None,
             "start_sol": None,
             "vari_accept": 0,
             "pre_files": [],
@@ -81,19 +81,27 @@ class LNS:
         self.param_values = {**self.param_values, **params}
         self.avail_time = self.param_values["overall_time_limit"]
 
-        if not isinstance(self.param_values["max_steps"], int):
+        if isinstance(self.param_values["max_steps"], str):
             if self.param_values["max_steps"].isdigit():
                 self.param_values["max_steps"] = int(self.param_values["max_steps"])
             else:
-                self.param_values["max_steps"] = "-"
+                self.param_values["max_steps"] = None
+        elif isinstance(self.param_values["max_steps"], int):
+            pass
+        else:
+            self.param_values["max_steps"] = None
 
-        if not isinstance(self.param_values["stuck_after_no_improv"], int):
+        if isinstance(self.param_values["stuck_after_no_improv"], str):
             if self.param_values["stuck_after_no_improv"].isdigit():
                 self.param_values["stuck_after_no_improv"] = int(
                     self.param_values["stuck_after_no_improv"]
                 )
             else:
-                self.param_values["stuck_after_no_improv"] = "-"
+                self.param_values["stuck_after_no_improv"] = None
+        elif isinstance(self.param_values["stuck_after_no_improv"], int):
+            pass
+        else:
+            self.param_values["stuck_after_no_improv"] = None
 
     def set_seed(self, seed: int) -> None:
         """
@@ -125,18 +133,27 @@ class LNS:
         """
         self.param_values = {**self.param_values, **params}
         self.set_seed(self.param_values["seed"])
-        if not isinstance(self.param_values["max_steps"], int):
+        if isinstance(self.param_values["max_steps"], str):
             if self.param_values["max_steps"].isdigit():
                 self.param_values["max_steps"] = int(self.param_values["max_steps"])
             else:
-                self.param_values["max_steps"] = "-"
-        if not isinstance(self.param_values["stuck_after_no_improv"], int):
+                self.param_values["max_steps"] = None
+        elif isinstance(self.param_values["max_steps"], int):
+            pass
+        else:
+            self.param_values["max_steps"] = None
+
+        if isinstance(self.param_values["stuck_after_no_improv"], str):
             if self.param_values["stuck_after_no_improv"].isdigit():
                 self.param_values["stuck_after_no_improv"] = int(
                     self.param_values["stuck_after_no_improv"]
                 )
             else:
-                self.param_values["stuck_after_no_improv"] = "-"
+                self.param_values["stuck_after_no_improv"] = None
+        elif isinstance(self.param_values["stuck_after_no_improv"], int):
+            pass
+        else:
+            self.param_values["stuck_after_no_improv"] = None
 
     # pylint: disable=unidiomatic-typecheck
     def get_cost_str(self, model: Dict[str, Any]) -> str:

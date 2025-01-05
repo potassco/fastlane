@@ -1,5 +1,5 @@
 """
-Strategy implementing LNS using hard constraints with weighted sum as optimization criteria and random relaxation.
+Strategy implementing classic LNS with weighted sum as optimization criteria and random relaxation.
 """
 
 from __future__ import annotations
@@ -8,20 +8,20 @@ import time
 from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple, Union
 
 import clingo
-from clingo.symbol import Number, SymbolType
+from clingo.symbol import SymbolType
 
-from large_neighbourhood_search.interfaces.strategy import StrategyInterface
-from large_neighbourhood_search.lib.relaxation import relax_random
-from large_neighbourhood_search.lib.utils import calculate_variability, fix_symbols
+from mod_lns.interfaces.strategy import StrategyInterface
+from mod_lns.lib.relaxation import relax_random
+from mod_lns.lib.utils import calculate_variability, fix_symbols
 
 if TYPE_CHECKING:
-    from large_neighbourhood_search import LNS  # nocoverage
+    from mod_lns import LNS  # nocoverage
 
 
 # pylint: disable=duplicate-code
-class HCWeightedSumRnd(StrategyInterface):
+class ClassicWeightedSumRnd(StrategyInterface):
     """
-    LNS using hard constraints with weighted sum as optimization criteria and random relaxation.
+    Classic LNS with weighted sum as optimization criteria and random relaxation.
     """
 
     def calc_cost(
@@ -48,8 +48,6 @@ class HCWeightedSumRnd(StrategyInterface):
     ) -> bool:
         """
         Find initial solution.
-        Ground found optimization value as hard constraint.
-        Use weighted sum as optimization criteria.
 
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
@@ -67,21 +65,10 @@ class HCWeightedSumRnd(StrategyInterface):
 
         # get first solution
         if lns_object.solver.solve_fixed(lns_object, fixed_sym).satisfiable:
-            cost = lns_object.models["new_model"]["cost"]
             print(
                 f"{time.time() - lns_object.start_time:.3f}s: Initial solution found with cost: "
                 f'{lns_object.get_cost_str(lns_object.models["new_model"])}'
             )
-
-            # add constraint to force better solution with each iteration
-            # encoding has to contain _lns_penalty(N,I,W) predicates
-            # where N: name, I: identifier, W: weight
-            if isinstance(lns_object.solver.ctl, clingo.control.Control):
-                lns_object.solver.ctl.add(
-                    "cost", ["c"], ":- #sum{W,I: _lns_penalty(_,I,W)} >= c."
-                )
-                lns_object.solver.ctl.ground([("cost", [Number(cost)])])
-
             lns_object.models["current_model"] = lns_object.models["new_model"].copy()
             lns_object.models["best_model"] = lns_object.models["new_model"].copy()
             return True
@@ -168,22 +155,24 @@ class HCWeightedSumRnd(StrategyInterface):
         )
         return vari >= lns_object.param_values["vari_accept"]
 
-    # pylint: disable=unused-argument
     def check_better(
         self,
         lns_object: LNS,
     ) -> bool:
         """
         Check whether new model is better.
-        Enforced by constraint.
 
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         :return: Whether new model is better or not.
         :rtype: bool
         """
-        return True
+        return (
+            lns_object.models["new_model"]["cost"]
+            < lns_object.models["best_model"]["cost"]
+        )
 
+    # pylint: disable=unused-argument
     def update_grounding(self, lns_object: LNS) -> None:
         """
         Update grounding after new best solution.
@@ -191,10 +180,6 @@ class HCWeightedSumRnd(StrategyInterface):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         """
-        if isinstance(lns_object.solver.ctl, clingo.control.Control):
-            lns_object.solver.ctl.ground(
-                [("cost", [Number(lns_object.models["best_model"]["cost"])])]
-            )
 
     def stuck_handling(self, lns_object: LNS) -> None:
         """

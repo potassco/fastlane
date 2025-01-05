@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple, Union
 import clingo
 
 if TYPE_CHECKING:
-    from large_neighbourhood_search import LNS  # nocoverage
+    from mod_lns import LNS  # nocoverage
 
 
 class StrategyInterface(metaclass=abc.ABCMeta):

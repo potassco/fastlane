@@ -11,13 +11,11 @@ from typing import TYPE_CHECKING, Any, Dict, Sequence
 import clingo
 from clingo.symbol import SymbolType
 
-from large_neighbourhood_search.lib.strategies.classic_weighted_sum_rnd import (
-    ClassicWeightedSumRnd,
-)
-from large_neighbourhood_search.lib.utils import check_smaller_lexicographic
+from mod_lns.lib.strategies.classic_weighted_sum_rnd import ClassicWeightedSumRnd
+from mod_lns.lib.utils import check_smaller_lexicographic
 
 if TYPE_CHECKING:
-    from large_neighbourhood_search import LNS  # nocoverage
+    from mod_lns import LNS  # nocoverage
 
 
 class ClassicLexiRnd(ClassicWeightedSumRnd):

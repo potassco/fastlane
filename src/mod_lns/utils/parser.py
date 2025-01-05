@@ -8,28 +8,16 @@ from argparse import ArgumentParser
 from textwrap import dedent
 from typing import Any, cast
 
-from large_neighbourhood_search.lib.solvers.clingo_dl_heu_solver import (
-    ClingoDLHeuSolver,
-)
-from large_neighbourhood_search.lib.solvers.clingo_dl_solver import ClingoDLSolver
-from large_neighbourhood_search.lib.solvers.clingo_heu_solver import ClingoHeuSolver
-from large_neighbourhood_search.lib.solvers.clingo_solver import ClingoSolver
-from large_neighbourhood_search.lib.strategies.classic_lexicographic_declarative import (
-    ClassicLexiDecl,
-)
-from large_neighbourhood_search.lib.strategies.classic_lexicographic_rnd import (
-    ClassicLexiRnd,
-)
-from large_neighbourhood_search.lib.strategies.classic_weighted_sum_rnd import (
-    ClassicWeightedSumRnd,
-)
-from large_neighbourhood_search.lib.strategies.hc_lexicographic_declarative import (
-    HCLexiDecl,
-)
-from large_neighbourhood_search.lib.strategies.hc_lexicographic_rnd import HCLexiRnd
-from large_neighbourhood_search.lib.strategies.hc_weighted_sum_rnd import (
-    HCWeightedSumRnd,
-)
+from mod_lns.lib.solvers.clingo_dl_heu_solver import ClingoDLHeuSolver
+from mod_lns.lib.solvers.clingo_dl_solver import ClingoDLSolver
+from mod_lns.lib.solvers.clingo_heu_solver import ClingoHeuSolver
+from mod_lns.lib.solvers.clingo_solver import ClingoSolver
+from mod_lns.lib.strategies.classic_lexicographic_declarative import ClassicLexiDecl
+from mod_lns.lib.strategies.classic_lexicographic_rnd import ClassicLexiRnd
+from mod_lns.lib.strategies.classic_weighted_sum_rnd import ClassicWeightedSumRnd
+from mod_lns.lib.strategies.hc_lexicographic_declarative import HCLexiDecl
+from mod_lns.lib.strategies.hc_lexicographic_rnd import HCLexiRnd
+from mod_lns.lib.strategies.hc_weighted_sum_rnd import HCWeightedSumRnd
 
 __all__ = ["get_parser"]
 
@@ -38,7 +26,7 @@ if sys.version_info[1] < 8:
 else:
     from importlib import metadata  # nocoverage
 
-VERSION = metadata.version("large_neighbourhood_search")
+VERSION = metadata.version("mod_lns")
 
 
 def get_parser() -> ArgumentParser:
@@ -46,10 +34,10 @@ def get_parser() -> ArgumentParser:
     Return the parser for command line options.
     """
     parser = ArgumentParser(
-        prog="large_neighbourhood_search",
+        prog="mod_lns",
         description=dedent(
             """\
-            ASP using Large-Neighbourhood Search (LNS).\n
+            Modular Large Neighbourhood Search (LNS) Framework using ASP.\n
             Check the documentation for a guide on how to use this framework
             and all possible options for configuration.
             """

@@ -7,10 +7,8 @@ from typing import Any, Dict, List, Sequence, Tuple, Union
 
 import clingo
 
-from large_neighbourhood_search.lib.relaxation import relax_declarative
-from large_neighbourhood_search.lib.strategies.classic_lexicographic_rnd import (
-    ClassicLexiRnd,
-)
+from mod_lns.lib.relaxation import relax_declarative
+from mod_lns.lib.strategies.classic_lexicographic_rnd import ClassicLexiRnd
 
 
 class ClassicLexiDecl(ClassicLexiRnd):

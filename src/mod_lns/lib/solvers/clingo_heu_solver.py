@@ -1,5 +1,5 @@
 """
-Heuristic clingo-dl solver for LNS.
+Heuristic clingo solver for LNS.
 """
 
 from __future__ import annotations
@@ -8,20 +8,18 @@ import time
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import clingo
-from clingo import ast
 from clingo.symbol import Function, Number
-from clingodl import ClingoDLTheory
 
-from large_neighbourhood_search.interfaces.solver import SolverInterface
-from large_neighbourhood_search.lib.utils import symbol_to_str
+from mod_lns.interfaces.solver import SolverInterface
+from mod_lns.lib.utils import symbol_to_str
 
 if TYPE_CHECKING:
-    from large_neighbourhood_search import LNS  # nocoverage
+    from mod_lns import LNS  # nocoverage
 
 
-class ClingoDLHeuSolver(SolverInterface):
+class ClingoHeuSolver(SolverInterface):
     """
-    Heursitic clingo-dl solver.
+    Heuristic clingo solver.
     """
 
     def setup(
@@ -51,19 +49,14 @@ class ClingoDLHeuSolver(SolverInterface):
             lns_object.set_seed(lns_object.param_values["seed"])
         argsl = [f"--{i[0]}={i[1]}" for i in args.items()] + ["--heuristic=Domain"]
 
-        thy = ClingoDLTheory()
         ctl = clingo.Control(argsl)
-        thy.register(ctl)
-        with ast.ProgramBuilder(ctl) as builder:
-            ast.parse_files(
-                files,
-                lambda ast: thy.rewrite_ast(ast, builder.add),
-            )
+        for path in files:
+            ctl.load(path)
 
         # used for heuristics, see solve_fixed()
         ctl.add("_lns_h_step", ["s"], "#external _lns_h_step(s).")
 
-        self.ctl, self.thy = ctl, thy
+        self.ctl, self.thy = ctl, None
 
     def solve_fixed(
         self,
@@ -103,6 +96,7 @@ class ClingoDLHeuSolver(SolverInterface):
                     for atom in fixed_atoms
                 ]
             )
+
             self.ctl.add("heuristics", [], rules)
             self.ctl.ground([("heuristics", [])])
 
@@ -111,14 +105,13 @@ class ClingoDLHeuSolver(SolverInterface):
         start_time = int(time.time())
         solve_time = self.get_avail_solve_time(lns_object)
         if isinstance(self.ctl, clingo.control.Control):
-            self.thy.prepare(self.ctl)
             with self.ctl.solve(on_model=lns_object.on_model, async_=True) as handle:
                 done = handle.wait(solve_time)
                 if not done:
                     handle.cancel()
                     print(
                         f"{time.time() - lns_object.start_time:.3f}s: "
-                        f'Search interrupted after  ({lns_object.param_values["solve_time_limit"]}s).'
+                        f'Search interrupted after ({lns_object.param_values["solve_time_limit"]}s).'
                     )
                 res = handle.get()
         lns_object.avail_time -= int(time.time()) - start_time
@@ -130,7 +123,7 @@ class ClingoDLHeuSolver(SolverInterface):
 
     def pre_solve(self, lns_object: LNS) -> clingo.solving.SolveResult:
         """
-        Pre-solve using clingo-dl.
+        Pre-solve using clingo.
 
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
@@ -139,7 +132,6 @@ class ClingoDLHeuSolver(SolverInterface):
         """
         res = clingo.solving.SolveResult(2)
         if isinstance(self.ctl, clingo.control.Control):
-            self.thy.prepare(self.ctl)
             with self.ctl.solve(on_model=lns_object.on_model, async_=True) as handle:
                 done = handle.wait(lns_object.param_values["pre_tl"])
                 if not done:
