@@ -1,6 +1,6 @@
 .. _ref_strat:
 
-.. currentmodule:: large_neighbourhood_search.interfaces.strategy
+.. currentmodule:: mod_lns.interfaces.strategy
 
 Implementations of :class:`StrategyInterface`
 ==============================================
@@ -24,59 +24,59 @@ of the following approaches:
 ClassicWeightedSumRnd
 ----------------------
 
-.. currentmodule:: large_neighbourhood_search.interfaces.strategy
+.. currentmodule:: mod_lns.interfaces.strategy
 
 This class is a direct implementation of :class:`StrategyInterface`.
 
-.. automodule:: large_neighbourhood_search.lib.strategies.classic_weighted_sum_rnd
+.. automodule:: mod_lns.lib.strategies.classic_weighted_sum_rnd
     :members:
 
 ClassicLexiRnd
 ---------------
 
-.. currentmodule:: large_neighbourhood_search.lib.strategies.classic_weighted_sum_rnd
+.. currentmodule:: mod_lns.lib.strategies.classic_weighted_sum_rnd
 
 This class inherits from :class:`ClassicWeightedSumRnd` and overwrites some methods as described below.
 
-.. automodule:: large_neighbourhood_search.lib.strategies.classic_lexicographic_rnd
+.. automodule:: mod_lns.lib.strategies.classic_lexicographic_rnd
     :members:
 
 ClassicLexiDecl
 ---------------
 
-.. currentmodule:: large_neighbourhood_search.lib.strategies.classic_lexicographic_rnd
+.. currentmodule:: mod_lns.lib.strategies.classic_lexicographic_rnd
 
 This class inherits from :class:`ClassicLexiRnd` and overwrites some methods as described below.
 
-.. automodule:: large_neighbourhood_search.lib.strategies.classic_lexicographic_declarative
+.. automodule:: mod_lns.lib.strategies.classic_lexicographic_declarative
     :members:
 
 HCWeightedSumRnd
 ----------------------
 
-.. currentmodule:: large_neighbourhood_search.interfaces.strategy
+.. currentmodule:: mod_lns.interfaces.strategy
 
 This class is a direct implementation of :class:`StrategyInterface`.
 
-.. automodule:: large_neighbourhood_search.lib.strategies.hc_weighted_sum_rnd
+.. automodule:: mod_lns.lib.strategies.hc_weighted_sum_rnd
     :members:
 
 HCLexiRnd
 ---------------
 
-.. currentmodule:: large_neighbourhood_search.lib.strategies.hc_weighted_sum_rnd
+.. currentmodule:: mod_lns.lib.strategies.hc_weighted_sum_rnd
 
 This class inherits from :class:`HCWeightedSumRnd` and overwrites some methods as described below.
 
-.. automodule:: large_neighbourhood_search.lib.strategies.hc_lexicographic_rnd
+.. automodule:: mod_lns.lib.strategies.hc_lexicographic_rnd
     :members:
 
 HCLexiDecl
 ---------------
 
-.. currentmodule:: large_neighbourhood_search.lib.strategies.hc_lexicographic_rnd
+.. currentmodule:: mod_lns.lib.strategies.hc_lexicographic_rnd
 
 This class inherits from :class:`HCLexiRnd` and overwrites some methods as described below.
 
-.. automodule:: large_neighbourhood_search.lib.strategies.hc_lexicographic_declarative
+.. automodule:: mod_lns.lib.strategies.hc_lexicographic_declarative
     :members:

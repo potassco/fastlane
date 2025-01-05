@@ -9,12 +9,12 @@ Example implementations of these interfaces are provided :ref:`here<ref_solv>` a
 SolverInterface
 ----------------
 
-.. automodule:: large_neighbourhood_search.interfaces.solver
+.. automodule:: mod_lns.interfaces.solver
     :members:
 
 
 StrategyInterface
 ------------------
 
-.. automodule:: large_neighbourhood_search.interfaces.strategy
+.. automodule:: mod_lns.interfaces.strategy
     :members:
