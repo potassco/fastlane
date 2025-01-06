@@ -107,7 +107,7 @@ def get_parser() -> ArgumentParser:
 
     parser.add_argument(
         "--strategy",
-        default="ClassicWeightedSumRnd",
+        default="HCWeightedSumRnd",
         choices=[val for _, val in strategies],
         metavar=f"{{{','.join(key for key, _ in strategies)}}}",
         help="set LNS strategy [%(default)s]",
