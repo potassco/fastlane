@@ -31,6 +31,16 @@ This class is a direct implementation of :class:`StrategyInterface`.
 .. automodule:: mod_lns.lib.strategies.classic_weighted_sum_rnd
     :members:
 
+ClassicWeightedSumDecl
+----------------------
+
+.. currentmodule:: mod_lns.lib.strategies.classic_weighted_sum_rnd
+
+This class inherits from :class:`ClassicWeightedSumRnd` and overwrites some methods as described below.
+
+.. automodule:: mod_lns.lib.strategies.classic_weighted_sum_decl
+    :members:
+
 ClassicLexiRnd
 ---------------
 
@@ -59,6 +69,16 @@ HCWeightedSumRnd
 This class is a direct implementation of :class:`StrategyInterface`.
 
 .. automodule:: mod_lns.lib.strategies.hc_weighted_sum_rnd
+    :members:
+
+HCWeightedSumDecl
+---------------
+
+.. currentmodule:: mod_lns.lib.strategies.hc_weighted_sum_rnd
+
+This class inherits from :class:`HCWeightedSumRnd` and overwrites some methods as described below.
+
+.. automodule:: mod_lns.lib.strategies.hc_lexicographic_decl
     :members:
 
 HCLexiRnd

@@ -13,8 +13,8 @@ For all options supported during the default module execution use:
 
 .. currentmodule:: mod_lns.__init__
 
-The default parameters make use of a classic LNS using weighted sums and a random relaxation of shown atoms.
-The search is limited to 2000 steps or 10 min with 20s per solve call and a relax rate of 0.2. The search is interrupted,
+The default parameters make use of a constrained LNS using weighted sums and a random relaxation of shown atoms.
+The search is limited to 2000 steps or 10 min with 20s per solve call and a relax rate of 0.1. The search is interrupted,
 if no better solutions is found after 1000 consecutive steps.
 
 .. note::
@@ -44,7 +44,7 @@ step by step introduction to the framework look :ref:`here<ref_guide>`.
     lns = LNS(
         ["./examples/golf.lp"],     # ASP encoding
         ClingoDLSolver(),           # Solver
-        ClassicLexiRnd(),           # Strategy
+        HCLexiRnd(),                # Strategy
         {"seed": 123},              # Additional parameters
     )
 

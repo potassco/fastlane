@@ -14,9 +14,11 @@ from mod_lns.lib.solvers.clingo_heu_solver import ClingoHeuSolver
 from mod_lns.lib.solvers.clingo_solver import ClingoSolver
 from mod_lns.lib.strategies.classic_lexicographic_declarative import ClassicLexiDecl
 from mod_lns.lib.strategies.classic_lexicographic_rnd import ClassicLexiRnd
+from mod_lns.lib.strategies.classic_weighted_sum_decl import ClassicWeightedSumDecl
 from mod_lns.lib.strategies.classic_weighted_sum_rnd import ClassicWeightedSumRnd
 from mod_lns.lib.strategies.hc_lexicographic_declarative import HCLexiDecl
 from mod_lns.lib.strategies.hc_lexicographic_rnd import HCLexiRnd
+from mod_lns.lib.strategies.hc_weighted_sum_decl import HCWeightedSumDecl
 from mod_lns.lib.strategies.hc_weighted_sum_rnd import HCWeightedSumRnd
 
 __all__ = ["get_parser"]
@@ -55,9 +57,11 @@ def get_parser() -> ArgumentParser:
     # dict of all supported strategies
     strategies = [
         ("ClassicWeightedSumRnd", ClassicWeightedSumRnd()),
+        ("ClassicWeightedSumDecl", ClassicWeightedSumDecl()),
         ("ClassicLexiRnd", ClassicLexiRnd()),
         ("ClassicLexiDecl", ClassicLexiDecl()),
         ("HCWeightedSumRnd", HCWeightedSumRnd()),
+        ("HCWeightedSumDecl", HCWeightedSumDecl()),
         ("HCLexiRnd", HCLexiRnd()),
         ("HCLexiDecl", HCLexiDecl()),
     ]
@@ -103,7 +107,7 @@ def get_parser() -> ArgumentParser:
 
     parser.add_argument(
         "--strategy",
-        default="ClassicWeightedSumRnd",
+        default="HCWeightedSumRnd",
         choices=[val for _, val in strategies],
         metavar=f"{{{','.join(key for key, _ in strategies)}}}",
         help="set LNS strategy [%(default)s]",

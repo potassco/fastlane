@@ -12,6 +12,7 @@ from mod_lns.interfaces.strategy import StrategyInterface
 from mod_lns.lib.solvers.clingo_solver import ClingoSolver
 from mod_lns.lib.strategies.hc_lexicographic_declarative import HCLexiDecl
 from mod_lns.lib.strategies.hc_lexicographic_rnd import HCLexiRnd
+from mod_lns.lib.strategies.hc_weighted_sum_decl import HCWeightedSumDecl
 from mod_lns.lib.strategies.hc_weighted_sum_rnd import HCWeightedSumRnd
 
 from .test_classic_strategies import TestStrategyClWsRnd
@@ -46,6 +47,20 @@ class TestStrategyHcWsRnd(TestStrategyClWsRnd):
         self.lns.models["best_model"]["cost"] = 2
         self.solver.setup(self.lns)
         self.assertIsNone(self.strategy.update_grounding(self.lns))
+
+
+class TestStrategyHcWsDecl(TestStrategyHcWsRnd):
+    """
+    Test cases for HCWeightedSumDecl class.
+
+    All test cases inherited from TestStrategyHclWsRnd.
+    Relax_declarative tested in test_relaxation.py
+    """
+
+    def setUp(self) -> None:
+        self.solver = ClingoSolver()
+        self.strategy = HCWeightedSumDecl()
+        self.lns = LNS(["./tests/ref/golf.lp"], self.solver, self.strategy)
 
 
 class TestStrategyHcLexiRnd(TestStrategyHcWsRnd):

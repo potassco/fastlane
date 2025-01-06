@@ -13,6 +13,7 @@ from mod_lns.interfaces.strategy import StrategyInterface
 from mod_lns.lib.solvers.clingo_solver import ClingoSolver
 from mod_lns.lib.strategies.classic_lexicographic_declarative import ClassicLexiDecl
 from mod_lns.lib.strategies.classic_lexicographic_rnd import ClassicLexiRnd
+from mod_lns.lib.strategies.classic_weighted_sum_decl import ClassicWeightedSumDecl
 from mod_lns.lib.strategies.classic_weighted_sum_rnd import ClassicWeightedSumRnd
 
 
@@ -243,6 +244,20 @@ class TestStrategyClWsRnd(TestCase):
         self.lns.param_values["stuck_after_no_improv"] = None
         self.strategy.stuck_handling(self.lns)
         self.assertFalse(self.lns.stopped)
+
+
+class TestStrategyClWsDecl(TestStrategyClWsRnd):
+    """
+    Test cases for ClassicWeightedSumDecl class.
+
+    All test cases inherited from TestStrategyClWsRnd.
+    Relax_declarative tested in test_relaxation.py
+    """
+
+    def setUp(self) -> None:
+        self.solver = ClingoSolver()
+        self.strategy = ClassicWeightedSumDecl()
+        self.lns = LNS(["./tests/ref/golf.lp"], self.solver, self.strategy)
 
 
 class TestStrategyClLexiRnd(TestStrategyClWsRnd):
