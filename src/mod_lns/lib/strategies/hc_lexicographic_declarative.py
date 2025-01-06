@@ -8,8 +8,8 @@ from typing import Any, Dict, List, Sequence, Tuple, Union
 
 import clingo
 
-from large_neighbourhood_search.lib.relaxation import relax_declarative
-from large_neighbourhood_search.lib.strategies.hc_lexicographic_rnd import HCLexiRnd
+from mod_lns.lib.relaxation import relax_declarative
+from mod_lns.lib.strategies.hc_lexicographic_rnd import HCLexiRnd
 
 
 class HCLexiDecl(HCLexiRnd):

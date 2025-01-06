@@ -56,13 +56,13 @@ during relaxation, in this case weeks "W". The second line then connects the ter
 Basics
 -----------------
 
-.. currentmodule:: large_neighbourhood_search.lib.solvers.clingo_solver
+.. currentmodule:: mod_lns.lib.solvers.clingo_solver
 
 As described in the :ref:`usage<ref_usage>` section, to work this framework requires a solver and strategy object.
 Our :ref:`library<ref_lib>` provides several different solvers and strategies.
 For our first search, lets use the default clingo solver with assumptions :class:`ClingoSolver`.
 
-.. currentmodule:: large_neighbourhood_search.lib.strategies.classic_weighted_sum_rnd
+.. currentmodule:: mod_lns.lib.strategies.classic_weighted_sum_rnd
 
 As a strategy we use the basic LNS implementation in :class:`ClassicWeightedSumRnd`. This strategy uses weighted sum optimization
 combined with a fully random relaxation.
@@ -71,9 +71,9 @@ Now we can run our first search by using the lines below:
 
 .. code-block:: python
 
-    from large_neighbourhood_search import LNS
-    from large_neighbourhood_search.lib.solvers.clingo_solver import ClingoSolver
-    from large_neighbourhood_search.lib.strategies.classic_weighted_sum_rnd import (
+    from mod_lns import LNS
+    from mod_lns.lib.solvers.clingo_solver import ClingoSolver
+    from mod_lns.lib.strategies.classic_weighted_sum_rnd import (
     ClassicWeightedSumRnd
     )
 
@@ -132,7 +132,7 @@ or "better". This usage of constraints leads to signiﬁcantly fewer steps but i
 
 .. code-block:: python
     
-    from large_neighbourhood_search.lib.strategies.hc_weighted_sum_rnd import HCWeightedSumRnd
+    from mod_lns.lib.strategies.hc_weighted_sum_rnd import HCWeightedSumRnd
 
     def config2():
         solver = ClingoSolver()
@@ -159,7 +159,7 @@ recommendations to the solver. Lets try it out with the :class:`ClassicWeightedS
 
 .. code-block:: python
 
-    from large_neighbourhood_search.lib.solvers.clingo_heu_solver import ClingoHeuSolver
+    from mod_lns.lib.solvers.clingo_heu_solver import ClingoHeuSolver
 
     def config3():
         solver = ClingoHeuSolver()
@@ -205,7 +205,7 @@ new strategy.
 
 .. code-block:: python
 
-    from large_neighbourhood_search.lib.relaxation import relax_declarative
+    from mod_lns.lib.relaxation import relax_declarative
 
     class ClassicWeightedSumDecl(ClassicWeightedSumRnd):
         def relax(self, model, relax_parameters):
@@ -230,8 +230,8 @@ Lets adjust our code so we can observe this.
 
 .. code-block:: python
 
-    from large_neighbourhood_search.lib.relaxation import relax_declarative
-    from large_neighbourhood_search.lib.utils import symbol_to_str
+    from mod_lns.lib.relaxation import relax_declarative
+    from mod_lns.lib.utils import symbol_to_str
 
     class ClassicWeightedSumDecl(ClassicWeightedSumRnd):
         def relax(self, model, relax_parameters):

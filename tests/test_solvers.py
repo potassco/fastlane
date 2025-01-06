@@ -7,18 +7,14 @@ from unittest import TestCase
 import clingo
 import clingodl
 
-from large_neighbourhood_search import LNS
-from large_neighbourhood_search.interfaces.solver import SolverInterface
-from large_neighbourhood_search.interfaces.strategy import StrategyInterface
-from large_neighbourhood_search.lib.solvers.clingo_dl_heu_solver import (
-    ClingoDLHeuSolver,
-)
-from large_neighbourhood_search.lib.solvers.clingo_dl_solver import ClingoDLSolver
-from large_neighbourhood_search.lib.solvers.clingo_heu_solver import ClingoHeuSolver
-from large_neighbourhood_search.lib.solvers.clingo_solver import ClingoSolver
-from large_neighbourhood_search.lib.strategies.classic_weighted_sum_rnd import (
-    ClassicWeightedSumRnd,
-)
+from mod_lns import LNS
+from mod_lns.interfaces.solver import SolverInterface
+from mod_lns.interfaces.strategy import StrategyInterface
+from mod_lns.lib.solvers.clingo_dl_heu_solver import ClingoDLHeuSolver
+from mod_lns.lib.solvers.clingo_dl_solver import ClingoDLSolver
+from mod_lns.lib.solvers.clingo_heu_solver import ClingoHeuSolver
+from mod_lns.lib.solvers.clingo_solver import ClingoSolver
+from mod_lns.lib.strategies.classic_weighted_sum_rnd import ClassicWeightedSumRnd
 
 
 class TestSolverClingo(TestCase):
@@ -45,14 +41,14 @@ class TestSolverClingo(TestCase):
         Test clingo setup.
         """
         self.solver.setup(self.lns)
-        self.assertDictEqual(self.lns.param_values["clingo_args"], {"rand-freq": 0.8})
+        self.assertDictEqual(self.lns.param_values["clingo_args"], {"rand-freq": 0.1})
         self.assertIsInstance(self.solver.ctl, clingo.control.Control)
         self.assertIsNone(self.solver.thy)
 
         self.lns.set_seed(123)
         self.solver.setup(self.lns)
         self.assertDictEqual(
-            self.lns.param_values["clingo_args"], {"rand-freq": 0.8, "seed": 123}
+            self.lns.param_values["clingo_args"], {"rand-freq": 0.1, "seed": 123}
         )
         self.assertIsInstance(self.solver.ctl, clingo.control.Control)
         self.assertIsNone(self.solver.thy)
@@ -139,14 +135,14 @@ class TestSolverClingoDL(TestSolverClingo):
         Test clingoDL setup.
         """
         self.solver.setup(self.lns)
-        self.assertDictEqual(self.lns.param_values["clingo_args"], {"rand-freq": 0.8})
+        self.assertDictEqual(self.lns.param_values["clingo_args"], {"rand-freq": 0.1})
         self.assertIsInstance(self.solver.ctl, clingo.control.Control)
         self.assertIsInstance(self.solver.thy, clingodl.ClingoDLTheory)
 
         self.lns.set_seed(123)
         self.solver.setup(self.lns)
         self.assertDictEqual(
-            self.lns.param_values["clingo_args"], {"rand-freq": 0.8, "seed": 123}
+            self.lns.param_values["clingo_args"], {"rand-freq": 0.1, "seed": 123}
         )
         self.assertIsInstance(self.solver.ctl, clingo.control.Control)
         self.assertIsInstance(self.solver.thy, clingodl.ClingoDLTheory)

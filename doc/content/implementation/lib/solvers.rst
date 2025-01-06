@@ -1,6 +1,6 @@
 .. _ref_solv:
 
-.. currentmodule:: large_neighbourhood_search.interfaces.solver
+.. currentmodule:: mod_lns.interfaces.solver
 
 Implementations of :class:`SolverInterface`
 ============================================
@@ -8,12 +8,12 @@ Implementations of :class:`SolverInterface`
 Listed below are multiple solver implementations. A clingo and clingoDL solver using assumptions to fix atoms
 and a clingo and clingoDl solver using heuristics instead.
 
-.. currentmodule:: large_neighbourhood_search.__init__
+.. currentmodule:: mod_lns.__init__
 
 .. note::
     Changes to the solver might also require changes to the :meth:`on_model` method of the :class:`LNS` class.
 
-.. currentmodule:: large_neighbourhood_search.interfaces.solver
+.. currentmodule:: mod_lns.interfaces.solver
 
 ClingoSolver
 --------------
@@ -21,10 +21,10 @@ ClingoSolver
 Implementation of :class:`SolverInterface` using clingo.
 Atoms are fixed using assumptions.
 
-.. automodule:: large_neighbourhood_search.lib.solvers.clingo_solver
+.. automodule:: mod_lns.lib.solvers.clingo_solver
     :members:
 
-.. currentmodule:: large_neighbourhood_search.interfaces.solver
+.. currentmodule:: mod_lns.interfaces.solver
 
 ClingoHeuSolver
 ----------------
@@ -32,10 +32,10 @@ ClingoHeuSolver
 Implementation of :class:`SolverInterface` using clingo.
 Atoms are fixed using heuristics.
 
-.. automodule:: large_neighbourhood_search.lib.solvers.clingo_heu_solver
+.. automodule:: mod_lns.lib.solvers.clingo_heu_solver
     :members:
 
-.. currentmodule:: large_neighbourhood_search.interfaces.solver
+.. currentmodule:: mod_lns.interfaces.solver
 
 ClingoDLSolver
 ----------------
@@ -43,10 +43,10 @@ ClingoDLSolver
 Implementation of :class:`SolverInterface` using clingo-dl.
 Atoms are fixed using assumptions.
 
-.. automodule:: large_neighbourhood_search.lib.solvers.clingo_dl_solver
+.. automodule:: mod_lns.lib.solvers.clingo_dl_solver
     :members:
 
-.. currentmodule:: large_neighbourhood_search.interfaces.solver
+.. currentmodule:: mod_lns.interfaces.solver
 
 ClingoDLHeuSolver
 ------------------
@@ -54,5 +54,5 @@ ClingoDLHeuSolver
 Implementation of :class:`SolverInterface` using clingo-dl.
 Atoms are fixed using heuristics.
 
-.. automodule:: large_neighbourhood_search.lib.solvers.clingo_dl_heu_solver
+.. automodule:: mod_lns.lib.solvers.clingo_dl_heu_solver
     :members:

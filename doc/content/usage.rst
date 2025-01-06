@@ -9,9 +9,9 @@ For all options supported during the default module execution use:
 
 .. code-block:: console
 
-    $ large_neighbourhood_search -h
+    $ mod_lns -h
 
-.. currentmodule:: large_neighbourhood_search.__init__
+.. currentmodule:: mod_lns.__init__
 
 The default parameters make use of a classic LNS using weighted sums and a random relaxation of shown atoms.
 The search is limited to 2000 steps or 10 min with 20s per solve call and a relax rate of 0.2. The search is interrupted,
@@ -37,9 +37,9 @@ step by step introduction to the framework look :ref:`here<ref_guide>`.
 
 .. code-block:: python
 
-    from large_neighbourhood_search import LNS
-    from large_neighbourhood_search.lib.solvers.clingo_dl_solver import ClingoDLSolver
-    from large_neighbourhood_search.lib.strategies.classic_lexicographic_rnd import ClassicLexiRnd
+    from mod_lns import LNS
+    from mod_lns.lib.solvers.clingo_dl_solver import ClingoDLSolver
+    from mod_lns.lib.strategies.classic_lexicographic_rnd import ClassicLexiRnd
 
     lns = LNS(
         ["./examples/golf.lp"],     # ASP encoding
@@ -53,7 +53,7 @@ step by step introduction to the framework look :ref:`here<ref_guide>`.
 Encoding
 ----------
 
-.. currentmodule:: large_neighbourhood_search
+.. currentmodule:: mod_lns
 
 For a correct program execution the ASP encoding has to contain some form of derivation for the :code:`_lns_penalty(N,I,W)` predicate
 to indicate optimization criteria and :code:`_lns_priority(N,P)` facts to denote their priority. An example definition can be seen in :file:`./examples/golf.lp`.

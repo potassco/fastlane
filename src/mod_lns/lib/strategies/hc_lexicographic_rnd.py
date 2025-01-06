@@ -11,13 +11,11 @@ from typing import TYPE_CHECKING, Any, Dict, List, Sequence
 import clingo
 from clingo.symbol import Function, Number, SymbolType
 
-from large_neighbourhood_search.lib.strategies.hc_weighted_sum_rnd import (
-    HCWeightedSumRnd,
-)
-from large_neighbourhood_search.lib.utils import fix_symbols
+from mod_lns.lib.strategies.hc_weighted_sum_rnd import HCWeightedSumRnd
+from mod_lns.lib.utils import fix_symbols
 
 if TYPE_CHECKING:
-    from large_neighbourhood_search import LNS  # nocoverage
+    from mod_lns import LNS  # nocoverage
 
 
 class HCLexiRnd(HCWeightedSumRnd):

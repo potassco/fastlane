@@ -6,17 +6,13 @@ import time
 
 from clingo.symbol import Function, Number, String
 
-from large_neighbourhood_search import LNS
-from large_neighbourhood_search.interfaces.solver import SolverInterface
-from large_neighbourhood_search.interfaces.strategy import StrategyInterface
-from large_neighbourhood_search.lib.solvers.clingo_solver import ClingoSolver
-from large_neighbourhood_search.lib.strategies.hc_lexicographic_declarative import (
-    HCLexiDecl,
-)
-from large_neighbourhood_search.lib.strategies.hc_lexicographic_rnd import HCLexiRnd
-from large_neighbourhood_search.lib.strategies.hc_weighted_sum_rnd import (
-    HCWeightedSumRnd,
-)
+from mod_lns import LNS
+from mod_lns.interfaces.solver import SolverInterface
+from mod_lns.interfaces.strategy import StrategyInterface
+from mod_lns.lib.solvers.clingo_solver import ClingoSolver
+from mod_lns.lib.strategies.hc_lexicographic_declarative import HCLexiDecl
+from mod_lns.lib.strategies.hc_lexicographic_rnd import HCLexiRnd
+from mod_lns.lib.strategies.hc_weighted_sum_rnd import HCWeightedSumRnd
 
 from .test_classic_strategies import TestStrategyClWsRnd
 

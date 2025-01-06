@@ -7,7 +7,7 @@ from unittest import TestCase
 
 from clingo.symbol import Function, Number
 
-from large_neighbourhood_search.lib.relaxation import relax_declarative, relax_random
+from mod_lns.lib.relaxation import relax_declarative, relax_random
 
 
 class TestSearch(TestCase):

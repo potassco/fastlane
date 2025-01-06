@@ -4,30 +4,18 @@ Integration tests.
 
 from unittest import TestCase
 
-from large_neighbourhood_search import LNS
-from large_neighbourhood_search.interfaces.solver import SolverInterface
-from large_neighbourhood_search.lib.solvers.clingo_dl_heu_solver import (
-    ClingoDLHeuSolver,
-)
-from large_neighbourhood_search.lib.solvers.clingo_dl_solver import ClingoDLSolver
-from large_neighbourhood_search.lib.solvers.clingo_heu_solver import ClingoHeuSolver
-from large_neighbourhood_search.lib.solvers.clingo_solver import ClingoSolver
-from large_neighbourhood_search.lib.strategies.classic_lexicographic_declarative import (
-    ClassicLexiDecl,
-)
-from large_neighbourhood_search.lib.strategies.classic_lexicographic_rnd import (
-    ClassicLexiRnd,
-)
-from large_neighbourhood_search.lib.strategies.classic_weighted_sum_rnd import (
-    ClassicWeightedSumRnd,
-)
-from large_neighbourhood_search.lib.strategies.hc_lexicographic_declarative import (
-    HCLexiDecl,
-)
-from large_neighbourhood_search.lib.strategies.hc_lexicographic_rnd import HCLexiRnd
-from large_neighbourhood_search.lib.strategies.hc_weighted_sum_rnd import (
-    HCWeightedSumRnd,
-)
+from mod_lns import LNS
+from mod_lns.interfaces.solver import SolverInterface
+from mod_lns.lib.solvers.clingo_dl_heu_solver import ClingoDLHeuSolver
+from mod_lns.lib.solvers.clingo_dl_solver import ClingoDLSolver
+from mod_lns.lib.solvers.clingo_heu_solver import ClingoHeuSolver
+from mod_lns.lib.solvers.clingo_solver import ClingoSolver
+from mod_lns.lib.strategies.classic_lexicographic_declarative import ClassicLexiDecl
+from mod_lns.lib.strategies.classic_lexicographic_rnd import ClassicLexiRnd
+from mod_lns.lib.strategies.classic_weighted_sum_rnd import ClassicWeightedSumRnd
+from mod_lns.lib.strategies.hc_lexicographic_declarative import HCLexiDecl
+from mod_lns.lib.strategies.hc_lexicographic_rnd import HCLexiRnd
+from mod_lns.lib.strategies.hc_weighted_sum_rnd import HCWeightedSumRnd
 
 
 class TestIntegrationCommon(TestCase):

@@ -7,11 +7,9 @@ from unittest import TestCase
 
 from clingo.symbol import Function, Number
 
-from large_neighbourhood_search import LNS
-from large_neighbourhood_search.lib.solvers.clingo_solver import ClingoSolver
-from large_neighbourhood_search.lib.strategies.hc_weighted_sum_rnd import (
-    HCWeightedSumRnd,
-)
+from mod_lns import LNS
+from mod_lns.lib.solvers.clingo_solver import ClingoSolver
+from mod_lns.lib.strategies.hc_weighted_sum_rnd import HCWeightedSumRnd
 
 
 class TestLNS(TestCase):
@@ -26,12 +24,12 @@ class TestLNS(TestCase):
         ref_config_values = {
             "files": ["./tests/ref/golf.lp"],
             "seed": None,
-            "relax_rate": 0.2,
+            "relax_rate": 0.1,
             "max_steps": 2000,
-            "clingo_args": {"rand-freq": 0.8},
+            "clingo_args": {"rand-freq": 0.1},
             "solve_time_limit": 20,
             "overall_time_limit": 600,
-            "stuck_after_no_improv": 1000,
+            "stuck_after_no_improv": None,
             "start_sol": None,
             "vari_accept": 0,
             "pre_files": [],
@@ -67,7 +65,12 @@ class TestLNS(TestCase):
 
         lns = LNS(["./tests/ref/golf.lp"], params={"max_steps": "a"})
         self.assertDictEqual(
-            lns.param_values, {**ref_config_values, **{"max_steps": "-"}}
+            lns.param_values, {**ref_config_values, **{"max_steps": None}}
+        )
+
+        lns = LNS(["./tests/ref/golf.lp"], params={"max_steps": None})
+        self.assertDictEqual(
+            lns.param_values, {**ref_config_values, **{"max_steps": None}}
         )
 
         lns = LNS(["./tests/ref/golf.lp"], params={"stuck_after_no_improv": "20"})
@@ -77,7 +80,12 @@ class TestLNS(TestCase):
 
         lns = LNS(["./tests/ref/golf.lp"], params={"stuck_after_no_improv": "a"})
         self.assertDictEqual(
-            lns.param_values, {**ref_config_values, **{"stuck_after_no_improv": "-"}}
+            lns.param_values, {**ref_config_values, **{"stuck_after_no_improv": None}}
+        )
+
+        lns = LNS(["./tests/ref/golf.lp"], params={"stuck_after_no_improv": None})
+        self.assertDictEqual(
+            lns.param_values, {**ref_config_values, **{"stuck_after_no_improv": None}}
         )
 
     def test_set_params(self):
@@ -87,12 +95,12 @@ class TestLNS(TestCase):
         ref_config_values = {
             "files": ["./tests/ref/golf.lp"],
             "seed": None,
-            "relax_rate": 0.2,
+            "relax_rate": 0.1,
             "max_steps": 2000,
-            "clingo_args": {"rand-freq": 0.8},
+            "clingo_args": {"rand-freq": 0.1},
             "solve_time_limit": 20,
             "overall_time_limit": 600,
-            "stuck_after_no_improv": 1000,
+            "stuck_after_no_improv": None,
             "start_sol": None,
             "vari_accept": 0,
             "pre_files": [],
@@ -122,7 +130,7 @@ class TestLNS(TestCase):
             lns.get_params(),
             {
                 **ref_config_values,
-                **{"max_steps": "-"},
+                **{"max_steps": None},
             },
         )
         lns = LNS(["./tests/ref/golf.lp"])
@@ -140,7 +148,7 @@ class TestLNS(TestCase):
             lns.get_params(),
             {
                 **ref_config_values,
-                **{"stuck_after_no_improv": "-"},
+                **{"stuck_after_no_improv": None},
             },
         )
         lns.set_params({"seed": 123, "new_param": "new", "stuck_after_no_improv": "20"})
@@ -166,7 +174,7 @@ class TestLNS(TestCase):
         lns.set_seed(seed)
         self.assertEqual(lns.param_values["seed"], seed)
         self.assertDictEqual(
-            lns.param_values["clingo_args"], {"seed": 42, "rand-freq": 0.8}
+            lns.param_values["clingo_args"], {"seed": 42, "rand-freq": 0.1}
         )
 
     def test_get_cost_str(self):

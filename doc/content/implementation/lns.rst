@@ -3,7 +3,7 @@
 LNS
 ====
 
-.. currentmodule:: large_neighbourhood_search.lib
+.. currentmodule:: mod_lns.lib
 
 .. note::
 
@@ -16,12 +16,12 @@ LNS
         self.param_values: Dict[str, Any] = {
             "files": files,                     # Encodings set during initialization, List[String]
             "seed": None,                       # Seed used both for solving and random relaxation, Int
-            "relax_rate": 0.2,                  # Relax rate, Float
+            "relax_rate": 0.1,                  # Relax rate, Float
             "max_steps": 2000,                  # Step limit for the search, non-int string for no limit, Int,Str
-            "clingo_args": {"rand-freq": 0.8},  # Additional clingo arguments, Dict[String, Any]
+            "clingo_args": {"rand-freq": 0.18},  # Additional clingo arguments, Dict[String, Any]
             "solve_time_limit": 20,             # Time limit for the individual solve call in seconds, Int
             "overall_time_limit": 600,          # Time limit for the entire search in seconds, Int
-            "stuck_after_no_improv": 1000,      # After how many interations without improvement the
+            "stuck_after_no_improv": None,      # After how many iterations without improvement the
                                                 #  search is determined as stuck, 
                                                 #  non-int string for no limit, Int,Str
             "start_sol": None,                  # Start solution, fixed during first solve call, String
@@ -33,7 +33,7 @@ LNS
             "base_relax_rate": 0                # base relax rate applied on top of declarative relaxation, Float
         }
 
-.. currentmodule:: large_neighbourhood_search.__init__
+.. currentmodule:: mod_lns.__init__
 
 .. autoclass:: LNS
     :members:

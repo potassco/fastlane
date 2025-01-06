@@ -6,15 +6,15 @@ a step by step introduction.
 """
 from typing import Any, Dict
 
-from large_neighbourhood_search import LNS
-from large_neighbourhood_search.lib.solvers.clingo_solver import ClingoSolver
-from large_neighbourhood_search.lib.strategies.classic_weighted_sum_rnd import (
+from mod_lns import LNS
+from mod_lns.lib.solvers.clingo_solver import ClingoSolver
+from mod_lns.lib.strategies.classic_weighted_sum_rnd import (
     ClassicWeightedSumRnd
 )
-from large_neighbourhood_search.lib.solvers.clingo_heu_solver import ClingoHeuSolver
-from large_neighbourhood_search.lib.strategies.hc_weighted_sum_rnd import HCWeightedSumRnd
-from large_neighbourhood_search.lib.relaxation import relax_declarative
-from large_neighbourhood_search.lib.utils import symbol_to_str
+from mod_lns.lib.solvers.clingo_heu_solver import ClingoHeuSolver
+from mod_lns.lib.strategies.hc_weighted_sum_rnd import HCWeightedSumRnd
+from mod_lns.lib.relaxation import relax_declarative
+from mod_lns.lib.utils import symbol_to_str
 
 # classic LNS with random relaxation using clingo with assumptions and weighted sum
 def config1():
