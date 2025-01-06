@@ -21,7 +21,7 @@ $ pip install .[full]
 You can check a successful installation by running
 
 ```bash
-large_neighbourhood_search -h
+mod_lns -h
 ```
 
 An example for the usage of the framework can be found in `./examples/demo.py`
