@@ -80,8 +80,8 @@ class ClingoHeuSolver(SolverInterface):
         #   Function("meets", [Number(2), Number(3), Number(4)], True),
         #   Function("meets", [Number(5), Number(6), Number(7)], True),] :
         # #external _lns_h_step(1).
-        # #heuristic meets(2,3,4) : _lns_h_step(1). [1, sign]
-        # #heuristic meets(5,6,7) : _lns_h_step(1). [1, sign]
+        # #heuristic meets(2,3,4) : _lns_h_step(1). [1, true]
+        # #heuristic meets(5,6,7) : _lns_h_step(1). [1, true]
 
         # setup external of current step
         step = lns_object.step_c
@@ -92,7 +92,7 @@ class ClingoHeuSolver(SolverInterface):
             # set heuristics
             rules = " ".join(
                 [
-                    f"#heuristic {symbol_to_str(atom[0])} : _lns_h_step({step}). [1, sign]"
+                    f"#heuristic {symbol_to_str(atom[0])} : _lns_h_step({step}). [1, true]"
                     for atom in fixed_atoms
                 ]
             )

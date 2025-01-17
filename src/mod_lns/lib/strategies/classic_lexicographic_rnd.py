@@ -60,7 +60,6 @@ class ClassicLexiRnd(ClassicWeightedSumRnd):
         Check whether to stop LNS.
 
         Stop if:
-        all cost = 0,
         max # of steps exceeded,
         overall time limit exceeded
 
@@ -69,11 +68,6 @@ class ClassicLexiRnd(ClassicWeightedSumRnd):
         :return: Whether to stop LNS or not.
         :rtype: bool
         """
-        if all(
-            lns_object.models["best_model"]["cost"][i] == 0
-            for i in lns_object.models["best_model"]["cost"]
-        ):
-            return True
         if isinstance(lns_object.param_values["max_steps"], int):
             return (
                 lns_object.step_c >= lns_object.param_values["max_steps"]

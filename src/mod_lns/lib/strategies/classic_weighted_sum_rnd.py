@@ -80,7 +80,6 @@ class ClassicWeightedSumRnd(StrategyInterface):
         Check whether to stop LNS.
 
         Stop if:
-        cost = 0,
         max # of steps exceeded,
         overall time limit exceeded
 
@@ -89,8 +88,6 @@ class ClassicWeightedSumRnd(StrategyInterface):
         :return: Whether to stop LNS or not.
         :rtype: bool
         """
-        if lns_object.models["best_model"]["cost"] == 0:
-            return True
         if isinstance(lns_object.param_values["max_steps"], int):
             return (
                 lns_object.step_c >= lns_object.param_values["max_steps"]
