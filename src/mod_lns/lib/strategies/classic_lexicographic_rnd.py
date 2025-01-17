@@ -23,7 +23,7 @@ class ClassicLexiRnd(ClassicWeightedSumRnd):
     Classic LNS with lexicographic optimization criteria and random relaxation.
     """
 
-    def calc_cost(self, model: Dict[str, Sequence[clingo.symbol.Symbol]]) -> Any:
+    def calculate_cost(self, model: Dict[str, Sequence[clingo.symbol.Symbol]]) -> Any:
         """
         Calculate cost of given model using lexicographic ordering.
 

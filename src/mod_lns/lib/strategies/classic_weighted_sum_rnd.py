@@ -24,7 +24,7 @@ class ClassicWeightedSumRnd(StrategyInterface):
     Classic LNS with weighted sum as optimization criteria and random relaxation.
     """
 
-    def calc_cost(
+    def calculate_cost(
         self, model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]
     ) -> Any:
         """
@@ -43,7 +43,7 @@ class ClassicWeightedSumRnd(StrategyInterface):
         return cost
 
     # pylint: disable=dangerous-default-value
-    def first_solution(
+    def get_first_solution(
         self, lns_object: LNS, start_sol: List[clingo.symbol.Symbol] = []
     ) -> bool:
         """
@@ -64,7 +64,7 @@ class ClassicWeightedSumRnd(StrategyInterface):
             fixed_sym = fix_symbols(start_sol)
 
         # get first solution
-        if lns_object.solver.solve_fixed(lns_object, fixed_sym).satisfiable:
+        if lns_object.solver.repair(lns_object, fixed_sym).satisfiable:
             print(
                 f"{time.time() - lns_object.start_time:.3f}s: Initial solution found with cost: "
                 f'{lns_object.get_cost_str(lns_object.models["new_model"])}'
@@ -130,7 +130,7 @@ class ClassicWeightedSumRnd(StrategyInterface):
         :return: Solve result.
         :rtype: clingo.solving.SolveResult
         """
-        return lns_object.solver.solve_fixed(lns_object, fixed_atoms)
+        return lns_object.solver.repair(lns_object, fixed_atoms)
 
     # pylint: disable=unused-argument
     def check_accept(

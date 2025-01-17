@@ -58,32 +58,32 @@ class TestLNS(TestCase):
         self.assertEqual(lns.solver, solver)
         self.assertEqual(lns.strategy, strategy)
 
-        lns = LNS(["./tests/ref/golf.lp"], params={"max_steps": "20"})
+        lns = LNS(["./tests/ref/golf.lp"], parameters={"max_steps": "20"})
         self.assertDictEqual(
             lns.param_values, {**ref_config_values, **{"max_steps": 20}}
         )
 
-        lns = LNS(["./tests/ref/golf.lp"], params={"max_steps": "a"})
+        lns = LNS(["./tests/ref/golf.lp"], parameters={"max_steps": "a"})
         self.assertDictEqual(
             lns.param_values, {**ref_config_values, **{"max_steps": None}}
         )
 
-        lns = LNS(["./tests/ref/golf.lp"], params={"max_steps": None})
+        lns = LNS(["./tests/ref/golf.lp"], parameters={"max_steps": None})
         self.assertDictEqual(
             lns.param_values, {**ref_config_values, **{"max_steps": None}}
         )
 
-        lns = LNS(["./tests/ref/golf.lp"], params={"stuck_after_no_improv": "20"})
+        lns = LNS(["./tests/ref/golf.lp"], parameters={"stuck_after_no_improv": "20"})
         self.assertDictEqual(
             lns.param_values, {**ref_config_values, **{"stuck_after_no_improv": 20}}
         )
 
-        lns = LNS(["./tests/ref/golf.lp"], params={"stuck_after_no_improv": "a"})
+        lns = LNS(["./tests/ref/golf.lp"], parameters={"stuck_after_no_improv": "a"})
         self.assertDictEqual(
             lns.param_values, {**ref_config_values, **{"stuck_after_no_improv": None}}
         )
 
-        lns = LNS(["./tests/ref/golf.lp"], params={"stuck_after_no_improv": None})
+        lns = LNS(["./tests/ref/golf.lp"], parameters={"stuck_after_no_improv": None})
         self.assertDictEqual(
             lns.param_values, {**ref_config_values, **{"stuck_after_no_improv": None}}
         )
@@ -108,52 +108,54 @@ class TestLNS(TestCase):
             "base_relax_rate": 0,
         }
         lns = LNS(["./tests/ref/golf.lp"])
-        self.assertDictEqual(lns.get_params(), ref_config_values)
-        lns.set_params({"max_steps": 20})
+        self.assertDictEqual(lns.get_parameters(), ref_config_values)
+        lns.set_parameters({"max_steps": 20})
         self.assertDictEqual(
-            lns.get_params(),
+            lns.get_parameters(),
             {
                 **ref_config_values,
                 **{"max_steps": 20},
             },
         )
-        lns.set_params({"max_steps": "20"})
+        lns.set_parameters({"max_steps": "20"})
         self.assertDictEqual(
-            lns.get_params(),
+            lns.get_parameters(),
             {
                 **ref_config_values,
                 **{"max_steps": 20},
             },
         )
-        lns.set_params({"max_steps": "a"})
+        lns.set_parameters({"max_steps": "a"})
         self.assertDictEqual(
-            lns.get_params(),
+            lns.get_parameters(),
             {
                 **ref_config_values,
                 **{"max_steps": None},
             },
         )
         lns = LNS(["./tests/ref/golf.lp"])
-        self.assertDictEqual(lns.get_params(), ref_config_values)
-        lns.set_params({"stuck_after_no_improv": 20})
+        self.assertDictEqual(lns.get_parameters(), ref_config_values)
+        lns.set_parameters({"stuck_after_no_improv": 20})
         self.assertDictEqual(
-            lns.get_params(),
+            lns.get_parameters(),
             {
                 **ref_config_values,
                 **{"stuck_after_no_improv": 20},
             },
         )
-        lns.set_params({"stuck_after_no_improv": "a"})
+        lns.set_parameters({"stuck_after_no_improv": "a"})
         self.assertDictEqual(
-            lns.get_params(),
+            lns.get_parameters(),
             {
                 **ref_config_values,
                 **{"stuck_after_no_improv": None},
             },
         )
-        lns.set_params({"seed": 123, "new_param": "new", "stuck_after_no_improv": "20"})
+        lns.set_parameters(
+            {"seed": 123, "new_param": "new", "stuck_after_no_improv": "20"}
+        )
         self.assertDictEqual(
-            lns.get_params(),
+            lns.get_parameters(),
             {
                 **ref_config_values,
                 **{

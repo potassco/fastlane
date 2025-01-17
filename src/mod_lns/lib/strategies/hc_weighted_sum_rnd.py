@@ -24,7 +24,7 @@ class HCWeightedSumRnd(StrategyInterface):
     LNS using hard constraints with weighted sum as optimization criteria and random relaxation.
     """
 
-    def calc_cost(
+    def calculate_cost(
         self, model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]
     ) -> Any:
         """
@@ -43,7 +43,7 @@ class HCWeightedSumRnd(StrategyInterface):
         return cost
 
     # pylint: disable=dangerous-default-value
-    def first_solution(
+    def get_first_solution(
         self, lns_object: LNS, start_sol: List[clingo.symbol.Symbol] = []
     ) -> bool:
         """
@@ -66,7 +66,7 @@ class HCWeightedSumRnd(StrategyInterface):
             fixed_sym = fix_symbols(start_sol)
 
         # get first solution
-        if lns_object.solver.solve_fixed(lns_object, fixed_sym).satisfiable:
+        if lns_object.solver.repair(lns_object, fixed_sym).satisfiable:
             cost = lns_object.models["new_model"]["cost"]
             print(
                 f"{time.time() - lns_object.start_time:.3f}s: Initial solution found with cost: "
@@ -76,11 +76,11 @@ class HCWeightedSumRnd(StrategyInterface):
             # add constraint to force better solution with each iteration
             # encoding has to contain _lns_penalty(N,I,W) predicates
             # where N: name, I: identifier, W: weight
-            if isinstance(lns_object.solver.ctl, clingo.control.Control):
-                lns_object.solver.ctl.add(
+            if isinstance(lns_object.solver.control, clingo.control.Control):
+                lns_object.solver.control.add(
                     "cost", ["c"], ":- #sum{W,I: _lns_penalty(_,I,W)} >= c."
                 )
-                lns_object.solver.ctl.ground([("cost", [Number(cost)])])
+                lns_object.solver.control.ground([("cost", [Number(cost)])])
 
             lns_object.models["current_model"] = lns_object.models["new_model"].copy()
             lns_object.models["best_model"] = lns_object.models["new_model"].copy()
@@ -143,7 +143,7 @@ class HCWeightedSumRnd(StrategyInterface):
         :return: Solve result.
         :rtype: clingo.solving.SolveResult
         """
-        return lns_object.solver.solve_fixed(lns_object, fixed_atoms)
+        return lns_object.solver.repair(lns_object, fixed_atoms)
 
     # pylint: disable=unused-argument
     def check_accept(
@@ -188,8 +188,8 @@ class HCWeightedSumRnd(StrategyInterface):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         """
-        if isinstance(lns_object.solver.ctl, clingo.control.Control):
-            lns_object.solver.ctl.ground(
+        if isinstance(lns_object.solver.control, clingo.control.Control):
+            lns_object.solver.control.ground(
                 [("cost", [Number(lns_object.models["best_model"]["cost"])])]
             )
 

@@ -50,9 +50,9 @@ class ClingoSolver(SolverInterface):
         ctl = clingo.Control(argsl)
         for path in files:
             ctl.load(path)
-        self.ctl, self.thy = ctl, None
+        self.control, self.theory = ctl, None
 
-    def solve_fixed(
+    def repair(
         self,
         lns_object: LNS,
         fixed_atoms: List[Tuple[clingo.symbol.Symbol, bool]],
@@ -69,9 +69,9 @@ class ClingoSolver(SolverInterface):
         """
         res = clingo.solving.SolveResult(2)
         start_time = int(time.time())
-        solve_time = self.get_avail_solve_time(lns_object)
-        if isinstance(self.ctl, clingo.control.Control):
-            with self.ctl.solve(
+        solve_time = self.get_available_solve_time(lns_object)
+        if isinstance(self.control, clingo.control.Control):
+            with self.control.solve(
                 assumptions=fixed_atoms, on_model=lns_object.on_model, async_=True
             ) as handle:
                 done = handle.wait(solve_time)
@@ -85,7 +85,7 @@ class ClingoSolver(SolverInterface):
         lns_object.avail_time -= int(time.time()) - start_time
         return res
 
-    def pre_solve(self, lns_object: LNS) -> clingo.solving.SolveResult:
+    def solve(self, lns_object: LNS) -> clingo.solving.SolveResult:
         """
         Pre-solve using clingo.
 
@@ -95,8 +95,10 @@ class ClingoSolver(SolverInterface):
         :rtype: clingo.solving.SolveResult
         """
         res = clingo.solving.SolveResult(2)
-        if isinstance(self.ctl, clingo.control.Control):
-            with self.ctl.solve(on_model=lns_object.on_model, async_=True) as handle:
+        if isinstance(self.control, clingo.control.Control):
+            with self.control.solve(
+                on_model=lns_object.on_model, async_=True
+            ) as handle:
                 done = handle.wait(lns_object.param_values["pre_tl"])
                 if not done:
                     handle.cancel()

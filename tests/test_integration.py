@@ -177,7 +177,7 @@ class TestIntegrationClingo(TestCase):
         lns = LNS(
             ["./tests/ref/golf.lp"],
             self.solver,
-            params={"pre_files": ["./tests/ref/golf_pre.lp"], "max_steps": 1},
+            parameters={"pre_files": ["./tests/ref/golf_pre.lp"], "max_steps": 1},
         )
         lns.set_seed(123)
         lns.main()
@@ -185,7 +185,7 @@ class TestIntegrationClingo(TestCase):
         lns = LNS(
             ["./tests/ref/golf_big.lp"],
             self.solver,
-            params={
+            parameters={
                 "pre_files": ["./tests/ref/golf_pre_big.lp"],
                 "pre_tl": 1,
                 "max_steps": 1,
@@ -197,7 +197,7 @@ class TestIntegrationClingo(TestCase):
         lns = LNS(
             ["./tests/ref/golf.lp"],
             self.solver,
-            params={"pre_files": ["./tests/ref/bad_encoding.lp"], "max_steps": 1},
+            parameters={"pre_files": ["./tests/ref/bad_encoding.lp"], "max_steps": 1},
         )
         with self.assertRaises(SystemExit):
             lns.main()
@@ -215,7 +215,7 @@ class TestIntegrationClingo(TestCase):
         lns = LNS(
             ["./tests/ref/golf.lp"],
             self.solver,
-            params={
+            parameters={
                 "start_sol": s,
             },
         )

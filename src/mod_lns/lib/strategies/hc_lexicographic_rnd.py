@@ -23,7 +23,7 @@ class HCLexiRnd(HCWeightedSumRnd):
     LNS using hard constraints with lexicographic optimization criteria and random relaxation.
     """
 
-    def calc_cost(self, model: Dict[str, Sequence[clingo.symbol.Symbol]]) -> Any:
+    def calculate_cost(self, model: Dict[str, Sequence[clingo.symbol.Symbol]]) -> Any:
         """
         Calculate cost of given model using lexicographic ordering.
 
@@ -56,7 +56,7 @@ class HCLexiRnd(HCWeightedSumRnd):
         return cost
 
     # pylint: disable=dangerous-default-value
-    def first_solution(
+    def get_first_solution(
         self, lns_object: LNS, start_sol: List[clingo.symbol.Symbol] = []
     ) -> bool:
         """
@@ -79,7 +79,7 @@ class HCLexiRnd(HCWeightedSumRnd):
             fixed_sym = fix_symbols(start_sol)
 
         # get first solution
-        if lns_object.solver.solve_fixed(lns_object, fixed_sym).satisfiable:
+        if lns_object.solver.repair(lns_object, fixed_sym).satisfiable:
             cost = lns_object.models["new_model"]["cost"]
             print(
                 f"{time.time() - lns_object.start_time:.3f}s: Initial solution found with cost: "
@@ -126,9 +126,9 @@ class HCLexiRnd(HCWeightedSumRnd):
                     )
                 )
             )
-            if isinstance(lns_object.solver.ctl, clingo.control.Control):
-                lns_object.solver.ctl.add("cost", s, rules)
-                lns_object.solver.ctl.ground(
+            if isinstance(lns_object.solver.control, clingo.control.Control):
+                lns_object.solver.control.add("cost", s, rules)
+                lns_object.solver.control.ground(
                     [
                         (
                             "cost",
@@ -137,7 +137,7 @@ class HCLexiRnd(HCWeightedSumRnd):
                         )
                     ]
                 )
-                lns_object.solver.ctl.assign_external(
+                lns_object.solver.control.assign_external(
                     Function("_lns_l_step", [Number(0)]), True
                 )
 
@@ -179,12 +179,12 @@ class HCLexiRnd(HCWeightedSumRnd):
         :type lns_object: large_neighbourhood_search.LNS
         """
         step = lns_object.step_c
-        if isinstance(lns_object.solver.ctl, clingo.control.Control):
-            lns_object.solver.ctl.release_external(
+        if isinstance(lns_object.solver.control, clingo.control.Control):
+            lns_object.solver.control.release_external(
                 Function("_lns_l_step", [Number(step - 1)])
             )
             cost = lns_object.models["best_model"]["cost"]
-            lns_object.solver.ctl.ground(
+            lns_object.solver.control.ground(
                 [
                     (
                         "cost",
@@ -193,6 +193,6 @@ class HCLexiRnd(HCWeightedSumRnd):
                     )
                 ]
             )
-            lns_object.solver.ctl.assign_external(
+            lns_object.solver.control.assign_external(
                 Function("_lns_l_step", [Number(step)]), True
             )

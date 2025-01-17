@@ -57,9 +57,9 @@ class ClingoDLSolver(SolverInterface):
                 files,
                 lambda ast: thy.rewrite_ast(ast, builder.add),
             )
-        self.ctl, self.thy = ctl, thy
+        self.control, self.theory = ctl, thy
 
-    def solve_fixed(
+    def repair(
         self,
         lns_object: LNS,
         fixed_atoms: List[Tuple[clingo.symbol.Symbol, bool]],
@@ -76,10 +76,10 @@ class ClingoDLSolver(SolverInterface):
         """
         res = clingo.solving.SolveResult(2)
         start_time = int(time.time())
-        solve_time = self.get_avail_solve_time(lns_object)
-        if isinstance(self.ctl, clingo.control.Control):
-            self.thy.prepare(self.ctl)
-            with self.ctl.solve(
+        solve_time = self.get_available_solve_time(lns_object)
+        if isinstance(self.control, clingo.control.Control):
+            self.theory.prepare(self.control)
+            with self.control.solve(
                 assumptions=fixed_atoms,
                 on_model=lns_object.on_model,
                 async_=True,  # yield_=True
@@ -95,7 +95,7 @@ class ClingoDLSolver(SolverInterface):
         lns_object.avail_time -= int(time.time()) - start_time
         return res
 
-    def pre_solve(self, lns_object: LNS) -> clingo.solving.SolveResult:
+    def solve(self, lns_object: LNS) -> clingo.solving.SolveResult:
         """
         Pre-solve using clingo-dl.
 
@@ -105,9 +105,11 @@ class ClingoDLSolver(SolverInterface):
         :rtype: clingo.solving.SolveResult
         """
         res = clingo.solving.SolveResult(2)
-        if isinstance(self.ctl, clingo.control.Control):
-            self.thy.prepare(self.ctl)
-            with self.ctl.solve(on_model=lns_object.on_model, async_=True) as handle:
+        if isinstance(self.control, clingo.control.Control):
+            self.theory.prepare(self.control)
+            with self.control.solve(
+                on_model=lns_object.on_model, async_=True
+            ) as handle:
                 done = handle.wait(lns_object.param_values["pre_tl"])
                 if not done:
                     handle.cancel()
