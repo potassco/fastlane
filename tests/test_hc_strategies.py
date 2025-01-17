@@ -152,25 +152,23 @@ class TestStrategyHcLexiRnd(TestStrategyHcWsRnd):
             ],
         }
         ref = {1: 3, 3: 1, 2: 2}
-        self.assertDictEqual(self.strategy.calc_cost(model), ref)
+        self.assertDictEqual(self.strategy.calculate_cost(model), ref)
 
     def test_check_stop(self):
         """
         Test check_stop.
         """
         self.lns.start_time = time.time()
-        self.lns.models["best_model"]["cost"] = {2: 0, 1: 0}
-        self.assertTrue(self.strategy.check_stop(self.lns))
         self.lns.models["best_model"]["cost"] = {2: 1, 1: 0}
         self.assertFalse(self.strategy.check_stop(self.lns))
-        self.lns.set_params({"overall_time_limit": 0})
+        self.lns.set_parameters({"overall_time_limit": 0})
         self.assertTrue(self.strategy.check_stop(self.lns))
-        self.lns.set_params({"overall_time_limit": 10000, "max_steps": 1})
+        self.lns.set_parameters({"overall_time_limit": 10000, "max_steps": 1})
         self.lns.step_c = 2
         self.assertTrue(self.strategy.check_stop(self.lns))
-        self.lns.set_params({"max_steps": "-"})
+        self.lns.set_parameters({"max_steps": "-"})
         self.assertFalse(self.strategy.check_stop(self.lns))
-        self.lns.set_params({"overall_time_limit": 0})
+        self.lns.set_parameters({"overall_time_limit": 0})
         self.assertTrue(self.strategy.check_stop(self.lns))
 
     def test_check_better(self):

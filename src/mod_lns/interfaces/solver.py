@@ -22,16 +22,18 @@ class SolverInterface(metaclass=abc.ABCMeta):
         """
         Initialization of the solver object.
         """
-        self.ctl: Optional[clingo.control.Control] = None
-        self.thy: Any = None
+        self.control: Optional[clingo.control.Control] = None
+        self.theory: Any = None
 
     @classmethod
     def __subclasshook__(cls, subclass):  # nocoverage
         return (
             hasattr(subclass, "setup")
             and callable(subclass.setup)
-            and hasattr(subclass, "solve_under_assumptions")
-            and callable(subclass.solve_under_assumptions)
+            and hasattr(subclass, "repair")
+            and callable(subclass.repair)
+            and hasattr(subclass, "solve")
+            and callable(subclass.solve)
             or NotImplemented
         )
 
@@ -55,7 +57,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def solve_fixed(
+    def repair(
         self,
         lns_object: LNS,
         fixed_atoms: List[Tuple[clingo.symbol.Symbol, bool]],
@@ -73,7 +75,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def pre_solve(self, lns_object: LNS) -> clingo.solving.SolveResult:  # nocoverage
+    def solve(self, lns_object: LNS) -> clingo.solving.SolveResult:  # nocoverage
         """
         Pre-solve using clingo.
 
@@ -91,10 +93,10 @@ class SolverInterface(metaclass=abc.ABCMeta):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         """
-        if isinstance(self.ctl, clingo.control.Control):
-            self.ctl.ground([("base", [])], context=lns_object)
+        if isinstance(self.control, clingo.control.Control):
+            self.control.ground([("base", [])], context=lns_object)
 
-    def get_avail_solve_time(self, lns_object: LNS) -> int:
+    def get_available_solve_time(self, lns_object: LNS) -> int:
         """
         Calculate available solve time.
         (rounded to int)
@@ -116,6 +118,6 @@ class SolverInterface(metaclass=abc.ABCMeta):
         :return: Statistics dictionary.
         :rtype: Dict
         """
-        if isinstance(self.ctl, clingo.control.Control):
-            return self.ctl.statistics
+        if isinstance(self.control, clingo.control.Control):
+            return self.control.statistics
         return {}

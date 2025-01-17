@@ -21,9 +21,9 @@ class StrategyInterface(metaclass=abc.ABCMeta):
     @classmethod
     def __subclasshook__(cls, subclass):  # nocoverage
         return (
-            hasattr(subclass, "first_solution")
+            hasattr(subclass, "get_first_solution")
             and callable(subclass.first_solution)
-            and hasattr(subclass, "calc_cost")
+            and hasattr(subclass, "calculate_cost")
             and callable(subclass.calc_cost)
             and hasattr(subclass, "check_stop")
             and callable(subclass.check_stop)
@@ -41,7 +41,7 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         )
 
     @abc.abstractmethod
-    def calc_cost(
+    def calculate_cost(
         self, model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]
     ) -> Any:  # nocoverage
         """
@@ -55,7 +55,7 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def first_solution(
+    def get_first_solution(
         self, lns_object: LNS, start_sol: List[clingo.symbol.Symbol]
     ) -> bool:  # nocoverage
         """

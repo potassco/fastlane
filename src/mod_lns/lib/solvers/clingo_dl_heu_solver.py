@@ -63,9 +63,9 @@ class ClingoDLHeuSolver(SolverInterface):
         # used for heuristics, see solve_fixed()
         ctl.add("_lns_h_step", ["s"], "#external _lns_h_step(s).")
 
-        self.ctl, self.thy = ctl, thy
+        self.control, self.theory = ctl, thy
 
-    def solve_fixed(
+    def repair(
         self,
         lns_object: LNS,
         fixed_atoms: List[Tuple[clingo.symbol.Symbol, bool]],
@@ -87,32 +87,34 @@ class ClingoDLHeuSolver(SolverInterface):
         #   Function("meets", [Number(2), Number(3), Number(4)], True),
         #   Function("meets", [Number(5), Number(6), Number(7)], True),] :
         # #external _lns_h_step(1).
-        # #heuristic meets(2,3,4) : _lns_h_step(1). [1, sign]
-        # #heuristic meets(5,6,7) : _lns_h_step(1). [1, sign]
+        # #heuristic meets(2,3,4) : _lns_h_step(1). [1, true]
+        # #heuristic meets(5,6,7) : _lns_h_step(1). [1, true]
 
         # setup external of current step
         step = lns_object.step_c
-        if isinstance(self.ctl, clingo.control.Control):
-            self.ctl.ground([("_lns_h_step", [Number(step)])])
-            self.ctl.assign_external(Function("_lns_h_step", [Number(step)]), True)
+        if isinstance(self.control, clingo.control.Control):
+            self.control.ground([("_lns_h_step", [Number(step)])])
+            self.control.assign_external(Function("_lns_h_step", [Number(step)]), True)
 
             # set heuristics
             rules = " ".join(
                 [
-                    f"#heuristic {symbol_to_str(atom[0])} : _lns_h_step({step}). [1, sign]"
+                    f"#heuristic {symbol_to_str(atom[0])} : _lns_h_step({step}). [1, true]"
                     for atom in fixed_atoms
                 ]
             )
-            self.ctl.add("heuristics", [], rules)
-            self.ctl.ground([("heuristics", [])])
+            self.control.add("heuristics", [], rules)
+            self.control.ground([("heuristics", [])])
 
         # solve
         res = clingo.solving.SolveResult(2)
         start_time = int(time.time())
-        solve_time = self.get_avail_solve_time(lns_object)
-        if isinstance(self.ctl, clingo.control.Control):
-            self.thy.prepare(self.ctl)
-            with self.ctl.solve(on_model=lns_object.on_model, async_=True) as handle:
+        solve_time = self.get_available_solve_time(lns_object)
+        if isinstance(self.control, clingo.control.Control):
+            self.theory.prepare(self.control)
+            with self.control.solve(
+                on_model=lns_object.on_model, async_=True
+            ) as handle:
                 done = handle.wait(solve_time)
                 if not done:
                     handle.cancel()
@@ -124,11 +126,11 @@ class ClingoDLHeuSolver(SolverInterface):
         lns_object.avail_time -= int(time.time()) - start_time
 
         # release externals
-        if isinstance(self.ctl, clingo.control.Control):
-            self.ctl.release_external(Function("_lns_h_step", [Number(step)]))
+        if isinstance(self.control, clingo.control.Control):
+            self.control.release_external(Function("_lns_h_step", [Number(step)]))
         return res
 
-    def pre_solve(self, lns_object: LNS) -> clingo.solving.SolveResult:
+    def solve(self, lns_object: LNS) -> clingo.solving.SolveResult:
         """
         Pre-solve using clingo-dl.
 
@@ -138,9 +140,11 @@ class ClingoDLHeuSolver(SolverInterface):
         :rtype: clingo.solving.SolveResult
         """
         res = clingo.solving.SolveResult(2)
-        if isinstance(self.ctl, clingo.control.Control):
-            self.thy.prepare(self.ctl)
-            with self.ctl.solve(on_model=lns_object.on_model, async_=True) as handle:
+        if isinstance(self.control, clingo.control.Control):
+            self.theory.prepare(self.control)
+            with self.control.solve(
+                on_model=lns_object.on_model, async_=True
+            ) as handle:
                 done = handle.wait(lns_object.param_values["pre_tl"])
                 if not done:
                     handle.cancel()

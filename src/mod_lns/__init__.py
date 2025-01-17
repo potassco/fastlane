@@ -41,7 +41,7 @@ class LNS:
         files: List[str],
         solver: SolverInterface = ClingoSolver(),
         strategy: StrategyInterface = HCWeightedSumRnd(),
-        params: Dict[str, Any] = {},
+        parameters: Dict[str, Any] = {},
     ):
         """
         Initialization of the lns object.
@@ -78,7 +78,7 @@ class LNS:
             "pre_tl": 1800,
             "base_relax_rate": 0,
         }
-        self.param_values = {**self.param_values, **params}
+        self.param_values = {**self.param_values, **parameters}
         self.avail_time = self.param_values["overall_time_limit"]
 
         if isinstance(self.param_values["max_steps"], str):
@@ -118,13 +118,13 @@ class LNS:
                 **{"seed": seed},
             }
 
-    def get_params(self) -> Dict[str, Any]:
+    def get_parameters(self) -> Dict[str, Any]:
         """
         Get LNS parameters.
         """
         return self.param_values
 
-    def set_params(self, params: Dict[str, Any]) -> None:
+    def set_parameters(self, params: Dict[str, Any]) -> None:
         """
         Set LNS parameters.
 
@@ -216,15 +216,15 @@ class LNS:
         self.models["new_model"] = {}
         self.models["new_model"]["shown"] = model.symbols(shown=True)
         self.models["new_model"]["true"] = model.symbols(atoms=True)
-        self.models["new_model"]["cost"] = self.strategy.calc_cost(
+        self.models["new_model"]["cost"] = self.strategy.calculate_cost(
             self.models["new_model"]
         )
         # dl
-        if self.solver.thy:
-            self.solver.thy.on_model(model=model)
+        if self.solver.theory:
+            self.solver.theory.on_model(model=model)
             self.models["new_model"]["assignments"] = [
                 f"{key}={val}"
-                for key, val in self.solver.thy.assignment(model.thread_id)
+                for key, val in self.solver.theory.assignment(model.thread_id)
             ]
         # pre solving
         if self.param_values["pre_files"] and self.step_c == -1:
@@ -260,7 +260,7 @@ class LNS:
             print(f"Start pre-solving ({self.param_values['pre_tl']}s):")
             self.pre_solver.setup(self, self.param_values["pre_files"])
             self.pre_solver.ground_base(self)
-            if self.pre_solver.pre_solve(self).satisfiable:
+            if self.pre_solver.solve(self).satisfiable:
                 print("Pre-solving done.")
                 start_sol = self.models["new_model"]["shown"]
 
@@ -270,7 +270,7 @@ class LNS:
 
         self.step_c = 0
 
-        if not self.strategy.first_solution(self, start_sol):
+        if not self.strategy.get_first_solution(self, start_sol):
             print("First solution could not be obtained")
             raise SystemExit
 
