@@ -12,6 +12,22 @@ import clingo
 if TYPE_CHECKING:
     from mod_lns import LNS  # nocoverage
 
+# c, b, n: current, best, new model
+        # inter0()
+        # solver_setup()
+        # inter1()
+        # c = first_sol()
+        # inter2()
+        # while check_stop()
+        #   inter3()
+        #   n = repair(relax(c))
+        #   inter4()
+        #   check_accept(n)
+        #       c = n
+        #       accepted()
+        #   check_better(n,b)
+        #       b = n
+        #       better()
 
 class StrategyInterface(metaclass=abc.ABCMeta):
     """
@@ -35,8 +51,8 @@ class StrategyInterface(metaclass=abc.ABCMeta):
             and callable(subclass.check_accept)
             and hasattr(subclass, "check_better")
             and callable(subclass.check_better)
-            and hasattr(subclass, "update_grounding")
-            and callable(subclass.update_grounding)
+          #  and hasattr(subclass, "update_grounding")
+           # and callable(subclass.update_grounding)
             or NotImplemented
         )
 
@@ -54,6 +70,24 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
+    def pre_setup(self, lns_object: LNS) -> None:  # nocoverage
+        """
+        Do something pre solver setup.
+
+        :param lns_object: LNS object.
+        :type lns_object: large_neighbourhood_search.LNS
+        """
+        pass
+
+    def post_setup(self, lns_object: LNS) -> None:  # nocoverage
+        """
+        Do something post solver setup.
+
+        :param lns_object: LNS object.
+        :type lns_object: large_neighbourhood_search.LNS
+        """
+        pass
+    
     @abc.abstractmethod
     def get_first_solution(
         self, lns_object: LNS, start_sol: List[clingo.symbol.Symbol]
@@ -70,6 +104,15 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
+    def post_first_solution(self, lns_object: LNS) -> None:  # nocoverage
+        """
+        Do something post first solution.
+
+        :param lns_object: LNS object.
+        :type lns_object: large_neighbourhood_search.LNS
+        """
+        pass
+
     @abc.abstractmethod
     def check_stop(self, lns_object: LNS) -> bool:  # nocoverage
         """
@@ -81,6 +124,15 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         :rtype: bool
         """
         raise NotImplementedError
+
+    def pre_releax(self, lns_object: LNS) -> None:  # nocoverage
+        """
+        Do something pre relaxation.
+
+        :param lns_object: LNS object.
+        :type lns_object: large_neighbourhood_search.LNS
+        """
+        pass
 
     @abc.abstractmethod
     def relax(
@@ -116,6 +168,15 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
+    def post_repair(self, lns_object: LNS) -> None:  # nocoverage
+        """
+        Do something post repair.
+
+        :param lns_object: LNS object.
+        :type lns_object: large_neighbourhood_search.LNS
+        """
+        pass
+
     @abc.abstractmethod
     def check_accept(
         self,
@@ -130,6 +191,15 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         :rtype: bool
         """
         raise NotImplementedError
+
+    def accepted(self, lns_object: LNS) -> None:  # nocoverage
+        """
+        Do something after new model is accepted and saved as the new current model.
+
+        :param lns_object: LNS object.
+        :type lns_object: large_neighbourhood_search.LNS
+        """
+        pass
 
     @abc.abstractmethod
     def check_better(
@@ -146,21 +216,32 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def update_grounding(self, lns_object: LNS) -> None:  # nocoverage
+    def better(self, lns_object: LNS) -> None:  # nocoverage
         """
-        Update grounding after new best solution.
+        Do something after new model is better and saved as the new best model.
 
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         """
-        raise NotImplementedError
+        pass
 
+    #@abc.abstractmethod
+    #def update_grounding(self, lns_object: LNS) -> None:  # nocoverage
+    #    """
+    #    Update grounding after new best solution.#
+    #
+    #    :param lns_object: LNS object.
+    #    :type lns_object: large_neighbourhood_search.LNS
+    #    """
+    #    raise NotImplementedError
+
+
+    # beeing reworked
     # pylint: disable=unused-argument
-    def stuck_handling(self, lns_object: LNS) -> None:
-        """
-        Check whether search is stuck and what to do if it is.
-
-        :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
-        """
+    #def stuck_handling(self, lns_object: LNS) -> None:
+    #    """
+    #    Check whether search is stuck and what to do if it is.
+    #   
+    #    :param lns_object: LNS object.
+    #    :type lns_object: large_neighbourhood_search.LNS
+    #    """

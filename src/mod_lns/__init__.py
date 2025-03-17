@@ -39,19 +39,17 @@ class LNS:
     def __init__(
         self,
         files: List[str],
-        solver: SolverInterface = ClingoSolver(),
-        strategy: StrategyInterface = HCWeightedSumRnd(),
-        parameters: Dict[str, Any] = {},
+        config: ConfigInterface(),
+        options: Dict[str, Any] = {},
     ):
         """
         Initialization of the lns object.
         """
-        self.pre_solver: SolverInterface = type(solver)()
-        self.solver: SolverInterface = solver
-        self.strategy: StrategyInterface = strategy
+        self.solver: SolverInterface = config.solver
+        #self.strategy: StrategyInterface = strategy
         self.start_time: float = 0
         self.step_c: int = 0
-        self.no_improv_c = 0
+        #self.no_improv_c = 0
         self.stopped = False
 
         new_model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]] = {}
@@ -69,16 +67,19 @@ class LNS:
             "relax_rate": 0.1,
             "max_steps": "2000",
             "clingo_args": {"rand-freq": 0.1},
-            "solve_time_limit": 20,
+            #"solve_time_limit": 20,
             "overall_time_limit": 600,
-            "stuck_after_no_improv": None,
+            #"stuck_after_no_improv": None,
             "start_sol": None,
-            "vari_accept": 0,
-            "pre_files": [],
-            "pre_tl": 1800,
-            "base_relax_rate": 0,
+            #"vari_accept": 0,
+            #"pre_files": [],
+            #"pre_tl": 1800,
+            #"base_relax_rate": 0,
+            heuristic = False,
+            hc = False,
+            decl = False, 
         }
-        self.param_values = {**self.param_values, **parameters}
+        self.param_values = {**self.param_values, **options}
         self.avail_time = self.param_values["overall_time_limit"]
 
         if isinstance(self.param_values["max_steps"], str):
@@ -91,17 +92,17 @@ class LNS:
         else:
             self.param_values["max_steps"] = None
 
-        if isinstance(self.param_values["stuck_after_no_improv"], str):
-            if self.param_values["stuck_after_no_improv"].isdigit():
-                self.param_values["stuck_after_no_improv"] = int(
-                    self.param_values["stuck_after_no_improv"]
-                )
-            else:
-                self.param_values["stuck_after_no_improv"] = None
-        elif isinstance(self.param_values["stuck_after_no_improv"], int):
-            pass
-        else:
-            self.param_values["stuck_after_no_improv"] = None
+        #if isinstance(self.param_values["stuck_after_no_improv"], str):
+        #    if self.param_values["stuck_after_no_improv"].isdigit():
+        #        self.param_values["stuck_after_no_improv"] = int(
+        #            self.param_values["stuck_after_no_improv"]
+        #        )
+        #    else:
+        #        self.param_values["stuck_after_no_improv"] = None
+        #elif isinstance(self.param_values["stuck_after_no_improv"], int):
+        #    pass
+        #else:
+        #    self.param_values["stuck_after_no_improv"] = None
 
     def set_seed(self, seed: int) -> None:
         """
@@ -143,50 +144,22 @@ class LNS:
         else:
             self.param_values["max_steps"] = None
 
-        if isinstance(self.param_values["stuck_after_no_improv"], str):
-            if self.param_values["stuck_after_no_improv"].isdigit():
-                self.param_values["stuck_after_no_improv"] = int(
-                    self.param_values["stuck_after_no_improv"]
-                )
-            else:
-                self.param_values["stuck_after_no_improv"] = None
-        elif isinstance(self.param_values["stuck_after_no_improv"], int):
-            pass
-        else:
-            self.param_values["stuck_after_no_improv"] = None
+        #if isinstance(self.param_values["stuck_after_no_improv"], str):
+        #    if self.param_values["stuck_after_no_improv"].isdigit():
+        #        self.param_values["stuck_after_no_improv"] = int(
+        #            self.param_values["stuck_after_no_improv"]
+        #        )
+        #    else:
+        #        self.param_values["stuck_after_no_improv"] = None
+        #elif isinstance(self.param_values["stuck_after_no_improv"], int):
+        #    pass
+        #else:
+        #    self.param_values["stuck_after_no_improv"] = None
 
-    # pylint: disable=unidiomatic-typecheck
-    def get_cost_str(self, model: Dict[str, Any]) -> str:
-        """
-        Get cost of given model as string.
-
-        :param model: Model.
-        :type model: Dict[str, Any]
-        :return: Cost as string.
-        :rtype: str
-        """
-        cost = model["cost"]
-        if type(cost) is int:
-            return str(cost)
-        if type(cost) is dict:
-            return " ".join(list(map(str, cost.values())))
-        return ""
-
-    def print_model(self, model: Dict[str, Any]) -> str:
-        """
-        Print given model.
-
-        :param model: Model.
-        :type model: Dict[str, Any]
-        :return: Printed string.
-        :rtype: str
-        """
-        answer_string = " ".join([str(atom) for atom in model["shown"]])
-        if "assignments" in model:
-            answer_string += "\nAssignments:\n" + " ".join(model["assignments"])
-        s = "Answer\n" f"{answer_string}\n" f"Cost: {self.get_cost_str(model)}\n"
-        print(s)
-        return s
+    # moved to utils.functions
+    from utils.functions import get_cost_str
+    from utils.functions import print_model
+    
 
     # pylint: disable=unused-argument
     def interrupt_handler(self, sig: int, frame: Union[None, FrameType]) -> None:
@@ -219,16 +192,16 @@ class LNS:
         self.models["new_model"]["cost"] = self.strategy.calculate_cost(
             self.models["new_model"]
         )
-        # dl
+        # dl - to be improved
         if self.solver.theory:
             self.solver.theory.on_model(model=model)
             self.models["new_model"]["assignments"] = [
                 f"{key}={val}"
                 for key, val in self.solver.theory.assignment(model.thread_id)
             ]
-        # pre solving
-        if self.param_values["pre_files"] and self.step_c == -1:
-            print(model.cost)
+        ## pre solving
+        #if self.param_values["pre_files"] and self.step_c == -1:
+        #    print(model.cost)
 
     def main(self) -> None:
         """
@@ -255,21 +228,22 @@ class LNS:
 
         self.solver.setup(self)
 
-        # pre solving
-        if self.param_values["pre_files"]:
-            print(f"Start pre-solving ({self.param_values['pre_tl']}s):")
-            self.pre_solver.setup(self, self.param_values["pre_files"])
-            self.pre_solver.ground_base(self)
-            if self.pre_solver.solve(self).satisfiable:
-                print("Pre-solving done.")
-                start_sol = self.models["new_model"]["shown"]
-
-            else:
-                print("Pre-solving failed")
-                raise SystemExit
+        ## pre solving
+        #if self.param_values["pre_files"]:
+        #    print(f"Start pre-solving ({self.param_values['pre_tl']}s):")
+        #    self.pre_solver.setup(self, self.param_values["pre_files"])
+        #    self.pre_solver.ground_base(self)
+        #    if self.pre_solver.solve(self).satisfiable:
+        #        print("Pre-solving done.")
+        #        start_sol = self.models["new_model"]["shown"]
+        #
+        #    else:
+        #       print("Pre-solving failed")
+        #       raise SystemExit
 
         self.step_c = 0
 
+        # get first solution - to be reworked
         if not self.strategy.get_first_solution(self, start_sol):
             print("First solution could not be obtained")
             raise SystemExit
@@ -300,27 +274,45 @@ class LNS:
                     self.strategy.update_grounding(self)
                     self.no_improv_c = 0
                     improv = True
-            if not improv:
-                self.no_improv_c += 1
-                self.strategy.stuck_handling(self)
+            #if not improv:
+             #   self.no_improv_c += 1
+                # self.strategy.stuck_handling(self)
         print("==================")
         print("SEARCH FINISHED:")
         self.print_model(self.models["best_model"])
         print(f"Overall steps: {self.step_c}")
         print(f"Overall time: {time.time() - self.start_time:.3f}s")
 
-        # old callables
-        # s     "setup": theory.setup_clingo,
-        # st    "get_first_solution": search.get_first_solution_hc_weighted_sum,
-        # st r  "relax": search.relax_random,
-        # s st  "repair": theory.repair_clingo,
-        # st    "check_accept": search.check_accept_always,
-        # st    "check_better": search.check_better_always,
-        # st    "check_stop": boundary.check_stop_steps,
-        # st    "calc_opt_value": lns_utils.calc_opt_val_weighted_sum,
-        # st    "better_solution_found": search.better_solution_found_hc_weighted_sum,
-        # --    "boundary_handling": boundary.boundary_overall,
-        # --    "finish": boundary.finish,
-        # st    "check_stuck": search.check_stuck_never,
-        # st    "is_stuck": search.is_stuck,
-        # --    "timeout": search.timeout,
+# c, b, n: current, best, new model
+        # inter0()
+        # solver_setup()
+        # inter1()
+        # c = first_sol()
+        # inter2()
+        # while check_stop()
+        #   inter3()
+        #   n = repair(relax(c))
+        #   inter4()
+        #   check_accept(n)
+        #       c = n
+        #       accepted()
+        #   check_better(n,b)
+        #       b = n
+        #       better()
+
+# mod_lns --dl --heu --decl -rr=3
+# mod_lns --x_strat -r=2 
+# main:
+# config -> select strat or options
+#        -> select solver
+
+
+
+# class mod_lns
+#   params
+#       config
+#           solver
+#           heu
+#           mode: hc cl
+#           detect rnd decl
+#
