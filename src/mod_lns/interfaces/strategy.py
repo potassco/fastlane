@@ -13,21 +13,22 @@ if TYPE_CHECKING:
     from mod_lns import LNS  # nocoverage
 
 # c, b, n: current, best, new model
-        # inter0()
-        # solver_setup()
-        # inter1()
-        # c = first_sol()
-        # inter2()
-        # while check_stop()
-        #   inter3()
-        #   n = repair(relax(c))
-        #   inter4()
-        #   check_accept(n)
-        #       c = n
-        #       accepted()
-        #   check_better(n,b)
-        #       b = n
-        #       better()
+# pre_setup()
+# solver_setup()
+# post_setup()
+# c = first_sol()
+# post_first_sol()
+# while check_stop()
+#   pre_relax()
+#   n = repair(relax(c))
+#   post_repair()
+#   check_accept(n)
+#       c = n
+#       accepted()
+#   check_better(n,b)
+#       b = n
+#       better()
+
 
 class StrategyInterface(metaclass=abc.ABCMeta):
     """
@@ -51,8 +52,8 @@ class StrategyInterface(metaclass=abc.ABCMeta):
             and callable(subclass.check_accept)
             and hasattr(subclass, "check_better")
             and callable(subclass.check_better)
-          #  and hasattr(subclass, "update_grounding")
-           # and callable(subclass.update_grounding)
+            #  and hasattr(subclass, "update_grounding")
+            # and callable(subclass.update_grounding)
             or NotImplemented
         )
 
@@ -77,7 +78,6 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         """
-        pass
 
     def post_setup(self, lns_object: LNS) -> None:  # nocoverage
         """
@@ -86,8 +86,7 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         """
-        pass
-    
+
     @abc.abstractmethod
     def get_first_solution(
         self, lns_object: LNS, start_sol: List[clingo.symbol.Symbol]
@@ -111,7 +110,6 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         """
-        pass
 
     @abc.abstractmethod
     def check_stop(self, lns_object: LNS) -> bool:  # nocoverage
@@ -125,14 +123,13 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
-    def pre_releax(self, lns_object: LNS) -> None:  # nocoverage
+    def pre_relax(self, lns_object: LNS) -> None:  # nocoverage
         """
         Do something pre relaxation.
 
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         """
-        pass
 
     @abc.abstractmethod
     def relax(
@@ -175,7 +172,6 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         """
-        pass
 
     @abc.abstractmethod
     def check_accept(
@@ -199,7 +195,6 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         """
-        pass
 
     @abc.abstractmethod
     def check_better(
@@ -223,10 +218,9 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         """
-        pass
 
-    #@abc.abstractmethod
-    #def update_grounding(self, lns_object: LNS) -> None:  # nocoverage
+    # @abc.abstractmethod
+    # def update_grounding(self, lns_object: LNS) -> None:  # nocoverage
     #    """
     #    Update grounding after new best solution.#
     #
@@ -235,13 +229,12 @@ class StrategyInterface(metaclass=abc.ABCMeta):
     #    """
     #    raise NotImplementedError
 
-
     # beeing reworked
     # pylint: disable=unused-argument
-    #def stuck_handling(self, lns_object: LNS) -> None:
+    # def stuck_handling(self, lns_object: LNS) -> None:
     #    """
     #    Check whether search is stuck and what to do if it is.
-    #   
+    #
     #    :param lns_object: LNS object.
     #    :type lns_object: large_neighbourhood_search.LNS
     #    """

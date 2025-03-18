@@ -93,9 +93,15 @@ def config4_1():
     }
     return solver, strategy, params
 
+
+from mod_lns import LNSConfig
+
 def main():
-    solver, strategy, params = config1()
-    lns = LNS(["examples/golf_demo.lp"], solver, strategy, params)
+    #solver, strategy, params = config1()
+    #lns = LNS(["examples/golf_demo.lp"], solver, strategy, params)
+    #lns.main()
+    config = LNSConfig(lns_options={"hc":True,"decl":False, "heu":False})
+    lns = LNS(["examples/golf_demo.lp"], config)
     lns.main()
 
 if __name__ == "__main__":

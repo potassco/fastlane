@@ -11,14 +11,14 @@ from typing import TYPE_CHECKING, Any, Dict, Sequence
 import clingo
 from clingo.symbol import SymbolType
 
-from mod_lns.lib.strategies.classic_weighted_sum_rnd import ClassicWeightedSumRnd
+from mod_lns.lib.strategies.default_strategy import DefaultStrategy
 from mod_lns.lib.utils import check_smaller_lexicographic
 
 if TYPE_CHECKING:
     from mod_lns import LNS  # nocoverage
 
 
-class ClassicLexiRnd(ClassicWeightedSumRnd):
+class ClassicLexiRnd(DefaultStrategy):
     """
     Classic LNS with lexicographic optimization criteria and random relaxation.
     """

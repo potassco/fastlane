@@ -12,7 +12,12 @@ from clingo.symbol import SymbolType
 
 from mod_lns.interfaces.strategy import StrategyInterface
 from mod_lns.lib.relaxation import relax_random
-from mod_lns.lib.utils import calculate_variability, fix_symbols
+from mod_lns.lib.utils import (
+    calculate_variability,
+    check_smaller_lexicographic,
+    fix_symbols,
+)
+from mod_lns.utils.functions import get_cost_str
 
 if TYPE_CHECKING:
     from mod_lns import LNS  # nocoverage
@@ -24,22 +29,36 @@ class DefaultStrategy(StrategyInterface):
     Classic LNS with weighted sum as optimization criteria and random relaxation.
     """
 
-    def calculate_cost(
-        self, model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]
-    ) -> Any:
+    def calculate_cost(self, model: Dict[str, Sequence[clingo.symbol.Symbol]]) -> Any:
         """
-        Calculate cost of given model using weighted sum.
+        Calculate cost of given model using lexicographic ordering.
 
         :param model: Model.
-        :type model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]
+        :type model: Dict[str, Sequence[clingo.symbol.Symbol]]
         :return: Cost of given model.
         :rtype: Any
         """
-        cost = 0
+        priorities: Dict[str, int] = {}
+        temp_val: Dict[str, int] = {}
+        cost: Dict[int, int] = {}
         for atom in model["true"]:
-            if atom.match("_lns_penalty", 3):
-                if atom.arguments[2].type is SymbolType.Number:
-                    cost += atom.arguments[2].number
+            if atom.match("_lns_priority", 2):
+                if (
+                    atom.arguments[0].type is SymbolType.String
+                    and atom.arguments[1].type is SymbolType.Number
+                ):
+                    priorities[atom.arguments[0].string] = atom.arguments[1].number
+            elif atom.match("_lns_penalty", 3):
+                if (
+                    atom.arguments[0].type is SymbolType.String
+                    and atom.arguments[2].type is SymbolType.Number
+                ):
+                    temp_val[atom.arguments[0].string] = (
+                        temp_val.get(atom.arguments[0].string, 0)
+                        + atom.arguments[2].number
+                    )
+        for item in priorities.items():
+            cost[item[1]] = cost.get(item[1], 0) + temp_val.get(item[0], 0)
         return cost
 
     # pylint: disable=dangerous-default-value
@@ -67,7 +86,7 @@ class DefaultStrategy(StrategyInterface):
         if lns_object.solver.repair(lns_object, fixed_sym).satisfiable:
             print(
                 f"{time.time() - lns_object.start_time:.3f}s: Initial solution found with cost: "
-                f'{lns_object.get_cost_str(lns_object.models["new_model"])}'
+                f'{get_cost_str(lns_object.models["new_model"])}'
             )
             lns_object.models["current_model"] = lns_object.models["new_model"].copy()
             lns_object.models["best_model"] = lns_object.models["new_model"].copy()
@@ -164,9 +183,9 @@ class DefaultStrategy(StrategyInterface):
         :return: Whether new model is better or not.
         :rtype: bool
         """
-        return (
-            lns_object.models["new_model"]["cost"]
-            < lns_object.models["best_model"]["cost"]
+        return check_smaller_lexicographic(
+            lns_object.models["new_model"]["cost"],
+            lns_object.models["best_model"]["cost"],
         )
 
     def stuck_handling(self, lns_object: LNS) -> None:
