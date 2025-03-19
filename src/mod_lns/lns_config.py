@@ -1,0 +1,297 @@
+
+from __future__ import annotations
+from typing import Any, TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple, Union
+
+
+
+import clingo
+from clingo.symbol import Function, Number
+
+from .utils.conversions import symbol_to_str
+
+from .interfaces.solver import SolverInterface
+from .interfaces.strategy import StrategyInterface
+from .lib.solvers.clingo_solver import ClingoSolver
+from .lib.strategies.default_strategy import DefaultStrategy
+from .lib.relaxation import relax_declarative
+
+# pylint: disable=dangerous-default-value
+if TYPE_CHECKING:
+    from mod_lns import LNS  # nocoverage
+
+class LNSConfig:
+    """
+    LNS configuration class.
+    Defines base solver and strategy objects and modifies them
+    according to the given LNS options.
+
+    :param params: LNS options
+    :type params: Dict[str, Any]
+    :default params: {}
+    :param base_solver: Solver object used as base for LNS.
+    :type base_solver: SolverInterface
+    :default base_solver: ClingoSolver()
+    :param base_strategy: Strategy object used as base for LNS.
+    :type base_strategy: StrategyInterface
+    :default base_strategy: DefaultStrategy()
+    """
+
+    def __init__(
+        self,
+        lns_options: Dict[str, Any] = {},
+        base_solver: SolverInterface = ClingoSolver(),
+        base_strategy: StrategyInterface = DefaultStrategy(),
+    ):
+        """
+        Initialize lns config.
+        """
+        default_options = {
+            "strategy": None,
+            "heu": False,
+            "hc": False,
+            "decl": False,
+        }
+
+        self.lns_options = {**default_options, **lns_options}
+
+        # solver
+        self.solver = base_solver
+        if self.lns_options["heu"]:
+            self.enable_heuristic()
+
+        # strategy
+        self.strategy = base_strategy
+        if self.lns_options["hc"]:
+            self.enable_constrained_approach()
+        if self.lns_options["decl"]:
+            self.enable_declarative()
+
+    def enable_heuristic(self) -> None:
+        """
+        Adjust base solver to use heuristics for reparation.
+        """
+        base = type(self.solver)
+
+        class EnHeu(base):
+            def setup(
+                self,
+                lns_object: LNS,
+                files: Optional[List[str]] = None,
+                args: Optional[Dict[str, Any]] = None,
+            ) -> None:
+                """
+                Set up heuristics.
+
+                :param lns_object: LNS object.
+                :type lns_object: large_neighbourhood_search.LNS
+                :param files: ASP files to be loaded, default: lns_object.param_values["files"].
+                :type files: Optional[List[str]]
+                :param args: clingo arguments, default: lns_object.param_values["clingo_args"].
+                :type args: Optional[Dict[str,Any]]
+                """
+                if args is None:
+                    args = {
+                        **lns_object.param_values["clingo_args"],
+                        **{"heuristic": "Domain"},
+                    }
+                else:
+                    args = {**args, **{"heuristic": "Domain"}}
+
+                super(EnHeu, self).setup(lns_object, files, args)
+
+                # used for heuristics, see solve_fixed()
+                self.control.add("_lns_h_step", ["s"], "#external _lns_h_step(s).")
+
+            def repair(
+                self,
+                lns_object: LNS,
+                fixed_atoms: List[Tuple[clingo.symbol.Symbol, bool]],
+            ) -> clingo.solving.SolveResult:
+                """
+                Use heuristics during reparation.
+
+                :param lns_object: LNS object.
+                :type lns_object: large_neighbourhood_search.LNS
+                :param assumptions: Assumptions for solving (fixed atoms).
+                :type assumptions: List[Tuple[clingo.symbol.Symbol, bool]]
+                :return: Solve result.
+                :rtype: clingo.solving.SolveResult
+                """
+                # add rules for heuristics
+                # to correctly enable and disable heuristics at each step
+                # #external _lns_h_step(s) is used
+                # example for step=1, fixed_atoms=[
+                #   Function("meets", [Number(2), Number(3), Number(4)], True),
+                #   Function("meets", [Number(5), Number(6), Number(7)], True),] :
+                # #external _lns_h_step(1).
+                # #heuristic meets(2,3,4) : _lns_h_step(1). [1, true]
+                # #heuristic meets(5,6,7) : _lns_h_step(1). [1, true]
+
+                # setup external of current step
+                step = lns_object.step_c
+                if isinstance(self.control, clingo.control.Control):
+                    self.control.ground([("_lns_h_step", [Number(step)])])
+                    self.control.assign_external(
+                        Function("_lns_h_step", [Number(step)]), True
+                    )
+
+                    # set heuristics
+                    rules = " ".join(
+                        [
+                            f"#heuristic {symbol_to_str(atom[0])} : _lns_h_step({step}). [1, true]"
+                            for atom in fixed_atoms
+                        ]
+                    )
+
+                    self.control.add("heuristics", [], rules)
+                    self.control.ground([("heuristics", [])])
+
+                # solve
+                res = super(EnHeu, self).repair(lns_object, fixed_atoms)
+
+                # release externals
+                if isinstance(self.control, clingo.control.Control):
+                    self.control.release_external(
+                        Function("_lns_h_step", [Number(step)])
+                    )
+                return res
+
+        self.solver = EnHeu()
+
+    def enable_constrained_approach(self) -> None:
+        """
+        Adjust base strategy to use constrained approach.
+        """
+        base = type(self.strategy)
+
+        class EnCons(base):
+            def post_first_solution(self, lns_object: LNS) -> None:
+                """
+                Enforce better solution by implementing initial cost as hard constraint.
+
+                :param lns_object: LNS object.
+                :type lns_object: large_neighbourhood_search.LNS
+                """
+                super(EnCons, self).post_first_solution(lns_object)
+                cost = lns_object.models["new_model"]["cost"]
+                # add rules to force better solution with each iteration
+                # encoding has to contain _lns_penalty(N,I,W) predicates and _lns_priority(N,P) facts
+                # where N: name, I: identifier, W: weight, P: priority
+                # higher priority = more important
+                # priorities have to be declared consecutively, e.g. only 1 and 3 not allowed
+                # example of generated rules with ground values for cost={1:3, 2:4}
+                #   #external _lns_l_step(s).
+                #   _lns_bettereq(P+1,s) :- _lns_priority(_,P), not _lns_penalty(_,P+1), _lns_l_step(s).
+                #   :- not _lns_better(_,s), _lns_l_step(s).
+                #   _lns_better(1,s) :- _lns_priority(N,1), #sum{W,I: _lns_penalty(N,I,W)} < 3,
+                #                       _lns_bettereq(1,s), _lns_l_step(s).
+                #   _lns_bettereq(1,s) :- _lns_priority(N,1), #sum{W,I: _lns_penalty(N,I,W)} <= 3,
+                #                         _lns_bettereq(2,s), _lns_l_step(s).
+                #   _lns_better(2,s) :- _lns_priority(N,2), #sum{W,I: _lns_penalty(N,I,W)} < 4,
+                #                       _lns_bettereq(2,s), _lns_l_step(s).
+                #   _lns_bettereq(2,s) :- _lns_priority(N,2), #sum{W,I: _lns_penalty(N,I,W)} <= 4,
+                #                         _lns_bettereq(3,s), _lns_l_step(s).
+                s = ["s"] + list(map(lambda x: f"cost{x}", sorted(cost.keys())))
+                rules = (
+                    "#external _lns_l_step(s).\
+                _lns_bettereq(P+1,s) :- _lns_priority(_,P), not _lns_priority(_,P+1), _lns_l_step(s).\
+                :- not _lns_better(_,s), _lns_l_step(s)."
+                    + " ".join(
+                        list(
+                            map(
+                                lambda x: f"_lns_better({x},s) :- _lns_priority(N,{x}),\
+                                #sum{{W,I: _lns_penalty(N,I,W)}} < cost{x}, _lns_bettereq({x},s), _lns_l_step(s).",
+                                cost.keys(),
+                            )
+                        )
+                        + list(
+                            map(
+                                lambda x: f"_lns_bettereq({x},s) :- _lns_priority(N,{x}),\
+                                #sum{{W,I: _lns_penalty(N,I,W)}} <= cost{x}, _lns_bettereq({x+1},s), _lns_l_step(s).",
+                                cost.keys(),
+                            )
+                        )
+                    )
+                )
+                if isinstance(lns_object.solver.control, clingo.control.Control):
+                    lns_object.solver.control.add("cost", s, rules)
+                    lns_object.solver.control.ground(
+                        [
+                            (
+                                "cost",
+                                [Number(0)]
+                                + [Number(cost[prio]) for prio in sorted(cost.keys())],
+                            )
+                        ]
+                    )
+                    lns_object.solver.control.assign_external(
+                        Function("_lns_l_step", [Number(0)]), True
+                    )
+
+            def check_better(self, lns_object: LNS) -> bool:
+                """
+                Check whether new model is better.
+                Enforced through constraint.
+
+                :param lns_object: LNS object.
+                :type lns_object: large_neighbourhood_search.LNS
+                :return: Whether new model is better or not.
+                :rtype: bool
+                """
+                return True
+
+            def better(self, lns_object: LNS) -> None:
+                """
+                Update constraint after new best solution was found.
+
+                :param lns_object: LNS object.
+                :type lns_object: large_neighbourhood_search.LNS
+                """
+                super(EnCons, self).better(lns_object)
+                step = lns_object.step_c
+                if isinstance(lns_object.solver.control, clingo.control.Control):
+                    lns_object.solver.control.release_external(
+                        Function("_lns_l_step", [Number(step - 1)])
+                    )
+                    cost = lns_object.models["best_model"]["cost"]
+                    lns_object.solver.control.ground(
+                        [
+                            (
+                                "cost",
+                                [Number(step)]
+                                + [Number(cost[prio]) for prio in sorted(cost.keys())],
+                            )
+                        ]
+                    )
+                    lns_object.solver.control.assign_external(
+                        Function("_lns_l_step", [Number(step)]), True
+                    )
+
+        self.strategy = EnCons()
+
+    def enable_declarative(self) -> None:
+        """
+        Adjust base strategy to use declarative relaxation.
+        """
+        base=type(self.strategy)
+
+        class EnDecl(base):
+            def relax(
+                self,
+                model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]],
+                relax_parameters: Dict[str, Any],
+            ) -> List[Tuple[clingo.symbol.Symbol, bool]]:
+                """
+                Relax portion of atoms given by the relax_parameters.
+                Use declarative random relaxation.
+
+                :param model: Dictionary containing list of shown and true atoms.
+                :type model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]
+                :param relax_parameters: Parameters used to determine relaxed atoms.
+                :type relax_parameters: Dict[str, Any]
+                :return: Fixed (not relaxed) atoms.
+                :rtype: List[Tuple[clingo.symbol.Symbol, bool]]
+                """
+                return relax_declarative(model, relax_parameters)
+
+        self.strategy = EnDecl()

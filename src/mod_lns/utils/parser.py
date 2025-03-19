@@ -8,18 +8,10 @@ from argparse import ArgumentParser
 from textwrap import dedent
 from typing import Any, cast
 
-from mod_lns.lib.solvers.clingo_dl_heu_solver import ClingoDLHeuSolver
-from mod_lns.lib.solvers.clingo_dl_solver import ClingoDLSolver
-from mod_lns.lib.solvers.clingo_heu_solver import ClingoHeuSolver
-from mod_lns.lib.solvers.clingo_solver import ClingoSolver
-from mod_lns.lib.strategies.classic_lexicographic_declarative import ClassicLexiDecl
-from mod_lns.lib.strategies.classic_lexicographic_rnd import ClassicLexiRnd
-from mod_lns.lib.strategies.classic_weighted_sum_decl import ClassicWeightedSumDecl
-from mod_lns.lib.strategies.classic_weighted_sum_rnd import ClassicWeightedSumRnd
-from mod_lns.lib.strategies.hc_lexicographic_declarative import HCLexiDecl
-from mod_lns.lib.strategies.hc_lexicographic_rnd import HCLexiRnd
-from mod_lns.lib.strategies.hc_weighted_sum_decl import HCWeightedSumDecl
-from mod_lns.lib.strategies.hc_weighted_sum_rnd import HCWeightedSumRnd
+from mod_lns.interfaces import solver, strategy
+from mod_lns.lib.solvers import *
+from mod_lns.lib.strategies import *
+
 
 __all__ = ["get_parser"]
 
@@ -42,29 +34,18 @@ def get_parser() -> ArgumentParser:
             Modular Large Neighbourhood Search (LNS) Framework using ASP.\n
             Check the documentation for a guide on how to use this framework
             and all possible options for configuration.
+
+            --heuristic, --constrained and --declarative options should not be used
+            when using custom solvers and/or strategies.  
             """
         ),
     )
 
     # dict of supported solvers
-    solvers = [
-        ("ClingoSolver", ClingoSolver()),
-        ("ClingoHeuSolver", ClingoHeuSolver()),
-        ("ClingoDLSolver", ClingoDLSolver()),
-        ("ClingoDLHeuSolver", ClingoDLHeuSolver()),
-    ]
-
+    solvers = [(cls.__name__, cls()) for cls in solver.SolverInterface.__subclasses__()]
+    
     # dict of all supported strategies
-    strategies = [
-        ("ClassicWeightedSumRnd", ClassicWeightedSumRnd()),
-        ("ClassicWeightedSumDecl", ClassicWeightedSumDecl()),
-        ("ClassicLexiRnd", ClassicLexiRnd()),
-        ("ClassicLexiDecl", ClassicLexiDecl()),
-        ("HCWeightedSumRnd", HCWeightedSumRnd()),
-        ("HCWeightedSumDecl", HCWeightedSumDecl()),
-        ("HCLexiRnd", HCLexiRnd()),
-        ("HCLexiDecl", HCLexiDecl()),
-    ]
+    strategies = [(cls.__name__, cls()) for cls in strategy.StrategyInterface.__subclasses__()]
 
     levels = [
         ("error", logging.ERROR),
@@ -107,11 +88,29 @@ def get_parser() -> ArgumentParser:
 
     parser.add_argument(
         "--strategy",
-        default="HCWeightedSumRnd",
+        default="DefaultStrategy",
         choices=[val for _, val in strategies],
         metavar=f"{{{','.join(key for key, _ in strategies)}}}",
         help="set LNS strategy [%(default)s]",
         type=cast(Any, lambda name: get(strategies, name)),
+    )
+
+    parser.add_argument(
+        "--heuristic",
+        action="store_true",
+        help="enable heuristics during reparation",
+    )
+
+    parser.add_argument(
+        "--constrained",
+        action="store_true",
+        help="enable constrained approach",
+    )
+
+    parser.add_argument(
+        "--declarative",
+        action="store_true",
+        help="enable declarative relaxation",
     )
 
     parser.add_argument(
@@ -126,12 +125,6 @@ def get_parser() -> ArgumentParser:
         "--relax_rate",
         help="set relax rate 0 < [%(default)s] <= 1",
         default=0.2,
-        type=float,
-    )
-    parser.add_argument(
-        "--base_relax_rate",
-        help="set base relax rate 0 <= [%(default)s] <= 1",
-        default=0,
         type=float,
     )
 
@@ -153,38 +146,6 @@ def get_parser() -> ArgumentParser:
         "--max_steps",
         help="set maximum number of steps [%(default)s], non-int string for no limit",
         default="2000",
-        type=str,
-    )
-
-    parser.add_argument(
-        "--no_improv",
-        help="set maximum number of steps without improvement [%(default)s], non-int string for no limit",
-        default="1000",
-        type=str,
-    )
-
-    parser.add_argument(
-        "--vari_accept",
-        help="accept solution if specified variability is achieved 0 <= [%(default)s] < relax_rate",
-        default=0,
-        type=float,
-    )
-
-    parser.add_argument(
-        "--pre_files",
-        help="ASP input file(s) for pre-solving [%(default)s]",
-        nargs="*",
-        default=[],
-    )
-
-    parser.add_argument(
-        "--pre_tl", help="pre-solving time-limit [%(default)s]", default=1800, type=int
-    )
-
-    parser.add_argument(
-        "--start_sol",
-        help="set initial solution in the form of: 'atom(1) atom(2) ...'",
-        default=None,
         type=str,
     )
 

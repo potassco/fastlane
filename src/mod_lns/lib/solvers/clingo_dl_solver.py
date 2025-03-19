@@ -5,7 +5,7 @@ clingo-dl solver for LNS.
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Sequence, List, Optional, Tuple
 
 import clingo
 from clingo import ast
@@ -26,7 +26,7 @@ class ClingoDLSolver(SolverInterface):
         self,
         lns_object: LNS,
         files: Optional[List[str]] = None,
-        args: Optional[Dict[str, Any]] = None,
+        args: Sequence[str] = [],
     ) -> None:
         """
         Initialize clingo.Control object using clingo-dl.
@@ -35,22 +35,22 @@ class ClingoDLSolver(SolverInterface):
         :type lns_object: large_neighbourhood_search.LNS
         :param files: ASP files to be loaded, default: lns_object.param_values["files"].
         :type files: Optional[List[str]]
-        :param args: clingo arguments, default: lns_object.param_values["clingo_args"].
-        :type args: Optional[Dict[str,Any]]
+        :param args: clingo arguments, default: lns_object.clingo_options.
+        :type args: Sequence[str]
+        :default args: []
         """
         if files is None:
             files = lns_object.param_values["files"]
 
         if args is None:
-            args = lns_object.param_values["clingo_args"]
+            args = lns_object.clingo_options
 
         # set seed if given
         if lns_object.param_values["seed"] is not None:
-            lns_object.set_seed(lns_object.param_values["seed"])
-        argsl = [f"--{i[0]}={i[1]}" for i in args.items()]
+            args = args + [f"--seed={lns_object.param_values['seed']}"]
 
         thy = ClingoDLTheory()
-        ctl = clingo.Control(argsl)
+        ctl = clingo.Control(args)
         thy.register(ctl)
         with ast.ProgramBuilder(ctl) as builder:
             ast.parse_files(

@@ -8,13 +8,8 @@ from typing import Any, Dict
 
 from mod_lns import LNS
 from mod_lns.lib.solvers.clingo_solver import ClingoSolver
-from mod_lns.lib.strategies.classic_weighted_sum_rnd import (
-    ClassicWeightedSumRnd
-)
-from mod_lns.lib.solvers.clingo_heu_solver import ClingoHeuSolver
-from mod_lns.lib.strategies.hc_weighted_sum_rnd import HCWeightedSumRnd
 from mod_lns.lib.relaxation import relax_declarative
-from mod_lns.lib.utils import symbol_to_str
+from mod_lns.utils.conversions import symbol_to_str
 
 # classic LNS with random relaxation using clingo with assumptions and weighted sum
 def config1():
@@ -94,7 +89,7 @@ def config4_1():
     return solver, strategy, params
 
 
-from mod_lns import LNSConfig
+from mod_lns.lns_config import LNSConfig
 
 def main():
     #solver, strategy, params = config1()
