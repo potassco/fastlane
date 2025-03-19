@@ -8,11 +8,6 @@ from argparse import ArgumentParser
 from textwrap import dedent
 from typing import Any, cast
 
-from mod_lns.interfaces import solver, strategy
-from mod_lns.lib.solvers import *
-from mod_lns.lib.strategies import *
-
-
 __all__ = ["get_parser"]
 
 if sys.version_info[1] < 8:
@@ -21,6 +16,38 @@ else:
     from importlib import metadata  # nocoverage
 
 VERSION = metadata.version("mod_lns")
+
+import importlib
+import inspect
+import pkgutil
+
+# temporary solution
+def get_classes_from_package(package: str) -> list[type]:
+    """
+    Return all classes inside given package.
+
+    :param package: Package string.
+    :type package: str
+    :return: List of classes in package.
+    :rtype: list[type]
+    """
+    classes_in_package = []
+    # Go through the modules in the package
+    for _importer, module_name, _ in pkgutil.iter_modules(
+        importlib.import_module(package).__path__
+    ):
+        full_module_name = f"{package}.{module_name}"
+        # Load the module for inspection
+        module = importlib.import_module(full_module_name)
+
+        # Filter for class objects and only objects that exist within the module
+        for _name, obj in inspect.getmembers(
+            module,
+            lambda member, module_name=full_module_name: inspect.isclass(member)
+            and member.__module__ == module_name,
+        ):
+            classes_in_package.append(obj)
+    return classes_in_package
 
 
 def get_parser() -> ArgumentParser:
@@ -40,12 +67,16 @@ def get_parser() -> ArgumentParser:
             """
         ),
     )
+    # list of supported solvers
+    solvers = [
+        (cls.__name__, cls()) for cls in get_classes_from_package("mod_lns.lib.solvers")
+    ]
 
-    # dict of supported solvers
-    solvers = [(cls.__name__, cls()) for cls in solver.SolverInterface.__subclasses__()]
-    
-    # dict of all supported strategies
-    strategies = [(cls.__name__, cls()) for cls in strategy.StrategyInterface.__subclasses__()]
+    # list of supported strategies
+    strategies = [
+        (cls.__name__, cls())
+        for cls in get_classes_from_package("mod_lns.lib.strategies")
+    ]
 
     levels = [
         ("error", logging.ERROR),
