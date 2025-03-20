@@ -5,7 +5,7 @@ Default strategy implementing classic LNS with weighted sum as optimization crit
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, Sequence, Union
 
 import clingo
 from clingo.symbol import SymbolType
@@ -29,18 +29,18 @@ class DefaultStrategy(StrategyInterface):
     Classic LNS with weighted sum as optimization criteria and random relaxation.
     """
 
-    def calculate_cost(self, model: Dict[str, Sequence[clingo.symbol.Symbol]]) -> Any:
+    def calculate_cost(self, model: dict[str, Sequence[clingo.symbol.Symbol]]) -> Any:
         """
         Calculate cost of given model using lexicographic ordering.
 
         :param model: Model.
-        :type model: Dict[str, Sequence[clingo.symbol.Symbol]]
+        :type model: dict[str, Sequence[clingo.symbol.Symbol]]
         :return: Cost of given model.
         :rtype: Any
         """
-        priorities: Dict[str, int] = {}
-        temp_val: Dict[str, int] = {}
-        cost: Dict[int, int] = {}
+        priorities: dict[str, int] = {}
+        temp_val: dict[str, int] = {}
+        cost: dict[int, int] = {}
         for atom in model["true"]:
             if atom.match("_lns_priority", 2):
                 if (
@@ -63,7 +63,7 @@ class DefaultStrategy(StrategyInterface):
 
     # pylint: disable=dangerous-default-value
     def get_first_solution(
-        self, lns_object: LNS, start_sol: List[clingo.symbol.Symbol] = []
+        self, lns_object: LNS, start_sol: list[clingo.symbol.Symbol] = []
     ) -> bool:
         """
         Find initial solution.
@@ -71,7 +71,7 @@ class DefaultStrategy(StrategyInterface):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         :param start_sol: optional start solution.
-        :type start_sol: List[clingo.symbol.Symbol]
+        :type start_sol: list[clingo.symbol.Symbol]
         :default start_sol: []
         :return: Whether a solution was found or not
         :rtype: bool
@@ -120,24 +120,24 @@ class DefaultStrategy(StrategyInterface):
 
     def relax(
         self,
-        model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]],
-        relax_parameters: Dict[str, Any],
-    ) -> List[Tuple[clingo.symbol.Symbol, bool]]:
+        model: dict[str, Union[Sequence[clingo.symbol.Symbol], Any]],
+        relax_parameters: dict[str, Any],
+    ) -> list[tuple[clingo.symbol.Symbol, bool]]:
         """
         Relax portion of atoms given by the relax_parameters.
         Use random relaxation.
 
-        :param model: Dictionary containing list of shown and true atoms.
-        :type model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]
+        :param model: dictionary containing list of shown and true atoms.
+        :type model: dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]
         :param relax_parameters: Parameters used to determine relaxed atoms.
-        :type relax_parameters: Dict[str, Any]
+        :type relax_parameters: dict[str, Any]
         :return: Fixed (not relaxed) atoms.
-        :rtype: List[Tuple[clingo.symbol.Symbol, bool]]
+        :rtype: list[tuple[clingo.symbol.Symbol, bool]]
         """
         return relax_random(model, relax_parameters)
 
     def repair(
-        self, lns_object: LNS, fixed_atoms: List[Tuple[clingo.symbol.Symbol, bool]]
+        self, lns_object: LNS, fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]]
     ) -> clingo.solving.SolveResult:
         """
         Repair solution.
@@ -145,7 +145,7 @@ class DefaultStrategy(StrategyInterface):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         :param fixed_atoms: Fixed atoms.
-        :type fixed_atoms: List[Tuple[clingo.symbol.Symbol, bool]]
+        :type fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]]
         :return: Solve result.
         :rtype: clingo.solving.SolveResult
         """
