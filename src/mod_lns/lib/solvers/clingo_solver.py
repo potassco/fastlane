@@ -5,7 +5,7 @@ clingo solver for LNS.
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, List, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Optional
 
 import clingo
 
@@ -23,8 +23,8 @@ class ClingoSolver(SolverInterface):
     def setup(
         self,
         lns_object: LNS,
-        files: Optional[List[str]] = None,
-        args: Sequence[str] = [],
+        files: Optional[list[str]] = None,
+        args: list[str] = [],
     ) -> None:
         """
         Initialize clingo.Control object using clingo.
@@ -32,9 +32,9 @@ class ClingoSolver(SolverInterface):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         :param files: ASP files to be loaded, default: lns_object.param_values["files"].
-        :type files: Optional[List[str]]
+        :type files: Optional[list[str]]
         :param args: clingo arguments, default: lns_object.clingo_options.
-        :type args: Sequence[str]
+        :type args: list[str]
         :default args: []
         """
         if files is None:
@@ -55,7 +55,7 @@ class ClingoSolver(SolverInterface):
     def repair(
         self,
         lns_object: LNS,
-        fixed_atoms: List[Tuple[clingo.symbol.Symbol, bool]],
+        fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]],
     ) -> clingo.solving.SolveResult:
         """
         Solve under assumptions using clingo.
@@ -63,7 +63,7 @@ class ClingoSolver(SolverInterface):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         :param assumptions: Assumptions for solving (fixed atoms).
-        :type assumptions: List[Tuple[clingo.symbol.Symbol, bool]]
+        :type assumptions: list[tuple[clingo.symbol.Symbol, bool]]
         :return: Solve result.
         :rtype: clingo.solving.SolveResult
         """

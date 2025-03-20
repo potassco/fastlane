@@ -5,7 +5,7 @@ Solver interface used for LNS.
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Optional, Sequence
 
 import clingo
 
@@ -41,8 +41,8 @@ class SolverInterface(metaclass=abc.ABCMeta):
     def setup(
         self,
         lns_object: LNS,
-        files: Optional[List[str]] = None,
-        args: Sequence[str] = [],
+        files: Optional[list[str]] = None,
+        args: list[str] = [],
     ) -> None:  # nocoverage
         """
         Initialization of the solver.
@@ -50,9 +50,9 @@ class SolverInterface(metaclass=abc.ABCMeta):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         :param files: ASP files to be loaded.
-        :type files: Optional[List[str]]
+        :type files: Optional[list[str]]
         :param args: clingo arguments.
-        :type args: Sequence[str]
+        :type args: list[str]
         :default args: []
         """
         raise NotImplementedError
@@ -61,7 +61,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
     def repair(
         self,
         lns_object: LNS,
-        fixed_atoms: List[Tuple[clingo.symbol.Symbol, bool]],
+        fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]],
     ) -> clingo.solving.SolveResult:  # nocoverage
         """
         Solve with fixed atoms.
@@ -69,7 +69,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         :param assumptions: Assumptions for solving (fixed atoms).
-        :type assumptions: List[Tuple[clingo.symbol.Symbol, bool]]
+        :type assumptions: list[tuple[clingo.symbol.Symbol, bool]]
         :return: Solve result.
         :rtype: clingo.solving.SolveResult
         """
@@ -87,6 +87,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
+    @classmethod
     def ground_base(self, lns_object: LNS) -> None:
         """
         Ground base encoding.
@@ -97,6 +98,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
         if isinstance(self.control, clingo.control.Control):
             self.control.ground([("base", [])], context=lns_object)
 
+    @classmethod
     def get_available_solve_time(self, lns_object: LNS) -> int:
         """
         Calculate available solve time.
@@ -112,12 +114,13 @@ class SolverInterface(metaclass=abc.ABCMeta):
             return lns_object.param_values["solve_time_limit"]
         return avail_time
 
-    def get_stats(self) -> Dict:
+    @classmethod
+    def get_stats(self) -> dict:
         """
         Get statistics of the last solve call.
 
         :return: Statistics dictionary.
-        :rtype: Dict
+        :rtype: dict
         """
         if isinstance(self.control, clingo.control.Control):
             return self.control.statistics
