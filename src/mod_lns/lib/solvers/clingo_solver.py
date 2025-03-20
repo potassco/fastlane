@@ -5,7 +5,7 @@ clingo solver for LNS.
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, List, Optional, Tuple, Sequence
+from typing import TYPE_CHECKING, List, Optional, Sequence, Tuple
 
 import clingo
 
@@ -40,7 +40,7 @@ class ClingoSolver(SolverInterface):
         if files is None:
             files = lns_object.param_values["files"]
 
-        if args is None:
+        if len(args) == 0:
             args = lns_object.clingo_options
 
         # set seed if given

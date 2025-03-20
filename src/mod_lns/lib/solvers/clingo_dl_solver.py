@@ -5,7 +5,7 @@ clingo-dl solver for LNS.
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Sequence, List, Optional, Tuple
+from typing import TYPE_CHECKING, List, Optional, Sequence, Tuple
 
 import clingo
 from clingo import ast

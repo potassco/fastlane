@@ -9,11 +9,11 @@ from types import FrameType
 from typing import Any, Dict, List, Sequence, Union
 
 import clingo
-from .lns_config import LNSConfig 
-from .utils.conversions import str_to_symbols
 
 from .interfaces.solver import SolverInterface
 from .interfaces.strategy import StrategyInterface
+from .lns_config import LNSConfig
+from .utils.conversions import str_to_symbols
 from .utils.functions import get_cost_str, print_model
 
 
@@ -24,32 +24,23 @@ class LNS:
 
     :param files: Problem encodings.
     :type files: List[str]
-    :param solver: Solver class used during LNS.
-    :type solver: SolverInterface
-    :default solver: ClingoSolver
-    :param strategy: Strategy class used during LNS.
-    :type strategy: StrategyInterface
-    :default strategy: HCWeightedSumRnd
-    :param params: Search parameters.
-    :type params: Dict[str, Any]
-    :default params: {}
+    :param lns_config: LNSConfig object.
+    :type lns_config: mod_lns.lns_config.LNSConfig
     """
 
     def __init__(
         self,
         files: List[str],
         lns_config: LNSConfig,
-        clingo_options: Sequence[str] = [],
     ):
         """
         Initialization of the lns object.
         """
-        self.clingo_options = ["--rand-freq=0.1"] + clingo_options
+        self.clingo_options = lns_config.clingo_options
         self.solver: SolverInterface = lns_config.solver
         self.strategy: StrategyInterface = lns_config.strategy
         self.start_time: float = 0
         self.step_c: int = 0
-        # self.no_improv_c = 0
         self.stopped = False
 
         new_model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]] = {}
@@ -61,6 +52,7 @@ class LNS:
             "best_model": best_model,
         }
 
+        # to be reworked
         self.param_values: Dict[str, Any] = {
             "files": files,
             "seed": None,
@@ -234,7 +226,6 @@ class LNS:
                         f'New best solution: {get_cost_str(self.models["best_model"])}'
                     )
                     self.strategy.better(self)
-                    self.no_improv_c = 0
         print("==================")
         print("SEARCH FINISHED:")
         print_model(self.models["best_model"])

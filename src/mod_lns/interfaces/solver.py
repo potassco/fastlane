@@ -5,7 +5,7 @@ Solver interface used for LNS.
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
 
 import clingo
 
@@ -42,7 +42,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
         self,
         lns_object: LNS,
         files: Optional[List[str]] = None,
-        args: Optional[Dict[str, Any]] = None,
+        args: Sequence[str] = [],
     ) -> None:  # nocoverage
         """
         Initialization of the solver.
@@ -52,7 +52,8 @@ class SolverInterface(metaclass=abc.ABCMeta):
         :param files: ASP files to be loaded.
         :type files: Optional[List[str]]
         :param args: clingo arguments.
-        :type args: Optional[Dict[str,Any]]
+        :type args: Sequence[str]
+        :default args: []
         """
         raise NotImplementedError
 

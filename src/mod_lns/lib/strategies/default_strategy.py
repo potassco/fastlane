@@ -187,20 +187,3 @@ class DefaultStrategy(StrategyInterface):
             lns_object.models["new_model"]["cost"],
             lns_object.models["best_model"]["cost"],
         )
-
-    def stuck_handling(self, lns_object: LNS) -> None:
-        """
-        Stop search after specific amount of no improvements in a row.
-
-        :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
-        """
-        if isinstance(lns_object.param_values["stuck_after_no_improv"], int):
-            if (
-                lns_object.no_improv_c
-                >= lns_object.param_values["stuck_after_no_improv"]
-            ):
-                print(
-                    f"{time.time() - lns_object.start_time:.3f}s: Search stuck at step {lns_object.step_c}!"
-                )
-                lns_object.stopped = True

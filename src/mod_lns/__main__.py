@@ -20,7 +20,7 @@ def main():
     log.warning("warning")
     log.debug("debug")
     log.error("error")
-    print(rest)
+
     config = LNSConfig(
         {
             "heu": args.heuristic,
@@ -32,15 +32,17 @@ def main():
             "solve_time_limit": args.solve_time_limit,
             "max_steps": args.max_steps,
         },
+        rest,
         args.solver,
-        args.strategy)
+        args.strategy,
+    )
 
     lns = LNS(
         args.input_files,
         config,
-        rest,
     )
-    #lns.main()
+    lns.main()
+
 
 if __name__ == "__main__":
     main()

@@ -219,16 +219,6 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         :type lns_object: large_neighbourhood_search.LNS
         """
 
-    # @abc.abstractmethod
-    # def update_grounding(self, lns_object: LNS) -> None:  # nocoverage
-    #    """
-    #    Update grounding after new best solution.#
-    #
-    #    :param lns_object: LNS object.
-    #    :type lns_object: large_neighbourhood_search.LNS
-    #    """
-    #    raise NotImplementedError
-
     # beeing reworked
     # pylint: disable=unused-argument
     # def stuck_handling(self, lns_object: LNS) -> None:

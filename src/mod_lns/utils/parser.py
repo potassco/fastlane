@@ -2,7 +2,10 @@
 The command line parser for the project.
 """
 
+import importlib
+import inspect
 import logging
+import pkgutil
 import sys
 from argparse import ArgumentParser
 from textwrap import dedent
@@ -17,9 +20,6 @@ else:
 
 VERSION = metadata.version("mod_lns")
 
-import importlib
-import inspect
-import pkgutil
 
 # temporary solution
 def get_classes_from_package(package: str) -> list[type]:

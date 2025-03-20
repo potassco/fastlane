@@ -1,8 +1,8 @@
+import re
+from typing import Any, Dict, List
+
 import clingo
 from clingo.symbol import SymbolType, parse_term
-from typing import Dict, Any
-import re
-from typing import List
 
 
 def str_to_symbols(string: str) -> List[clingo.symbol.Symbol]:
@@ -45,14 +45,22 @@ def symbol_to_str(symbol: clingo.Symbol) -> str:
         return "#inf"
     return "#sup"
 
+
 def args_to_dict(args_str: str) -> Dict[str, Any]:
+    """
+    Convert program argument string to dictionary.
+
+    :param args_str: String to be converted.
+    :type args_str: str
+    :return: Argument dictionary.
+    :rtype: Dict[str, Any]
+    """
     arg_list = args_str.split()
     d = {}
     for arg in arg_list:
-        k = re.match(r'\-[\-]?([\w\-]+)(=([\w\-]+))?', arg)
+        k = re.match(r"\-[\-]?([\w\-]+)(=([\w\-]+))?", arg)
         if k.group(1) and k.group(3):
             d[k.group(1)] = k.group(3)
         elif k.group(1):
             d[k.group(1)] = True
     return d
-

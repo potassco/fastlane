@@ -1,23 +1,21 @@
-
 from __future__ import annotations
-from typing import Any, TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple, Union
 
-
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import clingo
 from clingo.symbol import Function, Number
 
-from .utils.conversions import symbol_to_str
-
 from .interfaces.solver import SolverInterface
 from .interfaces.strategy import StrategyInterface
+from .lib.relaxation import relax_declarative
 from .lib.solvers.clingo_solver import ClingoSolver
 from .lib.strategies.default_strategy import DefaultStrategy
-from .lib.relaxation import relax_declarative
+from .utils.conversions import symbol_to_str
 
 # pylint: disable=dangerous-default-value
 if TYPE_CHECKING:
     from mod_lns import LNS  # nocoverage
+
 
 class LNSConfig:
     """
@@ -25,9 +23,12 @@ class LNSConfig:
     Defines base solver and strategy objects and modifies them
     according to the given LNS options.
 
-    :param params: LNS options
-    :type params: Dict[str, Any]
-    :default params: {}
+    :param lns_options: LNS options.
+    :type lns_options: Dict[str, Any]
+    :default lns_options: {}
+    :param clingo_options: clingo options.
+    :type clingo_options: Sequence[str]
+    :default clingo_options: []
     :param base_solver: Solver object used as base for LNS.
     :type base_solver: SolverInterface
     :default base_solver: ClingoSolver()
@@ -39,6 +40,7 @@ class LNSConfig:
     def __init__(
         self,
         lns_options: Dict[str, Any] = {},
+        clingo_options: Sequence[str] = [],
         base_solver: SolverInterface = ClingoSolver(),
         base_strategy: StrategyInterface = DefaultStrategy(),
     ):
@@ -46,27 +48,33 @@ class LNSConfig:
         Initialize lns config.
         """
         default_options = {
-            "strategy": None,
-            "heu": False,
-            "hc": False,
-            "decl": False,
+            "heuristics": False,
+            "constrained": False,
+            "declarative": False,
+            "relax_rate": 0.1,
+            "max_steps": "2000",
+            "solve_time_limit": 20,
+            "overall_time_limit": 600,
         }
 
         self.lns_options = {**default_options, **lns_options}
+        self.clingo_options = clingo_options
 
         # solver
         self.solver = base_solver
-        if self.lns_options["heu"]:
-            self.enable_heuristic()
+        if self.lns_options["heuristics"]:
+            self._enable_heuristics()
 
         # strategy
         self.strategy = base_strategy
-        if self.lns_options["hc"]:
-            self.enable_constrained_approach()
-        if self.lns_options["decl"]:
-            self.enable_declarative()
+        if self.lns_options["constrained"]:
+            self._enable_constrained_approach()
+        else:
+            self.clingo_options = self.clingo_options + ["--rand-freq=0.05"]
+        if self.lns_options["declarative"]:
+            self._enable_declarative()
 
-    def enable_heuristic(self) -> None:
+    def _enable_heuristics(self) -> None:
         """
         Adjust base solver to use heuristics for reparation.
         """
@@ -77,7 +85,7 @@ class LNSConfig:
                 self,
                 lns_object: LNS,
                 files: Optional[List[str]] = None,
-                args: Optional[Dict[str, Any]] = None,
+                args: Sequence[str] = [],
             ) -> None:
                 """
                 Set up heuristics.
@@ -87,15 +95,13 @@ class LNSConfig:
                 :param files: ASP files to be loaded, default: lns_object.param_values["files"].
                 :type files: Optional[List[str]]
                 :param args: clingo arguments, default: lns_object.param_values["clingo_args"].
-                :type args: Optional[Dict[str,Any]]
+                :type args: Sequence[str]
+                :default args: []
                 """
-                if args is None:
-                    args = {
-                        **lns_object.param_values["clingo_args"],
-                        **{"heuristic": "Domain"},
-                    }
+                if len(args) == 0:
+                    args = lns_object.clingo_options + ["--heuristic=Domain"]
                 else:
-                    args = {**args, **{"heuristic": "Domain"}}
+                    args = args + ["--heuristic=Domain"]
 
                 super(EnHeu, self).setup(lns_object, files, args)
 
@@ -158,7 +164,7 @@ class LNSConfig:
 
         self.solver = EnHeu()
 
-    def enable_constrained_approach(self) -> None:
+    def _enable_constrained_approach(self) -> None:
         """
         Adjust base strategy to use constrained approach.
         """
@@ -269,11 +275,11 @@ class LNSConfig:
 
         self.strategy = EnCons()
 
-    def enable_declarative(self) -> None:
+    def _enable_declarative(self) -> None:
         """
         Adjust base strategy to use declarative relaxation.
         """
-        base=type(self.strategy)
+        base = type(self.strategy)
 
         class EnDecl(base):
             def relax(
