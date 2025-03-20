@@ -1,5 +1,5 @@
 """
-Test cases for classic strategy classes.
+Test cases for DefaultStrategy classes.
 """
 
 import time
@@ -8,28 +8,22 @@ from unittest import TestCase
 from clingo.symbol import Function, Number, String
 
 from mod_lns import LNS
-from mod_lns.interfaces.solver import SolverInterface
-from mod_lns.interfaces.strategy import StrategyInterface
-from mod_lns.lib.solvers.clingo_solver import ClingoSolver
-from mod_lns.lib.strategies.classic_lexicographic_declarative import ClassicLexiDecl
-from mod_lns.lib.strategies.classic_lexicographic_rnd import ClassicLexiRnd
-from mod_lns.lib.strategies.classic_weighted_sum_decl import ClassicWeightedSumDecl
-from mod_lns.lib.strategies.classic_weighted_sum_rnd import ClassicWeightedSumRnd
+from mod_lns.lib.strategies.default_strategy import DefaultStrategy
+from mod_lns.lns_config import LNSConfig
 
 
-class TestStrategyClWsRnd(TestCase):
+class TestDefaultStrategy(TestCase):
     """
-    Test cases for ClassicWeightedSumRnd class.
+    Test cases for DefaultStrategy class.
     """
 
     def setUp(self) -> None:
-        self.solver: SolverInterface = ClingoSolver()
-        self.strategy: StrategyInterface = ClassicWeightedSumRnd()
-        self.lns = LNS(["./tests/ref/golf.lp"], self.solver, self.strategy)
+        config = LNSConfig(base_strategy=DefaultStrategy())
+        self.lns = LNS(["./tests/ref/golf.lp"], config)
 
     def test_calc_cost(self):
         """
-        Test cost calculation using weighted sum.
+        Test cost calculation using lexicographic optimization.
         """
         model = {
             "shown": [
@@ -71,7 +65,7 @@ class TestStrategyClWsRnd(TestCase):
                     "_lns_priority",
                     [
                         String("min2"),
-                        Number(2),
+                        Number(3),
                     ],
                     True,
                 ),
@@ -85,9 +79,17 @@ class TestStrategyClWsRnd(TestCase):
                     True,
                 ),
                 Function(
+                    "_lns_priority",
+                    [
+                        String("min3"),
+                        Number(2),
+                    ],
+                    True,
+                ),
+                Function(
                     "_lns_penalty",
                     [
-                        String("min2"),
+                        String("min3"),
                         Function("", [Number(3), Number(5)], True),
                         Number(2),
                     ],
@@ -95,7 +97,8 @@ class TestStrategyClWsRnd(TestCase):
                 ),
             ],
         }
-        self.assertEqual(self.strategy.calculate_cost(model), 6)
+        ref = {1: 3, 3: 1, 2: 2}
+        self.assertDictEqual(self.strategy.calculate_cost(model), ref)
 
     def test_first_solution(self):
         """
@@ -120,7 +123,7 @@ class TestStrategyClWsRnd(TestCase):
         Test check_stop.
         """
         self.lns.start_time = time.time()
-        self.lns.models["best_model"]["cost"] = 1
+        self.lns.models["best_model"]["cost"] = {2: 1, 1: 0}
         self.assertFalse(self.strategy.check_stop(self.lns))
         self.lns.set_parameters({"overall_time_limit": 0})
         self.assertTrue(self.strategy.check_stop(self.lns))
@@ -220,156 +223,6 @@ class TestStrategyClWsRnd(TestCase):
         """
         Test better check.
         """
-        self.lns.models["new_model"]["cost"] = 3
-        self.lns.models["best_model"]["cost"] = 5
-        self.assertTrue(self.strategy.check_better(self.lns))
-        self.lns.models["new_model"]["cost"] = 8
-        self.assertFalse(self.strategy.check_better(self.lns))
-        self.lns.models["new_model"]["cost"] = 5
-        self.assertFalse(self.strategy.check_better(self.lns))
-
-    def test_stuck_handling(self):
-        """
-        Test stuck handling.
-        """
-        self.lns.param_values["stuck_after_no_improv"] = 1000
-        self.strategy.stuck_handling(self.lns)
-        self.assertFalse(self.lns.stopped)
-        self.lns.no_improv_c = 1001
-        self.strategy.stuck_handling(self.lns)
-        self.assertTrue(self.lns.stopped)
-        self.lns.stopped = False
-        self.lns.param_values["stuck_after_no_improv"] = None
-        self.strategy.stuck_handling(self.lns)
-        self.assertFalse(self.lns.stopped)
-
-
-class TestStrategyClWsDecl(TestStrategyClWsRnd):
-    """
-    Test cases for ClassicWeightedSumDecl class.
-
-    All test cases inherited from TestStrategyClWsRnd.
-    Relax_declarative tested in test_relaxation.py
-    """
-
-    def setUp(self) -> None:
-        self.solver = ClingoSolver()
-        self.strategy = ClassicWeightedSumDecl()
-        self.lns = LNS(["./tests/ref/golf.lp"], self.solver, self.strategy)
-
-
-class TestStrategyClLexiRnd(TestStrategyClWsRnd):
-    """
-    Test cases for ClassicLexiRnd class.
-
-    Remaining test cases inherited from TestStrategyClWsRnd.
-    """
-
-    def setUp(self) -> None:
-        self.solver = ClingoSolver()
-        self.strategy = ClassicLexiRnd()
-        self.lns = LNS(["./tests/ref/golf.lp"], self.solver, self.strategy)
-
-    def test_calc_cost(self):
-        """
-        Test cost calculation using lexicographic optimization.
-        """
-        model = {
-            "shown": [
-                Function("plays", [Number(3), Number(1), Number(1)], True),
-                Function("plays", [Number(5), Number(1), Number(1)], True),
-                Function("plays", [Number(9), Number(1), Number(1)], True),
-            ],
-            "true": [
-                Function("meets", [Number(7), Number(8), Number(3)], True),
-                Function("meets", [Number(7), Number(9), Number(3)], True),
-                Function("meets", [Number(8), Number(9), Number(3)], True),
-                Function(
-                    "_lns_priority",
-                    [
-                        String("min"),
-                        Number(1),
-                    ],
-                    True,
-                ),
-                Function(
-                    "_lns_penalty",
-                    [
-                        String("min"),
-                        Function("", [Number(1), Number(2)], True),
-                        Number(1),
-                    ],
-                    True,
-                ),
-                Function(
-                    "_lns_penalty",
-                    [
-                        String("min"),
-                        Function("", [Number(3), Number(5)], True),
-                        Number(2),
-                    ],
-                    True,
-                ),
-                Function(
-                    "_lns_priority",
-                    [
-                        String("min2"),
-                        Number(3),
-                    ],
-                    True,
-                ),
-                Function(
-                    "_lns_penalty",
-                    [
-                        String("min2"),
-                        Function("", [Number(1), Number(2)], True),
-                        Number(1),
-                    ],
-                    True,
-                ),
-                Function(
-                    "_lns_priority",
-                    [
-                        String("min3"),
-                        Number(2),
-                    ],
-                    True,
-                ),
-                Function(
-                    "_lns_penalty",
-                    [
-                        String("min3"),
-                        Function("", [Number(3), Number(5)], True),
-                        Number(2),
-                    ],
-                    True,
-                ),
-            ],
-        }
-        ref = {1: 3, 3: 1, 2: 2}
-        self.assertDictEqual(self.strategy.calculate_cost(model), ref)
-
-    def test_check_stop(self):
-        """
-        Test check_stop.
-        """
-        self.lns.start_time = time.time()
-        self.lns.models["best_model"]["cost"] = {2: 1, 1: 0}
-        self.assertFalse(self.strategy.check_stop(self.lns))
-        self.lns.set_parameters({"overall_time_limit": 0})
-        self.assertTrue(self.strategy.check_stop(self.lns))
-        self.lns.set_parameters({"overall_time_limit": 10000, "max_steps": 1})
-        self.lns.step_c = 2
-        self.assertTrue(self.strategy.check_stop(self.lns))
-        self.lns.set_parameters({"max_steps": "-"})
-        self.assertFalse(self.strategy.check_stop(self.lns))
-        self.lns.set_parameters({"overall_time_limit": 0})
-        self.assertTrue(self.strategy.check_stop(self.lns))
-
-    def test_check_better(self):
-        """
-        Test better check.
-        """
         self.lns.models["new_model"]["cost"] = {2: 1, 1: 1}
         self.lns.models["best_model"]["cost"] = {2: 1, 1: 2}
         self.assertTrue(self.strategy.check_better(self.lns))
@@ -379,17 +232,3 @@ class TestStrategyClLexiRnd(TestStrategyClWsRnd):
         self.assertFalse(self.strategy.check_better(self.lns))
         self.lns.models["new_model"]["cost"] = {2: 1, 1: 2}
         self.assertFalse(self.strategy.check_better(self.lns))
-
-
-class TestStrategyClLexiDecl(TestStrategyClLexiRnd):
-    """
-    Test cases for ClassicLexiDecl class.
-
-    All test cases inherited from TestStrategyClLexiRnd.
-    Relax_declarative tested in test_relaxation.py
-    """
-
-    def setUp(self) -> None:
-        self.solver = ClingoSolver()
-        self.strategy = ClassicLexiDecl()
-        self.lns = LNS(["./tests/ref/golf.lp"], self.solver, self.strategy)
