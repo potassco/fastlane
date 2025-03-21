@@ -37,6 +37,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
             or NotImplemented
         )
 
+    # pylint: disable=dangerous-default-value
     @abc.abstractmethod
     def setup(
         self,

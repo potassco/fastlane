@@ -2,15 +2,15 @@
 Utility functions.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 # pylint: disable=unidiomatic-typecheck
-def get_cost_str(model: Dict[str, Any]) -> str:
+def get_cost_str(model: dict[str, Any]) -> str:
     """
     Get cost of given model as string.
     :param model: Model.
-    :type model: Dict[str, Any]
+    :type model: dict[str, Any]
     :return: Cost as string.
     :rtype: str
     """
@@ -22,12 +22,12 @@ def get_cost_str(model: Dict[str, Any]) -> str:
     return ""
 
 
-def print_model(model: Dict[str, Any]) -> str:
+def print_model(model: dict[str, Any]) -> str:
     """
     Print given model.
 
     :param model: Model.
-    :type model: Dict[str, Any]
+    :type model: dict[str, Any]
     :return: Printed string.
     :rtype: str
     """

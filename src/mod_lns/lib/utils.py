@@ -2,19 +2,19 @@
 Collection of utility functions used for LNS.
 """
 
-from typing import Dict, List, Sequence, Tuple
+from typing import Sequence
 
 import clingo
 
 
-def check_smaller_lexicographic(cost1: Dict[int, int], cost2: Dict[int, int]) -> bool:
+def check_smaller_lexicographic(cost1: dict[int, int], cost2: dict[int, int]) -> bool:
     """
     Check whether cost1 is smaller than cost2.
 
     :param cost1: Optimization dictionary.
-    :type cost1: Dict[int, int]
+    :type cost1: dict[int, int]
     :param cost2: Optimization dictionary.
-    :type cost2: Dict[int, int]
+    :type cost2: dict[int, int]
     :return: whether cost1 is smaller than cost2.
     :rtype: bool
     """
@@ -47,15 +47,15 @@ def calculate_variability(list1: Sequence, list2: Sequence) -> float:
 
 
 def fix_symbols(
-    symbols: List[clingo.symbol.Symbol],
-) -> List[Tuple[clingo.symbol.Symbol, bool]]:
+    symbols: list[clingo.symbol.Symbol],
+) -> list[tuple[clingo.symbol.Symbol, bool]]:
     """
     Prepare symbols to be used as assumptions (being fixed).
 
     :param symbols: Symbols to be used.
-    :type symbols: List[clingo.symbol.Symbol]
+    :type symbols: list[clingo.symbol.Symbol]
     :return: Fixed symbols/atoms.
-    :rtype:  List[Tuple[clingo.symbol.Symbol, bool]]
+    :rtype:  list[tuple[clingo.symbol.Symbol, bool]]
     """
     fixed = []
     for symbol in symbols:

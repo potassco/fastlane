@@ -3,25 +3,25 @@ Different relaxation methods for LNS.
 """
 
 import random
-from typing import Any, Dict, List, Sequence, Tuple, Union
+from typing import Any, Sequence, Union
 
 import clingo
 
 
 def relax_declarative(
-    model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]],
-    relax_parameters: Dict[str, Any],
-) -> List[Tuple[clingo.symbol.Symbol, bool]]:
+    model: dict[str, Union[Sequence[clingo.symbol.Symbol], Any]],
+    relax_parameters: dict[str, Any],
+) -> list[tuple[clingo.symbol.Symbol, bool]]:
     """
     Relax portion of selected atoms given by the relax_rate.
     ASP encoding has to contain `_lns_select/1` and `_lns_fix/2` predicates.
 
-    :param model: Dictionary containing list of shown and true atoms.
-    :type model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]
+    :param model: dictionary containing list of shown and true atoms.
+    :type model: dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]
     :param relax_parameters: Parameters used to determine relaxed atoms.
-    :type relax_parameters: Dict[str, Any]
+    :type relax_parameters: dict[str, Any]
     :return: Fixed (not relaxed) atoms.
-    :rtype: List[Tuple[clingo.symbol.Symbol, bool]]
+    :rtype: list[tuple[clingo.symbol.Symbol, bool]]
     """
     fixed_atoms = []
     selected_atoms = []
@@ -56,18 +56,18 @@ def relax_declarative(
 
 
 def relax_random(
-    model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]],
-    relax_parameters: Dict[str, Any],
-) -> List[Tuple[clingo.symbol.Symbol, bool]]:
+    model: dict[str, Union[Sequence[clingo.symbol.Symbol], Any]],
+    relax_parameters: dict[str, Any],
+) -> list[tuple[clingo.symbol.Symbol, bool]]:
     """
     Relax random number of shown atoms given by the relax_rate.
 
-    :param model: Dictionary containing list of shown and true atoms.
-    :type model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]
+    :param model: dictionary containing list of shown and true atoms.
+    :type model: dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]
     :param relax_parameters: Parameters used to determine relaxed atoms.
-    :type relax_parameters: Dict[str, Any]
+    :type relax_parameters: dict[str, Any]
     :return: Fixed (not relaxed) atoms.
-    :rtype: List[Tuple[clingo.symbol.Symbol, bool]]
+    :rtype: list[tuple[clingo.symbol.Symbol, bool]]
     """
     fixed_atoms = []
     sample = random.sample(

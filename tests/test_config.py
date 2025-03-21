@@ -12,9 +12,8 @@ from mod_lns.lib.solvers.clingo_solver import ClingoSolver
 from mod_lns.lib.strategies.default_strategy import DefaultStrategy
 from mod_lns.lns_config import LNSConfig
 
-# from mod_lns.lib.relaxation import relax_declarative
 
-
+# pylint: disable=protected-access
 class TestLNSConfig(TestCase):
     """
     Test cases for LNSConfig class.

@@ -5,6 +5,7 @@ Integration tests.
 from unittest import TestCase
 
 from mod_lns import LNS
+from mod_lns.interfaces.solver import SolverInterface
 from mod_lns.lib.solvers.clingo_dl_solver import ClingoDLSolver
 from mod_lns.lib.solvers.clingo_solver import ClingoSolver
 from mod_lns.lns_config import LNSConfig
@@ -63,7 +64,7 @@ class TestIntegrationClingoClassic(TestCase):
     """
 
     def setUp(self) -> None:
-        self.solver = ClingoSolver()
+        self.solver: SolverInterface = ClingoSolver()
         self.params = {"max_steps": 100, "seed": 123}
 
     def test_rnd(self):
@@ -95,7 +96,7 @@ class TestIntegrationClingoCons(TestIntegrationClingoClassic):
     """
 
     def setUp(self) -> None:
-        self.solver = ClingoSolver()
+        self.solver: SolverInterface = ClingoSolver()
         self.params = {"max_steps": 100, "seed": 123, "constrained": True}
 
 
@@ -105,7 +106,7 @@ class TestIntegrationClingoHeu(TestIntegrationClingoClassic):
     """
 
     def setUp(self) -> None:
-        self.solver = ClingoSolver()
+        self.solver: SolverInterface = ClingoSolver()
         self.params = {"max_steps": 100, "seed": 123, "heuristics": True}
 
 
@@ -115,7 +116,7 @@ class TestIntegrationClingoConsHeu(TestIntegrationClingoCons):
     """
 
     def setUp(self) -> None:
-        self.solver = ClingoSolver()
+        self.solver: SolverInterface = ClingoSolver()
         self.params = {
             "max_steps": 100,
             "seed": 123,
@@ -130,7 +131,7 @@ class TestIntegrationClingoDLClassic(TestCase):
     """
 
     def setUp(self) -> None:
-        self.solver = ClingoDLSolver()
+        self.solver: SolverInterface = ClingoDLSolver()
         self.params = {"max_steps": 100, "seed": 123}
 
     def test_rnd(self):
@@ -162,7 +163,7 @@ class TestIntegrationClingoDLCons(TestIntegrationClingoClassic):
     """
 
     def setUp(self) -> None:
-        self.solver = ClingoDLSolver()
+        self.solver: SolverInterface = ClingoDLSolver()
         self.params = {"max_steps": 100, "seed": 123, "constrained": True}
 
 
@@ -172,7 +173,7 @@ class TestIntegrationClingoDlHeu(TestIntegrationClingoClassic):
     """
 
     def setUp(self) -> None:
-        self.solver = ClingoDLSolver()
+        self.solver: SolverInterface = ClingoDLSolver()
         self.params = {"max_steps": 100, "seed": 123, "heuristics": True}
 
 
@@ -182,7 +183,7 @@ class TestIntegrationClingoDLConsHeu(TestIntegrationClingoCons):
     """
 
     def setUp(self) -> None:
-        self.solver = ClingoDLSolver()
+        self.solver: SolverInterface = ClingoDLSolver()
         self.params = {
             "max_steps": 100,
             "seed": 123,

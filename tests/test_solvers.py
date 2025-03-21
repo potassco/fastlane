@@ -8,6 +8,7 @@ import clingo
 import clingodl
 
 from mod_lns import LNS
+from mod_lns.interfaces.solver import SolverInterface
 from mod_lns.lib.solvers.clingo_dl_solver import ClingoDLSolver
 from mod_lns.lib.solvers.clingo_solver import ClingoSolver
 from mod_lns.lib.strategies.default_strategy import DefaultStrategy
@@ -20,7 +21,7 @@ class TestSolverClingo(TestCase):
     """
 
     def setUp(self) -> None:
-        self.solver = ClingoSolver()
+        self.solver: SolverInterface = ClingoSolver()
         self.strategy = DefaultStrategy()
         config = LNSConfig(base_solver=self.solver, base_strategy=self.strategy)
         self.lns = LNS(["./tests/ref/golf.lp"], config)
@@ -98,7 +99,7 @@ class TestSolverClingoDL(TestSolverClingo):
     """
 
     def setUp(self) -> None:
-        self.solver = ClingoDLSolver()
+        self.solver: SolverInterface = ClingoDLSolver()
         self.strategy = DefaultStrategy()
         config = LNSConfig(base_solver=self.solver, base_strategy=self.strategy)
         self.lns = LNS(["./tests/ref/golf.lp"], config)

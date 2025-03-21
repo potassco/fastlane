@@ -9,7 +9,7 @@ import pkgutil
 import sys
 from argparse import ArgumentParser
 from textwrap import dedent
-from typing import Any, cast
+from typing import Any, cast, no_type_check
 
 __all__ = ["get_parser"]
 
@@ -22,6 +22,7 @@ VERSION = metadata.version("mod_lns")
 
 
 # temporary solution
+@no_type_check
 def get_classes_from_package(package: str) -> list[type]:
     """
     Return all classes inside given package.
@@ -33,7 +34,7 @@ def get_classes_from_package(package: str) -> list[type]:
     """
     classes_in_package = []
     # Go through the modules in the package
-    for _importer, module_name, _ in pkgutil.iter_modules(
+    for _, module_name, _ in pkgutil.iter_modules(
         importlib.import_module(package).__path__
     ):
         full_module_name = f"{package}.{module_name}"
@@ -41,7 +42,7 @@ def get_classes_from_package(package: str) -> list[type]:
         module = importlib.import_module(full_module_name)
 
         # Filter for class objects and only objects that exist within the module
-        for _name, obj in inspect.getmembers(
+        for _, obj in inspect.getmembers(
             module,
             lambda member, module_name=full_module_name: inspect.isclass(member)
             and member.__module__ == module_name,
@@ -63,7 +64,7 @@ def get_parser() -> ArgumentParser:
             and all possible options for configuration.
 
             --heuristic, --constrained and --declarative options should not be used
-            when using custom solvers and/or strategies.  
+            when using custom solvers and/or strategies.
             """
         ),
     )

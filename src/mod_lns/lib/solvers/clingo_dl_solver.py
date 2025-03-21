@@ -22,6 +22,7 @@ class ClingoDLSolver(SolverInterface):
     clingo-dl solver.
     """
 
+    # pylint: disable=dangerous-default-value
     def setup(
         self,
         lns_object: LNS,

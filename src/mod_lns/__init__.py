@@ -1,12 +1,12 @@
 """
-The large_neighbourhood_search project.
+A modifiable large neighborhood search framework.
 """
 
 import random
 import signal
 import time
 from types import FrameType
-from typing import Any, Dict, List, Sequence, Union
+from typing import Any, Sequence, Union
 
 import clingo
 
@@ -17,13 +17,13 @@ from .utils.conversions import str_to_symbols
 from .utils.functions import get_cost_str, print_model
 
 
-# pylint: disable=dangerous-default-value,too-many-instance-attributes
+# pylint: disable=dangerous-default-value, too-many-instance-attributes
 class LNS:
     """
     Class handling and  performing LNS.
 
     :param files: Problem encodings.
-    :type files: List[str]
+    :type files: list[str]
     :param lns_config: LNSConfig object.
     :type lns_config: mod_lns.lns_config.LNSConfig
     :default lns_config: LNSConfig()
@@ -31,7 +31,7 @@ class LNS:
 
     def __init__(
         self,
-        files: List[str],
+        files: list[str],
         lns_config: LNSConfig = LNSConfig(),
     ):
         """
@@ -44,17 +44,17 @@ class LNS:
         self.step_c: int = 0
         self.stopped = False
 
-        new_model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]] = {}
-        current_model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]] = {}
-        best_model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]] = {}
-        self.models: Dict[str, Any] = {
+        new_model: dict[str, Union[Sequence[clingo.symbol.Symbol], Any]] = {}
+        current_model: dict[str, Union[Sequence[clingo.symbol.Symbol], Any]] = {}
+        best_model: dict[str, Union[Sequence[clingo.symbol.Symbol], Any]] = {}
+        self.models: dict[str, Any] = {
             "new_model": new_model,
             "current_model": current_model,
             "best_model": best_model,
         }
 
         # to be reworked
-        self.param_values: Dict[str, Any] = {
+        self.param_values: dict[str, Any] = {
             "files": files,
             "seed": None,
             "relax_rate": 0.1,
@@ -81,18 +81,18 @@ class LNS:
         self.param_values["seed"] = seed
         random.seed(self.param_values["seed"])
 
-    def get_parameters(self) -> Dict[str, Any]:
+    def get_parameters(self) -> dict[str, Any]:
         """
         Get LNS parameters.
         """
         return self.param_values
 
-    def set_parameters(self, params: Dict[str, Any]) -> None:
+    def set_parameters(self, params: dict[str, Any]) -> None:
         """
         Set LNS parameters.
 
         :param params: LNS parameters.
-        :type params: Dict[str, Any]
+        :type params: dict[str, Any]
         """
         self.param_values = {**self.param_values, **params}
         self.set_seed(self.param_values["seed"])
@@ -115,7 +115,7 @@ class LNS:
         :type sig: int
         :param frame: Current stack frame.
         :type frame: Frame
-        :rtype: Dict[str, Any]
+        :rtype: dict[str, Any]
         """
         print("==================")
         print("INTERRUPTED:")
