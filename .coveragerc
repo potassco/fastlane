@@ -1,7 +1,7 @@
 [run]
-source = large_neighbourhood_search
+source = mod_lns
        tests
-omit = */large_neighbourhood_search/__main__.py
+omit = */mod_lns/__main__.py
 [report]
 exclude_lines =
     assert

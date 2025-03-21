@@ -10,6 +10,7 @@ from clingo.symbol import Function, Number, String
 from mod_lns import LNS
 from mod_lns.lib.strategies.default_strategy import DefaultStrategy
 from mod_lns.lns_config import LNSConfig
+from mod_lns.utils.conversions import str_to_symbols
 
 
 class TestDefaultStrategy(TestCase):
@@ -18,7 +19,8 @@ class TestDefaultStrategy(TestCase):
     """
 
     def setUp(self) -> None:
-        config = LNSConfig(base_strategy=DefaultStrategy())
+        self.strategy = DefaultStrategy()
+        config = LNSConfig(base_strategy=self.strategy)
         self.lns = LNS(["./tests/ref/golf.lp"], config)
 
     def test_calc_cost(self):
@@ -105,7 +107,7 @@ class TestDefaultStrategy(TestCase):
         Test finding of first solution.
         """
         self.lns.set_seed(123)
-        self.solver.setup(self.lns)
+        self.lns.solver.setup(self.lns)
         self.assertTrue(self.strategy.get_first_solution(self.lns))
         self.assertIsNotNone(self.lns.models["new_model"])
         self.assertEqual(type(self.lns.models["new_model"]), dict)
@@ -114,8 +116,19 @@ class TestDefaultStrategy(TestCase):
         self.assertIsNotNone(self.lns.models["best_model"])
         self.assertEqual(type(self.lns.models["best_model"]), dict)
 
+        self.lns.solver.setup(self.lns)
+        self.assertTrue(
+            self.strategy.get_first_solution(self.lns, str_to_symbols("meets(7,8,3)"))
+        )
+        self.assertIsNotNone(self.lns.models["new_model"])
+        self.assertEqual(type(self.lns.models["new_model"]), dict)
+        self.assertIsNotNone(self.lns.models["current_model"])
+        self.assertEqual(type(self.lns.models["current_model"]), dict)
+        self.assertIsNotNone(self.lns.models["best_model"])
+        self.assertEqual(type(self.lns.models["best_model"]), dict)
+
         self.lns.set_parameters({"files": ["./tests/ref/bad_encoding.lp"], "seed": 123})
-        self.solver.setup(self.lns)
+        self.lns.solver.setup(self.lns)
         self.assertFalse(self.strategy.get_first_solution(self.lns))
 
     def test_check_stop(self):
@@ -188,8 +201,8 @@ class TestDefaultStrategy(TestCase):
 
         Concrete repair methods tested in test_solvers.py.
         """
-        self.solver.setup(self.lns)
-        self.solver.ground_base(self.lns)
+        self.lns.solver.setup(self.lns)
+        self.lns.solver.ground_base(self.lns)
         self.assertTrue(self.strategy.repair(self.lns, []).satisfiable)
 
     def test_check_accept(self):

@@ -9,14 +9,14 @@ from unittest import TestCase
 from clingo.symbol import Function, Infimum, Number, String, Supremum
 
 from mod_lns.lib.solvers.clingo_dl_solver import ClingoDLSolver
-from mod_lns.lib.strategies.hc_weighted_sum_rnd import HCWeightedSumRnd
+from mod_lns.lib.strategies.default_strategy import DefaultStrategy
 from mod_lns.lib.utils import (
     calculate_variability,
     check_smaller_lexicographic,
     fix_symbols,
-    str_to_symbols,
-    symbol_to_str,
 )
+from mod_lns.utils.conversions import args_to_dict, str_to_symbols, symbol_to_str
+from mod_lns.utils.functions import get_cost_str, print_model
 from mod_lns.utils.logger import setup_logger
 from mod_lns.utils.parser import get_parser
 
@@ -52,31 +52,63 @@ class TestUtils(TestCase):
         self.assertEqual(ret.relax_rate, 0.5)
         ret = parser.parse_args(["--solver", "ClingoDLSolver", "-i", "x.lp"])
         self.assertIsInstance(ret.solver, ClingoDLSolver)
-        ret = parser.parse_args(["--strategy", "HCWeightedSumRnd", "-i", "x.lp"])
-        self.assertIsInstance(ret.strategy, HCWeightedSumRnd)
+        ret = parser.parse_args(["--strategy", "DefaultStrategy", "-i", "x.lp"])
+        self.assertIsInstance(ret.strategy, DefaultStrategy)
         ret = parser.parse_args(["--time_limit", "12", "-i", "x.lp"])
         self.assertEqual(ret.time_limit, 12)
         ret = parser.parse_args(["--solve_time_limit", "14", "-i", "x.lp"])
         self.assertEqual(ret.solve_time_limit, 14)
         ret = parser.parse_args(["--max_steps", "30", "-i", "x.lp"])
         self.assertEqual(ret.max_steps, "30")
-        ret = parser.parse_args(["--no_improv", "20", "-i", "x.lp"])
-        self.assertEqual(ret.no_improv, "20")
         ret = parser.parse_args(["--seed", "213", "-i", "x.lp"])
         self.assertEqual(ret.seed, 213)
-        ret = parser.parse_args(["--vari_accept", "0.2", "-i", "x.lp"])
-        self.assertEqual(ret.vari_accept, 0.2)
-        ret = parser.parse_args(["--pre_files", "p1.lp", "p2.lp", "-i", "x.lp"])
-        self.assertEqual(ret.pre_files, ["p1.lp", "p2.lp"])
-        ret = parser.parse_args(["--pre_tl", "300", "-i", "x.lp"])
-        self.assertEqual(ret.pre_tl, 300)
-        self.assertEqual(ret.pre_files, [])
-        ret = parser.parse_args(
-            ["--start_sol", "plays(4,1,1) plays(3,2,2)", "-i", "x.lp"]
+        ret = parser.parse_args(["--heuristic", "-i", "x.lp"])
+        self.assertTrue(ret.heuristic)
+        ret = parser.parse_args(["--constrained", "-i", "x.lp"])
+        self.assertTrue(ret.constrained)
+        ret = parser.parse_args(["--declarative", "-i", "x.lp"])
+        self.assertTrue(ret.declarative)
+
+    def test_symbol_to_str(self):
+        """
+        Test symbol to str conversion.
+        """
+        s = Function(
+            "test",
+            [Function("inner", [Number(2)]), String("string"), Infimum, Supremum],
         )
-        self.assertEqual(ret.start_sol, "plays(4,1,1) plays(3,2,2)")
-        ret = parser.parse_args(["--relax_rate", "0.5", "-i", "x.lp"])
-        self.assertEqual(ret.relax_rate, 0.5)
+        self.assertEqual(symbol_to_str(s), 'test(inner(2),"string",#inf,#sup)')
+
+    def test_str_to_symbols(self):
+        """
+        Test str to symbols conversion.
+        """
+        s = 'test(inner(2),"string",#inf,#sup) second(3)'
+        self.assertEqual(
+            str_to_symbols(s),
+            [
+                Function(
+                    "test",
+                    [
+                        Function("inner", [Number(2)]),
+                        String("string"),
+                        Infimum,
+                        Supremum,
+                    ],
+                    True,
+                ),
+                Function("second", [Number(3)], True),
+            ],
+        )
+
+    def test_args_to_dict(self):
+        """
+        Test args to dict conversion.
+        """
+        s = "-a --test=5 -g=3 --help howefow"
+        self.assertDictEqual(
+            args_to_dict(s), {"a": True, "test": "5", "g": "3", "help": True}
+        )
 
 
 class TestLNSUtils(TestCase):
@@ -116,38 +148,6 @@ class TestLNSUtils(TestCase):
         self.assertTrue(check_smaller_lexicographic(val1, val2))
         self.assertFalse(check_smaller_lexicographic(val2, val1))
 
-    def test_symbol_to_str(self):
-        """
-        Test symbol to str conversion.
-        """
-        s = Function(
-            "test",
-            [Function("inner", [Number(2)]), String("string"), Infimum, Supremum],
-        )
-        self.assertEqual(symbol_to_str(s), 'test(inner(2),"string",#inf,#sup)')
-
-    def test_str_to_symbols(self):
-        """
-        Test str to symbols conversion.
-        """
-        s = 'test(inner(2),"string",#inf,#sup) second(3)'
-        self.assertEqual(
-            str_to_symbols(s),
-            [
-                Function(
-                    "test",
-                    [
-                        Function("inner", [Number(2)]),
-                        String("string"),
-                        Infimum,
-                        Supremum,
-                    ],
-                    True,
-                ),
-                Function("second", [Number(3)], True),
-            ],
-        )
-
     def test_fix_symbols(self):
         """
         test fix_symbols function.
@@ -182,3 +182,33 @@ class TestLNSUtils(TestCase):
                 ),
             ],
         )
+
+    def test_get_cost_str(self):
+        """
+        Test get cost str.
+        """
+        model = {"cost": 1}
+        self.assertEqual(get_cost_str(model), "1")
+        model["cost"] = {3: 4, 2: 3, 1: 2}
+        self.assertEqual(get_cost_str(model), "4 3 2")
+        model["cost"] = True
+        self.assertEqual(get_cost_str(model), "")
+
+    def test_print_model(self):
+        """
+        Test print model.
+        """
+        model = {
+            "shown": [
+                Function("plays", [Number(3), Number(1), Number(1)], True),
+            ],
+            "true": [
+                Function("meets", [Number(7), Number(8), Number(3)], True),
+            ],
+            "assignments": [
+                "test=42",
+            ],
+            "cost": 2,
+        }
+        ref_str = "Answer\nplays(3,1,1)\nAssignments:\ntest=42\nCost: 2\n"
+        self.assertEqual(print_model(model), ref_str)
