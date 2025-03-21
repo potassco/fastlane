@@ -5,7 +5,7 @@ Solver interface used for LNS.
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Optional
 
 import clingo
 
@@ -75,19 +75,6 @@ class SolverInterface(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def solve(self, lns_object: LNS) -> clingo.solving.SolveResult:  # nocoverage
-        """
-        Pre-solve using clingo.
-
-        :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
-        :return: Solve result.
-        :rtype: clingo.solving.SolveResult
-        """
-        raise NotImplementedError
-
-    @classmethod
     def ground_base(self, lns_object: LNS) -> None:
         """
         Ground base encoding.
@@ -98,7 +85,6 @@ class SolverInterface(metaclass=abc.ABCMeta):
         if isinstance(self.control, clingo.control.Control):
             self.control.ground([("base", [])], context=lns_object)
 
-    @classmethod
     def get_available_solve_time(self, lns_object: LNS) -> int:
         """
         Calculate available solve time.
@@ -114,7 +100,6 @@ class SolverInterface(metaclass=abc.ABCMeta):
             return lns_object.param_values["solve_time_limit"]
         return avail_time
 
-    @classmethod
     def get_stats(self) -> dict:
         """
         Get statistics of the last solve call.

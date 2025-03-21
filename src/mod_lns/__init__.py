@@ -26,12 +26,13 @@ class LNS:
     :type files: List[str]
     :param lns_config: LNSConfig object.
     :type lns_config: mod_lns.lns_config.LNSConfig
+    :default lns_config: LNSConfig()
     """
 
     def __init__(
         self,
         files: List[str],
-        lns_config: LNSConfig,
+        lns_config: LNSConfig = LNSConfig(),
     ):
         """
         Initialization of the lns object.
@@ -64,22 +65,11 @@ class LNS:
             "stuck_after_no_improv": None,
             "start_sol": None,
             "vari_accept": 0,
-            "pre_files": [],
-            "pre_tl": 1800,
             "base_relax_rate": 0,
         }
-        self.param_values = {**self.param_values, **lns_config.lns_options}
-        self.avail_time = self.param_values["overall_time_limit"]
+        self.set_parameters(lns_config.lns_options)
 
-        if isinstance(self.param_values["max_steps"], str):
-            if self.param_values["max_steps"].isdigit():
-                self.param_values["max_steps"] = int(self.param_values["max_steps"])
-            else:
-                self.param_values["max_steps"] = None
-        elif isinstance(self.param_values["max_steps"], int):
-            pass
-        else:
-            self.param_values["max_steps"] = None
+        self.avail_time = self.param_values["overall_time_limit"]
 
     def set_seed(self, seed: int) -> None:
         """
@@ -88,8 +78,8 @@ class LNS:
         :param seed: Seed to be set.
         :type seed: int
         """
-        random.seed(self.param_values["seed"])
         self.param_values["seed"] = seed
+        random.seed(self.param_values["seed"])
 
     def get_parameters(self) -> Dict[str, Any]:
         """

@@ -59,8 +59,9 @@ def args_to_dict(args_str: str) -> Dict[str, Any]:
     d = {}
     for arg in arg_list:
         k = re.match(r"\-[\-]?([\w\-]+)(=([\w\-]+))?", arg)
-        if k.group(1) and k.group(3):
-            d[k.group(1)] = k.group(3)
-        elif k.group(1):
-            d[k.group(1)] = True
+        if k:
+            if k.group(1) and k.group(3):
+                d[k.group(1)] = k.group(3)
+            elif k.group(1):
+                d[k.group(1)] = True
     return d

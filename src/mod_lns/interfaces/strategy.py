@@ -71,7 +71,6 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
-    @classmethod
     def pre_setup(self, lns_object: LNS) -> None:  # nocoverage
         """
         Do something pre solver setup.
@@ -80,7 +79,6 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         :type lns_object: large_neighbourhood_search.LNS
         """
 
-    @classmethod
     def post_setup(self, lns_object: LNS) -> None:  # nocoverage
         """
         Do something post solver setup.
@@ -105,7 +103,6 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
-    @classmethod
     def post_first_solution(self, lns_object: LNS) -> None:  # nocoverage
         """
         Do something post first solution.
@@ -126,7 +123,6 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
-    @classmethod
     def pre_relax(self, lns_object: LNS) -> None:  # nocoverage
         """
         Do something pre relaxation.
@@ -169,7 +165,6 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
-    @classmethod
     def post_repair(self, lns_object: LNS) -> None:  # nocoverage
         """
         Do something post repair.
@@ -193,7 +188,6 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
-    @classmethod
     def accepted(self, lns_object: LNS) -> None:  # nocoverage
         """
         Do something after new model is accepted and saved as the new current model.
@@ -217,7 +211,6 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
-    @classmethod
     def better(self, lns_object: LNS) -> None:  # nocoverage
         """
         Do something after new model is better and saved as the new best model.
