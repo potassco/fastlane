@@ -36,15 +36,15 @@ The first part represents the basic clingo encoding of the problem, seen below.
 
 The second part is used to determine the cost of each solution, our optimization criterion.
 In the first line we define our optimization criterion "min" with a priority of 1.
-The second line then describes, that for each occurrence of the player pair (P1,P2) a penalty/cost of 1 should be inferred,
-if the players of the given pair meet more than once.
+The second line then describes, that for each occurrence of player P1 a penalty/cost of 1 should be inferred,
+if the players meets another player more than once a week. Duplications are avoided through P1 < P2.
 
 .. code-block::
 
     _lns_priority("min",1).
-    _lns_penalty("min",(P1,P2),1) :- #count { W : meets(P1,P2,W) } > 1, player(P1), player(P2), P1 < P2.
+    _lns_penalty("min",P1,1) :- #count { W : meets(P1,P2,W) } > 1, player(P1), player(P2), P1 < P2.
 
-And the last part can be used for declarative relaxation, with the first line defining possible terms to be selected
+The last part can be used for declarative relaxation, with the first line defining possible terms to be selected
 during relaxation, in this case weeks "W". The second line then connects the terms "W" with corresponding atoms to be fixed
 (complement of relaxed atoms during search), here all plays/3 atoms in the corresponding week W.
 
@@ -57,6 +57,14 @@ Basics
 -----------------
 
 .. currentmodule:: mod_lns.lib.solvers.clingo_solver
+
+
+---
+WIP
+
+
+
+
 
 As described in the :ref:`usage<ref_usage>` section, to work this framework requires a solver and strategy object.
 Our :ref:`library<ref_lib>` provides several different solvers and strategies.
