@@ -128,15 +128,15 @@ def get_parser() -> ArgumentParser:
     )
 
     parser.add_argument(
-        "--heuristic",
+        "--heuristics",
         action="store_true",
         help="enable heuristics during reparation",
     )
 
     parser.add_argument(
-        "--constrained",
+        "--classic",
         action="store_true",
-        help="enable constrained approach",
+        help="enable classic approach",
     )
 
     parser.add_argument(

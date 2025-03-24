@@ -33,27 +33,27 @@ class LNSConfig:
     :param clingo_options: clingo options.
     :type clingo_options: list[str]
     :default clingo_options: []
-    :param base_solver: Solver object used as base for LNS.
-    :type base_solver: SolverInterface
-    :default base_solver: ClingoSolver()
-    :param base_strategy: Strategy object used as base for LNS.
-    :type base_strategy: StrategyInterface
-    :default base_strategy: DefaultStrategy()
+    :param solver: Solver object used as base for LNS.
+    :type solver: SolverInterface
+    :default solver: ClingoSolver()
+    :param strategy: Strategy object used as base for LNS.
+    :type strategy: StrategyInterface
+    :default strategy: DefaultStrategy()
     """
 
     def __init__(
         self,
         lns_options: dict[str, Any] = {},
         clingo_options: list[str] = [],
-        base_solver: SolverInterface = ClingoSolver(),
-        base_strategy: StrategyInterface = DefaultStrategy(),
+        solver: SolverInterface = ClingoSolver(),
+        strategy: StrategyInterface = DefaultStrategy(),
     ):
         """
         Initialize lns config.
         """
         default_options = {
             "heuristics": False,
-            "constrained": False,
+            "constrained": True,
             "declarative": False,
             "relax_rate": 0.1,
             "max_steps": "2000",
@@ -65,12 +65,12 @@ class LNSConfig:
         self.clingo_options = clingo_options
 
         # solver
-        self.solver = base_solver
+        self.solver = solver
         if self.lns_options["heuristics"]:
             self._enable_heuristics()
 
         # strategy
-        self.strategy = base_strategy
+        self.strategy = strategy
         if self.lns_options["constrained"]:
             self._enable_constrained_approach()
         else:

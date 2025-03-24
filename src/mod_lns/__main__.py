@@ -23,9 +23,9 @@ def main():
 
     config = LNSConfig(
         {
-            "heu": args.heuristic,
-            "hc": args.constrained,
-            "decl": args.declarative,
+            "heuristics": args.heuristics,
+            "constrained": not args.classic,
+            "declarative": args.declarative,
             "seed": args.seed,
             "relax_rate": args.relax_rate,
             "overall_time_limit": args.time_limit,
