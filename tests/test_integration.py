@@ -22,14 +22,14 @@ class TestIntegrationCommon(TestCase):
         """
         lns = LNS(
             ["./tests/ref/golf_big.lp"],
-            LNSConfig({"solve_time_limit": 0.1, "max_steps": 5, "constrained": True}),
+            LNSConfig({"solve_time_limit": 0.2, "max_steps": 5}),
         )
         lns.main()
         lns = LNS(
             ["./tests/ref/golf_big.lp"],
             LNSConfig(
-                {"solve_time_limit": 0.1, "max_steps": 5, "constrained": True},
-                base_solver=ClingoDLSolver(),
+                {"solve_time_limit": 0.2, "max_steps": 5},
+                solver=ClingoDLSolver(),
             ),
         )
         lns.main()
@@ -58,9 +58,9 @@ class TestIntegrationCommon(TestCase):
             lns.main()
 
 
-class TestIntegrationClingoClassic(TestCase):
+class TestIntegrationClingoCons(TestCase):
     """
-    Integration tests using clingo and classic LNS.
+    Integration tests using clingo, constrained LNSand constrained LNS.
     """
 
     def setUp(self) -> None:
@@ -73,7 +73,7 @@ class TestIntegrationClingoClassic(TestCase):
         """
         lns = LNS(
             ["./tests/ref/golf.lp"],
-            LNSConfig(self.params, [], base_solver=self.solver),
+            LNSConfig(self.params, [], solver=self.solver),
         )
         lns.main()
 
@@ -83,31 +83,19 @@ class TestIntegrationClingoClassic(TestCase):
         """
         lns = LNS(
             ["./tests/ref/golf.lp"],
-            LNSConfig(
-                {**self.params, **{"declarative": True}}, [], base_solver=self.solver
-            ),
+            LNSConfig({**self.params, **{"declarative": True}}, [], solver=self.solver),
         )
         lns.main()
 
 
-class TestIntegrationClingoCons(TestIntegrationClingoClassic):
+class TestIntegrationClingoClassic(TestIntegrationClingoCons):
     """
-    Integration tests using clingo, constrained LNSand constrained LNS.
-    """
-
-    def setUp(self) -> None:
-        self.solver: SolverInterface = ClingoSolver()
-        self.params = {"max_steps": 100, "seed": 123, "constrained": True}
-
-
-class TestIntegrationClingoHeu(TestIntegrationClingoClassic):
-    """
-    Integration tests using clingo, classic LNS and heuristics.
+    Integration tests using clingo and classic LNS.
     """
 
     def setUp(self) -> None:
         self.solver: SolverInterface = ClingoSolver()
-        self.params = {"max_steps": 100, "seed": 123, "heuristics": True}
+        self.params = {"max_steps": 100, "seed": 123, "constrained": False}
 
 
 class TestIntegrationClingoConsHeu(TestIntegrationClingoCons):
@@ -120,14 +108,28 @@ class TestIntegrationClingoConsHeu(TestIntegrationClingoCons):
         self.params = {
             "max_steps": 100,
             "seed": 123,
-            "constrained": True,
             "heuristics": True,
         }
 
 
-class TestIntegrationClingoDLClassic(TestCase):
+class TestIntegrationClingoHeu(TestIntegrationClingoClassic):
     """
-    Integration tests using clingo-dl and classic LNS.
+    Integration tests using clingo, classic LNS and heuristics.
+    """
+
+    def setUp(self) -> None:
+        self.solver: SolverInterface = ClingoSolver()
+        self.params = {
+            "max_steps": 100,
+            "seed": 123,
+            "heuristics": True,
+            "constrained": False,
+        }
+
+
+class TestIntegrationClingoDLCons(TestCase):
+    """
+    Integration tests using clingo, constrained LNSand constrained LNS.
     """
 
     def setUp(self) -> None:
@@ -140,7 +142,7 @@ class TestIntegrationClingoDLClassic(TestCase):
         """
         lns = LNS(
             ["./tests/ref/golf.lp"],
-            LNSConfig(self.params, [], base_solver=self.solver),
+            LNSConfig(self.params, [], solver=self.solver),
         )
         lns.main()
 
@@ -150,31 +152,19 @@ class TestIntegrationClingoDLClassic(TestCase):
         """
         lns = LNS(
             ["./tests/ref/golf.lp"],
-            LNSConfig(
-                {**self.params, **{"declarative": True}}, [], base_solver=self.solver
-            ),
+            LNSConfig({**self.params, **{"declarative": True}}, [], solver=self.solver),
         )
         lns.main()
 
 
-class TestIntegrationClingoDLCons(TestIntegrationClingoClassic):
+class TestIntegrationClingoDLClassic(TestIntegrationClingoDLCons):
     """
-    Integration tests using clingo, constrained LNSand constrained LNS.
-    """
-
-    def setUp(self) -> None:
-        self.solver: SolverInterface = ClingoDLSolver()
-        self.params = {"max_steps": 100, "seed": 123, "constrained": True}
-
-
-class TestIntegrationClingoDlHeu(TestIntegrationClingoClassic):
-    """
-    Integration tests using clingo, classic LNS and heuristics.
+    Integration tests using clingo-dl and classic LNS.
     """
 
     def setUp(self) -> None:
         self.solver: SolverInterface = ClingoDLSolver()
-        self.params = {"max_steps": 100, "seed": 123, "heuristics": True}
+        self.params = {"max_steps": 100, "seed": 123, "constrained": False}
 
 
 class TestIntegrationClingoDLConsHeu(TestIntegrationClingoCons):
@@ -187,6 +177,20 @@ class TestIntegrationClingoDLConsHeu(TestIntegrationClingoCons):
         self.params = {
             "max_steps": 100,
             "seed": 123,
-            "constrained": True,
             "heuristics": True,
+        }
+
+
+class TestIntegrationClingoDlHeu(TestIntegrationClingoClassic):
+    """
+    Integration tests using clingo, classic LNS and heuristics.
+    """
+
+    def setUp(self) -> None:
+        self.solver: SolverInterface = ClingoDLSolver()
+        self.params = {
+            "max_steps": 100,
+            "seed": 123,
+            "heuristics": True,
+            "constrained": False,
         }

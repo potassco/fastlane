@@ -23,7 +23,7 @@ class TestSolverClingo(TestCase):
     def setUp(self) -> None:
         self.solver: SolverInterface = ClingoSolver()
         self.strategy = DefaultStrategy()
-        config = LNSConfig(base_solver=self.solver, base_strategy=self.strategy)
+        config = LNSConfig(solver=self.solver, strategy=self.strategy)
         self.lns = LNS(["./tests/ref/golf.lp"], config)
 
     def test_setup(self):
@@ -31,7 +31,6 @@ class TestSolverClingo(TestCase):
         Test clingo setup.
         """
         self.solver.setup(self.lns)
-        self.assertEqual(self.lns.clingo_options, ["--rand-freq=0.05"])
         self.assertIsInstance(self.solver.control, clingo.control.Control)
         self.assertIsNone(self.solver.theory)
 
@@ -101,7 +100,7 @@ class TestSolverClingoDL(TestSolverClingo):
     def setUp(self) -> None:
         self.solver: SolverInterface = ClingoDLSolver()
         self.strategy = DefaultStrategy()
-        config = LNSConfig(base_solver=self.solver, base_strategy=self.strategy)
+        config = LNSConfig(solver=self.solver, strategy=self.strategy)
         self.lns = LNS(["./tests/ref/golf.lp"], config)
 
     def test_setup(self):
@@ -109,7 +108,6 @@ class TestSolverClingoDL(TestSolverClingo):
         Test clingoDL setup.
         """
         self.solver.setup(self.lns)
-        self.assertEqual(self.lns.clingo_options, ["--rand-freq=0.05"])
         self.assertIsInstance(self.solver.control, clingo.control.Control)
         self.assertIsInstance(self.solver.theory, clingodl.ClingoDLTheory)
 

@@ -20,7 +20,7 @@ class TestDefaultStrategy(TestCase):
 
     def setUp(self) -> None:
         self.strategy = DefaultStrategy()
-        config = LNSConfig(base_strategy=self.strategy)
+        config = LNSConfig(strategy=self.strategy)
         self.lns = LNS(["./tests/ref/golf.lp"], config)
 
     def test_calc_cost(self):

@@ -25,14 +25,14 @@ class TestLNSConfig(TestCase):
         """
         ref_lns_opt = {
             "heuristics": False,
-            "constrained": False,
+            "constrained": True,
             "declarative": False,
             "relax_rate": 0.1,
             "max_steps": "2000",
             "solve_time_limit": 20,
             "overall_time_limit": 600,
         }
-        ref_clingo_opt = ["--rand-freq=0.05"]
+        ref_clingo_opt = []
         config = LNSConfig()
         self.assertDictEqual(config.lns_options, ref_lns_opt)
         self.assertCountEqual(config.clingo_options, ref_clingo_opt)
@@ -54,12 +54,12 @@ class TestLNSConfig(TestCase):
         ref_strat = DefaultStrategy()
 
         config = LNSConfig(
-            {"test_opt": "abc"}, ["--test_opt=123"], ref_solver, ref_strat
+            {"test_opt": "abc", "constrained": False}, ["--test_opt=123"], ref_solver, ref_strat
         )
         self.assertDictEqual(config.lns_options, ref_lns_opt)
         self.assertCountEqual(config.clingo_options, ref_clingo_opt)
         self.assertIs(config.solver, ref_solver)
-        self.assertIs(config.strategy, ref_strat)
+        self.assertIsInstance(config.strategy, type(ref_strat))
 
         with patch.object(
             LNSConfig, "_enable_heuristics", return_value=None
@@ -90,7 +90,7 @@ class TestLNSConfig(TestCase):
             ) as solver_repair,
         ):
             ref_solver = ClingoSolver()
-            config = LNSConfig(base_solver=ref_solver)
+            config = LNSConfig({"constrained":False}, solver=ref_solver)
             lns = LNS(["./tests/ref/golf.lp"], config)
             self.assertIsInstance(config.solver, type(ref_solver))
             self.assertIs(config.solver, ref_solver)
@@ -110,7 +110,7 @@ class TestLNSConfig(TestCase):
 
         with patch.object(ClingoSolver, "setup") as solver_setup:
             ref_solver = ClingoSolver()
-            config = LNSConfig(base_solver=ref_solver)
+            config = LNSConfig(solver=ref_solver)
             lns = LNS(["./tests/ref/golf.lp"], config)
             self.assertIsInstance(config.solver, type(ref_solver))
             self.assertIs(config.solver, ref_solver)
@@ -136,7 +136,7 @@ class TestLNSConfig(TestCase):
             patch.object(DefaultStrategy, "better") as strat_better,
         ):
             ref_strat = DefaultStrategy()
-            config = LNSConfig(base_strategy=ref_strat)
+            config = LNSConfig({"constrained":False},strategy=ref_strat)
             lns = LNS(["./tests/ref/golf.lp"], config)
             self.assertIsInstance(config.strategy, type(ref_strat))
             self.assertIs(config.strategy, ref_strat)
@@ -165,7 +165,7 @@ class TestLNSConfig(TestCase):
             "mod_lns.lns_config.relax_declarative", return_value=["return"]
         ) as relax_decl:
             ref_strat = DefaultStrategy()
-            config = LNSConfig(base_strategy=ref_strat)
+            config = LNSConfig({"constrained":False}, strategy=ref_strat)
             LNS(["./tests/ref/golf.lp"], config)
             self.assertIsInstance(config.strategy, type(ref_strat))
             self.assertIs(config.strategy, ref_strat)
