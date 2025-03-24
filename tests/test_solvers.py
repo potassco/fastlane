@@ -2,6 +2,7 @@
 Test cases for solver classes.
 """
 
+from typing import Type
 from unittest import TestCase
 
 import clingo
@@ -21,7 +22,8 @@ class TestSolverClingo(TestCase):
     """
 
     def setUp(self) -> None:
-        self.solver: SolverInterface = ClingoSolver()
+        self.solver_type: Type[SolverInterface] = ClingoSolver
+        self.solver: SolverInterface = self.solver_type()
         self.strategy = DefaultStrategy()
         config = LNSConfig(solver=self.solver, strategy=self.strategy)
         self.lns = LNS(["./tests/ref/golf.lp"], config)
@@ -60,9 +62,11 @@ class TestSolverClingo(TestCase):
         self.assertTrue(self.solver.repair(self.lns, assumptions).satisfiable)
         self.assertTrue(self.lns.models["new_model"])
 
-        # flaky, covered by integration test instead
-        # self.lns.set_params({"solve_time_limit": 0})
-        # self.assertTrue(self.solver.repair(self.lns, assumptions).interrupted)
+        # flaky
+        self.lns.set_parameters({"solve_time_limit": 0})
+        self.solver.setup(self.lns, ["./tests/ref/golf_big.lp"])
+        self.solver.ground_base(self.lns)
+        self.assertFalse(self.solver.repair(self.lns, assumptions).satisfiable)
 
     def test_get_avail_solve_time(self):
         """

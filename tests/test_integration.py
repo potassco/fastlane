@@ -16,24 +16,6 @@ class TestIntegrationCommon(TestCase):
     Common integration tests.
     """
 
-    def test_stop(self):
-        """
-        Test stopped execution.
-        """
-        lns = LNS(
-            ["./tests/ref/golf_big.lp"],
-            LNSConfig({"solve_time_limit": 0.2, "max_steps": 5}),
-        )
-        lns.main()
-        lns = LNS(
-            ["./tests/ref/golf_big.lp"],
-            LNSConfig(
-                {"solve_time_limit": 0.2, "max_steps": 5},
-                solver=ClingoDLSolver(),
-            ),
-        )
-        lns.main()
-
     def test_start_sol(self):
         """
         Test execution with start sol.

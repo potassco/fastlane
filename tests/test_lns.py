@@ -47,13 +47,19 @@ class TestLNS(TestCase):
         solver = ClingoSolver()
         strategy = DefaultStrategy()
         config = LNSConfig(
-            {"relax_rate": 0.4, "max_steps": 20, "constrained": False}, ["--test"], solver, strategy
+            {"relax_rate": 0.4, "max_steps": 20, "constrained": False},
+            ["--test"],
+            solver,
+            strategy,
         )
 
         lns = LNS(["./tests/ref/golf.lp"], config)
         self.assertDictEqual(
             lns.param_values,
-            {**ref_config_values, **{"relax_rate": 0.4, "max_steps": 20, "constrained": False}},
+            {
+                **ref_config_values,
+                **{"relax_rate": 0.4, "max_steps": 20, "constrained": False},
+            },
         )
         self.assertCountEqual(lns.clingo_options, ["--rand-freq=0.05", "--test"])
         self.assertEqual(lns.solver, solver)
