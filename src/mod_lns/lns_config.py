@@ -157,11 +157,19 @@ class LNSConfig:
 
                 self.control.add("heuristics", [], rules)
                 self.control.ground([("heuristics", [])])
-
+            
             # solve
             res = super(EnHeu, self).repair(  # pylint: disable=bad-super-call
                 lns_object, fixed_atoms
             )
+            print("------------------")
+            print(step)
+            print(res)
+            print(rules)
+            print(lns_object.models["new_model"]["true"])
+            print(lns_object.models["new_model"]["cost"])
+            if "cost" in lns_object.models["best_model"]:
+                print(lns_object.models["best_model"]["cost"])
 
             # release externals
             if isinstance(self.control, clingo.control.Control):
@@ -176,6 +184,14 @@ class LNSConfig:
         """
         Adjust base strategy to use constrained approach.
         """
+
+        @no_type_check
+        def __init__(self):
+            """
+            Introduce helper variable to keep track of steps.
+            """
+            super(EnCons, self).__init__() # pylint: disable=bad-super-call
+            self.step_hc = 0
 
         @no_type_check
         def post_first_solution(self, lns_object: LNS) -> None:
@@ -242,6 +258,7 @@ class LNSConfig:
                 lns_object.solver.control.assign_external(
                     Function("_lns_l_step", [Number(0)]), True
                 )
+            self.step_hc = 0
 
         # pylint: disable=unused-argument
         @no_type_check
@@ -269,8 +286,9 @@ class LNSConfig:
             step = lns_object.step_c
             if isinstance(lns_object.solver.control, clingo.control.Control):
                 lns_object.solver.control.release_external(
-                    Function("_lns_l_step", [Number(step - 1)])
+                    Function("_lns_l_step", [Number(self.step_hc)])
                 )
+                self.step_hc = step
                 cost = lns_object.models["best_model"]["cost"]
                 lns_object.solver.control.ground(
                     [
@@ -284,6 +302,7 @@ class LNSConfig:
                 lns_object.solver.control.assign_external(
                     Function("_lns_l_step", [Number(step)]), True
                 )
+                
 
         base: Type[StrategyInterface] = type(self.strategy)
         EnCons = type(
