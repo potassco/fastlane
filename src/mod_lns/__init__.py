@@ -57,7 +57,7 @@ class LNS:
         self.param_values: dict[str, Any] = {
             "files": files,
             "seed": None,
-            "relax_rate": 0.1,
+            "relax_rate": 0.2,
             "max_steps": "2000",
             # move to clingo opts
             "solve_time_limit": 20,

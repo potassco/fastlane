@@ -25,14 +25,14 @@ class TestLNSConfig(TestCase):
         """
         ref_lns_opt = {
             "heuristics": False,
-            "constrained": True,
+            "constrained": False,
             "declarative": False,
-            "relax_rate": 0.1,
+            "relax_rate": 0.2,
             "max_steps": "2000",
             "solve_time_limit": 20,
             "overall_time_limit": 600,
         }
-        ref_clingo_opt = []
+        ref_clingo_opt = ["--rand-freq=0.05"]
         config = LNSConfig()
         self.assertDictEqual(config.lns_options, ref_lns_opt)
         self.assertCountEqual(config.clingo_options, ref_clingo_opt)
@@ -41,20 +41,20 @@ class TestLNSConfig(TestCase):
 
         ref_lns_opt = {
             "heuristics": False,
-            "constrained": False,
+            "constrained": True,
             "declarative": False,
-            "relax_rate": 0.1,
+            "relax_rate": 0.2,
             "max_steps": "2000",
             "solve_time_limit": 20,
             "overall_time_limit": 600,
             "test_opt": "abc",
         }
-        ref_clingo_opt = ["--rand-freq=0.05", "--test_opt=123"]
+        ref_clingo_opt = ["--test_opt=123"]
         ref_solver = ClingoSolver()
         ref_strat = DefaultStrategy()
 
         config = LNSConfig(
-            {"test_opt": "abc", "constrained": False},
+            {"test_opt": "abc", "constrained": True},
             ["--test_opt=123"],
             ref_solver,
             ref_strat,

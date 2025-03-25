@@ -25,7 +25,7 @@ class TestLNS(TestCase):
         ref_config_values = {
             "files": ["./tests/ref/golf.lp"],
             "seed": None,
-            "relax_rate": 0.1,
+            "relax_rate": 0.2,
             "max_steps": 2000,
             "solve_time_limit": 20,
             "overall_time_limit": 600,
@@ -34,20 +34,20 @@ class TestLNS(TestCase):
             "vari_accept": 0,
             "base_relax_rate": 0,
             "heuristics": False,
-            "constrained": True,
+            "constrained": False,
             "declarative": False,
         }
 
         lns = LNS(["./tests/ref/golf.lp"])
         self.assertDictEqual(lns.param_values, ref_config_values)
-        self.assertEqual(lns.clingo_options, [])
+        self.assertEqual(lns.clingo_options, ["--rand-freq=0.05"])
         self.assertIsInstance(lns.solver, ClingoSolver)
         self.assertIsInstance(lns.strategy, DefaultStrategy)
 
         solver = ClingoSolver()
         strategy = DefaultStrategy()
         config = LNSConfig(
-            {"relax_rate": 0.4, "max_steps": 20, "constrained": False},
+            {"relax_rate": 0.4, "max_steps": 20},
             ["--test"],
             solver,
             strategy,
@@ -58,7 +58,7 @@ class TestLNS(TestCase):
             lns.param_values,
             {
                 **ref_config_values,
-                **{"relax_rate": 0.4, "max_steps": 20, "constrained": False},
+                **{"relax_rate": 0.4, "max_steps": 20},
             },
         )
         self.assertCountEqual(lns.clingo_options, ["--rand-freq=0.05", "--test"])
@@ -87,7 +87,7 @@ class TestLNS(TestCase):
         ref_config_values = {
             "files": ["./tests/ref/golf.lp"],
             "seed": None,
-            "relax_rate": 0.1,
+            "relax_rate": 0.2,
             "max_steps": 2000,
             "solve_time_limit": 20,
             "overall_time_limit": 600,
@@ -96,7 +96,7 @@ class TestLNS(TestCase):
             "vari_accept": 0,
             "base_relax_rate": 0,
             "heuristics": False,
-            "constrained": True,
+            "constrained": False,
             "declarative": False,
         }
         lns = LNS(["./tests/ref/golf.lp"])

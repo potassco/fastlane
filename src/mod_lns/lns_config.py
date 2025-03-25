@@ -53,9 +53,9 @@ class LNSConfig:
         """
         default_options = {
             "heuristics": False,
-            "constrained": True,
+            "constrained": False,
             "declarative": False,
-            "relax_rate": 0.1,
+            "relax_rate": 0.2,
             "max_steps": "2000",
             "solve_time_limit": 20,
             "overall_time_limit": 600,
@@ -73,8 +73,8 @@ class LNSConfig:
         self.strategy = strategy
         if self.lns_options["constrained"]:
             self._enable_constrained_approach()
-        else:
-            self.clingo_options = self.clingo_options + ["--rand-freq=0.05"]
+        elif not any(o.startswith("--rand-freq") for o in self.clingo_options):
+                self.clingo_options = self.clingo_options + ["--rand-freq=0.05"]
         if self.lns_options["declarative"]:
             self._enable_declarative()
 
