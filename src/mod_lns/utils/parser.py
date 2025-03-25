@@ -134,9 +134,9 @@ def get_parser() -> ArgumentParser:
     )
 
     parser.add_argument(
-        "--classic",
+        "--constrained",
         action="store_true",
-        help="enable classic approach",
+        help="enable constrained approach",
     )
 
     parser.add_argument(

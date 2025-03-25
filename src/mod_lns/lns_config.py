@@ -74,7 +74,7 @@ class LNSConfig:
         if self.lns_options["constrained"]:
             self._enable_constrained_approach()
         elif not any(o.startswith("--rand-freq") for o in self.clingo_options):
-                self.clingo_options = self.clingo_options + ["--rand-freq=0.05"]
+            self.clingo_options = self.clingo_options + ["--rand-freq=0.05"]
         if self.lns_options["declarative"]:
             self._enable_declarative()
 

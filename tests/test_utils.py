@@ -64,8 +64,8 @@ class TestUtils(TestCase):
         self.assertEqual(ret.seed, 213)
         ret = parser.parse_args(["--heuristics", "-i", "x.lp"])
         self.assertTrue(ret.heuristics)
-        ret = parser.parse_args(["--classic", "-i", "x.lp"])
-        self.assertTrue(ret.classic)
+        ret = parser.parse_args(["--constrained", "-i", "x.lp"])
+        self.assertTrue(ret.constrained)
         ret = parser.parse_args(["--declarative", "-i", "x.lp"])
         self.assertTrue(ret.declarative)
 
