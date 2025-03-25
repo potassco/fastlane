@@ -157,19 +157,11 @@ class LNSConfig:
 
                 self.control.add("heuristics", [], rules)
                 self.control.ground([("heuristics", [])])
-            
+
             # solve
             res = super(EnHeu, self).repair(  # pylint: disable=bad-super-call
                 lns_object, fixed_atoms
             )
-            print("------------------")
-            print(step)
-            print(res)
-            print(rules)
-            print(lns_object.models["new_model"]["true"])
-            print(lns_object.models["new_model"]["cost"])
-            if "cost" in lns_object.models["best_model"]:
-                print(lns_object.models["best_model"]["cost"])
 
             # release externals
             if isinstance(self.control, clingo.control.Control):
@@ -190,8 +182,8 @@ class LNSConfig:
             """
             Introduce helper variable to keep track of steps.
             """
-            super(EnCons, self).__init__() # pylint: disable=bad-super-call
-            self.step_hc = 0
+            super(EnCons, self).__init__()  # pylint: disable=bad-super-call
+            self.step_hc: int = 0
 
         @no_type_check
         def post_first_solution(self, lns_object: LNS) -> None:
@@ -302,13 +294,13 @@ class LNSConfig:
                 lns_object.solver.control.assign_external(
                     Function("_lns_l_step", [Number(step)]), True
                 )
-                
 
         base: Type[StrategyInterface] = type(self.strategy)
         EnCons = type(
             "EnCons",
             (base,),
             {
+                "__init__": __init__,
                 "post_first_solution": post_first_solution,
                 "check_better": check_better,
                 "better": better,
