@@ -10,20 +10,21 @@ from mod_lns.utils.conversions import symbol_to_str
 
 def main():
     # classic LNS with random relaxation using clingo with assumptions
-    cl_config = LNSConfig(lns_options={"seed": 123})
-    cl2_config = LNSConfig(
+    cl_config = LNSConfig(
         lns_options={
-            "seed": 123, 
-            "relax_rate": 0.4
+            "seed": 123,
+            "relax_rate": 0.2,
         })
 
     # constrained LNS using clingo with assumptions and random relaxation
     hc_config = LNSConfig(
         lns_options={
-            "constrained":True, 
-            "seed": 123, 
+            "constrained":True,
+            "seed": 123,
+            "relax_rate": 0.2, 
             "solve_time_limit": 10
         })
+    
 
     # classic LNS with declarative relaxation using clingo with assumptions
     cl_decl_config = LNSConfig(
@@ -51,21 +52,22 @@ def main():
         
         def _enable_new_opt(self):
             # get current strategy to modify
-            base = type(self.strategy)
-            class EnNewOpt(base):
-                def relax(
-                    self,
-                    model,
-                    relax_parameters,
-                ):
-                    # keep functionality
-                    r = super(EnNewOpt, self).relax(model,relax_parameters)
-                    # new functionality
-                    for s in r:
-                        print(symbol_to_str(s[0]))
-                    print("--")
-                    return r
+            
+            def relax(
+                self,
+                model,
+                relax_parameters,
+            ):
+                # keep functionality
+                r = super(EnNewOpt, self).relax(model,relax_parameters)
+                # new functionality
+                for s in r:
+                    print(symbol_to_str(s[0]))
+                print("--")
+                return r
             # set new strategy
+            base = type(self.strategy)
+            EnNewOpt = type("EnNewOpt", (base,), {"relax": relax})
             self.strategy = EnNewOpt()
 
     # Use new config to inspect declarative relaxation

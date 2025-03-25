@@ -15,7 +15,7 @@ LNS
         self.param_values: Dict[str, Any] = {
             "files": files,                     # Encodings set during initialization, List[String]
             "seed": None,                       # Seed used both for solving and random relaxation, Int
-            "relax_rate": 0.1,                  # Relax rate, Float
+            "relax_rate": 0.2,                  # Relax rate, Float
             "max_steps": "2000",                # Step limit for the search, non-int string for no limit, Int,Str
             "solve_time_limit": 20,             # Time limit for the individual solve call in seconds, Int
             "overall_time_limit": 600,          # Time limit for the entire search in seconds, Int
@@ -36,7 +36,7 @@ LNS
     
     The following solver/strategy modifications are supported:
         - "heuristics": Atoms are fixed using heuristics
-        - "consrained": Constrained LNS approach (by default enabled)
+        - "constrained": Constrained LNS approach
         - "declarative": Declarative relaxation of atoms
 
 .. currentmodule:: mod_lns.__init__

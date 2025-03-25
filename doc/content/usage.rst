@@ -13,8 +13,8 @@ For all options supported during default module execution use:
 
 .. currentmodule:: mod_lns.__init__
 
-The default parameters make use of constrained LNS using assumptions and a random relaxation of shown atoms.
-The search is limited to 2000 steps or 10 min with 20s per solve call and a relax rate of 0.1.
+The default parameters make use of classic LNS using assumptions and a random relaxation of shown atoms.
+The search is limited to 2000 steps or 10 min with 20s per solve call and a relax rate of 0.2.
 
 For finer control over the performed Large-Neighbourhood-Search (LNS) this module should be used as a framework.
 During initialization of the LNS object, a LNSConfig object can be passed to modify or replace the used solver,
