@@ -4,6 +4,7 @@ clingo-dl solver for LNS.
 
 from __future__ import annotations
 
+import sys
 import time
 from typing import TYPE_CHECKING, Optional
 
@@ -50,8 +51,12 @@ class ClingoDLSolver(SolverInterface):
         if lns_object.param_values["seed"] is not None:
             args = args + [f"--seed={lns_object.param_values['seed']}"]
 
+        def custom_logger(mc, msg):  # nocoverage
+            if mc != clingo.MessageCode.Other:
+                print(msg, file=sys.stderr)
+
         thy = ClingoDLTheory()
-        ctl = clingo.Control(args)
+        ctl = clingo.Control(args, logger=custom_logger)
         thy.register(ctl)
         with ast.ProgramBuilder(ctl) as builder:
             ast.parse_files(
@@ -79,6 +84,8 @@ class ClingoDLSolver(SolverInterface):
         start_time = int(time.time())
         solve_time = self.get_available_solve_time(lns_object)
         if isinstance(self.control, clingo.control.Control):
+            if isinstance(self.control.configuration.solve, clingo.Configuration):
+                self.control.configuration.solve.models = 1
             self.theory.prepare(self.control)
             with self.control.solve(
                 assumptions=fixed_atoms,

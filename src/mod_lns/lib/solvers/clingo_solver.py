@@ -4,6 +4,7 @@ clingo solver for LNS.
 
 from __future__ import annotations
 
+import sys
 import time
 from typing import TYPE_CHECKING, Optional
 
@@ -48,7 +49,7 @@ class ClingoSolver(SolverInterface):
         if lns_object.param_values["seed"] is not None:
             args = args + [f"--seed={lns_object.param_values['seed']}"]
 
-        def custom_logger(mc, msg):
+        def custom_logger(mc, msg):  # nocoverage
             if mc != clingo.MessageCode.Other:
                 print(msg, file=sys.stderr)
 
@@ -72,11 +73,12 @@ class ClingoSolver(SolverInterface):
         :return: Solve result.
         :rtype: clingo.solving.SolveResult
         """
-        self.control.configuration.solve.models = 1
         res = clingo.solving.SolveResult(2)
         start_time = int(time.time())
         solve_time = self.get_available_solve_time(lns_object)
         if isinstance(self.control, clingo.control.Control):
+            if isinstance(self.control.configuration.solve, clingo.Configuration):
+                self.control.configuration.solve.models = 1
             with self.control.solve(
                 assumptions=fixed_atoms, on_model=lns_object.on_model, async_=True
             ) as handle:
