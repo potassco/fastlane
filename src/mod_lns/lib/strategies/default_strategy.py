@@ -27,38 +27,6 @@ class DefaultStrategy(StrategyInterface):
     Classic LNS with weighted sum as optimization criteria and random relaxation.
     """
 
-    def calculate_cost(self, model: dict[str, Sequence[clingo.symbol.Symbol]]) -> Any:
-        """
-        Calculate cost of given model using lexicographic ordering.
-
-        :param model: Model.
-        :type model: dict[str, Sequence[clingo.symbol.Symbol]]
-        :return: Cost of given model.
-        :rtype: Any
-        """
-        priorities: dict[str, int] = {}
-        temp_val: dict[str, int] = {}
-        cost: dict[int, int] = {}
-        for atom in model["true"]:
-            if atom.match("_lns_priority", 2):
-                if (
-                    atom.arguments[0].type is SymbolType.String
-                    and atom.arguments[1].type is SymbolType.Number
-                ):
-                    priorities[atom.arguments[0].string] = atom.arguments[1].number
-            elif atom.match("_lns_penalty", 3):
-                if (
-                    atom.arguments[0].type is SymbolType.String
-                    and atom.arguments[2].type is SymbolType.Number
-                ):
-                    temp_val[atom.arguments[0].string] = (
-                        temp_val.get(atom.arguments[0].string, 0)
-                        + atom.arguments[2].number
-                    )
-        for item in priorities.items():
-            cost[item[1]] = cost.get(item[1], 0) + temp_val.get(item[0], 0)
-        return cost
-
     # pylint: disable=dangerous-default-value
     def get_first_solution(
         self, lns_object: LNS, start_sol: list[clingo.symbol.Symbol] = []
