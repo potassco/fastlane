@@ -16,6 +16,7 @@ from mod_lns.interfaces.strategy import StrategyInterface
 from mod_lns.lns_config import LNSConfig
 from mod_lns.utils.conversions import str_to_symbols
 
+
 # pylint: disable=too-many-instance-attributes
 class LNS:
     """
