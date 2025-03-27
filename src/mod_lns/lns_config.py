@@ -193,15 +193,20 @@ class LNSConfig:
             :return: Solve result.
             :rtype: clingo.solving.SolveResult
             """
-            res = super(EnCons, self).repair(  # pylint: disable=bad-super-call
-                lns_object,
-                fixed_atoms
+            res = super(EnConsSolver, self).repair(  # pylint: disable=bad-super-call
+                lns_object, fixed_atoms
             )
             cost = lns_object.new_model.cost
             if res.satisfiable:
-                bound = cost[:-1] + [cost[-1]-1]
-                lns_object.solver.control.configuration.solve.opt_mode = "opt, " + ", ".join([str(c) for c in bound])
+                bound = cost[:-1] + [cost[-1] - 1]
+                lns_object.solver.control.configuration.solve.opt_mode = (
+                    "opt, " + ", ".join([str(c) for c in bound])
+                )
             return res
+
+        base: Type[SolverInterface] = type(self.solver)
+        EnConsSolver = type("EnConsSolver", (base,), {"repair": repair})
+        self.solver = EnConsSolver()
 
         # pylint: disable=unused-argument
         @no_type_check
@@ -217,15 +222,8 @@ class LNSConfig:
             return True
 
         base: Type[StrategyInterface] = type(self.strategy)
-        EnCons = type(
-            "EnCons",
-            (base,),
-            {
-                "repair": repair,
-                "check_better": check_better,
-            },
-        )
-        self.strategy = EnCons()
+        EnConsStrat = type("EnConsStrat", (base,), {"check_better": check_better})
+        self.strategy = EnConsStrat()
 
     @no_type_check
     def _enable_declarative(self) -> None:
