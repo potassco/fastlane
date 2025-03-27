@@ -26,9 +26,6 @@ class Model:
         self.assignments = []
         self.opt = False
 
-    def deep_copy(self):
-        return copy.deepcopy(self)
-
     def get_cost_str(self) -> str:
         """
         Get cost of model as string.
@@ -37,7 +34,7 @@ class Model:
         """
         cost = self.cost
         if len(cost) != 0:
-            return ", ".join([str(c) for c in cost])
+            return " ".join([str(c) for c in cost])
         return ""
 
     def print_model(self) -> str:

@@ -3,13 +3,15 @@ Different relaxation methods for LNS.
 """
 
 import random
-from typing import Any, Sequence, Union
+from typing import Any
 
 import clingo
 
+from mod_lns import Model
+
 
 def relax_declarative(
-    model: Any,
+    model: Model,
     relax_parameters: dict[str, Any],
 ) -> list[tuple[clingo.symbol.Symbol, bool]]:
     """
@@ -56,7 +58,7 @@ def relax_declarative(
 
 
 def relax_random(
-    model: Any,
+    model: Model,
     relax_parameters: dict[str, Any],
 ) -> list[tuple[clingo.symbol.Symbol, bool]]:
     """

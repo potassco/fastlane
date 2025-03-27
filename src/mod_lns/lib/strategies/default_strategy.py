@@ -5,11 +5,11 @@ Default strategy implementing classic LNS with weighted sum as optimization crit
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Any, Sequence
+from typing import TYPE_CHECKING, Any
 
 import clingo
-from clingo.symbol import SymbolType
 
+from mod_lns import Model
 from mod_lns.interfaces.strategy import StrategyInterface
 from mod_lns.lib.relaxation import relax_random
 from mod_lns.lib.utils import (

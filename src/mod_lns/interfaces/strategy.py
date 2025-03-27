@@ -5,9 +5,11 @@ Strategy interface used for LNS.
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any, Sequence, Union
+from typing import TYPE_CHECKING, Any
 
 import clingo
+
+from mod_lns import Model
 
 if TYPE_CHECKING:
     from mod_lns import LNS  # nocoverage
@@ -118,14 +120,14 @@ class StrategyInterface(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def relax(
         self,
-        model: dict[str, Union[Sequence[clingo.symbol.Symbol], Any]],
+        model: Model,
         relax_parameters: dict[str, Any],
     ) -> list[tuple[clingo.symbol.Symbol, bool]]:  # nocoverage
         """
         Relax portion of atoms given by the relax_parameters.
 
-        :param model: dictionary containing list of shown and true atoms.
-        :type model: dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]
+        :param model: model.
+        :type model: Model
         :param relax_parameters: Parameters used to determine relaxed atoms.
         :type relax_parameters: dict[str, Any]
         :return: Fixed (not relaxed) atoms.

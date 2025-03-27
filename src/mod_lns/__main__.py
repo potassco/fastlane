@@ -37,10 +37,7 @@ def main():
         args.strategy,
     )
 
-    lns = LNS(
-        args.input_files,
-        config,
-    )
+    lns = LNS(args.input_files, config)
     lns.main()
 
 

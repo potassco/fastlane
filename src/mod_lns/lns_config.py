@@ -199,13 +199,13 @@ class LNSConfig:
             cost = lns_object.new_model.cost
             if res.satisfiable:
                 bound = cost[:-1] + [cost[-1] - 1]
-                lns_object.solver.control.configuration.solve.opt_mode = (
-                    "opt, " + ", ".join([str(c) for c in bound])
+                self.control.configuration.solve.opt_mode = "opt, " + ", ".join(
+                    [str(c) for c in bound]
                 )
             return res
 
-        base: Type[SolverInterface] = type(self.solver)
-        EnConsSolver = type("EnConsSolver", (base,), {"repair": repair})
+        sol_base: Type[SolverInterface] = type(self.solver)
+        EnConsSolver = type("EnConsSolver", (sol_base,), {"repair": repair})
         self.solver = EnConsSolver()
 
         # pylint: disable=unused-argument
@@ -221,8 +221,8 @@ class LNSConfig:
             """
             return True
 
-        base: Type[StrategyInterface] = type(self.strategy)
-        EnConsStrat = type("EnConsStrat", (base,), {"check_better": check_better})
+        strat_base: Type[StrategyInterface] = type(self.strategy)
+        EnConsStrat = type("EnConsStrat", (strat_base,), {"check_better": check_better})
         self.strategy = EnConsStrat()
 
     @no_type_check
