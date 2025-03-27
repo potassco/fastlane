@@ -2,7 +2,7 @@
 The main entry point for the application.
 """
 
-from . import LNS
+from .lns import LNS
 from .lns_config import LNSConfig
 from .utils.logger import setup_logger
 from .utils.parser import get_parser

@@ -13,7 +13,7 @@ import clingo
 from mod_lns.interfaces.solver import SolverInterface
 
 if TYPE_CHECKING:
-    from mod_lns import LNS  # nocoverage
+    from mod_lns.lns import LNS  # nocoverage
 
 
 class ClingoSolver(SolverInterface):

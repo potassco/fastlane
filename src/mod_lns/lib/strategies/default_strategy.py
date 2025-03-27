@@ -18,7 +18,7 @@ from mod_lns.lib.utils import (
 )
 
 if TYPE_CHECKING:
-    from mod_lns import LNS, Model  # nocoverage
+    from mod_lns.lns import LNS  # nocoverage
 
 
 # pylint: disable=duplicate-code

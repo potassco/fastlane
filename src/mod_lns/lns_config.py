@@ -17,7 +17,7 @@ from .lib.strategies.default_strategy import DefaultStrategy
 from .utils.conversions import symbol_to_str
 
 if TYPE_CHECKING:
-    from mod_lns import LNS  # nocoverage
+    from mod_lns.lns import LNS  # nocoverage
 
 
 # pylint: disable=too-few-public-methods, dangerous-default-value

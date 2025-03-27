@@ -12,7 +12,7 @@ import clingo
 from mod_lns import Model
 
 if TYPE_CHECKING:
-    from mod_lns import LNS  # nocoverage
+    from mod_lns.lns import LNS  # nocoverage
 
 # c, b, n: current, best, new model
 # pre_setup()

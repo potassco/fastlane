@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any, Optional
 import clingo
 
 if TYPE_CHECKING:
-    from mod_lns import LNS  # nocoverage
+    from mod_lns.lns import LNS  # nocoverage
 
 
 class SolverInterface(metaclass=abc.ABCMeta):
