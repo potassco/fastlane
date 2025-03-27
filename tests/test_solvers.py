@@ -8,11 +8,12 @@ from unittest import TestCase
 import clingo
 import clingodl
 
-from mod_lns import LNS
+from mod_lns import Model
 from mod_lns.interfaces.solver import SolverInterface
 from mod_lns.lib.solvers.clingo_dl_solver import ClingoDLSolver
 from mod_lns.lib.solvers.clingo_solver import ClingoSolver
 from mod_lns.lib.strategies.default_strategy import DefaultStrategy
+from mod_lns.lns import LNS
 from mod_lns.lns_config import LNSConfig
 
 
@@ -52,15 +53,15 @@ class TestSolverClingo(TestCase):
         self.lns.set_seed(123)
         self.solver.setup(self.lns)
         self.solver.ground_base(self.lns)
+        self.assertEqual(self.solver.control.configuration.solve.models, "-1")
         self.assertTrue(self.solver.repair(self.lns, []).satisfiable)
-        self.assertTrue(self.lns.models["new_model"])
+        self.assertEqual(self.solver.control.configuration.solve.models, "1")
+        self.assertTrue(self.lns.new_model)
 
-        assumptions = self.strategy.relax(
-            self.lns.models["new_model"], {"relax_rate": 0.2}
-        )
-        self.lns.models["new_model"] = {}
+        assumptions = self.strategy.relax(self.lns.new_model, {"relax_rate": 0.2})
+        self.lns.new_model = Model()
         self.assertTrue(self.solver.repair(self.lns, assumptions).satisfiable)
-        self.assertTrue(self.lns.models["new_model"])
+        self.assertTrue(self.lns.new_model)
 
         # flaky
         self.lns.set_parameters({"solve_time_limit": 0})

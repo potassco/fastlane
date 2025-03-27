@@ -12,11 +12,9 @@ from mod_lns.lib.solvers.clingo_dl_solver import ClingoDLSolver
 from mod_lns.lib.strategies.default_strategy import DefaultStrategy
 from mod_lns.lib.utils import (
     calculate_variability,
-    check_smaller_lexicographic,
     fix_symbols,
 )
 from mod_lns.utils.conversions import args_to_dict, str_to_symbols, symbol_to_str
-from mod_lns.utils.functions import get_cost_str, print_model
 from mod_lns.utils.logger import setup_logger
 from mod_lns.utils.parser import get_parser
 
@@ -127,27 +125,6 @@ class TestLNSUtils(TestCase):
         self.assertEqual(calculate_variability(l1, l2), 0.5)
         self.assertEqual(calculate_variability(l2, l1), 0.5)
 
-    def test_lexi_comparison(self):
-        """
-        Test comparison of lexicographic values.
-        """
-        val1 = {2: 10}
-        val2 = {3: 1, 1: 1}
-        self.assertTrue(check_smaller_lexicographic(val1, val2))
-        self.assertFalse(check_smaller_lexicographic(val2, val1))
-        val1 = {3: 2}
-        self.assertFalse(check_smaller_lexicographic(val1, val2))
-        self.assertTrue(check_smaller_lexicographic(val2, val1))
-        val1 = {3: 1, 1: 2}
-        self.assertFalse(check_smaller_lexicographic(val1, val2))
-        self.assertTrue(check_smaller_lexicographic(val2, val1))
-        val1 = val2
-        self.assertFalse(check_smaller_lexicographic(val1, val2))
-        self.assertFalse(check_smaller_lexicographic(val2, val1))
-        val1 = {}
-        self.assertTrue(check_smaller_lexicographic(val1, val2))
-        self.assertFalse(check_smaller_lexicographic(val2, val1))
-
     def test_fix_symbols(self):
         """
         test fix_symbols function.
@@ -182,33 +159,3 @@ class TestLNSUtils(TestCase):
                 ),
             ],
         )
-
-    def test_get_cost_str(self):
-        """
-        Test get cost str.
-        """
-        model = {"cost": 1}
-        self.assertEqual(get_cost_str(model), "1")
-        model["cost"] = {3: 4, 2: 3, 1: 2}
-        self.assertEqual(get_cost_str(model), "4 3 2")
-        model["cost"] = True
-        self.assertEqual(get_cost_str(model), "")
-
-    def test_print_model(self):
-        """
-        Test print model.
-        """
-        model = {
-            "shown": [
-                Function("plays", [Number(3), Number(1), Number(1)], True),
-            ],
-            "true": [
-                Function("meets", [Number(7), Number(8), Number(3)], True),
-            ],
-            "assignments": [
-                "test=42",
-            ],
-            "cost": 2,
-        }
-        ref_str = "Answer\nplays(3,1,1)\nAssignments:\ntest=42\nCost: 2\n"
-        self.assertEqual(print_model(model), ref_str)

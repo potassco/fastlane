@@ -7,9 +7,9 @@ from unittest.mock import patch
 
 import clingo
 
-from mod_lns import LNS
 from mod_lns.lib.solvers.clingo_solver import ClingoSolver
 from mod_lns.lib.strategies.default_strategy import DefaultStrategy
+from mod_lns.lns import LNS
 from mod_lns.lns_config import LNSConfig
 
 
@@ -61,7 +61,7 @@ class TestLNSConfig(TestCase):
         )
         self.assertDictEqual(config.lns_options, ref_lns_opt)
         self.assertCountEqual(config.clingo_options, ref_clingo_opt)
-        self.assertIs(config.solver, ref_solver)
+        self.assertIsInstance(config.solver, type(ref_solver))
         self.assertIsInstance(config.strategy, type(ref_strat))
 
         with patch.object(
@@ -132,32 +132,32 @@ class TestLNSConfig(TestCase):
         """
         Test _enable_constrained_approach method.
         """
-        with (
-            patch.object(
-                DefaultStrategy, "post_first_solution"
-            ) as strat_post_first_solution,
-            patch.object(DefaultStrategy, "better") as strat_better,
-        ):
+        with patch.object(
+            ClingoSolver, "repair", return_value=clingo.SolveResult(1)
+        ) as solver_repair:
+            ref_solver = ClingoSolver()
             ref_strat = DefaultStrategy()
-            config = LNSConfig({"constrained": False}, strategy=ref_strat)
+            config = LNSConfig(
+                {"constrained": False}, solver=ref_solver, strategy=ref_strat
+            )
             lns = LNS(["./tests/ref/golf.lp"], config)
+            self.assertIsInstance(config.solver, type(ref_solver))
+            self.assertIs(config.solver, ref_solver)
             self.assertIsInstance(config.strategy, type(ref_strat))
             self.assertIs(config.strategy, ref_strat)
 
             config._enable_constrained_approach()
+            self.assertIsInstance(config.solver, type(ref_solver))
+            self.assertIsNot(config.solver, ref_solver)
             self.assertIsInstance(config.strategy, type(ref_strat))
             self.assertIsNot(config.strategy, ref_strat)
 
             config.solver.control = clingo.Control()
-            lns.models["new_model"]["cost"] = {1: 1}
-            config.strategy.post_first_solution(lns)
-            strat_post_first_solution.assert_called_once_with(lns)
+            lns.new_model.cost = [1, 2]
+            config.solver.repair(lns, [])
+            solver_repair.assert_called_once_with(lns, [])
 
             self.assertTrue(config.strategy.check_better(lns))
-
-            lns.models["best_model"]["cost"] = {1: 1}
-            config.strategy.better(lns)
-            strat_better.assert_called_once_with(lns)
 
     def test_enable_declarative(self):
         """

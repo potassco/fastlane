@@ -4,10 +4,10 @@ Integration tests.
 
 from unittest import TestCase
 
-from mod_lns import LNS
 from mod_lns.interfaces.solver import SolverInterface
 from mod_lns.lib.solvers.clingo_dl_solver import ClingoDLSolver
 from mod_lns.lib.solvers.clingo_solver import ClingoSolver
+from mod_lns.lns import LNS
 from mod_lns.lns_config import LNSConfig
 
 

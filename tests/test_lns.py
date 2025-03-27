@@ -7,10 +7,57 @@ from unittest import TestCase
 
 from clingo.symbol import Function, Number
 
-from mod_lns import LNS
+from mod_lns import Model
 from mod_lns.lib.solvers.clingo_solver import ClingoSolver
 from mod_lns.lib.strategies.default_strategy import DefaultStrategy
+from mod_lns.lns import LNS
 from mod_lns.lns_config import LNSConfig
+
+
+class TestModel(TestCase):
+    """
+    Test cases for Model class.
+    """
+
+    def test_init(self):
+        """
+        Test initialization.
+        """
+        model = Model()
+        self.assertEqual(model.shown, [])
+        self.assertEqual(model.true, [])
+        self.assertEqual(model.cost, [])
+        self.assertEqual(model.assignments, [])
+        self.assertFalse(model.opt)
+
+    def test_get_cost_str(self):
+        """
+        Test get cost str.
+        """
+        model = Model()
+        self.assertEqual(model.get_cost_str(), "")
+        model.cost = [1]
+        self.assertEqual(model.get_cost_str(), "1")
+        model.cost = [4, 3, 2]
+        self.assertEqual(model.get_cost_str(), "4 3 2")
+
+    def test_print_model(self):
+        """
+        Test print model.
+        """
+        model = Model()
+        model.shown = [
+            Function("plays", [Number(3), Number(1), Number(1)], True),
+        ]
+        model.true = [
+            Function("meets", [Number(7), Number(8), Number(3)], True),
+        ]
+        model.assignments = [
+            "test=42",
+        ]
+        model.cost = [2]
+        ref_str = "Answer\nplays(3,1,1)\nAssignments:\ntest=42\nCost: 2\n"
+        self.assertEqual(model.print_model(), ref_str)
 
 
 class TestLNS(TestCase):
@@ -139,20 +186,19 @@ class TestLNS(TestCase):
         """
         Test interrupt handling.
         """
-        model = {
-            "shown": [
-                Function("plays", [Number(3), Number(1), Number(1)], True),
-            ],
-            "true": [
-                Function("meets", [Number(7), Number(8), Number(3)], True),
-            ],
-            "assignments": [
-                "test=42",
-            ],
-            "cost": 2,
-        }
+        model = Model()
+        model.shown = [
+            Function("plays", [Number(3), Number(1), Number(1)], True),
+        ]
+        model.true = [
+            Function("meets", [Number(7), Number(8), Number(3)], True),
+        ]
+        model.assignments = [
+            "test=42",
+        ]
+        model.cost = [2]
         lns = LNS(["./tests/ref/golf_big.lp"])
-        lns.models["best_model"] = model
+        lns.best_model = model
         signal.signal(signal.SIGINT, lns.interrupt_handler)
         with self.assertRaises(SystemExit):
             signal.raise_signal(signal.SIGINT)
