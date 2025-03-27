@@ -178,29 +178,30 @@ class LNSConfig:
         """
 
         @no_type_check
-        def __init__(self):
+        def repair(
+            self,
+            lns_object: LNS,
+            fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]],
+        ) -> clingo.solving.SolveResult:
             """
-            Introduce helper variable to keep track of steps.
-            """
-            super(EnCons, self).__init__()  # pylint: disable=bad-super-call
-            self.step_hc: int = 0
-
-        def get_bound(cost: list) -> list:
-            assert len(cost) != 0
-            return cost[:-1] + [cost[-1]-1]
-
-        @no_type_check
-        def post_first_solution(self, lns_object: LNS) -> None:
-            """
-            Enforce better solution.
+            Force better solution in next iteration after cost is determined.
 
             :param lns_object: LNS object.
             :type lns_object: large_neighbourhood_search.LNS
+            :param assumptions: Assumptions for solving (fixed atoms).
+            :type assumptions: list[tuple[clingo.symbol.Symbol, bool]]
+            :return: Solve result.
+            :rtype: clingo.solving.SolveResult
             """
-            super(EnCons, self).post_first_solution(  # pylint: disable=bad-super-call
-                lns_object
+            res = super(EnCons, self).repair(  # pylint: disable=bad-super-call
+                lns_object,
+                fixed_atoms
             )
-            lns_object.solver.control.configuration.solve.opt_mode = "opt, " + ", ".join([str(c) for c in get_bound(lns_object.new_model.cost)])
+            cost = lns_object.new_model.cost
+            if res.satisfiable:
+                bound = cost[:-1] + [cost[-1]-1]
+                lns_object.solver.control.configuration.solve.opt_mode = "opt, " + ", ".join([str(c) for c in bound])
+            return res
 
         # pylint: disable=unused-argument
         @no_type_check
@@ -215,26 +216,13 @@ class LNSConfig:
             """
             return True
 
-        @no_type_check
-        def better(self, lns_object: LNS) -> None:
-            """
-            Enforce better solution.
-
-            :param lns_object: LNS object.
-            :type lns_object: large_neighbourhood_search.LNS
-            """
-            super(EnCons, self).better(lns_object)  # pylint: disable=bad-super-call
-            lns_object.solver.control.configuration.solve.opt_mode = "opt, " + ", ".join([str(c) for c in get_bound(lns_object.new_model.cost)])
-
         base: Type[StrategyInterface] = type(self.strategy)
         EnCons = type(
             "EnCons",
             (base,),
             {
-                "__init__": __init__,
-                "post_first_solution": post_first_solution,
+                "repair": repair,
                 "check_better": check_better,
-                "better": better,
             },
         )
         self.strategy = EnCons()
