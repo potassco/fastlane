@@ -14,7 +14,45 @@ from .interfaces.solver import SolverInterface
 from .interfaces.strategy import StrategyInterface
 from .lns_config import LNSConfig
 from .utils.conversions import str_to_symbols
-from .utils.functions import get_cost_str, print_model
+
+
+class Model:
+    "Simplified Model class"
+
+    def __init__(self):
+        self.shown = []
+        self.true = []
+        self.cost = []
+        self.assignments = []
+        self.opt = False
+
+    def deep_copy(self):
+        return copy.deepcopy(self)
+
+    def get_cost_str(self) -> str:
+        """
+        Get cost of model as string.
+        :return: Cost as string.
+        :rtype: str
+        """
+        cost = self.cost
+        if len(cost) != 0:
+            return ", ".join([str(c) for c in cost])
+        return ""
+
+    def print_model(self) -> str:
+        """
+        Print model.
+
+        :return: Printed string.
+        :rtype: str
+        """
+        answer_string = " ".join([str(atom) for atom in self.shown])
+        if len(self.assignments) != 0:
+            answer_string += "\nAssignments:\n" + " ".join(self.assignments)
+        s = "Answer\n" f"{answer_string}\n" f"Cost: {self.get_cost_str()}\n"
+        print(s)
+        return s
 
 
 # pylint: disable=dangerous-default-value, too-many-instance-attributes
@@ -44,14 +82,9 @@ class LNS:
         self.step_c: int = 0
         self.stopped = False
 
-        new_model: dict[str, Union[Sequence[clingo.symbol.Symbol], Any]] = {}
-        current_model: dict[str, Union[Sequence[clingo.symbol.Symbol], Any]] = {}
-        best_model: dict[str, Union[Sequence[clingo.symbol.Symbol], Any]] = {}
-        self.models: dict[str, Any] = {
-            "new_model": new_model,
-            "current_model": current_model,
-            "best_model": best_model,
-        }
+        self.new_model: Model = Model()
+        self.current_model: Model = Model()
+        self.best_model: Model = Model()
 
         # to be reworked
         self.param_values: dict[str, Any] = {
@@ -119,7 +152,7 @@ class LNS:
         """
         print("==================")
         print("INTERRUPTED:")
-        print_model(self.models["best_model"])
+        self.best_model.print_model()
         print(f"Overall steps: {self.step_c}")
         print(f"Overall time: {time.time() - self.start_time:.3f}s")
         raise SystemExit
@@ -131,16 +164,15 @@ class LNS:
         :param model: Model found during solving.
         :type model: clingo.solving.Model
         """
-        self.models["new_model"] = {}
-        self.models["new_model"]["shown"] = model.symbols(shown=True)
-        self.models["new_model"]["true"] = model.symbols(atoms=True)
-        self.models["new_model"]["cost"] = self.strategy.calculate_cost(
-            self.models["new_model"]
-        )
+        self.new_model = Model()
+        self.new_model.shown = model.symbols(shown=True)
+        self.new_model.true = model.symbols(atoms=True)
+        self.new_model.cost = model.cost
+
         # dl - to be improved
         if self.solver.theory:
             self.solver.theory.on_model(model=model)
-            self.models["new_model"]["assignments"] = [
+            self.new_model.assignments = [
                 f"{key}={val}"
                 for key, val in self.solver.theory.assignment(model.thread_id)
             ]
@@ -198,7 +230,7 @@ class LNS:
                 )
             self.strategy.pre_relax(self)
             fixed_atoms = self.strategy.relax(
-                self.models["new_model"],
+                self.new_model,
                 {
                     "relax_rate": self.param_values["relax_rate"],
                     "base_relax_rate": self.param_values["base_relax_rate"],
@@ -207,17 +239,17 @@ class LNS:
             if self.strategy.repair(self, fixed_atoms).satisfiable:
                 self.strategy.post_repair(self)
                 if self.strategy.check_accept(self):
-                    self.models["current_model"] = self.models["new_model"].copy()
+                    self.current_model = self.new_model
                     self.strategy.accepted(self)
                 if self.strategy.check_better(self):
-                    self.models["best_model"] = self.models["new_model"].copy()
+                    self.best_model = self.new_model
                     print(
                         f'{time.time() - self.start_time:.3f}s: {self.step_c}|{self.param_values["max_steps"]} '
-                        f'New best solution: {get_cost_str(self.models["best_model"])}'
+                        f"New best solution: {self.best_model.get_cost_str()}"
                     )
                     self.strategy.better(self)
         print("==================")
         print("SEARCH FINISHED:")
-        print_model(self.models["best_model"])
+        self.best_model.print_model()
         print(f"Overall steps: {self.step_c}")
         print(f"Overall time: {time.time() - self.start_time:.3f}s")

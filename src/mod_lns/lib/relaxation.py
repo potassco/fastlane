@@ -9,15 +9,15 @@ import clingo
 
 
 def relax_declarative(
-    model: dict[str, Union[Sequence[clingo.symbol.Symbol], Any]],
+    model: Any,
     relax_parameters: dict[str, Any],
 ) -> list[tuple[clingo.symbol.Symbol, bool]]:
     """
     Relax portion of selected atoms given by the relax_rate.
     ASP encoding has to contain `_lns_select/1` and `_lns_fix/2` predicates.
 
-    :param model: dictionary containing list of shown and true atoms.
-    :type model: dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]
+    :param model: model.
+    :type model: Model
     :param relax_parameters: Parameters used to determine relaxed atoms.
     :type relax_parameters: dict[str, Any]
     :return: Fixed (not relaxed) atoms.
@@ -28,7 +28,7 @@ def relax_declarative(
     declared_fixed_atoms: dict[
         clingo.symbol.Symbol, list[tuple[clingo.symbol.Symbol, bool]]
     ] = {}
-    for atom in model["true"]:
+    for atom in model.true:
         if atom.match("_lns_select", 1):
             if atom.arguments[0] not in selected_atoms:
                 selected_atoms.append(atom.arguments[0])
@@ -56,14 +56,14 @@ def relax_declarative(
 
 
 def relax_random(
-    model: dict[str, Union[Sequence[clingo.symbol.Symbol], Any]],
+    model: Any,
     relax_parameters: dict[str, Any],
 ) -> list[tuple[clingo.symbol.Symbol, bool]]:
     """
     Relax random number of shown atoms given by the relax_rate.
 
-    :param model: dictionary containing list of shown and true atoms.
-    :type model: dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]
+    :param model: model.
+    :type model: Model
     :param relax_parameters: Parameters used to determine relaxed atoms.
     :type relax_parameters: dict[str, Any]
     :return: Fixed (not relaxed) atoms.
@@ -71,7 +71,7 @@ def relax_random(
     """
     fixed_atoms = []
     sample = random.sample(
-        model["shown"], int(len(model["shown"]) * (1 - relax_parameters["relax_rate"]))
+        model.shown, int(len(model.shown) * (1 - relax_parameters["relax_rate"]))
     )
     for atom in sample:
         fixed_atoms.append((atom, True))

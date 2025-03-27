@@ -5,7 +5,7 @@ Default strategy implementing classic LNS with weighted sum as optimization crit
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Any, Sequence, Union
+from typing import TYPE_CHECKING, Any, Sequence
 
 import clingo
 from clingo.symbol import SymbolType
@@ -14,13 +14,11 @@ from mod_lns.interfaces.strategy import StrategyInterface
 from mod_lns.lib.relaxation import relax_random
 from mod_lns.lib.utils import (
     calculate_variability,
-    check_smaller_lexicographic,
     fix_symbols,
 )
-from mod_lns.utils.functions import get_cost_str
 
 if TYPE_CHECKING:
-    from mod_lns import LNS  # nocoverage
+    from mod_lns import LNS, Model  # nocoverage
 
 
 # pylint: disable=duplicate-code
@@ -86,10 +84,10 @@ class DefaultStrategy(StrategyInterface):
         if lns_object.solver.repair(lns_object, fixed_sym).satisfiable:
             print(
                 f"{time.time() - lns_object.start_time:.3f}s: Initial solution found with cost: "
-                f'{get_cost_str(lns_object.models["new_model"])}'
+                f"{lns_object.new_model.get_cost_str()}"
             )
-            lns_object.models["current_model"] = lns_object.models["new_model"].copy()
-            lns_object.models["best_model"] = lns_object.models["new_model"].copy()
+            lns_object.current_model = lns_object.new_model
+            lns_object.best_model = lns_object.new_model
             return True
         print("No first solution found.")
         return False
@@ -120,7 +118,7 @@ class DefaultStrategy(StrategyInterface):
 
     def relax(
         self,
-        model: dict[str, Union[Sequence[clingo.symbol.Symbol], Any]],
+        model: Model,
         relax_parameters: dict[str, Any],
     ) -> list[tuple[clingo.symbol.Symbol, bool]]:
         """
@@ -128,7 +126,7 @@ class DefaultStrategy(StrategyInterface):
         Use random relaxation.
 
         :param model: dictionary containing list of shown and true atoms.
-        :type model: dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]
+        :type model: Model
         :param relax_parameters: Parameters used to determine relaxed atoms.
         :type relax_parameters: dict[str, Any]
         :return: Fixed (not relaxed) atoms.
@@ -166,8 +164,8 @@ class DefaultStrategy(StrategyInterface):
         :rtype: bool
         """
         vari = calculate_variability(
-            lns_object.models["new_model"]["shown"],
-            lns_object.models["current_model"]["shown"],
+            lns_object.new_model.shown,
+            lns_object.current_model.shown,
         )
         return vari >= lns_object.param_values["vari_accept"]
 
@@ -183,7 +181,4 @@ class DefaultStrategy(StrategyInterface):
         :return: Whether new model is better or not.
         :rtype: bool
         """
-        return check_smaller_lexicographic(
-            lns_object.models["new_model"]["cost"],
-            lns_object.models["best_model"]["cost"],
-        )
+        return lns_object.new_model.cost < lns_object.best_model.cost

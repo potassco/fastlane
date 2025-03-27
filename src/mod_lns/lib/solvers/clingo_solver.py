@@ -48,7 +48,11 @@ class ClingoSolver(SolverInterface):
         if lns_object.param_values["seed"] is not None:
             args = args + [f"--seed={lns_object.param_values['seed']}"]
 
-        ctl = clingo.Control(args)
+        def custom_logger(mc, msg):
+            if mc != clingo.MessageCode.Other:
+                print(msg, file=sys.stderr)
+
+        ctl = clingo.Control(args, logger=custom_logger)
         for path in files:
             ctl.load(path)
         self.control, self.theory = ctl, None
@@ -68,6 +72,7 @@ class ClingoSolver(SolverInterface):
         :return: Solve result.
         :rtype: clingo.solving.SolveResult
         """
+        self.control.configuration.solve.models = 1
         res = clingo.solving.SolveResult(2)
         start_time = int(time.time())
         solve_time = self.get_available_solve_time(lns_object)
