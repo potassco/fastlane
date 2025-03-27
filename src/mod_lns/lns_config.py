@@ -185,10 +185,14 @@ class LNSConfig:
             super(EnCons, self).__init__()  # pylint: disable=bad-super-call
             self.step_hc: int = 0
 
+        def get_bound(cost: list) -> list:
+            assert len(cost) != 0
+            return cost[:-1] + [cost[-1]-1]
+
         @no_type_check
         def post_first_solution(self, lns_object: LNS) -> None:
             """
-            Enforce better solution by implementing initial cost as hard constraint.
+            Enforce better solution.
 
             :param lns_object: LNS object.
             :type lns_object: large_neighbourhood_search.LNS
@@ -196,68 +200,13 @@ class LNSConfig:
             super(EnCons, self).post_first_solution(  # pylint: disable=bad-super-call
                 lns_object
             )
-            cost = lns_object.models["new_model"]["cost"]
-            # add rules to force better solution with each iteration
-            # encoding has to contain _lns_penalty(N,I,W) predicates and _lns_priority(N,P) facts
-            # where N: name, I: identifier, W: weight, P: priority
-            # higher priority = more important
-            # priorities have to be declared consecutively, e.g. only 1 and 3 not allowed
-            # example of generated rules with ground values for cost={1:3, 2:4}
-            #   #external _lns_l_step(s).
-            #   _lns_bettereq(P+1,s) :- _lns_priority(_,P), not _lns_penalty(_,P+1), _lns_l_step(s).
-            #   :- not _lns_better(_,s), _lns_l_step(s).
-            #   _lns_better(1,s) :- _lns_priority(N,1), #sum{W,I: _lns_penalty(N,I,W)} < 3,
-            #                       _lns_bettereq(1,s), _lns_l_step(s).
-            #   _lns_bettereq(1,s) :- _lns_priority(N,1), #sum{W,I: _lns_penalty(N,I,W)} <= 3,
-            #                         _lns_bettereq(2,s), _lns_l_step(s).
-            #   _lns_better(2,s) :- _lns_priority(N,2), #sum{W,I: _lns_penalty(N,I,W)} < 4,
-            #                       _lns_bettereq(2,s), _lns_l_step(s).
-            #   _lns_bettereq(2,s) :- _lns_priority(N,2), #sum{W,I: _lns_penalty(N,I,W)} <= 4,
-            #                         _lns_bettereq(3,s), _lns_l_step(s).
-            s = ["s"] + list(map(lambda x: f"cost{x}", sorted(cost.keys())))
-            rules = (
-                "#external _lns_l_step(s).\
-            _lns_bettereq(P+1,s) :- _lns_priority(_,P), not _lns_priority(_,P+1), _lns_l_step(s).\
-            :- not _lns_better(_,s), _lns_l_step(s)."
-                + " ".join(
-                    list(
-                        map(
-                            lambda x: f"_lns_better({x},s) :- _lns_priority(N,{x}),\
-                            #sum{{W,I: _lns_penalty(N,I,W)}} < cost{x}, _lns_bettereq({x},s), _lns_l_step(s).",
-                            cost.keys(),
-                        )
-                    )
-                    + list(
-                        map(
-                            lambda x: f"_lns_bettereq({x},s) :- _lns_priority(N,{x}),\
-                            #sum{{W,I: _lns_penalty(N,I,W)}} <= cost{x}, _lns_bettereq({x+1},s), _lns_l_step(s).",
-                            cost.keys(),
-                        )
-                    )
-                )
-            )
-            if isinstance(lns_object.solver.control, clingo.control.Control):
-                lns_object.solver.control.add("cost", s, rules)
-                lns_object.solver.control.ground(
-                    [
-                        (
-                            "cost",
-                            [Number(0)]
-                            + [Number(cost[prio]) for prio in sorted(cost.keys())],
-                        )
-                    ]
-                )
-                lns_object.solver.control.assign_external(
-                    Function("_lns_l_step", [Number(0)]), True
-                )
-            self.step_hc = 0
+            lns_object.solver.control.configuration.solve.opt_mode = "opt, " + ", ".join([str(c) for c in get_bound(lns_object.new_model.cost)])
 
         # pylint: disable=unused-argument
         @no_type_check
         def check_better(self, lns_object: LNS) -> bool:
             """
             Check whether new model is better.
-            Enforced through constraint.
 
             :param lns_object: LNS object.
             :type lns_object: large_neighbourhood_search.LNS
@@ -269,31 +218,13 @@ class LNSConfig:
         @no_type_check
         def better(self, lns_object: LNS) -> None:
             """
-            Update constraint after new best solution was found.
+            Enforce better solution.
 
             :param lns_object: LNS object.
             :type lns_object: large_neighbourhood_search.LNS
             """
             super(EnCons, self).better(lns_object)  # pylint: disable=bad-super-call
-            step = lns_object.step_c
-            if isinstance(lns_object.solver.control, clingo.control.Control):
-                lns_object.solver.control.release_external(
-                    Function("_lns_l_step", [Number(self.step_hc)])
-                )
-                self.step_hc = step
-                cost = lns_object.models["best_model"]["cost"]
-                lns_object.solver.control.ground(
-                    [
-                        (
-                            "cost",
-                            [Number(step)]
-                            + [Number(cost[prio]) for prio in sorted(cost.keys())],
-                        )
-                    ]
-                )
-                lns_object.solver.control.assign_external(
-                    Function("_lns_l_step", [Number(step)]), True
-                )
+            lns_object.solver.control.configuration.solve.opt_mode = "opt, " + ", ".join([str(c) for c in get_bound(lns_object.new_model.cost)])
 
         base: Type[StrategyInterface] = type(self.strategy)
         EnCons = type(
