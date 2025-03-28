@@ -10,7 +10,7 @@ Implementations of :class:`SolverInterface`
 Listed below are multiple solver implementations, which can be used on its own or be modified using an
 :class:`LNSConfig` object.
 
-.. currentmodule:: mod_lns.__init__
+.. currentmodule:: mod_lns.lns
 
 .. note::
     Changes to the solver might also require changes to the :meth:`on_model` method of the :class:`LNS` class.

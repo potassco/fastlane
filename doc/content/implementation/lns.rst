@@ -39,7 +39,7 @@ LNS
         - "constrained": Constrained LNS approach
         - "declarative": Declarative relaxation of atoms
 
-.. currentmodule:: mod_lns.__init__
+.. currentmodule:: mod_lns.lns
 
 .. autoclass:: LNS
     :members:
@@ -49,3 +49,7 @@ LNS
 .. autoclass:: LNSConfig
     :members:
 
+.. currentmodule:: mod_lns.__init__
+
+.. autoclass:: Model
+    :members:

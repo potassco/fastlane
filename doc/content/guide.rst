@@ -15,7 +15,7 @@ observe the effects of different approaches.
 Encoding
 ----------
 
-The corresponding encoding is located in :file:`./examples/golf_demo.lp` and can be divided into three parts.
+The corresponding encoding is located in :file:`./examples/golf_demo.lp` and can be divided into two parts.
 The first part represents the basic clingo encoding of the problem, seen below.
 
 .. code-block::
@@ -32,19 +32,10 @@ The first part represents the basic clingo encoding of the problem, seen below.
     { plays(P,W,G) : player(P) } = p :- week(W), group(G).
 
     meets(P1,P2,W) :- plays(P1,W,G), plays(P2,W,G), P1 < P2.
+    :~ #count { W : meets(P1,P2,W) } > 1, player(P1), player(P2), P1 < P2. [1,P1]
     #show plays/3.
 
-The second part is used to determine the cost of each solution, our optimization criterion.
-In the first line we define our optimization criterion "min" with a priority of 1.
-The second line then describes, that for each occurrence of player P1 a penalty/cost of 1 should be inferred,
-if the players meets another player more than once a week. Duplications are avoided through P1 < P2.
-
-.. code-block::
-
-    _lns_priority("min",1).
-    _lns_penalty("min",P1,1) :- #count { W : meets(P1,P2,W) } > 1, player(P1), player(P2), P1 < P2.
-
-The last part can be used for declarative relaxation, with the first line defining possible terms to be selected
+The second part can be used for declarative relaxation, with the first line defining possible terms to be selected
 during relaxation, in this case weeks "W". The second line then connects the terms "W" with corresponding atoms to be fixed
 (complement of relaxed atoms during search), here all plays/3 atoms in the corresponding week W.
 
@@ -63,12 +54,12 @@ the corresponding ASP encoding. In this case the default configuration described
 
 .. code-block:: python
 
-    from mod_lns import LNS
+    from mod_lns.lns import LNS
 
     lns = LNS(["examples/golf_demo.lp"])
     lns.main()
 
-We can configure the search my passing a new :class:`LNSConfig` object. During initilization of the the :class:`LNSConfig` the
+We can configure the search my passing a new :class:`LNSConfig` object. During initialization of the the :class:`LNSConfig` the
 following arguments can be provided:
 
 - lns_options: A dictionary of lns specific parameters, such as relax_rate or step limit (see :ref:`lns implementation<ref_lns>` section for more details)
@@ -90,15 +81,15 @@ For now lets just modify the lns_options as seen below (0.2 is also the default 
     lns = LNS(["examples/golf_demo.lp"], cl_config)
     lns.main()
 
-You should see 2000 LNS steps, during which the optimization value is reduced from initially 5 to 2. The iterations
-are marked every 50 steps to be able to tell the current state of the search. We can see the that, the number of steps required
-to find better solutions increases the closer we get to the optimal solution (in this case 0, found at step 10244).
+You should see 2000 LNS steps, during which the optimization value is reduced relatively quickly from initially 5 to 2.
+The iterations are marked every 50 steps to be able to tell the current state of the search. We can see the that,
+while first improvements come quickly the number of steps required to find the best solutions (cost 0) can not be found
+in the first 2000 steps (found at step 2518).
 Feel free to play around with different seeds and or relax rates to see how that effects the search.
 
-An alternative approach is to "guide" the search by using constraints. In this approach the value of the previous best
-solution is directly integrated into the solving process, by enforcing a better solution via constraints. While in the
+An alternative approach is to "guide" the search by enforcing a strictly better solution by the solver. While in the
 classic approach the solutions are either "worse/equal" or "better", in this approach the solutions are either "unsatisfiable"
-or "better". This usage of constraints leads to signiﬁcantly fewer steps but increases the solve time for each step. Lets try it out.
+or "better". This leads to signiﬁcantly fewer steps but increases the solve time for each step. Lets try it out.
 
 .. code-block:: python
 
@@ -121,7 +112,7 @@ example strongly connected to the chosen "solve_time_limit" parameter, try 2s.
 
 All of the above approaches use fully random relaxation, i.e. atoms to be fixed are randomly selected from all shown atoms.
 We can enable declarative relaxation to define a set of atoms from which our fixed atoms are randomly chosen.
-The lower part of the :ref:`encoding<ref_g_enc>` section above, descibes how the enconding has to be modified to support
+The lower part of the :ref:`encoding<ref_g_enc>` section above, describes how the encoding has to be modified to support
 declarative relaxation. In this case a certain number of weeks are randomly selected and all matches in those weeks fixed.
 The declarative relaxation can be enabled as follows:
 

@@ -31,7 +31,7 @@ step by step introduction to the framework look :ref:`here<ref_guide>`.
 
 .. code-block:: python
 
-    from mod_lns import LNS
+    from mod_lns.lns import LNS
     from mod_lns.lns_config import LNSConfig
     from mod_lns.lib.solvers.clingo_dl_solver import ClingoDLSolver
 
@@ -58,20 +58,8 @@ Encoding
 
 .. currentmodule:: mod_lns
 
-For a correct program execution the ASP encoding has to contain some form of derivation for the :code:`_lns_penalty(N,I,W)` predicate
-to indicate optimization criteria and :code:`_lns_priority(N,P)` facts to denote their priority. An example definition can be seen in :file:`./examples/golf.lp`.
-
-.. code-block::
-    
-    _lns_priority(
-        N,      % Name of the optimization criteria
-        P       % Priority of the criteria (greater value = higher priority)
-    ).
-    _lns_penalty(
-        N,      % Name of the optimization criteria
-        I,      % Unique identifier
-        W       % Weight of the criteria
-    ) :- <BODY>.
+The encodings should contain some kind of optimization statement or soft constraint. The lns framework will work
+with the solution cost derived by the solver.
 
 When using :func:`lib.relaxation.relax_declarative`, :code:`_lns_select/1` and :code:`_lns_fix/2` have to be used
 in the encoding. While :code:`_lns_select/1` selects a set of terms, :code:`_lns_fix/2` maps atoms those terms,
