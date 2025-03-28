@@ -17,7 +17,7 @@ def main():
         })
 
     # constrained LNS using clingo with assumptions and random relaxation
-    hc_config = LNSConfig(
+    con_config = LNSConfig(
         lns_options={
             "constrained":True,
             "seed": 123,
@@ -71,7 +71,7 @@ def main():
             self.strategy = EnNewOpt()
 
     # Use new config to inspect declarative relaxation
-    cl_decl_custom_config = NewLNSConfig(
+    con_decl_custom_config = NewLNSConfig(
         lns_options={
             "new_opt": True, 
             "declarative": True, 
