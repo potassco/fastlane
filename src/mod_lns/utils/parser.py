@@ -2,24 +2,14 @@
 The command line parser for the project.
 """
 
+import importlib
+import inspect
 import logging
+import pkgutil
 import sys
 from argparse import ArgumentParser
 from textwrap import dedent
-from typing import Any, cast
-
-from mod_lns.lib.solvers.clingo_dl_heu_solver import ClingoDLHeuSolver
-from mod_lns.lib.solvers.clingo_dl_solver import ClingoDLSolver
-from mod_lns.lib.solvers.clingo_heu_solver import ClingoHeuSolver
-from mod_lns.lib.solvers.clingo_solver import ClingoSolver
-from mod_lns.lib.strategies.classic_lexicographic_declarative import ClassicLexiDecl
-from mod_lns.lib.strategies.classic_lexicographic_rnd import ClassicLexiRnd
-from mod_lns.lib.strategies.classic_weighted_sum_decl import ClassicWeightedSumDecl
-from mod_lns.lib.strategies.classic_weighted_sum_rnd import ClassicWeightedSumRnd
-from mod_lns.lib.strategies.hc_lexicographic_declarative import HCLexiDecl
-from mod_lns.lib.strategies.hc_lexicographic_rnd import HCLexiRnd
-from mod_lns.lib.strategies.hc_weighted_sum_decl import HCWeightedSumDecl
-from mod_lns.lib.strategies.hc_weighted_sum_rnd import HCWeightedSumRnd
+from typing import Any, cast, no_type_check
 
 __all__ = ["get_parser"]
 
@@ -29,6 +19,36 @@ else:
     from importlib import metadata  # nocoverage
 
 VERSION = metadata.version("mod_lns")
+
+
+# temporary solution
+@no_type_check
+def get_classes_from_package(package: str) -> list[type]:
+    """
+    Return all classes inside given package.
+
+    :param package: Package string.
+    :type package: str
+    :return: List of classes in package.
+    :rtype: list[type]
+    """
+    classes_in_package = []
+    # Go through the modules in the package
+    for _, module_name, _ in pkgutil.iter_modules(
+        importlib.import_module(package).__path__
+    ):
+        full_module_name = f"{package}.{module_name}"
+        # Load the module for inspection
+        module = importlib.import_module(full_module_name)
+
+        # Filter for class objects and only objects that exist within the module
+        for _, obj in inspect.getmembers(
+            module,
+            lambda member, module_name=full_module_name: inspect.isclass(member)
+            and member.__module__ == module_name,
+        ):
+            classes_in_package.append(obj)
+    return classes_in_package
 
 
 def get_parser() -> ArgumentParser:
@@ -42,28 +62,21 @@ def get_parser() -> ArgumentParser:
             Modular Large Neighbourhood Search (LNS) Framework using ASP.\n
             Check the documentation for a guide on how to use this framework
             and all possible options for configuration.
+
+            --heuristic, --constrained and --declarative options should not be used
+            when using custom solvers and/or strategies.
             """
         ),
     )
-
-    # dict of supported solvers
+    # list of supported solvers
     solvers = [
-        ("ClingoSolver", ClingoSolver()),
-        ("ClingoHeuSolver", ClingoHeuSolver()),
-        ("ClingoDLSolver", ClingoDLSolver()),
-        ("ClingoDLHeuSolver", ClingoDLHeuSolver()),
+        (cls.__name__, cls()) for cls in get_classes_from_package("mod_lns.lib.solvers")
     ]
 
-    # dict of all supported strategies
+    # list of supported strategies
     strategies = [
-        ("ClassicWeightedSumRnd", ClassicWeightedSumRnd()),
-        ("ClassicWeightedSumDecl", ClassicWeightedSumDecl()),
-        ("ClassicLexiRnd", ClassicLexiRnd()),
-        ("ClassicLexiDecl", ClassicLexiDecl()),
-        ("HCWeightedSumRnd", HCWeightedSumRnd()),
-        ("HCWeightedSumDecl", HCWeightedSumDecl()),
-        ("HCLexiRnd", HCLexiRnd()),
-        ("HCLexiDecl", HCLexiDecl()),
+        (cls.__name__, cls())
+        for cls in get_classes_from_package("mod_lns.lib.strategies")
     ]
 
     levels = [
@@ -107,11 +120,29 @@ def get_parser() -> ArgumentParser:
 
     parser.add_argument(
         "--strategy",
-        default="HCWeightedSumRnd",
+        default="DefaultStrategy",
         choices=[val for _, val in strategies],
         metavar=f"{{{','.join(key for key, _ in strategies)}}}",
         help="set LNS strategy [%(default)s]",
         type=cast(Any, lambda name: get(strategies, name)),
+    )
+
+    parser.add_argument(
+        "--heuristics",
+        action="store_true",
+        help="enable heuristics during reparation",
+    )
+
+    parser.add_argument(
+        "--constrained",
+        action="store_true",
+        help="enable constrained approach",
+    )
+
+    parser.add_argument(
+        "--declarative",
+        action="store_true",
+        help="enable declarative relaxation",
     )
 
     parser.add_argument(
@@ -126,12 +157,6 @@ def get_parser() -> ArgumentParser:
         "--relax_rate",
         help="set relax rate 0 < [%(default)s] <= 1",
         default=0.2,
-        type=float,
-    )
-    parser.add_argument(
-        "--base_relax_rate",
-        help="set base relax rate 0 <= [%(default)s] <= 1",
-        default=0,
         type=float,
     )
 
@@ -153,38 +178,6 @@ def get_parser() -> ArgumentParser:
         "--max_steps",
         help="set maximum number of steps [%(default)s], non-int string for no limit",
         default="2000",
-        type=str,
-    )
-
-    parser.add_argument(
-        "--no_improv",
-        help="set maximum number of steps without improvement [%(default)s], non-int string for no limit",
-        default="1000",
-        type=str,
-    )
-
-    parser.add_argument(
-        "--vari_accept",
-        help="accept solution if specified variability is achieved 0 <= [%(default)s] < relax_rate",
-        default=0,
-        type=float,
-    )
-
-    parser.add_argument(
-        "--pre_files",
-        help="ASP input file(s) for pre-solving [%(default)s]",
-        nargs="*",
-        default=[],
-    )
-
-    parser.add_argument(
-        "--pre_tl", help="pre-solving time-limit [%(default)s]", default=1800, type=int
-    )
-
-    parser.add_argument(
-        "--start_sol",
-        help="set initial solution in the form of: 'atom(1) atom(2) ...'",
-        default=None,
         type=str,
     )
 

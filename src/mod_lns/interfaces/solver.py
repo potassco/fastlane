@@ -5,12 +5,12 @@ Solver interface used for LNS.
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Optional
 
 import clingo
 
 if TYPE_CHECKING:
-    from mod_lns import LNS  # nocoverage
+    from mod_lns.lns import LNS  # nocoverage
 
 
 class SolverInterface(metaclass=abc.ABCMeta):
@@ -37,12 +37,13 @@ class SolverInterface(metaclass=abc.ABCMeta):
             or NotImplemented
         )
 
+    # pylint: disable=dangerous-default-value
     @abc.abstractmethod
     def setup(
         self,
         lns_object: LNS,
-        files: Optional[List[str]] = None,
-        args: Optional[Dict[str, Any]] = None,
+        files: Optional[list[str]] = None,
+        args: list[str] = [],
     ) -> None:  # nocoverage
         """
         Initialization of the solver.
@@ -50,9 +51,10 @@ class SolverInterface(metaclass=abc.ABCMeta):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         :param files: ASP files to be loaded.
-        :type files: Optional[List[str]]
+        :type files: Optional[list[str]]
         :param args: clingo arguments.
-        :type args: Optional[Dict[str,Any]]
+        :type args: list[str]
+        :default args: []
         """
         raise NotImplementedError
 
@@ -60,7 +62,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
     def repair(
         self,
         lns_object: LNS,
-        fixed_atoms: List[Tuple[clingo.symbol.Symbol, bool]],
+        fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]],
     ) -> clingo.solving.SolveResult:  # nocoverage
         """
         Solve with fixed atoms.
@@ -68,19 +70,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         :param assumptions: Assumptions for solving (fixed atoms).
-        :type assumptions: List[Tuple[clingo.symbol.Symbol, bool]]
-        :return: Solve result.
-        :rtype: clingo.solving.SolveResult
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def solve(self, lns_object: LNS) -> clingo.solving.SolveResult:  # nocoverage
-        """
-        Pre-solve using clingo.
-
-        :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
+        :type assumptions: list[tuple[clingo.symbol.Symbol, bool]]
         :return: Solve result.
         :rtype: clingo.solving.SolveResult
         """
@@ -111,12 +101,12 @@ class SolverInterface(metaclass=abc.ABCMeta):
             return lns_object.param_values["solve_time_limit"]
         return avail_time
 
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> dict:
         """
         Get statistics of the last solve call.
 
         :return: Statistics dictionary.
-        :rtype: Dict
+        :rtype: dict
         """
         if isinstance(self.control, clingo.control.Control):
             return self.control.statistics

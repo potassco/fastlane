@@ -5,12 +5,31 @@ Strategy interface used for LNS.
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any
 
 import clingo
 
+from mod_lns import Model
+
 if TYPE_CHECKING:
-    from mod_lns import LNS  # nocoverage
+    from mod_lns.lns import LNS  # nocoverage
+
+# c, b, n: current, best, new model
+# pre_setup()
+# solver_setup()
+# post_setup()
+# c = first_sol()
+# post_first_sol()
+# while check_stop()
+#   pre_relax()
+#   n = repair(relax(c))
+#   post_repair()
+#   check_accept(n)
+#       c = n
+#       accepted()
+#   check_better(n,b)
+#       b = n
+#       better()
 
 
 class StrategyInterface(metaclass=abc.ABCMeta):
@@ -22,9 +41,7 @@ class StrategyInterface(metaclass=abc.ABCMeta):
     def __subclasshook__(cls, subclass):  # nocoverage
         return (
             hasattr(subclass, "get_first_solution")
-            and callable(subclass.first_solution)
-            and hasattr(subclass, "calculate_cost")
-            and callable(subclass.calc_cost)
+            and callable(subclass.get_first_solution)
             and hasattr(subclass, "check_stop")
             and callable(subclass.check_stop)
             and hasattr(subclass, "relax")
@@ -35,28 +52,30 @@ class StrategyInterface(metaclass=abc.ABCMeta):
             and callable(subclass.check_accept)
             and hasattr(subclass, "check_better")
             and callable(subclass.check_better)
-            and hasattr(subclass, "update_grounding")
-            and callable(subclass.update_grounding)
+            #  and hasattr(subclass, "update_grounding")
+            # and callable(subclass.update_grounding)
             or NotImplemented
         )
 
-    @abc.abstractmethod
-    def calculate_cost(
-        self, model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]
-    ) -> Any:  # nocoverage
+    def pre_setup(self, lns_object: LNS) -> None:  # nocoverage
         """
-        Calculate cost of given model.
+        Do something pre solver setup.
 
-        :param model: Model.
-        :type model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]
-        :return: Cost of given model.
-        :rtype: Any
+        :param lns_object: LNS object.
+        :type lns_object: large_neighbourhood_search.LNS
         """
-        raise NotImplementedError
+
+    def post_setup(self, lns_object: LNS) -> None:  # nocoverage
+        """
+        Do something post solver setup.
+
+        :param lns_object: LNS object.
+        :type lns_object: large_neighbourhood_search.LNS
+        """
 
     @abc.abstractmethod
     def get_first_solution(
-        self, lns_object: LNS, start_sol: List[clingo.symbol.Symbol]
+        self, lns_object: LNS, start_sol: list[clingo.symbol.Symbol]
     ) -> bool:  # nocoverage
         """
         Find initial solution.
@@ -64,11 +83,19 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         :param start_sol: optional start solution.
-        :type lns_object: List[clingo.symbol.Symbol]
+        :type lns_object: list[clingo.symbol.Symbol]
         :return: Whether a solution was found or not
         :rtype: bool
         """
         raise NotImplementedError
+
+    def post_first_solution(self, lns_object: LNS) -> None:  # nocoverage
+        """
+        Do something post first solution.
+
+        :param lns_object: LNS object.
+        :type lns_object: large_neighbourhood_search.LNS
+        """
 
     @abc.abstractmethod
     def check_stop(self, lns_object: LNS) -> bool:  # nocoverage
@@ -82,27 +109,35 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
+    def pre_relax(self, lns_object: LNS) -> None:  # nocoverage
+        """
+        Do something pre relaxation.
+
+        :param lns_object: LNS object.
+        :type lns_object: large_neighbourhood_search.LNS
+        """
+
     @abc.abstractmethod
     def relax(
         self,
-        model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]],
-        relax_parameters: Dict[str, Any],
-    ) -> List[Tuple[clingo.symbol.Symbol, bool]]:  # nocoverage
+        model: Model,
+        relax_parameters: dict[str, Any],
+    ) -> list[tuple[clingo.symbol.Symbol, bool]]:  # nocoverage
         """
         Relax portion of atoms given by the relax_parameters.
 
-        :param model: Dictionary containing list of shown and true atoms.
-        :type model: Dict[str, Union[Sequence[clingo.symbol.Symbol], Any]]
+        :param model: model.
+        :type model: Model
         :param relax_parameters: Parameters used to determine relaxed atoms.
-        :type relax_parameters: Dict[str, Any]
+        :type relax_parameters: dict[str, Any]
         :return: Fixed (not relaxed) atoms.
-        :rtype: List[Tuple[clingo.symbol.Symbol, bool]]
+        :rtype: list[tuple[clingo.symbol.Symbol, bool]]
         """
         raise NotImplementedError
 
     @abc.abstractmethod
     def repair(
-        self, lns_object: LNS, fixed_atoms: List[Tuple[clingo.symbol.Symbol, bool]]
+        self, lns_object: LNS, fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]]
     ) -> clingo.solving.SolveResult:  # nocoverage
         """
         Repair solution.
@@ -110,11 +145,19 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         :param assumptions: Assumptions for solving (fixed atoms).
-        :type assumptions: List[Tuple[clingo.symbol.Symbol, bool]]
+        :type assumptions: list[tuple[clingo.symbol.Symbol, bool]]
         :return: Solve result.
         :rtype: clingo.solving.SolveResult
         """
         raise NotImplementedError
+
+    def post_repair(self, lns_object: LNS) -> None:  # nocoverage
+        """
+        Do something post repair.
+
+        :param lns_object: LNS object.
+        :type lns_object: large_neighbourhood_search.LNS
+        """
 
     @abc.abstractmethod
     def check_accept(
@@ -131,6 +174,14 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
+    def accepted(self, lns_object: LNS) -> None:  # nocoverage
+        """
+        Do something after new model is accepted and saved as the new current model.
+
+        :param lns_object: LNS object.
+        :type lns_object: large_neighbourhood_search.LNS
+        """
+
     @abc.abstractmethod
     def check_better(
         self,
@@ -146,21 +197,21 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def update_grounding(self, lns_object: LNS) -> None:  # nocoverage
+    def better(self, lns_object: LNS) -> None:  # nocoverage
         """
-        Update grounding after new best solution.
+        Do something after new model is better and saved as the new best model.
 
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         """
-        raise NotImplementedError
 
+    # beeing reworked
     # pylint: disable=unused-argument
-    def stuck_handling(self, lns_object: LNS) -> None:
-        """
-        Check whether search is stuck and what to do if it is.
-
-        :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
-        """
+    # @classmethod
+    # def stuck_handling(self, lns_object: LNS) -> None:
+    #    """
+    #    Check whether search is stuck and what to do if it is.
+    #
+    #    :param lns_object: LNS object.
+    #    :type lns_object: large_neighbourhood_search.LNS
+    #    """

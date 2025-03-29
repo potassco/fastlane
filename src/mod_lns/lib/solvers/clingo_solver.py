@@ -4,15 +4,16 @@ clingo solver for LNS.
 
 from __future__ import annotations
 
+import sys
 import time
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 import clingo
 
 from mod_lns.interfaces.solver import SolverInterface
 
 if TYPE_CHECKING:
-    from mod_lns import LNS  # nocoverage
+    from mod_lns.lns import LNS  # nocoverage
 
 
 class ClingoSolver(SolverInterface):
@@ -20,11 +21,12 @@ class ClingoSolver(SolverInterface):
     clingo solver.
     """
 
+    # pylint: disable=dangerous-default-value
     def setup(
         self,
         lns_object: LNS,
-        files: Optional[List[str]] = None,
-        args: Optional[Dict[str, Any]] = None,
+        files: Optional[list[str]] = None,
+        args: list[str] = [],
     ) -> None:
         """
         Initialize clingo.Control object using clingo.
@@ -32,22 +34,26 @@ class ClingoSolver(SolverInterface):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         :param files: ASP files to be loaded, default: lns_object.param_values["files"].
-        :type files: Optional[List[str]]
-        :param args: clingo arguments, default: lns_object.param_values["clingo_args"].
-        :type args: Optional[Dict[str,Any]]
+        :type files: Optional[list[str]]
+        :param args: clingo arguments, default: lns_object.clingo_options.
+        :type args: list[str]
+        :default args: []
         """
         if files is None:
             files = lns_object.param_values["files"]
 
-        if args is None:
-            args = lns_object.param_values["clingo_args"]
+        if len(args) == 0:
+            args = lns_object.clingo_options
 
         # set seed if given
         if lns_object.param_values["seed"] is not None:
-            lns_object.set_seed(lns_object.param_values["seed"])
-        argsl = [f"--{i[0]}={i[1]}" for i in args.items()]
+            args = args + [f"--seed={lns_object.param_values['seed']}"]
 
-        ctl = clingo.Control(argsl)
+        def custom_logger(mc, msg):  # nocoverage
+            if mc != clingo.MessageCode.Other:
+                print(msg, file=sys.stderr)
+
+        ctl = clingo.Control(args, logger=custom_logger)
         for path in files:
             ctl.load(path)
         self.control, self.theory = ctl, None
@@ -55,7 +61,7 @@ class ClingoSolver(SolverInterface):
     def repair(
         self,
         lns_object: LNS,
-        fixed_atoms: List[Tuple[clingo.symbol.Symbol, bool]],
+        fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]],
     ) -> clingo.solving.SolveResult:
         """
         Solve under assumptions using clingo.
@@ -63,7 +69,7 @@ class ClingoSolver(SolverInterface):
         :param lns_object: LNS object.
         :type lns_object: large_neighbourhood_search.LNS
         :param assumptions: Assumptions for solving (fixed atoms).
-        :type assumptions: List[Tuple[clingo.symbol.Symbol, bool]]
+        :type assumptions: list[tuple[clingo.symbol.Symbol, bool]]
         :return: Solve result.
         :rtype: clingo.solving.SolveResult
         """
@@ -71,6 +77,8 @@ class ClingoSolver(SolverInterface):
         start_time = int(time.time())
         solve_time = self.get_available_solve_time(lns_object)
         if isinstance(self.control, clingo.control.Control):
+            if isinstance(self.control.configuration.solve, clingo.Configuration):
+                self.control.configuration.solve.models = 1
             with self.control.solve(
                 assumptions=fixed_atoms, on_model=lns_object.on_model, async_=True
             ) as handle:
@@ -83,28 +91,4 @@ class ClingoSolver(SolverInterface):
                     )
                 res = handle.get()
         lns_object.avail_time -= int(time.time()) - start_time
-        return res
-
-    def solve(self, lns_object: LNS) -> clingo.solving.SolveResult:
-        """
-        Pre-solve using clingo.
-
-        :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
-        :return: Solve result.
-        :rtype: clingo.solving.SolveResult
-        """
-        res = clingo.solving.SolveResult(2)
-        if isinstance(self.control, clingo.control.Control):
-            with self.control.solve(
-                on_model=lns_object.on_model, async_=True
-            ) as handle:
-                done = handle.wait(lns_object.param_values["pre_tl"])
-                if not done:
-                    handle.cancel()
-                    print(
-                        f"{time.time() - lns_object.start_time:.3f}s: "
-                        f'Search interrupted after ({lns_object.param_values["pre_tl"]}s).'
-                    )
-                res = handle.get()
         return res

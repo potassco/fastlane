@@ -4,8 +4,8 @@ Usage
 ============
 
 While this project is mainly build to be used as an easily modifiable framework, 
-it can still be used on its own with the provided library classes, as described below.
-For all options supported during the default module execution use:
+it can still be used on its own with the provided example classes, as described below.
+For all options supported during default module execution use:
 
 .. code-block:: console
 
@@ -13,22 +13,16 @@ For all options supported during the default module execution use:
 
 .. currentmodule:: mod_lns.__init__
 
-The default parameters make use of a constrained LNS using weighted sums and a random relaxation of shown atoms.
-The search is limited to 2000 steps or 10 min with 20s per solve call and a relax rate of 0.1. The search is interrupted,
-if no better solutions is found after 1000 consecutive steps.
-
-.. note::
-
-    When using the pre-solving feature a secondary problem encoding with weak constraints or optimization statements should be provided.
-    This encoding has not to contain LNS specific atoms, see :file:`./examples/golf_pre.lp` as a example.
+The default parameters make use of classic LNS using assumptions and a random relaxation of shown atoms.
+The search is limited to 2000 steps or 10 min with 20s per solve call and a relax rate of 0.2.
 
 For finer control over the performed Large-Neighbourhood-Search (LNS) this module should be used as a framework.
-During initialization of the LNS object, the solver and strategy used during execution can be replaced/modified and additional
-search parameters provided.
+During initialization of the LNS object, a LNSConfig object can be passed to modify or replace the used solver,
+strategy and lns parameters.
 
-The solver and strategy should be implemented according to the interfaces described :ref:`here<ref_inter>` and
+Any solver and strategy should be implemented according to the interfaces described :ref:`here<ref_inter>` and
 have to implement all abstract methods.
-Some example implementations can be found in the :ref:`lib<ref_lib>` submodule. 
+Some default implementations can be found in the :ref:`lib<ref_lib>` submodule. 
 
 Additional parameters such as the relax rate or
 the step limit for the search can be set during initialization or using the :meth:`set_params` method. 
@@ -37,41 +31,35 @@ step by step introduction to the framework look :ref:`here<ref_guide>`.
 
 .. code-block:: python
 
-    from mod_lns import LNS
+    from mod_lns.lns import LNS
+    from mod_lns.lns_config import LNSConfig
     from mod_lns.lib.solvers.clingo_dl_solver import ClingoDLSolver
-    from mod_lns.lib.strategies.classic_lexicographic_rnd import ClassicLexiRnd
 
     lns = LNS(
-        ["./examples/golf.lp"],     # ASP encoding
-        ClingoDLSolver(),           # Solver
-        HCLexiRnd(),                # Strategy
-        {"seed": 123},              # Additional parameters
+        ["./examples/golf.lp"],         # ASP encoding
+        LNSConfig(                      # LNSConfig object
+            lns_options={               # lns search parameters
+                "seed"=123,             # set seed
+            },
+            solver=ClingoDLSolver(),    # change solver
+        )
     )
 
 .. _ref_enc:
+
+The same search can be performed through the command line as follows:
+
+.. code-block:: console
+
+    $ mod_lns -i ./examples/golf.lp --seed=123 --solver=ClingoDLSolver 
 
 Encoding
 ----------
 
 .. currentmodule:: mod_lns
 
-For a correct program execution the ASP encoding has to contain some form of derivation for the :code:`_lns_penalty(N,I,W)` predicate
-to indicate optimization criteria and :code:`_lns_priority(N,P)` facts to denote their priority. An example definition can be seen in :file:`./examples/golf.lp`.
-
-.. code-block::
-    
-    _lns_priority(
-        N,      % Name of the optimization criteria
-        P       % Priority of the criteria (greater value = higher priority)
-    ).
-    _lns_penalty(
-        N,      % Name of the optimization criteria
-        I,      % Unique identifier
-        W       % Weight of the criteria
-    ) :- <BODY>.
-
-By default this project performs minimization using weighted sums, where the priority is simply ignored.
-Alternatively minimization with lexicographic optimization is also supported.
+The encodings should contain some kind of optimization statement or soft constraint. The lns framework will work
+with the solution cost derived by the solver.
 
 When using :func:`lib.relaxation.relax_declarative`, :code:`_lns_select/1` and :code:`_lns_fix/2` have to be used
 in the encoding. While :code:`_lns_select/1` selects a set of terms, :code:`_lns_fix/2` maps atoms those terms,

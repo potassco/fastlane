@@ -9,14 +9,12 @@ from unittest import TestCase
 from clingo.symbol import Function, Infimum, Number, String, Supremum
 
 from mod_lns.lib.solvers.clingo_dl_solver import ClingoDLSolver
-from mod_lns.lib.strategies.hc_weighted_sum_rnd import HCWeightedSumRnd
+from mod_lns.lib.strategies.default_strategy import DefaultStrategy
 from mod_lns.lib.utils import (
     calculate_variability,
-    check_smaller_lexicographic,
     fix_symbols,
-    str_to_symbols,
-    symbol_to_str,
 )
+from mod_lns.utils.conversions import args_to_dict, str_to_symbols, symbol_to_str
 from mod_lns.utils.logger import setup_logger
 from mod_lns.utils.parser import get_parser
 
@@ -52,69 +50,22 @@ class TestUtils(TestCase):
         self.assertEqual(ret.relax_rate, 0.5)
         ret = parser.parse_args(["--solver", "ClingoDLSolver", "-i", "x.lp"])
         self.assertIsInstance(ret.solver, ClingoDLSolver)
-        ret = parser.parse_args(["--strategy", "HCWeightedSumRnd", "-i", "x.lp"])
-        self.assertIsInstance(ret.strategy, HCWeightedSumRnd)
+        ret = parser.parse_args(["--strategy", "DefaultStrategy", "-i", "x.lp"])
+        self.assertIsInstance(ret.strategy, DefaultStrategy)
         ret = parser.parse_args(["--time_limit", "12", "-i", "x.lp"])
         self.assertEqual(ret.time_limit, 12)
         ret = parser.parse_args(["--solve_time_limit", "14", "-i", "x.lp"])
         self.assertEqual(ret.solve_time_limit, 14)
         ret = parser.parse_args(["--max_steps", "30", "-i", "x.lp"])
         self.assertEqual(ret.max_steps, "30")
-        ret = parser.parse_args(["--no_improv", "20", "-i", "x.lp"])
-        self.assertEqual(ret.no_improv, "20")
         ret = parser.parse_args(["--seed", "213", "-i", "x.lp"])
         self.assertEqual(ret.seed, 213)
-        ret = parser.parse_args(["--vari_accept", "0.2", "-i", "x.lp"])
-        self.assertEqual(ret.vari_accept, 0.2)
-        ret = parser.parse_args(["--pre_files", "p1.lp", "p2.lp", "-i", "x.lp"])
-        self.assertEqual(ret.pre_files, ["p1.lp", "p2.lp"])
-        ret = parser.parse_args(["--pre_tl", "300", "-i", "x.lp"])
-        self.assertEqual(ret.pre_tl, 300)
-        self.assertEqual(ret.pre_files, [])
-        ret = parser.parse_args(
-            ["--start_sol", "plays(4,1,1) plays(3,2,2)", "-i", "x.lp"]
-        )
-        self.assertEqual(ret.start_sol, "plays(4,1,1) plays(3,2,2)")
-        ret = parser.parse_args(["--relax_rate", "0.5", "-i", "x.lp"])
-        self.assertEqual(ret.relax_rate, 0.5)
-
-
-class TestLNSUtils(TestCase):
-    """
-    Test cases for lns utilities.
-    """
-
-    def test_variability(self):
-        """
-        Test variability calculation.
-        """
-        l1 = [0, 1, 2, 3, 4, 5]
-        l2 = [1, 3]
-        self.assertEqual(calculate_variability(l1, l2), 0)
-        l2 = [0, 2, 6, 7]
-        self.assertEqual(calculate_variability(l1, l2), 0.5)
-        self.assertEqual(calculate_variability(l2, l1), 0.5)
-
-    def test_lexi_comparison(self):
-        """
-        Test comparison of lexicographic values.
-        """
-        val1 = {2: 10}
-        val2 = {3: 1, 1: 1}
-        self.assertTrue(check_smaller_lexicographic(val1, val2))
-        self.assertFalse(check_smaller_lexicographic(val2, val1))
-        val1 = {3: 2}
-        self.assertFalse(check_smaller_lexicographic(val1, val2))
-        self.assertTrue(check_smaller_lexicographic(val2, val1))
-        val1 = {3: 1, 1: 2}
-        self.assertFalse(check_smaller_lexicographic(val1, val2))
-        self.assertTrue(check_smaller_lexicographic(val2, val1))
-        val1 = val2
-        self.assertFalse(check_smaller_lexicographic(val1, val2))
-        self.assertFalse(check_smaller_lexicographic(val2, val1))
-        val1 = {}
-        self.assertTrue(check_smaller_lexicographic(val1, val2))
-        self.assertFalse(check_smaller_lexicographic(val2, val1))
+        ret = parser.parse_args(["--heuristics", "-i", "x.lp"])
+        self.assertTrue(ret.heuristics)
+        ret = parser.parse_args(["--constrained", "-i", "x.lp"])
+        self.assertTrue(ret.constrained)
+        ret = parser.parse_args(["--declarative", "-i", "x.lp"])
+        self.assertTrue(ret.declarative)
 
     def test_symbol_to_str(self):
         """
@@ -147,6 +98,32 @@ class TestLNSUtils(TestCase):
                 Function("second", [Number(3)], True),
             ],
         )
+
+    def test_args_to_dict(self):
+        """
+        Test args to dict conversion.
+        """
+        s = "-a --test=5 -g=3 --help howefow"
+        self.assertDictEqual(
+            args_to_dict(s), {"a": True, "test": "5", "g": "3", "help": True}
+        )
+
+
+class TestLNSUtils(TestCase):
+    """
+    Test cases for lns utilities.
+    """
+
+    def test_variability(self):
+        """
+        Test variability calculation.
+        """
+        l1 = [0, 1, 2, 3, 4, 5]
+        l2 = [1, 3]
+        self.assertEqual(calculate_variability(l1, l2), 0)
+        l2 = [0, 2, 6, 7]
+        self.assertEqual(calculate_variability(l1, l2), 0.5)
+        self.assertEqual(calculate_variability(l2, l1), 0.5)
 
     def test_fix_symbols(self):
         """
