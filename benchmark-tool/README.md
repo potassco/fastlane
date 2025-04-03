@@ -15,6 +15,7 @@ from benchmarktool.resultparser.lns import lns
 ```
 - Modify runscript-lns.xml for your use-case
 - Set the conda environment where mod_lns is installed inside the `./program/mod_lns-conda` script
+- For benchmarking on a cluster you also have to set the correct environment inside `./templates/single.pbs`
 - Generate start script using:
 ```
 $ ./bgen ./runscripts/runscript-lns.xml
