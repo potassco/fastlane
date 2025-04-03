@@ -1,10 +1,10 @@
-<runscript output="output-folder">
+<runscript output="lns-output">
 
 	<machine name="zuse" cpu="24x8xE5520@2.27GHz" memory="24GB"/>
 	
   	<config name="seq-lns" template="templates/seq-lns.sh"/>
   
-	<system name="mod_lns" version="4.0.3" measures="lns" config="seq-lns">
+	<system name="mod_lns" version="conda" measures="lns" config="seq-lns">
 
     		<setting name="setting-1" cmdline="--max_steps=None --constrained" tag="basic" />
 
