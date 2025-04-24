@@ -5,7 +5,7 @@ Collection of scripts and files used to run this framework with this [benchmark-
 ## Usage
 
 - Make sure mod_lns is correctly installed in a conda environment
-- Clone the benchmark-tool repository
+- Clone the benchmark-tool repository (>v1.1.0)
 - Install lxml (`$ conda install lxml`)
 - Copy files in this folder into the corresponding folders inside the benchmark-tool
 - All following steps assume you are inside the benchmark-tool folder 
@@ -23,7 +23,7 @@ $ ./bgen ./runscripts/runscript-lns.xml
 - Start benchmarks using the start.py script generated 3 folders down inside the output folder
 - Evaluate benchmarks using:
 ```
-$ ./beval ./runscripts/runscript-lns.xml | ./bconv -m "time:t,cost" > results.ods
+$ ./beval ./runscripts/runscript-lns.xml | ./bconv -m "time:t,cost" -o results.ods
 ```
 - The -m option accepts a comma-separated list of measures in the form `name[:{t,to,-}]` to be included in the table (optional argument determines coloring)
 - All supported measures are defined in the resultparser
