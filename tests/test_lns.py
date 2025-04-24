@@ -80,6 +80,8 @@ class TestLNS(TestCase):
             "start_sol": None,
             "vari_accept": 0,
             "base_relax_rate": 0,
+            "fs_time_limit": 60,
+            "fs_model_limit": 1,
             "heuristics": False,
             "constrained": False,
             "declarative": False,
@@ -142,6 +144,8 @@ class TestLNS(TestCase):
             "start_sol": None,
             "vari_accept": 0,
             "base_relax_rate": 0,
+            "fs_time_limit": 60,
+            "fs_model_limit": 1,
             "heuristics": False,
             "constrained": False,
             "declarative": False,
@@ -202,3 +206,13 @@ class TestLNS(TestCase):
         signal.signal(signal.SIGINT, lns.interrupt_handler)
         with self.assertRaises(SystemExit):
             signal.raise_signal(signal.SIGINT)
+
+    def test_get_avail_solve_time(self):
+        """
+        Test calculation of available solve time.
+        """
+        lns = LNS(["./tests/ref/golf.lp"])
+        lns.avail_time = 16
+        self.assertEqual(lns.get_available_solve_time(10), 10)
+        lns.avail_time = 6
+        self.assertEqual(lns.get_available_solve_time(10), 6)

@@ -64,19 +64,9 @@ class TestSolverClingo(TestCase):
         self.assertTrue(self.lns.new_model)
 
         # flaky
-        self.lns.set_parameters({"solve_time_limit": 0})
         self.solver.setup(self.lns, ["./tests/ref/golf_big.lp"])
         self.solver.ground_base(self.lns)
-        self.assertFalse(self.solver.repair(self.lns, assumptions).satisfiable)
-
-    def test_get_avail_solve_time(self):
-        """
-        Test calculation of available solve time.
-        """
-        self.lns.set_parameters({"overall_time_limit": 16, "solve_time_limit": 10})
-        self.assertEqual(self.solver.get_available_solve_time(self.lns), 10)
-        self.lns.avail_time = 6
-        self.assertEqual(self.solver.get_available_solve_time(self.lns), 6)
+        self.assertFalse(self.solver.repair(self.lns, assumptions, 0).satisfiable)
 
     def test_get_stats(self):
         """

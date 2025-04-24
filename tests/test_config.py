@@ -109,7 +109,7 @@ class TestLNSConfig(TestCase):
             )
 
             config.solver.repair(lns, [])
-            solver_repair.assert_called_once_with(lns, [])
+            solver_repair.assert_called_once_with(lns, [], None, 1)
 
         with patch.object(ClingoSolver, "setup") as solver_setup:
             ref_solver = ClingoSolver()
@@ -155,7 +155,7 @@ class TestLNSConfig(TestCase):
             config.solver.control = clingo.Control()
             lns.new_model.cost = [1, 2]
             config.solver.repair(lns, [])
-            solver_repair.assert_called_once_with(lns, [])
+            solver_repair.assert_called_once_with(lns, [], None, 1)
 
             self.assertTrue(config.strategy.check_better(lns))
 
