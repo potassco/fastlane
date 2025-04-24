@@ -104,7 +104,7 @@ class LNS:
     # pylint: disable=unused-argument
     def interrupt_handler(self, sig: int, frame: Union[None, FrameType]) -> None:
         """
-        Signal handler for interrupts (SIGINT)
+        Signal handler for interrupts (SIGINT, SIGTERM)
 
         :param sig: Signal number.
         :type sig: int
@@ -161,6 +161,7 @@ class LNS:
         #       better()
 
         signal.signal(signal.SIGINT, self.interrupt_handler)
+        signal.signal(signal.SIGTERM, self.interrupt_handler)
 
         self.start_time = time.time()
         self.step_c = -1

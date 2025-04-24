@@ -1,0 +1,24 @@
+<runscript output="lns-output">
+
+	<machine name="zuse" cpu="24x8xE5520@2.27GHz" memory="24GB"/>
+	
+  	<config name="seq-lns" template="templates/seq-lns.sh"/>
+  
+	<system name="mod_lns" version="conda" measures="lns" config="seq-lns">
+
+    		<setting name="setting-1" cmdline="--max_steps=None --constrained" tag="basic" />
+
+    </system>
+
+	<seqjob name="seq-lns" timeout="10" runs="2" script_mode="timeout" walltime="00:01:00" parallel="1"/>
+
+	<benchmark name="lns">
+		<folder path="benchmarks/lns/"></folder>
+	</benchmark>
+	
+	<project name="lns-seq-job" job="seq-lns">
+		<runtag machine="zuse" benchmark="lns" tag="basic"/>
+	</project>
+
+</runscript>
+
