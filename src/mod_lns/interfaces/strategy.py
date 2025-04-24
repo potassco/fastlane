@@ -5,7 +5,7 @@ Strategy interface used for LNS.
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 import clingo
 
@@ -75,7 +75,11 @@ class StrategyInterface(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get_first_solution(
-        self, lns_object: LNS, start_sol: list[clingo.symbol.Symbol]
+        self,
+        lns_object: LNS,
+        start_sol: list[clingo.symbol.Symbol],
+        time_limit: Optional[int] = None,
+        model_limit: int = 1,
     ) -> bool:  # nocoverage
         """
         Find initial solution.
@@ -84,6 +88,12 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         :type lns_object: large_neighbourhood_search.LNS
         :param start_sol: optional start solution.
         :type lns_object: list[clingo.symbol.Symbol]
+        :param time_limit: Manually set time limit for solve call.
+        :type time_limit: Optional[int]
+        :default time_limit: None
+        :param model_limit: Set number of calculated models.
+        :type model_limit: int
+        :default model_limit: 1
         :return: Whether a solution was found or not
         :rtype: bool
         """
@@ -137,7 +147,11 @@ class StrategyInterface(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def repair(
-        self, lns_object: LNS, fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]]
+        self,
+        lns_object: LNS,
+        fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]],
+        time_limit: Optional[int] = None,
+        model_limit: int = 1,
     ) -> clingo.solving.SolveResult:  # nocoverage
         """
         Repair solution.
@@ -146,6 +160,12 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         :type lns_object: large_neighbourhood_search.LNS
         :param assumptions: Assumptions for solving (fixed atoms).
         :type assumptions: list[tuple[clingo.symbol.Symbol, bool]]
+        :param time_limit: Manually set time limit for solve call.
+        :type time_limit: Optional[int]
+        :default time_limit: None
+        :param model_limit: Set number of calculated models.
+        :type model_limit: int
+        :default model_limit: 1
         :return: Solve result.
         :rtype: clingo.solving.SolveResult
         """

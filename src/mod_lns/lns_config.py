@@ -118,6 +118,8 @@ class LNSConfig:
             self,
             lns_object: LNS,
             fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]],
+            time_limit: Optional[int] = None,
+            model_limit: int = 1,
         ) -> clingo.solving.SolveResult:
             """
             Use heuristics during reparation.
@@ -126,6 +128,12 @@ class LNSConfig:
             :type lns_object: large_neighbourhood_search.LNS
             :param assumptions: Assumptions for solving (fixed atoms).
             :type assumptions: list[tuple[clingo.symbol.Symbol, bool]]
+            :param time_limit: Manually set time limit for solve call.
+            :type time_limit: Optional[int]
+            :default time_limit: None
+            :param model_limit: Set number of calculated models.
+            :type model_limit: int
+            :default model_limit: 1
             :return: Solve result.
             :rtype: clingo.solving.SolveResult
             """
@@ -160,7 +168,7 @@ class LNSConfig:
 
             # solve
             res = super(EnHeu, self).repair(  # pylint: disable=bad-super-call
-                lns_object, fixed_atoms
+                lns_object, fixed_atoms, time_limit, model_limit
             )
 
             # release externals
@@ -182,6 +190,8 @@ class LNSConfig:
             self,
             lns_object: LNS,
             fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]],
+            time_limit: Optional[int] = None,
+            model_limit: int = 1,
         ) -> clingo.solving.SolveResult:
             """
             Force better solution in next iteration after cost is determined.
@@ -190,11 +200,17 @@ class LNSConfig:
             :type lns_object: large_neighbourhood_search.LNS
             :param assumptions: Assumptions for solving (fixed atoms).
             :type assumptions: list[tuple[clingo.symbol.Symbol, bool]]
+            :param time_limit: Manually set time limit for solve call.
+            :type time_limit: Optional[int]
+            :default time_limit: None
+            :param model_limit: Set number of calculated models.
+            :type model_limit: int
+            :default model_limit: 1
             :return: Solve result.
             :rtype: clingo.solving.SolveResult
             """
             res = super(EnConsSolver, self).repair(  # pylint: disable=bad-super-call
-                lns_object, fixed_atoms
+                lns_object, fixed_atoms, time_limit, model_limit
             )
             cost = lns_object.new_model.cost
             if res.satisfiable:

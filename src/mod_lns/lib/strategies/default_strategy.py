@@ -5,7 +5,7 @@ Default strategy implementing classic LNS with weighted sum as optimization crit
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 import clingo
 
@@ -29,7 +29,11 @@ class DefaultStrategy(StrategyInterface):
 
     # pylint: disable=dangerous-default-value
     def get_first_solution(
-        self, lns_object: LNS, start_sol: list[clingo.symbol.Symbol] = []
+        self,
+        lns_object: LNS,
+        start_sol: list[clingo.symbol.Symbol] = [],
+        time_limit: Optional[int] = None,
+        model_limit: int = 1,
     ) -> bool:
         """
         Find initial solution.
@@ -39,6 +43,12 @@ class DefaultStrategy(StrategyInterface):
         :param start_sol: optional start solution.
         :type start_sol: list[clingo.symbol.Symbol]
         :default start_sol: []
+        :param time_limit: Manually set time limit for solve call.
+        :type time_limit: Optional[int]
+        :default time_limit: None
+        :param model_limit: Set number of calculated models.
+        :type model_limit: int
+        :default model_limit: 1
         :return: Whether a solution was found or not
         :rtype: bool
         """
@@ -49,7 +59,9 @@ class DefaultStrategy(StrategyInterface):
             fixed_sym = fix_symbols(start_sol)
 
         # get first solution
-        if lns_object.solver.repair(lns_object, fixed_sym).satisfiable:
+        if lns_object.solver.repair(
+            lns_object, fixed_sym, time_limit, model_limit
+        ).satisfiable:
             print(
                 f"{time.time() - lns_object.start_time:.3f}s: Initial solution found with cost: "
                 f"{lns_object.new_model.get_cost_str()}"
@@ -103,7 +115,11 @@ class DefaultStrategy(StrategyInterface):
         return relax_random(model, relax_parameters)
 
     def repair(
-        self, lns_object: LNS, fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]]
+        self,
+        lns_object: LNS,
+        fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]],
+        time_limit: Optional[int] = None,
+        model_limit: int = 1,
     ) -> clingo.solving.SolveResult:
         """
         Repair solution.
@@ -112,10 +128,18 @@ class DefaultStrategy(StrategyInterface):
         :type lns_object: large_neighbourhood_search.LNS
         :param fixed_atoms: Fixed atoms.
         :type fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]]
+        :param time_limit: Manually set time limit for solve call.
+        :type time_limit: Optional[int]
+        :default time_limit: None
+        :param model_limit: Set number of calculated models.
+        :type model_limit: int
+        :default model_limit: 1
         :return: Solve result.
         :rtype: clingo.solving.SolveResult
         """
-        return lns_object.solver.repair(lns_object, fixed_atoms)
+        return lns_object.solver.repair(
+            lns_object, fixed_atoms, time_limit, model_limit
+        )
 
     # pylint: disable=unused-argument
     def check_accept(
