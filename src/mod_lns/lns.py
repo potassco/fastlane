@@ -216,10 +216,7 @@ class LNS:
             self.strategy.pre_relax(self)
             fixed_atoms = self.strategy.relax(
                 self.new_model,
-                {
-                    "relax_rate": self.param_values["relax_rate"],
-                    "base_relax_rate": self.param_values["base_relax_rate"],
-                },
+                self.param_values,
             )
             if self.strategy.repair(
                 self,
