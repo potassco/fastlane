@@ -5,11 +5,8 @@ Test cases for LNSConfig class.
 from unittest import TestCase
 from unittest.mock import patch
 
-import clingo
-
 from mod_lns.lib.solvers.clingo_solver import ClingoSolver
 from mod_lns.lib.strategies.default_strategy import DefaultStrategy
-from mod_lns.lns import LNS
 from mod_lns.lns_config import LNSConfig
 
 
@@ -64,117 +61,25 @@ class TestLNSConfig(TestCase):
         self.assertIsInstance(config.solver, type(ref_solver))
         self.assertIsInstance(config.strategy, type(ref_strat))
 
-        with patch.object(
-            LNSConfig, "_enable_heuristics", return_value=None
+        with patch(
+            "mod_lns.lns_config.enable_heuristics", return_value=ref_solver
         ) as mock_method:
             config = LNSConfig({"heuristics": True})
-        mock_method.assert_called_once()
-
-        with patch.object(
-            LNSConfig, "_enable_constrained_approach", return_value=None
-        ) as mock_method:
-            config = LNSConfig({"constrained": True})
-        mock_method.assert_called_once()
-
-        with patch.object(
-            LNSConfig, "_enable_declarative", return_value=None
-        ) as mock_method:
-            config = LNSConfig({"declarative": True})
-        mock_method.assert_called_once()
-
-    def test_enable_heuristics(self):
-        """
-        Test _enable_heuristics method.
-        """
-        with (
-            patch.object(ClingoSolver, "setup") as solver_setup,
-            patch.object(
-                ClingoSolver, "repair", return_value=clingo.solving.SolveResult
-            ) as solver_repair,
-        ):
-            ref_solver = ClingoSolver()
-            config = LNSConfig({"constrained": False}, solver=ref_solver)
-            lns = LNS(["./tests/ref/golf.lp"], config)
-            self.assertIsInstance(config.solver, type(ref_solver))
-            self.assertIs(config.solver, ref_solver)
-
-            config._enable_heuristics()
-            self.assertIsInstance(config.solver, type(ref_solver))
-            self.assertIsNot(config.solver, ref_solver)
-
-            config.solver.control = clingo.Control()
-            config.solver.setup(lns)
-            solver_setup.assert_called_once_with(
-                lns, None, ["--rand-freq=0.05", "--heuristic=Domain"]
-            )
-
-            config.solver.repair(lns, [])
-            solver_repair.assert_called_once_with(lns, [], None, 1)
-
-        with patch.object(ClingoSolver, "setup") as solver_setup:
-            ref_solver = ClingoSolver()
-            config = LNSConfig(solver=ref_solver)
-            lns = LNS(["./tests/ref/golf.lp"], config)
-            self.assertIsInstance(config.solver, type(ref_solver))
-            self.assertIs(config.solver, ref_solver)
-
-            config._enable_heuristics()
-            self.assertIsInstance(config.solver, type(ref_solver))
-            self.assertIsNot(config.solver, ref_solver)
-
-            config.solver.control = clingo.Control()
-            config.solver.setup(lns, ["test"], ["--test_arg"])
-            solver_setup.assert_called_once_with(
-                lns, ["test"], ["--test_arg", "--heuristic=Domain"]
-            )
-
-    def test_enable_constrained(self):
-        """
-        Test _enable_constrained_approach method.
-        """
-        with patch.object(
-            ClingoSolver, "repair", return_value=clingo.SolveResult(1)
-        ) as solver_repair:
-            ref_solver = ClingoSolver()
-            ref_strat = DefaultStrategy()
-            config = LNSConfig(
-                {"constrained": False}, solver=ref_solver, strategy=ref_strat
-            )
-            lns = LNS(["./tests/ref/golf.lp"], config)
-            self.assertIsInstance(config.solver, type(ref_solver))
-            self.assertIs(config.solver, ref_solver)
-            self.assertIsInstance(config.strategy, type(ref_strat))
-            self.assertIs(config.strategy, ref_strat)
-
-            config._enable_constrained_approach()
-            self.assertIsInstance(config.solver, type(ref_solver))
-            self.assertIsNot(config.solver, ref_solver)
-            self.assertIsInstance(config.strategy, type(ref_strat))
-            self.assertIsNot(config.strategy, ref_strat)
-
-            config.solver.control = clingo.Control()
-            lns.new_model.cost = [1, 2]
-            config.solver.repair(lns, [])
-            solver_repair.assert_called_once_with(lns, [], None, 1)
-
-            self.assertTrue(config.strategy.check_better(lns))
-
-    def test_enable_declarative(self):
-        """
-        Test _enable_declarative method.
-        """
+            mock_method.assert_called_once()
+        self.assertEqual(config.solver, ref_solver)
 
         with patch(
-            "mod_lns.lns_config.relax_declarative", return_value=["return"]
-        ) as relax_decl:
-            ref_strat = DefaultStrategy()
-            config = LNSConfig({"constrained": False}, strategy=ref_strat)
-            LNS(["./tests/ref/golf.lp"], config)
-            self.assertIsInstance(config.strategy, type(ref_strat))
-            self.assertIs(config.strategy, ref_strat)
+            "mod_lns.lns_config.enable_constrained_approach",
+            return_value=(ref_solver, ref_strat),
+        ) as mock_method:
+            config = LNSConfig({"constrained": True})
+            mock_method.assert_called_once()
+        self.assertEqual(config.solver, ref_solver)
+        self.assertEqual(config.strategy, ref_strat)
 
-            config._enable_declarative()
-            self.assertIsInstance(config.strategy, type(ref_strat))
-            self.assertIsNot(config.strategy, ref_strat)
-            self.assertEqual(config.strategy.relax({"test": 2}, {"par": 1}), ["return"])
-            relax_decl.assert_called_once_with({"test": 2}, {"par": 1})
+        with patch(
+            "mod_lns.lns_config.enable_declarative", return_value=ref_strat
+        ) as mock_method:
+            config = LNSConfig({"declarative": True})
+            mock_method.assert_called_once()
+        self.assertEqual(config.strategy, ref_strat)
