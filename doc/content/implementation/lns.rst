@@ -20,11 +20,11 @@ LNS
             "solve_time_limit": 20,             # Time limit for the individual solve call in seconds, Int
             "overall_time_limit": 600,          # Time limit for the entire search in seconds, Int
             "stuck_after_no_improv": None,      # After how many iterations without improvement the
-                                                #  search is determined as stuck, 
+                                                #  search is determined as stuck,
                                                 #  non-int string for no limit, Int,Str
             "start_sol": None,                  # Start solution, fixed during first solve call, String
             "vari_accept": 0,                   # New solution is accepted if given variability is
-                                                #  achieved, 0 = always accept, should be lower than 
+                                                #  achieved, 0 = always accept, should be lower than
                                                 #  relax rate, Float
             "base_relax_rate": 0                # Base relax rate applied on top of declarative relaxation, Float
             "fs_time_limit": 60                 # Time limit for the solve call when obtaining the first solution,
@@ -34,10 +34,10 @@ LNS
         }
 
     .. currentmodule:: mod_lns.lib
-    
+
     The default configuration uses the :class:`solvers.clingo_solver.ClingoSolver` solver and
-    the :class:`strategies.default_strategy.DefaultStrategy`. 
-    
+    the :class:`strategies.default_strategy.DefaultStrategy`.
+
     The following solver/strategy modifications are supported:
         - "heuristics": Atoms are fixed using heuristics
         - "constrained": Constrained LNS approach

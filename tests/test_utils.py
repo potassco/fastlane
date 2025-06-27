@@ -10,10 +10,7 @@ from clingo.symbol import Function, Infimum, Number, String, Supremum
 
 from mod_lns.lib.solvers.clingo_dl_solver import ClingoDLSolver
 from mod_lns.lib.strategies.default_strategy import DefaultStrategy
-from mod_lns.lib.utils import (
-    calculate_variability,
-    fix_symbols,
-)
+from mod_lns.lib.utils import calculate_variability, fix_symbols
 from mod_lns.utils.conversions import args_to_dict, str_to_symbols, symbol_to_str
 from mod_lns.utils.logger import setup_logger
 from mod_lns.utils.parser import get_parser
