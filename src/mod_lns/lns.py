@@ -234,8 +234,4 @@ class LNS:
                         f"New best solution: {self.best_model.get_cost_str()}"
                     )
                     self.strategy.better(self)
-        print("==================")
-        print("SEARCH FINISHED:")
-        self.best_model.print_model()
-        print(f"Overall steps: {self.step_c}")
-        print(f"Overall time: {time.time() - self.start_time:.3f}s")
+        self.strategy.print_result(self)

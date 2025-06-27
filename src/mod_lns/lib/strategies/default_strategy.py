@@ -12,10 +12,7 @@ import clingo
 from mod_lns import Model
 from mod_lns.interfaces.strategy import StrategyInterface
 from mod_lns.lib.relaxation import relax_random
-from mod_lns.lib.utils import (
-    calculate_variability,
-    fix_symbols,
-)
+from mod_lns.lib.utils import calculate_variability, fix_symbols
 
 if TYPE_CHECKING:
     from mod_lns.lns import LNS  # nocoverage
@@ -39,7 +36,7 @@ class DefaultStrategy(StrategyInterface):
         Find initial solution.
 
         :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
+        :type lns_object: mod_lns.LNS
         :param start_sol: optional start solution.
         :type start_sol: list[clingo.symbol.Symbol]
         :default start_sol: []
@@ -81,7 +78,7 @@ class DefaultStrategy(StrategyInterface):
         overall time limit exceeded
 
         :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
+        :type lns_object: mod_lns.LNS
         :return: Whether to stop LNS or not.
         :rtype: bool
         """
@@ -125,7 +122,7 @@ class DefaultStrategy(StrategyInterface):
         Repair solution.
 
         :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
+        :type lns_object: mod_lns.LNS
         :param fixed_atoms: Fixed atoms.
         :type fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]]
         :param time_limit: Manually set time limit for solve call.
@@ -151,7 +148,7 @@ class DefaultStrategy(StrategyInterface):
         Accept if desired variability is achieved.
 
         :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
+        :type lns_object: mod_lns.LNS
         :return: Whether new model is accepted or not.
         :rtype: bool
         """
@@ -169,8 +166,18 @@ class DefaultStrategy(StrategyInterface):
         Check whether new model is better.
 
         :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
+        :type lns_object: mod_lns.LNS
         :return: Whether new model is better or not.
         :rtype: bool
         """
         return lns_object.new_model.cost < lns_object.best_model.cost
+
+    def print_result(
+        self,
+        lns_object: LNS,
+    ) -> None:
+        print("==================")
+        print("SEARCH FINISHED:")
+        lns_object.best_model.print_model()
+        print(f"Overall steps: {lns_object.step_c}")
+        print(f"Overall time: {time.time() - lns_object.start_time:.3f}s")
