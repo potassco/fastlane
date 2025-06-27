@@ -32,7 +32,7 @@ class ClingoSolver(SolverInterface):
         Initialize clingo.Control object using clingo.
 
         :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
+        :type lns_object: mod_lns.LNS
         :param files: ASP files to be loaded, default: lns_object.param_values["files"].
         :type files: Optional[list[str]]
         :param args: clingo arguments, default: lns_object.clingo_options.
@@ -69,7 +69,7 @@ class ClingoSolver(SolverInterface):
         Solve under assumptions using clingo.
 
         :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
+        :type lns_object: mod_lns.LNS
         :param assumptions: Assumptions for solving (fixed atoms).
         :type assumptions: list[tuple[clingo.symbol.Symbol, bool]]
         :param time_limit: Manually set time limit for solve call.
