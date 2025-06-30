@@ -12,6 +12,6 @@ cd "$(dirname $0)"
 	--space-limit=20000 \
 	--output-file=runsolver.watcher \
 	--time-limit={run.timeout} \
-	"{run.root}/programs/{run.solver}" -i "{run.file}" {run.encodings} {run.args} > runsolver.solver
+	"{run.root}/programs/{run.solver}" {run.args} -i "{run.file}" {run.encodings} > runsolver.solver
 
 touch .finished

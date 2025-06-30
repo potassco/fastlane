@@ -5,8 +5,9 @@ Collection of scripts and files used to run this framework with this [benchmark-
 ## Usage
 
 - Make sure mod_lns is correctly installed in a conda environment
-- Clone the benchmark-tool repository (>v2.0.0) and install the module
+- Clone the benchmark-tool repository (>v2.0.0)
 - Copy files in this folder into the corresponding folders inside the benchmark-tool
+- Install the module using `pip install .`
 - Modify runscript-lns.xml for your use-case
 - Set the conda environment where mod_lns is installed inside the `./program/mod_lns-conda` script
 - For benchmarking on a cluster you also have to set the correct environment inside `./templates/single.dist`

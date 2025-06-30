@@ -9,8 +9,7 @@
 set -e
 
 # Load environment modules for your application here.
-source /etc/profile.d/modules.sh
-module load lang/Anaconda3/2024.02-1
+module load lang/Miniforge3/24.1.2-0
 source activate lns
 
 # Run jobs

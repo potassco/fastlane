@@ -10,7 +10,7 @@
 
     </system>
 
-	<seqjob name="seq-lns" timeout="10" runs="2" script_mode="timeout" walltime="00:01:00" parallel="1"/>
+	<seqjob name="seq-lns" timeout="10" runs="2" parallel="1"/>
 
 	<benchmark name="lns">
 		<folder path="benchmarks/lns/"></folder>
