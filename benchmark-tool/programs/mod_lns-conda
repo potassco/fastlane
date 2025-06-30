@@ -5,4 +5,3 @@ CONDAENV=lns
 
 source ~/anaconda3/etc/profile.d/conda.sh && conda activate "${CONDAENV}"
 mod_lns "${@}" 2> solver.err
-
