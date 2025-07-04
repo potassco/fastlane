@@ -61,6 +61,8 @@ class LNS:
             "start_sol": None,
             "vari_accept": 0,
             "base_relax_rate": 0,
+            "fs_time_limit": 60,
+            "fs_model_limit": 1,
         }
         self.set_parameters(lns_config.lns_options)
 
@@ -139,6 +141,21 @@ class LNS:
                 for key, val in self.solver.theory.assignment(model.thread_id)
             ]
 
+    def get_available_solve_time(self, time_limit: int) -> int:
+        """
+        Calculate available solve time.
+        (rounded to int)
+
+        :param time_limit: Time limit for solve call.
+        :type time_limit: int
+        :return: Available solve time.
+        :rtype: int
+        """
+        avail_time = self.avail_time
+        if avail_time >= time_limit:
+            return time_limit
+        return avail_time
+
     def main(self) -> None:
         """
         Run Large-Neighbourhood Search according to set parameters.
@@ -179,7 +196,12 @@ class LNS:
         self.step_c = 0
 
         # get first solution - to be reworked
-        if not self.strategy.get_first_solution(self, start_sol):
+        if not self.strategy.get_first_solution(
+            self,
+            start_sol,
+            self.get_available_solve_time(self.param_values["fs_time_limit"]),
+            self.param_values["fs_model_limit"],
+        ):
             print("First solution could not be obtained")
             raise SystemExit
 
@@ -194,12 +216,13 @@ class LNS:
             self.strategy.pre_relax(self)
             fixed_atoms = self.strategy.relax(
                 self.new_model,
-                {
-                    "relax_rate": self.param_values["relax_rate"],
-                    "base_relax_rate": self.param_values["base_relax_rate"],
-                },
+                self.param_values,
             )
-            if self.strategy.repair(self, fixed_atoms).satisfiable:
+            if self.strategy.repair(
+                self,
+                fixed_atoms,
+                self.get_available_solve_time(self.param_values["solve_time_limit"]),
+            ).satisfiable:
                 self.strategy.post_repair(self)
                 if self.strategy.check_accept(self):
                     self.current_model = self.new_model
@@ -211,8 +234,4 @@ class LNS:
                         f"New best solution: {self.best_model.get_cost_str()}"
                     )
                     self.strategy.better(self)
-        print("==================")
-        print("SEARCH FINISHED:")
-        self.best_model.print_model()
-        print(f"Overall steps: {self.step_c}")
-        print(f"Overall time: {time.time() - self.start_time:.3f}s")
+        self.strategy.print_result(self)

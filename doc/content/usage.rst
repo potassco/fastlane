@@ -3,7 +3,7 @@
 Usage
 ============
 
-While this project is mainly build to be used as an easily modifiable framework, 
+While this project is mainly build to be used as an easily modifiable framework,
 it can still be used on its own with the provided example classes, as described below.
 For all options supported during default module execution use:
 
@@ -22,10 +22,10 @@ strategy and lns parameters.
 
 Any solver and strategy should be implemented according to the interfaces described :ref:`here<ref_inter>` and
 have to implement all abstract methods.
-Some default implementations can be found in the :ref:`lib<ref_lib>` submodule. 
+Some default implementations can be found in the :ref:`lib<ref_lib>` submodule.
 
 Additional parameters such as the relax rate or
-the step limit for the search can be set during initialization or using the :meth:`set_params` method. 
+the step limit for the search can be set during initialization or using the :meth:`set_params` method.
 An example of the LNS initialization can be seen below or in :file:`./examples/demo.py`. For a more detailed and
 step by step introduction to the framework look :ref:`here<ref_guide>`.
 
@@ -51,7 +51,7 @@ The same search can be performed through the command line as follows:
 
 .. code-block:: console
 
-    $ mod_lns -i ./examples/golf.lp --seed=123 --solver=ClingoDLSolver 
+    $ mod_lns -i ./examples/golf.lp --seed=123 --solver=ClingoDLSolver
 
 Encoding
 ----------

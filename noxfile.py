@@ -134,5 +134,5 @@ def test(session):
         session.run("coverage", "run", "-m", "unittest", session.posargs[0], "-v")
     else:
         session.run("coverage", "run", "-m", "unittest", "discover", "-v")
-        #session.run("coverage", "run", "-m", "unittest", "tests.test_strategies", "-v")
+        # session.run("coverage", "run", "-m", "unittest", "tests.test_strategies", "-v")
         session.run("coverage", "report", "-m", "--fail-under=100")

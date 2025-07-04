@@ -181,4 +181,18 @@ def get_parser() -> ArgumentParser:
         type=str,
     )
 
+    parser.add_argument(
+        "--first_time_limit",
+        help="set time limit for obtaining a first solution [%(default)s], deducted from overall time limit",
+        default=60,
+        type=int,
+    )
+
+    parser.add_argument(
+        "--first_model_limit",
+        help="set model limit for obtaining first solution [%(default)s], 0 for no limit",
+        default=1,
+        type=int,
+    )
+
     return parser

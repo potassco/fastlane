@@ -4,7 +4,7 @@ lib
 ===============
 
 
-This library contains multiple example implementations of the Solver- and StrategyInterfaces and 
+This library contains multiple example implementations of the Solver- and StrategyInterfaces and
 some additional helper functions which can be used for LNS.
 
 
@@ -18,8 +18,9 @@ some additional helper functions which can be used for LNS.
 
 .. toctree::
     :maxdepth: 1
-    
+
     solvers.rst
     utils.rst
     strategies.rst
     relaxation.rst
+    mods.rst

@@ -32,7 +32,7 @@ class ClingoSolver(SolverInterface):
         Initialize clingo.Control object using clingo.
 
         :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
+        :type lns_object: mod_lns.LNS
         :param files: ASP files to be loaded, default: lns_object.param_values["files"].
         :type files: Optional[list[str]]
         :param args: clingo arguments, default: lns_object.clingo_options.
@@ -62,27 +62,34 @@ class ClingoSolver(SolverInterface):
         self,
         lns_object: LNS,
         fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]],
+        time_limit: Optional[int] = None,
+        model_limit: int = 1,
     ) -> clingo.solving.SolveResult:
         """
         Solve under assumptions using clingo.
 
         :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
+        :type lns_object: mod_lns.LNS
         :param assumptions: Assumptions for solving (fixed atoms).
         :type assumptions: list[tuple[clingo.symbol.Symbol, bool]]
+        :param time_limit: Manually set time limit for solve call.
+        :type time_limit: Optional[int]
+        :default time_limit: None
+        :param model_limit: Set number of calculated models.
+        :type model_limit: int
+        :default model_limit: 1
         :return: Solve result.
         :rtype: clingo.solving.SolveResult
         """
         res = clingo.solving.SolveResult(2)
         start_time = int(time.time())
-        solve_time = self.get_available_solve_time(lns_object)
         if isinstance(self.control, clingo.control.Control):
             if isinstance(self.control.configuration.solve, clingo.Configuration):
-                self.control.configuration.solve.models = 1
+                self.control.configuration.solve.models = model_limit
             with self.control.solve(
                 assumptions=fixed_atoms, on_model=lns_object.on_model, async_=True
             ) as handle:
-                done = handle.wait(solve_time)
+                done = handle.wait(time_limit)
                 if not done:
                     handle.cancel()
                     print(

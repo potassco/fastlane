@@ -49,7 +49,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
         Initialization of the solver.
 
         :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
+        :type lns_object: mod_lns.LNS
         :param files: ASP files to be loaded.
         :type files: Optional[list[str]]
         :param args: clingo arguments.
@@ -63,14 +63,22 @@ class SolverInterface(metaclass=abc.ABCMeta):
         self,
         lns_object: LNS,
         fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]],
+        time_limit: Optional[int] = None,
+        model_limit: int = 1,
     ) -> clingo.solving.SolveResult:  # nocoverage
         """
         Solve with fixed atoms.
 
         :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
+        :type lns_object: mod_lns.LNS
         :param assumptions: Assumptions for solving (fixed atoms).
         :type assumptions: list[tuple[clingo.symbol.Symbol, bool]]
+        :param time_limit: Manually set time limit for solve call.
+        :type time_limit: Optional[int]
+        :default time_limit: None
+        :param model_limit: Set number of calculated models.
+        :type model_limit: int
+        :default model_limit: 1
         :return: Solve result.
         :rtype: clingo.solving.SolveResult
         """
@@ -81,25 +89,10 @@ class SolverInterface(metaclass=abc.ABCMeta):
         Ground base encoding.
 
         :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
+        :type lns_object: mod_lns.LNS
         """
         if isinstance(self.control, clingo.control.Control):
             self.control.ground([("base", [])], context=lns_object)
-
-    def get_available_solve_time(self, lns_object: LNS) -> int:
-        """
-        Calculate available solve time.
-        (rounded to int)
-
-        :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
-        :return: Available solve time.
-        :rtype: int
-        """
-        avail_time = lns_object.avail_time
-        if avail_time >= lns_object.param_values["solve_time_limit"]:
-            return lns_object.param_values["solve_time_limit"]
-        return avail_time
 
     def get_stats(self) -> dict:
         """

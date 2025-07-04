@@ -5,7 +5,7 @@ Strategy interface used for LNS.
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 import clingo
 
@@ -52,8 +52,8 @@ class StrategyInterface(metaclass=abc.ABCMeta):
             and callable(subclass.check_accept)
             and hasattr(subclass, "check_better")
             and callable(subclass.check_better)
-            #  and hasattr(subclass, "update_grounding")
-            # and callable(subclass.update_grounding)
+            and hasattr(subclass, "print_result")
+            and callable(subclass.print_result)
             or NotImplemented
         )
 
@@ -62,7 +62,7 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         Do something pre solver setup.
 
         :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
+        :type lns_object: mod_lns.LNS
         """
 
     def post_setup(self, lns_object: LNS) -> None:  # nocoverage
@@ -70,20 +70,30 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         Do something post solver setup.
 
         :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
+        :type lns_object: mod_lns.LNS
         """
 
     @abc.abstractmethod
     def get_first_solution(
-        self, lns_object: LNS, start_sol: list[clingo.symbol.Symbol]
+        self,
+        lns_object: LNS,
+        start_sol: list[clingo.symbol.Symbol],
+        time_limit: Optional[int] = None,
+        model_limit: int = 1,
     ) -> bool:  # nocoverage
         """
         Find initial solution.
 
         :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
+        :type lns_object: mod_lns.LNS
         :param start_sol: optional start solution.
         :type lns_object: list[clingo.symbol.Symbol]
+        :param time_limit: Manually set time limit for solve call.
+        :type time_limit: Optional[int]
+        :default time_limit: None
+        :param model_limit: Set number of calculated models.
+        :type model_limit: int
+        :default model_limit: 1
         :return: Whether a solution was found or not
         :rtype: bool
         """
@@ -94,7 +104,7 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         Do something post first solution.
 
         :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
+        :type lns_object: mod_lns.LNS
         """
 
     @abc.abstractmethod
@@ -103,7 +113,7 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         Check whether to stop LNS.
 
         :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
+        :type lns_object: mod_lns.LNS
         :return: Whether to stop LNS or not.
         :rtype: bool
         """
@@ -114,7 +124,7 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         Do something pre relaxation.
 
         :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
+        :type lns_object: mod_lns.LNS
         """
 
     @abc.abstractmethod
@@ -137,15 +147,25 @@ class StrategyInterface(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def repair(
-        self, lns_object: LNS, fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]]
+        self,
+        lns_object: LNS,
+        fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]],
+        time_limit: Optional[int] = None,
+        model_limit: int = 1,
     ) -> clingo.solving.SolveResult:  # nocoverage
         """
         Repair solution.
 
         :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
+        :type lns_object: mod_lns.LNS
         :param assumptions: Assumptions for solving (fixed atoms).
         :type assumptions: list[tuple[clingo.symbol.Symbol, bool]]
+        :param time_limit: Manually set time limit for solve call.
+        :type time_limit: Optional[int]
+        :default time_limit: None
+        :param model_limit: Set number of calculated models.
+        :type model_limit: int
+        :default model_limit: 1
         :return: Solve result.
         :rtype: clingo.solving.SolveResult
         """
@@ -156,7 +176,7 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         Do something post repair.
 
         :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
+        :type lns_object: mod_lns.LNS
         """
 
     @abc.abstractmethod
@@ -168,7 +188,7 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         Check whether new model is accepted.
 
         :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
+        :type lns_object: mod_lns.LNS
         :return: Whether new model is accepted or not.
         :rtype: bool
         """
@@ -179,7 +199,7 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         Do something after new model is accepted and saved as the new current model.
 
         :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
+        :type lns_object: mod_lns.LNS
         """
 
     @abc.abstractmethod
@@ -191,7 +211,7 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         Check whether new model is better.
 
         :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
+        :type lns_object: mod_lns.LNS
         :return: Whether new model is better or not.
         :rtype: bool
         """
@@ -202,10 +222,23 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         Do something after new model is better and saved as the new best model.
 
         :param lns_object: LNS object.
-        :type lns_object: large_neighbourhood_search.LNS
+        :type lns_object: mod_lns.LNS
         """
 
-    # beeing reworked
+    @abc.abstractmethod
+    def print_result(
+        self,
+        lns_object: LNS,
+    ) -> None:  # nocoverage
+        """
+        Print results of LNS.
+
+        :param lns_object: LNS object.
+        :type lns_object: mod_lns.LNS
+        """
+        raise NotImplementedError
+
+    # being reworked
     # pylint: disable=unused-argument
     # @classmethod
     # def stuck_handling(self, lns_object: LNS) -> None:
@@ -213,5 +246,5 @@ class StrategyInterface(metaclass=abc.ABCMeta):
     #    Check whether search is stuck and what to do if it is.
     #
     #    :param lns_object: LNS object.
-    #    :type lns_object: large_neighbourhood_search.LNS
+    #    :type lns_object: mod_lns.LNS
     #    """

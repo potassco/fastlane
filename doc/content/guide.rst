@@ -5,7 +5,7 @@ Guide
 
 In his section we will illustrate an example workflow using this framework step by step. All python code snippets shown here can
 also be found in :file:`./examples/demo.py`.
-The problem we will be looking at is the `Social golfer problem <https://en.wikipedia.org/wiki/Social_golfer_problem>`_ with 
+The problem we will be looking at is the `Social golfer problem <https://en.wikipedia.org/wiki/Social_golfer_problem>`_ with
 3 players, 3 groups and 3 weeks. We choose a small instance, to keep the run-time as low as possible, while still being able to
 observe the effects of different approaches.
 
@@ -75,8 +75,8 @@ For now lets just modify the lns_options as seen below (0.2 is also the default 
 
     cl_config = LNSConfig(
         lns_options={
-            "seed": 123, 
-            "relax_rate": 0.2, 
+            "seed": 123,
+            "relax_rate": 0.2,
         })
     lns = LNS(["examples/golf_demo.lp"], cl_config)
     lns.main()
@@ -95,15 +95,15 @@ or "better". This leads to signiﬁcantly fewer steps but increases the solve ti
 
     hc_config = LNSConfig(
         lns_options={
-            "constrained":True,
+            "constrained": True,
             "seed": 123,
             "relax_rate": 0.2,
             "solve_time_limit": 10
         })
 
 We can see we need only 34 steps to find the best solution. The increased solve time is on such small instances not visible.
-Feel free to try the above configuration on the 5-5-5 golf instance to see the difference (CTRL + C to interrupt search). 
-In the time takes the constrained approach to produce one new solution the classic approach produces 50 or more. Once again 
+Feel free to try the above configuration on the 5-5-5 golf instance to see the difference (CTRL + C to interrupt search).
+In the time takes the constrained approach to produce one new solution the classic approach produces 50 or more. Once again
 the correct usage of parameters significantly influences the search. The performance of the constraint approach is for
 example strongly connected to the chosen "solve_time_limit" parameter, try 2s.
 
@@ -120,7 +120,7 @@ The declarative relaxation can be enabled as follows:
 
     cl_decl_config = LNSConfig(
             lns_options={
-                "declarative": True, 
+                "declarative": True,
                 "seed": 123
             })
 
@@ -131,6 +131,9 @@ Advanced
 The purpose of this framework is to not only plug different building blocks together and enable certain options
 but also allow them to be easily modifiable. Lets try modifying the default configuration, by adding a new option, which,
 when enabled, modifies the provided strategy so that the fixed atoms are printed and we can observe the declarative relaxation.
+
+.. note::
+    Example solver and strategy modifications are located inside the :code:`mod_lns.lib.mods` submodule.
 
 To do so we first nees to understand how the :class:`LNSConfig` class works. Inside the :meth:`__init__` method the different
 parameters are registered and, depending on the options, different methods to make changes to strategy and/or solver are called.
@@ -143,7 +146,7 @@ Below is the implementation of our new configuration class:
     from mod_lns.utils.conversions import symbol_to_str
 
     class NewLNSConfig(LNSConfig):
-        
+
         def __init__(self, lns_options = {}, clingo_options = []):
             # add new default value
             default_options = {
@@ -153,14 +156,14 @@ Below is the implementation of our new configuration class:
 
             # keep functionality of LNSConfig
             super().__init__(self.lns_options, clingo_options)
-            
+
             # add new functionality
             if self.lns_options["new_opt"] == True:
                 self._enable_new_opt()
-        
+
         def _enable_new_opt(self):
             # get current strategy to modify
-            
+
             def relax(
                 self,
                 model,
@@ -187,9 +190,9 @@ The new configuration class can then be used exactly the same as :class:`LNSConf
 
     cl_decl_custom_config = NewLNSConfig(
         lns_options={
-            "new_opt": True, 
-            "declarative": True, 
-            "seed": 123, 
+            "new_opt": True,
+            "declarative": True,
+            "seed": 123,
             "max_steps": 5
         })
 
@@ -197,5 +200,3 @@ When running the search we can see that at each step all plays/3 atoms of two (i
 
 After this brief guide you should now have a basic understanding of how to run the LNS framework and how to modify the performed
 search through parameters and perform more in-depth modifications to the solver and/or strategy through the configuration class.
-
-

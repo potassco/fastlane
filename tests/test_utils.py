@@ -10,10 +10,7 @@ from clingo.symbol import Function, Infimum, Number, String, Supremum
 
 from mod_lns.lib.solvers.clingo_dl_solver import ClingoDLSolver
 from mod_lns.lib.strategies.default_strategy import DefaultStrategy
-from mod_lns.lib.utils import (
-    calculate_variability,
-    fix_symbols,
-)
+from mod_lns.lib.utils import calculate_variability, fix_symbols
 from mod_lns.utils.conversions import args_to_dict, str_to_symbols, symbol_to_str
 from mod_lns.utils.logger import setup_logger
 from mod_lns.utils.parser import get_parser
@@ -58,6 +55,10 @@ class TestUtils(TestCase):
         self.assertEqual(ret.solve_time_limit, 14)
         ret = parser.parse_args(["--max_steps", "30", "-i", "x.lp"])
         self.assertEqual(ret.max_steps, "30")
+        ret = parser.parse_args(["--first_time_limit", "12", "-i", "x.lp"])
+        self.assertEqual(ret.first_time_limit, 12)
+        ret = parser.parse_args(["--first_model_limit", "12", "-i", "x.lp"])
+        self.assertEqual(ret.first_model_limit, 12)
         ret = parser.parse_args(["--seed", "213", "-i", "x.lp"])
         self.assertEqual(ret.seed, 213)
         ret = parser.parse_args(["--heuristics", "-i", "x.lp"])
