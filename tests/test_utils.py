@@ -53,6 +53,8 @@ class TestUtils(TestCase):
         self.assertEqual(ret.time_limit, 12)
         ret = parser.parse_args(["--solve_time_limit", "14", "-i", "x.lp"])
         self.assertEqual(ret.solve_time_limit, 14)
+        ret = parser.parse_args(["--model_limit", "5", "-i", "x.lp"])
+        self.assertEqual(ret.model_limit, 5)
         ret = parser.parse_args(["--max_steps", "30", "-i", "x.lp"])
         self.assertEqual(ret.max_steps, "30")
         ret = parser.parse_args(["--first_time_limit", "12", "-i", "x.lp"])

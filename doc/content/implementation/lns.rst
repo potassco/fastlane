@@ -18,6 +18,7 @@ LNS
             "relax_rate": 0.2,                  # Relax rate, Float
             "max_steps": "2000",                # Step limit for the search, non-int string for no limit, Int,Str
             "solve_time_limit": 20,             # Time limit for the individual solve call in seconds, Int
+            "model_limit": 0,                   # Model limit for each individual solve call, 0: no limit, Int
             "overall_time_limit": 600,          # Time limit for the entire search in seconds, Int
             "stuck_after_no_improv": None,      # After how many iterations without improvement the
                                                 #  search is determined as stuck,

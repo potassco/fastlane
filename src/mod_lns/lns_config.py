@@ -52,6 +52,7 @@ class LNSConfig:
             "relax_rate": 0.2,
             "max_steps": "2000",
             "solve_time_limit": 20,
+            "model_limit": 0,
             "overall_time_limit": 600,
         }
 

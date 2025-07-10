@@ -55,7 +55,7 @@ class TestSolverClingo(TestCase):
         self.solver.ground_base(self.lns)
         self.assertEqual(self.solver.control.configuration.solve.models, "-1")
         self.assertTrue(self.solver.repair(self.lns, []).satisfiable)
-        self.assertEqual(self.solver.control.configuration.solve.models, "1")
+        self.assertEqual(self.solver.control.configuration.solve.models, "0")
         self.assertTrue(self.lns.new_model)
 
         assumptions = self.strategy.relax(self.lns.new_model, {"relax_rate": 0.2})

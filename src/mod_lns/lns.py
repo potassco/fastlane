@@ -56,6 +56,7 @@ class LNS:
             "max_steps": "2000",
             # move to clingo opts
             "solve_time_limit": 20,
+            "model_limit": 0,
             "overall_time_limit": 600,
             "stuck_after_no_improv": None,
             "start_sol": None,
@@ -199,8 +200,6 @@ class LNS:
         if not self.strategy.get_first_solution(
             self,
             start_sol,
-            self.get_available_solve_time(self.param_values["fs_time_limit"]),
-            self.param_values["fs_model_limit"],
         ):
             print("First solution could not be obtained")
             raise SystemExit
@@ -221,7 +220,6 @@ class LNS:
             if self.strategy.repair(
                 self,
                 fixed_atoms,
-                self.get_available_solve_time(self.param_values["solve_time_limit"]),
             ).satisfiable:
                 self.strategy.post_repair(self)
                 if self.strategy.check_accept(self):

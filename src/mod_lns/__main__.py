@@ -30,6 +30,7 @@ def main():
             "relax_rate": args.relax_rate,
             "overall_time_limit": args.time_limit,
             "solve_time_limit": args.solve_time_limit,
+            "model_limit": args.model_limit,
             "max_steps": args.max_steps,
             "fs_time_limit": args.first_time_limit,
             "fs_model_limit": args.first_model_limit,
