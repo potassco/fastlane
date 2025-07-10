@@ -63,7 +63,7 @@ class ClingoSolver(SolverInterface):
         lns_object: LNS,
         fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]],
         time_limit: Optional[int] = None,
-        model_limit: int = 1,
+        model_limit: int = 0,
     ) -> clingo.solving.SolveResult:
         """
         Solve under assumptions using clingo.
@@ -77,7 +77,7 @@ class ClingoSolver(SolverInterface):
         :default time_limit: None
         :param model_limit: Set number of calculated models.
         :type model_limit: int
-        :default model_limit: 1
+        :default model_limit: 0
         :return: Solve result.
         :rtype: clingo.solving.SolveResult
         """
