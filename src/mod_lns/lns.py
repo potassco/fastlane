@@ -56,6 +56,7 @@ class LNS:
             "max_steps": "2000",
             # move to clingo opts
             "solve_time_limit": 20,
+            "model_limit": 0,
             "overall_time_limit": 600,
             "stuck_after_no_improv": None,
             "start_sol": None,

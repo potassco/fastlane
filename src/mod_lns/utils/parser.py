@@ -175,6 +175,13 @@ def get_parser() -> ArgumentParser:
     )
 
     parser.add_argument(
+        "--model_limit",
+        help="set model limit for each solve call, 0: no limit [%(default)s]",
+        default=0,
+        type=int,
+    )
+
+    parser.add_argument(
         "--max_steps",
         help="set maximum number of steps [%(default)s], non-int string for no limit",
         default="2000",
