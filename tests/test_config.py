@@ -28,6 +28,7 @@ class TestLNSConfig(TestCase):
             "max_steps": "2000",
             "solve_time_limit": 20,
             "overall_time_limit": 600,
+            "model_limit": 0,
         }
         ref_clingo_opt = ["--rand-freq=0.05"]
         config = LNSConfig()
@@ -44,6 +45,7 @@ class TestLNSConfig(TestCase):
             "max_steps": "2000",
             "solve_time_limit": 20,
             "overall_time_limit": 600,
+            "model_limit": 0,
             "test_opt": "abc",
         }
         ref_clingo_opt = ["--test_opt=123"]
