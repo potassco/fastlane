@@ -5,7 +5,7 @@ Default strategy implementing classic LNS with weighted sum as optimization crit
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import clingo
 
@@ -29,8 +29,6 @@ class DefaultStrategy(StrategyInterface):
         self,
         lns_object: LNS,
         start_sol: list[clingo.symbol.Symbol] = [],
-        time_limit: Optional[int] = None,
-        model_limit: int = 1,
     ) -> bool:
         """
         Find initial solution.
@@ -40,15 +38,14 @@ class DefaultStrategy(StrategyInterface):
         :param start_sol: optional start solution.
         :type start_sol: list[clingo.symbol.Symbol]
         :default start_sol: []
-        :param time_limit: Manually set time limit for solve call.
-        :type time_limit: Optional[int]
-        :default time_limit: None
-        :param model_limit: Set number of calculated models.
-        :type model_limit: int
-        :default model_limit: 1
         :return: Whether a solution was found or not
         :rtype: bool
         """
+        time_limit = lns_object.get_available_solve_time(
+            lns_object.param_values["fs_time_limit"]
+        )
+        model_limit = lns_object.param_values["fs_model_limit"]
+
         lns_object.solver.ground_base(lns_object)
 
         fixed_sym = []
@@ -115,8 +112,6 @@ class DefaultStrategy(StrategyInterface):
         self,
         lns_object: LNS,
         fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]],
-        time_limit: Optional[int] = None,
-        model_limit: int = 1,
     ) -> clingo.solving.SolveResult:
         """
         Repair solution.
@@ -125,15 +120,13 @@ class DefaultStrategy(StrategyInterface):
         :type lns_object: mod_lns.LNS
         :param fixed_atoms: Fixed atoms.
         :type fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]]
-        :param time_limit: Manually set time limit for solve call.
-        :type time_limit: Optional[int]
-        :default time_limit: None
-        :param model_limit: Set number of calculated models.
-        :type model_limit: int
-        :default model_limit: 1
         :return: Solve result.
         :rtype: clingo.solving.SolveResult
         """
+        time_limit = lns_object.get_available_solve_time(
+            lns_object.param_values["solve_time_limit"]
+        )
+        model_limit = lns_object.param_values["model_limit"]
         return lns_object.solver.repair(
             lns_object, fixed_atoms, time_limit, model_limit
         )

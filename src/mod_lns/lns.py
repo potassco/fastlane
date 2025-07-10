@@ -200,8 +200,6 @@ class LNS:
         if not self.strategy.get_first_solution(
             self,
             start_sol,
-            self.get_available_solve_time(self.param_values["fs_time_limit"]),
-            self.param_values["fs_model_limit"],
         ):
             print("First solution could not be obtained")
             raise SystemExit
@@ -222,7 +220,6 @@ class LNS:
             if self.strategy.repair(
                 self,
                 fixed_atoms,
-                self.get_available_solve_time(self.param_values["solve_time_limit"]),
             ).satisfiable:
                 self.strategy.post_repair(self)
                 if self.strategy.check_accept(self):
