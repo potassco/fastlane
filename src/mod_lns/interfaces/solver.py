@@ -5,12 +5,38 @@ Solver interface used for LNS.
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import clingo
+from clingo.symbol import Symbol
 
 if TYPE_CHECKING:
     from mod_lns.lns import LNS  # nocoverage
+
+
+class SolverConfig:
+    configuration: Optional[str]
+    opt_strategy: Optional[str]
+    opt_heuristic: Optional[str]
+    restart_on_model: Optional[str]
+    heuristic: Optional[str]
+    opt_mode: Optional[str]
+    solve_limit: Optional[str]
+    time_limit: Optional[float]
+    seed: Optional[int]
+    variability: bool
+
+    def __init__(self):
+        self.configuration = None
+        self.opt_strategy = None
+        self.opt_heuristic = None
+        self.restart_on_model = None
+        self.heuristic = None
+        self.opt_mode = None
+        self.solve_limit = None
+        self.time_limit = None
+        self.seed = None
+        self.variability = True
 
 
 class SolverInterface(metaclass=abc.ABCMeta):
@@ -24,6 +50,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
         """
         self.control: Optional[clingo.control.Control] = None
         self.theory: Any = None
+        self.finished: bool = False
 
     @classmethod
     def __subclasshook__(cls, subclass):  # nocoverage
@@ -42,29 +69,29 @@ class SolverInterface(metaclass=abc.ABCMeta):
     def setup(
         self,
         lns_object: LNS,
-        files: Optional[list[str]] = None,
         args: list[str] = [],
+        files: Optional[list[str]] = None,
     ) -> None:  # nocoverage
         """
         Initialization of the solver.
 
         :param lns_object: LNS object.
         :type lns_object: mod_lns.LNS
-        :param files: ASP files to be loaded.
-        :type files: Optional[list[str]]
         :param args: clingo arguments.
         :type args: list[str]
         :default args: []
+        :param files: ASP files to be loaded.
+        :type files: Optional[list[str]]
+        :default files: None
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def repair(
+    def solve(
         self,
         lns_object: LNS,
-        fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]],
-        time_limit: Optional[int] = None,
-        model_limit: int = 0,
+        config: Optional[SolverConfig],
+        assumptions: list[tuple[clingo.symbol.Symbol, bool]],
     ) -> clingo.solving.SolveResult:  # nocoverage
         """
         Solve with fixed atoms.
@@ -84,15 +111,58 @@ class SolverInterface(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
-    def ground_base(self, lns_object: LNS) -> None:
+    def ground(
+        self,
+        parts: list[tuple[str, list[Symbol]]] = [("base", [])],
+        context: Any = None,
+    ) -> None:
         """
         Ground base encoding.
 
-        :param lns_object: LNS object.
-        :type lns_object: mod_lns.LNS
+        :param parts: Parts to ground.
+        :type parts: list[tuple[str, list[Symbol]]]
+        :param context: Context for grounding.
+        :type context: Any
+        :default context: None
         """
         if isinstance(self.control, clingo.control.Control):
-            self.control.ground([("base", [])], context=lns_object)
+            self.control.ground(parts, context)
+
+    def add(self, name: str, parameters: list[str], program: str) -> None:
+        """
+        Add a program to the solver.
+
+        :param name: Name of the program.
+        :type name: str
+        :param parameters: Parameters for the program.
+        :type parameters: list[str]
+        :param program: Program to be added.
+        :type program: str
+        """
+        if isinstance(self.control, clingo.control.Control):
+            self.control.add(name, parameters, program)
+
+    def assign_external(self, external: Union[Symbol, int], truth: bool) -> None:
+        """
+        Assign truth value to external atom.
+
+        :param external: External atom.
+        :type external: Union[clingo.symbol.Symbol,int]
+        :param truth: Truth value.
+        :type truth: bool
+        """
+        if isinstance(self.control, clingo.control.Control):
+            self.control.assign_external(external, truth)
+
+    def release_external(self, external: Union[Symbol, int]) -> None:
+        """
+        Release external atom.
+
+        :param external: External atom.
+        :type external: Union[clingo.symbol.Symbol,int]
+        """
+        if isinstance(self.control, clingo.control.Control):
+            self.control.release_external(external)
 
     def get_stats(self) -> dict:
         """

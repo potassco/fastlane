@@ -65,7 +65,7 @@ class ClingoDLSolver(SolverInterface):
             )
         self.control, self.theory = ctl, thy
 
-    def repair(
+    def solve(
         self,
         lns_object: LNS,
         fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]],
