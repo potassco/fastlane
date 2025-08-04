@@ -5,11 +5,13 @@ Default strategy implementing classic LNS with weighted sum as optimization crit
 from __future__ import annotations
 
 import time
+from argparse import Namespace
 from typing import TYPE_CHECKING, Any
 
 import clingo
 
 from mod_lns import Model
+from mod_lns.interfaces.solver import SolverInterface
 from mod_lns.interfaces.strategy import StrategyInterface
 from mod_lns.lib.relaxation import relax_random
 from mod_lns.lib.utils import calculate_variability, fix_symbols
@@ -23,6 +25,39 @@ class DefaultStrategy(StrategyInterface):
     """
     Classic LNS with weighted sum as optimization criteria and random relaxation.
     """
+
+    def __init__(self) -> None:
+        """
+        Initialize default strategy.
+        """
+        super().__init__()
+        self.prev_heu_atoms: list[clingo.symbol.Symbol] = []
+        self.solver: SolverInterface = None
+
+    def get_parser(
+        self, subparsers: _SubParsersAction[ArgumentParser]
+    ) -> ArgumentParser:
+        """
+        Parse command line options.
+
+        :param subparsers: Subparsers for the argument parser.
+        :type subparsers: _SubParsersAction[ArgumentParser]
+        :return: Argument parser for the strategy.
+        :rtype: ArgumentParser
+        """
+
+    def parse_options(self, args: Namespace) -> dict[str, Any]:
+        """
+        Parse options from args.
+
+        :param args: Parsed arguments.
+        :type args: Namespace
+        :return: Remaining unparsed options.
+        :rtype: dict[str, Any]
+        """
+
+    def setup_solver(self, lns_object):
+        pass
 
     # pylint: disable=dangerous-default-value
     def get_first_solution(
@@ -46,14 +81,14 @@ class DefaultStrategy(StrategyInterface):
         )
         model_limit = lns_object.param_values["fs_model_limit"]
 
-        lns_object.solver.ground_base(lns_object)
+        lns_object.solver.ground(lns_object)
 
         fixed_sym = []
         if start_sol:
             fixed_sym = fix_symbols(start_sol)
 
         # get first solution
-        if lns_object.solver.repair(
+        if lns_object.solver.solve(
             lns_object, fixed_sym, time_limit, model_limit
         ).satisfiable:
             print(
@@ -127,9 +162,7 @@ class DefaultStrategy(StrategyInterface):
             lns_object.param_values["solve_time_limit"]
         )
         model_limit = lns_object.param_values["model_limit"]
-        return lns_object.solver.repair(
-            lns_object, fixed_atoms, time_limit, model_limit
-        )
+        return lns_object.solver.solve(lns_object, fixed_atoms, time_limit, model_limit)
 
     # pylint: disable=unused-argument
     def check_accept(
@@ -174,3 +207,20 @@ class DefaultStrategy(StrategyInterface):
         lns_object.best_model.print_model()
         print(f"Overall steps: {lns_object.step_c}")
         print(f"Overall time: {time.time() - lns_object.start_time:.3f}s")
+
+    from argparse import ArgumentParser, RawTextHelpFormatter, _SubParsersAction
+
+    def get_parser(
+        self, subparsers: _SubParsersAction[ArgumentParser]
+    ) -> ArgumentParser:
+        """
+        Parse command line options.
+
+        :param args: Command line arguments
+        :type args: str
+        """
+        parser = subparsers.add_parser("default", help="Default LNS strategy")
+        parser.add_argument(
+            "-y", "--yxtra", action="store_true", help="Enable yxtra features"
+        )
+        return parser
