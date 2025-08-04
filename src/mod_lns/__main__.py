@@ -2,43 +2,19 @@
 The main entry point for the application.
 """
 
-from .lns import LNS
-from .lns_config import LNSConfig
-from .utils.logger import setup_logger
-from .utils.parser import get_parser
+from mod_lns.lib.parser.framework_parser import get_framework_parser
+from mod_lns.lns import LNS
 
 
 def main():
     """
     Run the main function.
     """
-    parser = get_parser()
-    args, rest = parser.parse_known_args()
-    log = setup_logger("main", args.log)
 
-    log.info("info")
-    log.warning("warning")
-    log.debug("debug")
-    log.error("error")
-
-    config = LNSConfig(
-        {
-            "heuristics": args.heuristics,
-            "constrained": args.constrained,
-            "declarative": args.declarative,
-            "seed": args.seed,
-            "relax_rate": args.relax_rate,
-            "overall_time_limit": args.time_limit,
-            "solve_time_limit": args.solve_time_limit,
-            "model_limit": args.model_limit,
-            "max_steps": args.max_steps,
-            "fs_time_limit": args.first_time_limit,
-            "fs_model_limit": args.first_model_limit,
-        },
-        rest,
-        args.solver,
-        args.strategy,
-    )
+    parser = get_framework_parser()
+    args = parser.parse_args()
+    strategy = args.strategy
+    strategy.parse_options(args)
 
     lns = LNS(args.input_files, config)
     lns.main()
