@@ -44,3 +44,16 @@ def fix_symbols(
     for symbol in symbols:
         fixed.append((symbol, True))
     return fixed
+
+
+def get_unique_list(seq: Sequence) -> list:
+    """
+    Get unique elements from a list while preserving the order.
+
+    :param seq: Input sequence.
+    :type seq: Sequence
+    :return: List of unique elements.
+    :rtype: list
+    """
+    seen = []
+    return [x for x in seq if x not in seen and not seen.append(x)]

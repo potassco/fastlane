@@ -16,7 +16,7 @@ def main():
     strategy = args.strategy
     strategy.parse_options(args)
 
-    lns = LNS(args.input_files, config)
+    lns = LNS(args.files, strategy)
     lns.main()
 
 

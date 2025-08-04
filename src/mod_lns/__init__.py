@@ -1,6 +1,8 @@
 """
-Helper Model class.
+Helper classes.
 """
+
+import time
 
 
 class Model:
@@ -31,9 +33,58 @@ class Model:
         :return: Printed string.
         :rtype: str
         """
+        # print(self.string)
         answer_string = " ".join([str(atom) for atom in self.shown])
         if len(self.assignments) != 0:
             answer_string += "\nAssignments:\n" + " ".join(self.assignments)
         s = "Answer\n" f"{answer_string}\n" f"Cost: {self.get_cost_str()}\n"
         print(s)
         return s
+
+
+class Timer:
+    """
+    Timer class for measuring time intervals.
+    """
+
+    _started: bool
+    _ringing: bool
+    _start_time: float
+    _time_limit: float
+
+    def __init__(self):
+        """
+        Initialize the timer.
+        """
+        self._started = False
+        self._ringing = False
+
+    def start(self, time_limit: float) -> None:
+        """
+        Start the timer with a specified time limit.
+
+        :param time_limit: Time limit in seconds.
+        :type time_limit: float
+        """
+        self._started = True
+        self._ringing = False
+        self._start_time = time.time()
+        self._time_limit = time_limit
+
+    def reset(self) -> None:
+        """
+        Reset the timer.
+        """
+        self._started = False
+        self._ringing = False
+
+    @property
+    def is_ringing(self) -> bool:
+        """
+        Check if the timer is ringing (i.e., if the time limit has been reached).
+        """
+        if self._started and not self._ringing:
+            elapsed_time = time.time() - self._start_time
+            if elapsed_time >= self._time_limit:
+                self._ringing = True
+        return self._ringing
