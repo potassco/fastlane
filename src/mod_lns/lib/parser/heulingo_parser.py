@@ -238,12 +238,23 @@ def get_parser(
         metavar="<n>",
     )
 
-    # parser.add_argument(
-    #     "--max_steps",
-    #     help="set maximum number of steps [%(default)s], non-int string for no limit",
-    #     default="2000",
-    #     type=str,
-    # )
+    parser.add_argument(
+        "--max-steps",
+        help="set maximum number of LNS steps [%(default)s]",
+        default=None,
+        type=int,
+        dest="max_steps",
+        metavar="<n>",
+    )
+
+    parser.add_argument(
+        "--relax-rate",
+        help="set relaxation rate in percent [%(default)s]",
+        default=15,
+        type=int,
+        dest="relax_rate",
+        metavar="<n>",
+    )
 
     parser.add_argument(
         "--parallel_mode",

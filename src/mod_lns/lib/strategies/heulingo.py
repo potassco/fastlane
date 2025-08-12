@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import math
 import random
-import time
 from argparse import ArgumentParser, Namespace, _SubParsersAction
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, Optional
@@ -15,11 +14,12 @@ import clingo
 from clingo.control import Control
 from clingo.symbol import Function, Number, Symbol, SymbolType
 
+from mod_lns import Timer
 from mod_lns.interfaces.solver import SolverConfig, SolverInterface
 from mod_lns.interfaces.strategy import StrategyInterface
 from mod_lns.lib.parser.heulingo_parser import get_parser
 from mod_lns.lib.solvers.clingo_solver import ClingoSolver
-from mod_lns.lib.utils import get_unique_list
+from mod_lns.lib.utils import clamp, get_unique_list
 
 if TYPE_CHECKING:
     from mod_lns.lns import LNS  # nocoverage
@@ -43,6 +43,7 @@ class HeulingoConfig:
     time_limit: Optional[int] = None
     max_steps: Optional[int] = None
     parallel_mode: Optional[str] = None
+    relax_rate: int = 15
 
     minimize_variable: Optional[Symbol] = None
     falsify: Optional[str] = None
@@ -55,7 +56,7 @@ class HeulingoConfig:
     init_heuristic: Optional[str] = None
     init_opt_mode: Optional[str] = None
     init_solve_limit: Optional[str] = "2500000,5000"
-    init_time_limit: Optional[float] = None
+    init_time_limit: Optional[int] = None
 
     # lns configuration
     heulingo_configuration: Optional[str] = None
@@ -69,7 +70,7 @@ class HeulingoConfig:
     lns_opt_heuristic: Optional[str] = None
     lns_restart_on_model: Optional[bool] = None
     lns_heuristic: Optional[str] = "Domain"
-    lns_opt_mode: dict[str, Optional[str]] = field(
+    lns_opt_mode: dict[str, Any] = field(
         default_factory=lambda: {"mode": None, "nf": None, "modifier": None}
     )
     lns_solve_limit: Optional[str] = None
@@ -311,6 +312,7 @@ class Heulingo(StrategyInterface):
         self.__variability: bool = False
         self.__falsified: bool = False
         self.__false_weight = Function("inf")
+        self.timer = Timer()
 
     def get_parser(
         self, subparsers: _SubParsersAction[ArgumentParser]
@@ -346,18 +348,32 @@ class Heulingo(StrategyInterface):
         :param lns_object: LNS
         :type lns_object: mod_lns.LNS
         """
+        if self.config.time_limit is not None:
+            self.timer.start(self.config.time_limit)
+
         self.init_solver_config = self.config.get_init_solver_configuration()
         self.lns_solver_config = self.config.get_lns_solver_configuration()
 
-        if self.config.lns_opt_mode["modifier"] == "dynamic":
-            if self.config.lns_opt_mode["nf"] <= 0:
-                self.logger.warning(
-                    "heulingo may finish without proving optimality because of 0 or less percent of iter-opt-mode"
-                )
-            if self.config.lns_opt_mode["nf"] < self.config.acceptance_rate:
-                self.logger.warning(
-                    "Rate of iter-opt-mode is less than rate of acceptance-rate"
-                )
+        # set time limit if no solve time limit given or larger than overall time limit
+        init_tl = self.init_solver_config.time_limit
+        tl = self.config.time_limit
+        if tl is not None:
+            if init_tl is None:
+                self.init_solver_config.time_limit = tl
+            elif tl < init_tl:
+                self.init_solver_config.time_limit = tl
+
+        lns_opt_mode = self.config.lns_opt_mode
+        if lns_opt_mode["modifier"] is not None and lns_opt_mode["nf"] is not None:
+            if lns_opt_mode["modifier"] == "dynamic":
+                if lns_opt_mode["nf"] <= 0:
+                    self.logger.warning(
+                        "heulingo may finish without proving optimality because of 0 or less percent of iter-opt-mode"
+                    )
+                if lns_opt_mode["nf"] < self.config.acceptance_rate:
+                    self.logger.warning(
+                        "Rate of iter-opt-mode is less than rate of acceptance-rate"
+                    )
 
         random.seed(self.config.seed)
 
@@ -378,6 +394,8 @@ class Heulingo(StrategyInterface):
             args.append(f"--seed={self.config.seed}")
         if self.config.parallel_mode is not None:
             args.append(f"--parallel-mode={self.config.parallel_mode}")
+        if self.config.relax_rate is not None:
+            args.append(f"-c n={self.config.relax_rate}")
         self.solver.setup(lns_object, args)
 
     def post_setup(self, lns_object: "LNS"):
@@ -402,12 +420,12 @@ class Heulingo(StrategyInterface):
         :return: Whether a solution was found or not
         :rtype: bool
         """
-        lns_object.current_model = self.solver.solve(
-            lns_object, self.init_solver_config
-        )
-        if lns_object.current_model is None:
+        assert isinstance(self.solver, SolverInterface)
+        lns_object.new_model = self.solver.solve(lns_object, self.init_solver_config)
+        if lns_object.new_model is None:
             return False
-        lns_object.best_model = lns_object.current_model
+        lns_object.current_model = lns_object.new_model
+        lns_object.best_model = lns_object.new_model
         return True
 
     def __calc_opt_bound(self, solver_config: SolverConfig, cost: list[int]):
@@ -519,6 +537,22 @@ class Heulingo(StrategyInterface):
                     return False
         return True
 
+    def _set_lns_solver_time_limit(self) -> None:
+        """
+        Set the time limit for the LNS solver.
+        """
+        if self.config.time_limit is not None:
+            lns_tl = self.lns_solver_config.time_limit
+            if lns_tl is None:
+                self.lns_solver_config.time_limit = self.timer.remaining_time()
+            elif self.timer.remaining_time() < lns_tl:
+                self.lns_solver_config.time_limit = self.timer.remaining_time()
+                self.logger.debug(
+                    "Time limit for LNS solver reduced to %d seconds "
+                    " to fit into overall time limit.",
+                    self.lns_solver_config.time_limit,
+                )
+
     def post_first_solution(self, lns_object):
         """
         Actions to perform after finding the first solution.
@@ -526,7 +560,9 @@ class Heulingo(StrategyInterface):
         :param lns_object: LNS object
         :type lns_object: mod_lns.LNS
         """
-        if not lns_object.finished:
+        if not self.solver.finished:
+            self._set_lns_solver_time_limit()
+
             self.__calc_opt_bound(
                 self.lns_solver_config,
                 lns_object.current_model.cost,
@@ -579,13 +615,26 @@ class Heulingo(StrategyInterface):
         :return: Whether to stop LNS or not
         :rtype: bool
         """
+        assert isinstance(self.solver, SolverInterface)
+        stop = False
+        if self.config.time_limit is not None:
+            if self.timer.is_ringing:
+                print(f"Time limit ({self.config.time_limit} seconds) reached.")
+                stop = True
+
         if self.config.max_steps is not None:
             if lns_object.step_c >= self.config.max_steps:
-                self.logger.info(
-                    f"Maximum number of steps ({self.config.max_steps}) reached."
-                )
-                return True
-        return False
+                print(f"Maximum number of steps ({self.config.max_steps}) reached.")
+                stop = True
+        if self.solver.finished:
+            stop = True
+        return stop
+
+    def pre_relax(self, lns_object) -> None:
+        print(
+            f"{self.timer.get_elapsed_time():.3f}s: "
+            f"Iteration: {lns_object.step_c} || {lns_object.best_model.get_cost_str()}"
+        )
 
     def __project(
         self, shown_atoms: list[Symbol], conf: dict[str, Any]
@@ -807,7 +856,7 @@ class Heulingo(StrategyInterface):
     def repair(
         self,
         lns_object: "LNS",
-        fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]],
+        fixed_atoms: list[clingo.symbol.Symbol],
     ) -> None:
         """
         Repair solution.
@@ -815,7 +864,7 @@ class Heulingo(StrategyInterface):
         :param lns_object: LNS object
         :type lns_object: mod_lns.LNS
         :param fixed_atoms: Fixed atoms
-        :type fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]]
+        :type fixed_atoms: list[clingo.symbol.Symbol]
         :return: None
         """
         for a in self.prev_fixed_atoms:
@@ -850,6 +899,8 @@ class Heulingo(StrategyInterface):
 
         self.lns_solver_config.variability = self.__variability
         lns_object.new_model = self.solver.solve(lns_object, self.lns_solver_config)
+
+        self._set_lns_solver_time_limit()
 
     # pylint: disable=unused-argument
     def check_accept(
@@ -905,7 +956,23 @@ class Heulingo(StrategyInterface):
         :return: Whether new model is better or not
         :rtype: bool
         """
+        if lns_object.new_model is None:
+            self.logger.debug("No new model found, not better.")
+            return False
         return lns_object.new_model.cost < lns_object.best_model.cost
+
+    def better(self, lns_object: "LNS") -> None:
+        """
+        Do something after new model is better than the best model.
+
+        :param lns_object: LNS object
+        :type lns_object: mod_lns.LNS
+        :return: None
+        """
+        print(
+            f"{self.timer.get_elapsed_time():.3f}s: "
+            f"New best solution: {lns_object.best_model.get_cost_str()}"
+        )
 
     def __increase_solve_limit(self, solver_config: SolverConfig) -> None:
         """
@@ -915,22 +982,23 @@ class Heulingo(StrategyInterface):
         :type solver_config: SolverConfig
         :return: None
         """
-        increased_solve_limit = []
-        for n in solver_config.solve_limit.split(","):
-            if n == "umax":
-                increased_solve_limit.append(n)
-            else:
-                new_n = math.ceil(
-                    int(n) * self.config.solve_limit_increase_rate / 100 + int(n)
-                )
-                if new_n <= UINT_MAX:
-                    increased_solve_limit.append(str(new_n))
+        if solver_config.solve_limit is not None:
+            increased_solve_limit = []
+            for n in solver_config.solve_limit.split(","):
+                if n == "umax":
+                    increased_solve_limit.append(n)
                 else:
-                    increased_solve_limit.append("umax")
+                    new_n = math.ceil(
+                        int(n) * self.config.solve_limit_increase_rate / 100 + int(n)
+                    )
+                    if new_n <= UINT_MAX:
+                        increased_solve_limit.append(str(new_n))
+                    else:
+                        increased_solve_limit.append("umax")
 
-        solver_config.solve_limit = ",".join(increased_solve_limit)
+            solver_config.solve_limit = ",".join(increased_solve_limit)
 
-    def __increase_time_limit(self, solver_config: SolverConfig):
+    def __increase_time_limit(self, solver_config: SolverConfig) -> None:
         """
         Increase the solver's time limit for the next iteration.
 
@@ -938,9 +1006,13 @@ class Heulingo(StrategyInterface):
         :type solver_config: SolverConfig
         :return: None
         """
-        if solver_config.time_limit > 0:
+        # dont increase time limit past ovaerall time limit
+        if self.config.time_limit is not None:
+            if self.timer.remaining_time() < self.config.time_limit:
+                return
+        if solver_config.time_limit is not None:
             current_time_limit = solver_config.time_limit
-            solver_config.time_limit = (
+            solver_config.time_limit = int(
                 current_time_limit * self.config.time_limit_increase_rate / 100
                 + current_time_limit
             )
@@ -980,5 +1052,5 @@ class Heulingo(StrategyInterface):
         except AttributeError:
             print("Optimum: unknown")
         print(f"Iterations: {lns_object.step_c}")
-        print(f"Overall time: {time.time() - lns_object.start_time:.3f}s")
+        print(f"Overall time: {self.timer.get_elapsed_time():.3f}s")
         print(LINE)

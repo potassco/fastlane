@@ -50,7 +50,7 @@ class Timer:
     _started: bool
     _ringing: bool
     _start_time: float
-    _time_limit: float
+    _time_limit: int
 
     def __init__(self):
         """
@@ -59,7 +59,7 @@ class Timer:
         self._started = False
         self._ringing = False
 
-    def start(self, time_limit: float) -> None:
+    def start(self, time_limit: int) -> None:
         """
         Start the timer with a specified time limit.
 
@@ -77,6 +77,29 @@ class Timer:
         """
         self._started = False
         self._ringing = False
+
+    def remaining_time(self) -> int:
+        """
+        Get the remaining time before the timer rings.
+
+        :return: Remaining time in seconds.
+        :rtype: int
+        """
+        if not self._started:
+            return 0
+        elapsed_time = int(time.time() - self._start_time)
+        return max(0, self._time_limit - elapsed_time)
+
+    def get_elapsed_time(self) -> float:
+        """
+        Get the elapsed time since the timer started.
+
+        :return: Elapsed time in seconds.
+        :rtype: int
+        """
+        if not self._started:
+            return 0
+        return time.time() - self._start_time
 
     @property
     def is_ringing(self) -> bool:

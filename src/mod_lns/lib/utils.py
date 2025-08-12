@@ -2,7 +2,7 @@
 Collection of utility functions used for LNS.
 """
 
-from typing import Sequence
+from typing import Sequence, TypeVar
 
 import clingo
 
@@ -56,4 +56,23 @@ def get_unique_list(seq: Sequence) -> list:
     :rtype: list
     """
     seen = []
-    return [x for x in seq if x not in seen and not seen.append(x)]
+    return [x for x in seq if x not in seen and not seen.append(x)]  # type: ignore
+
+
+T = TypeVar("T", float, int)
+
+
+def clamp(value: T, min_value: int, max_value: int) -> T:
+    """
+    Clamp a value between a minimum and maximum value.
+
+    :param value: Value to clamp.
+    :type value: T
+    :param min_value: Minimum value.
+    :type min_value: int
+    :param max_value: Maximum value.
+    :type max_value: int
+    :return: Clamped value.
+    :rtype: T
+    """
+    return max(min_value, min(max_value, value))
