@@ -42,14 +42,19 @@ def get_parser(
         help="Heulingo strategy for LNS",
         description=dedent(
             """\
-            Heulingo.\n
-            pri heuristics
+            heulingo
+            An implementation of Large Neighbourhood Search (LNS) and
+            Large Neighbourhood Prioritized Search (LNPS) based on
+            Answer Set Programming (ASP).
+
+            Check the documentation for a guide on how to use this
+            framework.
             """
         ),
         formatter_class=formatter,
     )
 
-    def parse_parallel_mode(string: str) -> dict:
+    def parse_parallel_mode(string: str) -> str:
         """
         Parse the parallel mode string.
         """
@@ -70,20 +75,19 @@ def get_parser(
         elif len(values) == 2:
             if values[1] not in ("compete", "split"):
                 parser.error(f"'{string}': Invalid mode. {{compete|split}} expected.")
-            return {"threads": int(values[0]), "mode": values[1]}
         else:
             parser.error(f"'{string}': Invalid argument.")
         return string
 
     parser.register("type", "parallel_mode", parse_parallel_mode)
 
-    def parse_init_opt_mode(string: str) -> dict:
+    def parse_init_opt_mode(string: str) -> str:
         """
         Parse the optimization mode string.
         """
         ctl = Control()
         try:
-            ctl.configuration.solve.opt_mode = string
+            ctl.configuration.solve.opt_mode = string  # type: ignore
         except RuntimeError:
             parser.error(f"'{string}': Invalid opt mode.")
         return string
@@ -94,7 +98,7 @@ def get_parser(
         """
         Parse the lns optimization mode string.
         """
-        opt_mode = {}
+        opt_mode: dict[str, Any] = {}
         values = string.split(",")
         if values[0] not in ("opt", "enum", "optN", "ignore"):
             parser.error(
@@ -149,7 +153,7 @@ def get_parser(
         """
         ctl = Control()
         try:
-            ctl.configuration.solver.opt_strategy = string
+            ctl.configuration.solver.opt_strategy = string  # type: ignore
         except RuntimeError:
             parser.error(f"'{string}': Invalid opt strategy.")
         return string
@@ -277,7 +281,9 @@ def get_parser(
     #######################
     # Solver options for first solution, collected by hidden parser
     solver_group = parser.add_argument_group(
-        "Solver Configuration", "Configuration options for the solver"
+        "Initial Solver Configuration",
+        "Configuration options for the initial solver\n"
+        "used to find the first solution.",
     )
     solver_group.add_argument(
         "--init-configuration",
@@ -353,7 +359,7 @@ def get_parser(
 
     lns_group.add_argument(
         "--solve-limit-increase-rate",
-        help="set solve limit increase rate [%(default)s]",
+        help="set solve limit increase rate in percent [%(default)s]",
         default=0.01,
         type=float,
         dest="solve_limit_increase_rate",
@@ -362,7 +368,7 @@ def get_parser(
 
     lns_group.add_argument(
         "--time-limit-increase-rate",
-        help="set time limit increase rate [%(default)s]",
+        help="set time limit increase rate in percent [%(default)s]",
         default=0.01,
         type=float,
         dest="time_limit_increase_rate",
@@ -508,7 +514,7 @@ def get_parser(
             "  <bound>: {<n>...,static|<f>[,dynamic]}\n"
             "    <n>...,static: In every iteration, set <n>... as initial bound for objective function(s)\n"
             "    <f>[,dynamic]: Set initial bound for objective function(s) in each iteration such that\n"
-            "                   solutions whose objective value is at least <f>% worse than\n"
+            "                   solutions whose objective value is at least <f>%% worse than\n"
             "                   current incumbent solution are not obtained"
         ),
         default=None,

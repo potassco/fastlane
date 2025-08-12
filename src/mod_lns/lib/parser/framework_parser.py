@@ -78,8 +78,8 @@ def get_framework_parser() -> ArgumentParser:
             Check the documentation for a guide on how to use this framework
             and all possible options for configuration.
 
-            --heuristic, --constrained and --declarative options should not be used
-            when using custom solvers and/or strategies.
+            This framework can not be run on its own but requires the use of a
+            sub command to run a specific LNS strategy.
             """
         ),
         formatter_class=formatter,
