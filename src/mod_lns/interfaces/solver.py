@@ -5,38 +5,65 @@ Solver interface used for LNS.
 from __future__ import annotations
 
 import abc
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 import clingo
 from clingo.symbol import Symbol
 
 if TYPE_CHECKING:
+    from mod_lns import Model
     from mod_lns.lns import LNS  # nocoverage
 
 
+# pylint: disable=too-many-instance-attributes
+@dataclass
 class SolverConfig:
-    configuration: Optional[str]
-    opt_strategy: Optional[str]
-    opt_heuristic: Optional[str]
-    restart_on_model: Optional[str]
-    heuristic: Optional[str]
-    opt_mode: Optional[str]
-    solve_limit: Optional[str]
-    time_limit: Optional[float]
-    seed: Optional[int]
-    variability: bool
+    """
+    Configuration for a solver.
 
-    def __init__(self):
-        self.configuration = None
-        self.opt_strategy = None
-        self.opt_heuristic = None
-        self.restart_on_model = None
-        self.heuristic = None
-        self.opt_mode = None
-        self.solve_limit = None
-        self.time_limit = None
-        self.seed = None
-        self.variability = True
+    :param configuration: Used configuration.
+    :type configuration: Optional[str]
+    :default configuration: None
+    :param opt_strategy: Optimization strategy.
+    :type opt_strategy: Optional[str]
+    :default opt_strategy: None
+    :param opt_heuristic: Optimization in heuristic.
+    :type opt_heuristic: Optional[str]
+    :default opt_heuristic: None
+    :param restart_on_model: Restart on model.
+    :type restart_on_model: Optional[str]
+    :default restart_on_model: None
+    :param heuristic: Heuristic to use.
+    :type heuristic: Optional[str]
+    :default heuristic: None
+    :param opt_mode: Optimization mode.
+    :type opt_mode: Optional[str]
+    :default opt_mode: None
+    :param solve_limit: Solve limit.
+    :type solve_limit: Optional[str]
+    :default solve_limit: None
+    :param time_limit: Time limit for solving.
+    :type time_limit: Optional[int]
+    :default time_limit: None
+    :param seed: Random seed.
+    :type seed: Optional[int]
+    :default seed: None
+    :param variability: Variability.
+    :type variability: bool
+    :default variability: True
+    """
+
+    configuration: Optional[str] = None
+    opt_strategy: Optional[str] = None
+    opt_heuristic: Optional[str] = None
+    restart_on_model: Optional[str] = None
+    heuristic: Optional[str] = None
+    opt_mode: Optional[str] = None
+    solve_limit: Optional[str] = None
+    time_limit: Optional[int] = None
+    seed: Optional[int] = None
+    variability: bool = True
 
 
 class SolverInterface(metaclass=abc.ABCMeta):
@@ -44,13 +71,15 @@ class SolverInterface(metaclass=abc.ABCMeta):
     Solver interface.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initialization of the solver object.
         """
         self.control: Optional[clingo.control.Control] = None
         self.theory: Any = None
         self.finished: bool = False
+        self._result = "UNKNOWN"
+        self._optimum = "unknown"
 
     @classmethod
     def __subclasshook__(cls, subclass):  # nocoverage
@@ -91,23 +120,20 @@ class SolverInterface(metaclass=abc.ABCMeta):
         self,
         lns_object: LNS,
         config: Optional[SolverConfig],
-        assumptions: list[tuple[clingo.symbol.Symbol, bool]],
-    ) -> clingo.solving.SolveResult:  # nocoverage
+        assumptions: list[tuple[clingo.symbol.Symbol, bool]] = [],
+    ) -> Optional[Model]:  # nocoverage
         """
         Solve with fixed atoms.
 
         :param lns_object: LNS object.
         :type lns_object: mod_lns.LNS
+        :config: Solver configuration.
+        :type config: SolverConfig
         :param assumptions: Assumptions for solving (fixed atoms).
         :type assumptions: list[tuple[clingo.symbol.Symbol, bool]]
-        :param time_limit: Manually set time limit for solve call.
-        :type time_limit: Optional[int]
-        :default time_limit: None
-        :param model_limit: Set number of calculated models.
-        :type model_limit: int
-        :default model_limit: 0
-        :return: Solve result.
-        :rtype: clingo.solving.SolveResult
+        :default assumptions: []
+        :return: Last obtained model.
+        :rtype: Model
         """
         raise NotImplementedError
 
