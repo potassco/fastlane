@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from mod_lns.lib.strategies.heulingo import HeulingoConfig  # nocoverage
 
 
+# pylint: disable=too-many-statements
 def get_parser(
     config_cls: type["HeulingoConfig"], subparsers: "_SubParsersAction[ArgumentParser]"
 ) -> ArgumentParser:
@@ -94,6 +95,7 @@ def get_parser(
 
     parser.register("type", "init_opt_mode", parse_init_opt_mode)
 
+    # pylint: disable=too-many-branches
     def parse_lns_opt_mode(string: str) -> dict:
         """
         Parse the lns optimization mode string.

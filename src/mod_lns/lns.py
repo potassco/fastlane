@@ -100,10 +100,12 @@ class LNS:
             self.strategy.post_repair(self)
 
             if self.strategy.check_accept(self):
+                assert isinstance(self.new_model, Model)
                 self.current_model = self.new_model
                 self.strategy.accepted(self)
 
             if self.strategy.check_better(self):
+                assert isinstance(self.new_model, Model)
                 self.best_model = self.new_model
                 self.strategy.better(self)
 
