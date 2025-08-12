@@ -18,17 +18,15 @@ if TYPE_CHECKING:
     from mod_lns.lns import LNS  # nocoverage
 
 
+# pylint: disable=too-many-instance-attributes
 class ClingoSolver(SolverInterface):
     """
     clingo solver.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
-        self.last_model = None
-        self._result = "UNKNOWN"
-        self._optimum = "unknown"
-        self.__search_num = 0
+        self.last_model: Optional[Model] = None
         self.__timer = Timer()
         self.__interrupted = False
         self.__variability: bool = False
@@ -48,7 +46,8 @@ class ClingoSolver(SolverInterface):
         """
         self.finished = True
         print("interrupted by signal")
-        self.control.interrupt()
+        if self.control is not None:
+            self.control.interrupt()
 
     # pylint: disable=dangerous-default-value
     def setup(
@@ -137,7 +136,7 @@ class ClingoSolver(SolverInterface):
             self.finished = True
 
     def __find_first_solution(
-        self, lns_object: LNS, assumptions: list[tuple[clingo.symbol.Symbol, bool]]
+        self, lns_object: LNS, assumptions: list[tuple[clingo.symbol.Symbol, bool]] = []
     ) -> None:
         """
         Try harder to find first solution.
@@ -147,6 +146,8 @@ class ClingoSolver(SolverInterface):
         :param assumptions: Assumptions for solving (fixed atoms).
         :type assumptions: list[tuple[clingo.symbol.Symbol, bool]]
         """
+        assert isinstance(self.control, clingo.control.Control)
+        assert isinstance(self.control.configuration.solve, clingo.Configuration)
         solve_limit_tmp = self.control.configuration.solve.solve_limit
         models_tmp = self.control.configuration.solve.models
         self.control.configuration.solve.solve_limit = "umax"
@@ -168,6 +169,7 @@ class ClingoSolver(SolverInterface):
         self.control.configuration.solve.solve_limit = solve_limit_tmp
         self.control.configuration.solve.models = models_tmp
 
+    # pylint: disable=too-many-branches
     def solve(
         self,
         lns_object: LNS,
@@ -183,15 +185,17 @@ class ClingoSolver(SolverInterface):
         :type config: SolverConfig
         :param assumptions: Assumptions for solving (fixed atoms).
         :type assumptions: list[tuple[clingo.symbol.Symbol, bool]]
-        :return: Solve result.
-        :rtype: clingo.solving.SolveResult
+        :return: Last obtained model.
+        :rtype: Model
         """
-        self.__search_num += 1
-        if config.time_limit is None:
-            time_limit = 0
-        else:
-            time_limit = config.time_limit
+        assert isinstance(self.control, clingo.control.Control)
+        assert isinstance(self.control.configuration.solve, clingo.Configuration)
+        assert isinstance(self.control.configuration.solver, clingo.Configuration)
+        time_limit = 0
         if config is not None:
+            self.__variability = config.variability
+            if config.time_limit is not None:
+                time_limit = config.time_limit
             if config.configuration is not None:
                 self.control.configuration.configuration = config.configuration
             if config.opt_strategy is not None:
@@ -237,7 +241,7 @@ class ClingoSolver(SolverInterface):
             f"solve-limit: {self.control.configuration.solve.solve_limit}"
         )
         lns_object.logger.debug(f"time-limit: {time_limit}")
-        self.__variability = config.variability
+
         self.__timer.reset()
         with self.control.solve(
             assumptions=assumptions,
