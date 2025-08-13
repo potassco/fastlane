@@ -476,6 +476,8 @@ class Heulingo(StrategyInterface):
         :type lns_object: mod_lns.LNS
         """
         assert isinstance(self.solver, SolverInterface)
+        if self.config.minimize_variable is not None:
+            self.solver.minimize_variable = self.config.minimize_variable
         args = []
         if self.config.seed is not None:
             args.append(f"--seed={self.config.seed}")
@@ -509,7 +511,7 @@ class Heulingo(StrategyInterface):
         :rtype: bool
         """
         assert isinstance(self.solver, SolverInterface)
-        lns_object.new_model = self.solver.solve(lns_object, self.init_solver_config)
+        lns_object.new_model = self.solver.solve(self.init_solver_config)
         if lns_object.new_model is None:
             return False
         lns_object.current_model = lns_object.new_model
@@ -1008,7 +1010,7 @@ class Heulingo(StrategyInterface):
         self.logger.debug(LINE)
 
         self.lns_solver_config.variability = self.__variability
-        lns_object.new_model = self.solver.solve(lns_object, self.lns_solver_config)
+        lns_object.new_model = self.solver.solve(self.lns_solver_config)
 
         self._set_lns_solver_time_limit()
 
@@ -1158,11 +1160,11 @@ class Heulingo(StrategyInterface):
         print(LINE)
         lns_object.best_model.print_model()
         try:
-            print(self.solver._result)
+            print(self.solver.result)
         except AttributeError:
             print("UNKNOWN")
         try:
-            print("Optimum:", self.solver._optimum)
+            print("Optimum:", self.solver.optimum)
         except AttributeError:
             print("Optimum: unknown")
         print(f"Iterations: {lns_object.step_c}")
