@@ -9,7 +9,7 @@ from argparse import (
     _SubParsersAction,
 )
 from textwrap import dedent
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from clingo import Control, Symbol, parse_term
 
@@ -205,7 +205,7 @@ def get_parser(
 
     # list of supported solvers
     solvers = [
-        (cls.__name__, cls())
+        (cls.get_name(), cls())
         for cls in get_classes_from_package("mod_lns.lib.solvers", SolverInterface)
     ]
 
@@ -215,13 +215,26 @@ def get_parser(
                 return val
         return None  # nocoverage
 
+    def parse_solver(string: str) -> SolverInterface:
+        """
+        Parse the solver string.
+        """
+        solver = get(solvers, string)
+        if solver is None:
+            parser.error(
+                f"'{string}': Invalid solver. Choose from {{{','.join(key for key, _ in solvers)}}}"
+            )
+        return solver
+
+    parser.register("type", "solver", parse_solver)
+
     parser.add_argument(
         "--solver",
-        default="ClingoSolver",
+        default="clingo",
         choices=[val for _, val in solvers],
         metavar=f"{{{','.join(key for key, _ in solvers)}}}",
         help="set LNS solver [%(default)s]",
-        type=cast(Any, lambda name: get(solvers, name)),
+        type=parse_solver,
     )
 
     parser.add_argument(

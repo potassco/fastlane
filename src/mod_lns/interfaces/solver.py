@@ -6,10 +6,13 @@ from __future__ import annotations
 
 import abc
 from dataclasses import dataclass
+from logging import Logger
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 import clingo
 from clingo.symbol import Symbol
+
+from mod_lns.utils.logger import setup_logger
 
 if TYPE_CHECKING:
     from mod_lns import Model
@@ -78,13 +81,18 @@ class SolverInterface(metaclass=abc.ABCMeta):
         self.control: Optional[clingo.control.Control] = None
         self.theory: Any = None
         self.finished: bool = False
-        self._result = "UNKNOWN"
-        self._optimum = "unknown"
+        self.result = "UNKNOWN"
+        self.optimum = "unknown"
+        self.minimize_variable: Optional[Symbol] = None
+        self.log_level: int = 30  # logging.WARNING
+        self.logger: Logger = setup_logger("DefaultSolverLogger", self.log_level)
 
     @classmethod
     def __subclasshook__(cls, subclass):  # nocoverage
         return (
-            hasattr(subclass, "setup")
+            hasattr(subclass, "get_name")
+            and callable(subclass.get_name)
+            and hasattr(subclass, "setup")
             and callable(subclass.setup)
             and hasattr(subclass, "repair")
             and callable(subclass.repair)
@@ -92,6 +100,17 @@ class SolverInterface(metaclass=abc.ABCMeta):
             and callable(subclass.solve)
             or NotImplemented
         )
+
+    @classmethod
+    @abc.abstractmethod
+    def get_name(cls) -> str:
+        """
+        Get the name under which the solver will be listed in options.
+
+        :return: Name of the solver.
+        :rtype: str
+        """
+        raise NotImplementedError
 
     # pylint: disable=dangerous-default-value
     @abc.abstractmethod
@@ -118,15 +137,12 @@ class SolverInterface(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def solve(
         self,
-        lns_object: LNS,
         config: Optional[SolverConfig],
         assumptions: list[tuple[clingo.symbol.Symbol, bool]] = [],
     ) -> Optional[Model]:  # nocoverage
         """
         Solve with fixed atoms.
 
-        :param lns_object: LNS object.
-        :type lns_object: mod_lns.LNS
         :config: Solver configuration.
         :type config: SolverConfig
         :param assumptions: Assumptions for solving (fixed atoms).

@@ -10,6 +10,7 @@ from types import FrameType
 from typing import TYPE_CHECKING, Optional, Union
 
 import clingo
+from clingo.statistics import StatisticsMap
 
 from mod_lns import Model, Timer
 from mod_lns.interfaces.solver import SolverConfig, SolverInterface
@@ -27,11 +28,21 @@ class ClingoSolver(SolverInterface):
     def __init__(self) -> None:
         super().__init__()
         self.last_model: Optional[Model] = None
-        self.__timer = Timer()
-        self.__interrupted = False
-        self.__variability: bool = False
+        self._timer = Timer()
+        self._interrupted = False
+        self._variability: bool = False
         signal.signal(signal.SIGINT, self.interrupt_handler)
         signal.signal(signal.SIGTERM, self.interrupt_handler)
+
+    @classmethod
+    def get_name(cls) -> str:
+        """
+        Get the name under which the solver will be listed in options.
+
+        :return: Name of the solver.
+        :rtype: str
+        """
+        return "clingo"
 
     # pylint: disable=unused-argument
     def interrupt_handler(self, sig: int, frame: Union[None, FrameType]):
@@ -71,15 +82,7 @@ class ClingoSolver(SolverInterface):
         if files is None:
             files = lns_object.files
 
-        # if len(args) == 0:
-        #    args = lns_object.clingo_options
-
-        #! seed, paramode
-        # set seed if given
-
-        # args = []
-        # if lns_object.seed is not None:
-        #     args = args + [f"--seed={lns_object.seed}"]
+        self.logger = lns_object.logger
 
         def custom_logger(mc, msg):  # nocoverage
             if mc != clingo.MessageCode.Other:
@@ -102,47 +105,50 @@ class ClingoSolver(SolverInterface):
         self.last_model.true = model.symbols(atoms=True)
         self.last_model.cost = model.cost
 
-        # dl - to be improved
-        if self.theory:
-            self.theory.on_model(model=model)
-            self.last_model.assignments = [
-                f"{key}={val}" for key, val in self.theory.assignment(model.thread_id)
-            ]
+    def _on_statistics(self, step: StatisticsMap, accu: StatisticsMap) -> None:
+        """
+        Update statistics.
 
-    # dl, con
-    # def __on_statistics(self, step: StatisticsMap, accu: StatisticsMap):
-    #     if self.theory is not None:
-    #         self.theory.on_statistics(step, accu)
+        :param step: Current step statistics.
+        :type step: StatisticsMap
+        :param accu: Accumulated statistics.
+        :type accu: StatisticsMap
+        """
+        return
 
     # res: SolverResult
     def _on_finish(self, res):
+        """
+        Search finished.
+
+        :param res: Result of the solving process.
+        :type res: SolveResult
+        """
         if res.satisfiable:
-            self._result = "SATISFIABLE"
+            self.result = "SATISFIABLE"
             if self.last_model is None:
                 self.finished = True
                 return
 
         if (
-            self.__variability
+            self._variability
             and res.exhausted
             and not self.finished
-            and not self.__interrupted
+            and not self._interrupted
         ):
             if res.unsatisfiable:
-                self._result = "UNSATISFIABLE"
+                self.result = "UNSATISFIABLE"
             else:
-                self._result = "OPTIMUM FOUND"
-                self._optimum = "yes"
+                self.result = "OPTIMUM FOUND"
+                self.optimum = "yes"
             self.finished = True
 
-    def __find_first_solution(
-        self, lns_object: LNS, assumptions: list[tuple[clingo.symbol.Symbol, bool]] = []
+    def _find_first_solution(
+        self, assumptions: list[tuple[clingo.symbol.Symbol, bool]] = []
     ) -> None:
         """
         Try harder to find first solution.
 
-        :param lns_object: LNS object.
-        :type lns_object: mod_lns.LNS
         :param assumptions: Assumptions for solving (fixed atoms).
         :type assumptions: list[tuple[clingo.symbol.Symbol, bool]]
         """
@@ -152,15 +158,16 @@ class ClingoSolver(SolverInterface):
         models_tmp = self.control.configuration.solve.models
         self.control.configuration.solve.solve_limit = "umax"
         self.control.configuration.solve.models = 1
-        lns_object.logger.debug(
-            "solve-limit:", self.control.configuration.solve.solve_limit
+        self.logger.debug(
+            "solve-limit: %s", self.control.configuration.solve.solve_limit
         )
-        lns_object.logger.debug("models:", self.control.configuration.solve.models)
+        self.logger.debug("models: %s", self.control.configuration.solve.models)
 
         with self.control.solve(
             assumptions=assumptions,
             on_model=self._on_model,
             on_finish=self._on_finish,
+            on_statistics=self._on_statistics,
             async_=True,
         ) as handle:
             while not handle.wait(0):
@@ -172,15 +179,12 @@ class ClingoSolver(SolverInterface):
     # pylint: disable=too-many-branches
     def solve(
         self,
-        lns_object: LNS,
         config: Optional[SolverConfig] = None,
         assumptions: list[tuple[clingo.symbol.Symbol, bool]] = [],
     ) -> Optional[Model]:
         """
         Solve under assumptions using clingo.
 
-        :param lns_object: LNS object.
-        :type lns_object: mod_lns.LNS
         :config: Solver configuration.
         :type config: SolverConfig
         :param assumptions: Assumptions for solving (fixed atoms).
@@ -193,7 +197,7 @@ class ClingoSolver(SolverInterface):
         assert isinstance(self.control.configuration.solver, clingo.Configuration)
         time_limit = 0
         if config is not None:
-            self.__variability = config.variability
+            self._variability = config.variability
             if config.time_limit is not None:
                 time_limit = config.time_limit
             if config.configuration is not None:
@@ -213,36 +217,27 @@ class ClingoSolver(SolverInterface):
             if config.solve_limit is not None:
                 self.control.configuration.solve.solve_limit = config.solve_limit
 
-        lns_object.logger.debug(
-            f"configuration: {self.control.configuration.configuration}"
+        self.logger.debug("configuration: %s", self.control.configuration.configuration)
+        self.logger.debug(
+            "opt-strategy: %s", self.control.configuration.solver.opt_strategy
         )
-        lns_object.logger.debug(
-            f"opt-strategy: {self.control.configuration.solver.opt_strategy}"
+        self.logger.debug(
+            "parallel-mode: %s", self.control.configuration.solve.parallel_mode
         )
-        lns_object.logger.debug(
-            f"parallel-mode: {self.control.configuration.solve.parallel_mode}"
+        self.logger.debug(
+            "opt-heuristic: %s", self.control.configuration.solver.opt_heuristic
         )
-        lns_object.logger.debug(
-            f"opt-heuristic: {self.control.configuration.solver.opt_heuristic}"
+        self.logger.debug(
+            "restart-on-model: %s", self.control.configuration.solver.restart_on_model
         )
-        lns_object.logger.debug(
-            f"restart-on-model: {self.control.configuration.solver.restart_on_model}"
+        self.logger.debug("heuristic: %s", self.control.configuration.solver.heuristic)
+        self.logger.debug("opt-mode: %s", self.control.configuration.solve.opt_mode)
+        self.logger.debug(
+            "solve-limit: %s", self.control.configuration.solve.solve_limit
         )
-        lns_object.logger.debug(
-            f"heuristic: {self.control.configuration.solver.heuristic}"
-        )
-        lns_object.logger.debug(
-            f"opt-mode: {self.control.configuration.solve.opt_mode}"
-        )
-        lns_object.logger.debug(
-            f"opt-mode: {self.control.configuration.solve.opt_mode}"
-        )
-        lns_object.logger.debug(
-            f"solve-limit: {self.control.configuration.solve.solve_limit}"
-        )
-        lns_object.logger.debug(f"time-limit: {time_limit}")
+        self.logger.debug("time-limit: %s", time_limit)
 
-        self.__timer.reset()
+        self._timer.reset()
         with self.control.solve(
             assumptions=assumptions,
             on_model=self._on_model,
@@ -250,23 +245,23 @@ class ClingoSolver(SolverInterface):
             async_=True,
         ) as handle:
             if time_limit > 0:
-                self.__timer.start(time_limit)
+                self._timer.start(time_limit)
             while not handle.wait(0):
                 if (
-                    self.__timer.is_ringing
-                    and not self.__interrupted
+                    self._timer.is_ringing
+                    and not self._interrupted
                     and not self.finished
                 ):
-                    self.__interrupted = True
-                    lns_object.logger.debug("interrupted by timer")
+                    self._interrupted = True
+                    self.logger.debug("interrupted by timer")
                     handle.cancel()
-        self.__interrupted = False
+        self._interrupted = False
 
         if self.last_model is None and not self.finished:
-            lns_object.logger.warning(
+            self.logger.warning(
                 "The solve-limit or time-limit is not enough to find a solution."
                 "Therefore, the first solution found is used as the initial solution."
             )
-            self.__find_first_solution(lns_object)
+            self._find_first_solution()
 
         return self.last_model
