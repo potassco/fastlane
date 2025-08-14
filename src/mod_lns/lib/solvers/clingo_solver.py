@@ -31,8 +31,6 @@ class ClingoSolver(SolverInterface):
         self._timer = Timer()
         self._interrupted = False
         self._variability: bool = False
-        signal.signal(signal.SIGINT, self.interrupt_handler)
-        signal.signal(signal.SIGTERM, self.interrupt_handler)
 
     @classmethod
     def get_name(cls) -> str:
@@ -60,6 +58,13 @@ class ClingoSolver(SolverInterface):
         if self.control is not None:
             self.control.interrupt()
 
+    def setup_interrupt_handling(self) -> None:
+        """
+        Setup signal handling for interrupts (SIGINT, SIGTERM).
+        """
+        signal.signal(signal.SIGINT, self.interrupt_handler)
+        signal.signal(signal.SIGTERM, self.interrupt_handler)
+
     # pylint: disable=dangerous-default-value
     def setup(
         self,
@@ -79,6 +84,8 @@ class ClingoSolver(SolverInterface):
         :type files: Optional[list[str]]
         :default files: None
         """
+        self.setup_interrupt_handling()
+
         if files is None:
             files = lns_object.files
 
