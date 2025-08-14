@@ -19,6 +19,7 @@ from mod_lns.lib.parser.framework_parser import get_classes_from_package
 if TYPE_CHECKING:
     from mod_lns.lib.strategies.heulingo import HeulingoConfig  # nocoverage
 
+VERSION = "1.0.0"
 
 # pylint: disable=too-many-statements
 def get_parser(
@@ -227,6 +228,10 @@ def get_parser(
         return solver
 
     parser.register("type", "solver", parse_solver)
+
+    parser.add_argument(
+        "--version", "-v", action="version", version=f"%(prog)s {VERSION}"
+    )
 
     parser.add_argument(
         "--solver",
