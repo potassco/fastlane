@@ -14,7 +14,7 @@ import clingo
 from clingo.control import Control
 from clingo.symbol import Function, Number, Symbol, SymbolType
 
-from mod_lns import Timer
+from mod_lns import Timer, Model
 from mod_lns.interfaces.solver import SolverConfig, SolverInterface
 from mod_lns.interfaces.strategy import StrategyInterface
 from mod_lns.lib.parser.heulingo_parser import get_parser
@@ -975,7 +975,7 @@ class Heulingo(StrategyInterface):
         self,
         lns_object: "LNS",
         fixed_atoms: list[clingo.symbol.Symbol],
-    ) -> None:
+    ) -> Optional[Model]:
         """
         Repair solution.
 
@@ -983,7 +983,8 @@ class Heulingo(StrategyInterface):
         :type lns_object: mod_lns.LNS
         :param fixed_atoms: Fixed atoms
         :type fixed_atoms: list[clingo.symbol.Symbol]
-        :return: None
+        :return: Repaired model
+        :rtype: Optional[Model]
         """
         assert isinstance(self.solver, SolverInterface)
         for a in self.prev_fixed_atoms:
@@ -1018,9 +1019,10 @@ class Heulingo(StrategyInterface):
         self.logger.debug(LINE)
 
         self.lns_solver_config.variability = self.__variability
-        lns_object.new_model = self.solver.solve(self.lns_solver_config)
+        new_model = self.solver.solve(self.lns_solver_config)
 
         self._update_lns_solver_time_limit()
+        return new_model
 
     # pylint: disable=unused-argument
     def check_accept(

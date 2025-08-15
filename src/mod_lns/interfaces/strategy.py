@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import clingo
 
+from mod_lns import Model
 from mod_lns.interfaces.solver import SolverInterface
 from mod_lns.utils.logger import setup_logger
 
@@ -198,7 +199,7 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         self,
         lns_object: LNS,
         fixed_atoms: list[clingo.symbol.Symbol],
-    ) -> None:  # nocoverage
+    ) -> Optional[Model]:  # nocoverage
         """
         Repair solution.
 
@@ -206,6 +207,8 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         :type lns_object: mod_lns.LNS
         :param assumptions: Assumptions for solving (fixed atoms).
         :type assumptions: list[clingo.symbol.Symbol, bool]
+        :return: Repaired model.
+        :rtype: Optional[Model]
         """
         raise NotImplementedError
 

@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Optional
 import clingo
 from clingo import Symbol
 
-from mod_lns import Timer
+from mod_lns import Timer, Model
 from mod_lns.interfaces.solver import SolverConfig, SolverInterface
 from mod_lns.interfaces.strategy import StrategyInterface
 from mod_lns.lib.parser.default_parser import get_parser
@@ -345,7 +345,7 @@ class DefaultStrategy(StrategyInterface):
         self,
         lns_object: LNS,
         fixed_atoms: list[Symbol],
-    ) -> clingo.solving.SolveResult:
+    ) -> Optional[Model]:
         """
         Repair solution.
 
@@ -353,8 +353,8 @@ class DefaultStrategy(StrategyInterface):
         :type lns_object: mod_lns.LNS
         :param fixed_atoms: Fixed atoms.
         :type fixed_atoms: list[Symbol]
-        :return: Solve result.
-        :rtype: clingo.solving.SolveResult
+        :return: Repaired model.
+        :rtype: Optional[Model]
         """
         new_model = self.solver.solve(
             self.lns_solver_config, list(map(lambda x: (x, True), fixed_atoms))
