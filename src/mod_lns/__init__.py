@@ -4,16 +4,18 @@ Helper classes.
 
 import time
 
+from clingo import Symbol
+
 
 class Model:
     "Simplified Model class"
 
     def __init__(self):
-        self.shown = []
-        self.true = []
-        self.cost = []
-        self.assignments = []
-        self.opt = False
+        self.shown: list[Symbol] = []
+        self.true: list[Symbol] = []
+        self.cost: list[int] = []
+        self.assignments: list[str] = []
+        self.opt: bool = False
 
     def get_cost_str(self) -> str:
         """
