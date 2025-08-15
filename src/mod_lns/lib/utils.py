@@ -7,13 +7,13 @@ from typing import Sequence, TypeVar
 import clingo
 
 
-def calculate_variability(list1: Sequence, list2: Sequence) -> float:
+def calculate_variability(list1: Sequence, list2: Sequence) -> int:
     """
-    Calculate variability of two lists.
+    Calculate variability of two lists in percent.
 
     0 - no variability (same lists or bigger one contains smaller one)
 
-    1 - completely different
+    100 - completely different
 
     :param list1: First list.
     :type list1: Sequence
@@ -25,8 +25,8 @@ def calculate_variability(list1: Sequence, list2: Sequence) -> float:
     len1 = len(list1)
     len2 = len(list2)
     if len1 < len2:
-        return 1 - len(set(list1).intersection(list2)) / len1
-    return 1 - len(set(list2).intersection(list1)) / len2
+        return (1 - len(set(list1).intersection(list2)) / len1) * 100
+    return (1 - len(set(list2).intersection(list1)) / len2) * 100
 
 
 def fix_symbols(
