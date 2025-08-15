@@ -3,16 +3,16 @@ Different relaxation methods for LNS.
 """
 
 import random
-from typing import Any
 
 import clingo
+from clingo import Symbol
 
 from mod_lns import Model
 
 
 def relax_declarative(
     model: Model,
-    relax_parameters: dict[str, Any],
+    relax_rate: int,
 ) -> list[tuple[clingo.symbol.Symbol, bool]]:
     """
     Relax portion of selected atoms given by the relax_rate.
@@ -20,61 +20,54 @@ def relax_declarative(
 
     :param model: model.
     :type model: Model
-    :param relax_parameters: Parameters used to determine relaxed atoms.
-    :type relax_parameters: dict[str, Any]
+    :param relax_rate: Percentage of atoms to relax.
+    :type relax_rate: int
     :return: Fixed (not relaxed) atoms.
-    :rtype: list[tuple[clingo.symbol.Symbol, bool]]
+    :rtype: list[Symbol]
     """
-    fixed_atoms = []
-    selected_atoms = []
-    declared_fixed_atoms: dict[
-        clingo.symbol.Symbol, list[tuple[clingo.symbol.Symbol, bool]]
-    ] = {}
+    fixed_atoms: list[Symbol] = []
+    selected_atoms: list[Symbol] = []
+    declared_fixed_atoms: dict[clingo.symbol.Symbol, list[Symbol]] = {}
+    # !inefficient
     for atom in model.true:
+        # get possible selection
         if atom.match("_lns_select", 1):
             if atom.arguments[0] not in selected_atoms:
                 selected_atoms.append(atom.arguments[0])
                 declared_fixed_atoms[atom.arguments[0]] = []
+        # associate selecttion with fixed atoms
         elif atom.match("_lns_fix", 2):
             if atom.arguments[1] in declared_fixed_atoms:
-                declared_fixed_atoms[atom.arguments[1]].append(
-                    (atom.arguments[0], True)
-                )
+                declared_fixed_atoms[atom.arguments[1]].append(atom.arguments[0])
+    # sample selection atoms
     if len(selected_atoms) == 1:
         symbols = selected_atoms.copy()
     else:
         symbols = random.sample(
             selected_atoms,
-            int(len(selected_atoms) * (1 - relax_parameters["relax_rate"])),
+            round(len(selected_atoms) * (1 - relax_rate / 100)),
         )
+    # fix corresponding atoms
     for s in symbols:
-        fixed_atoms += random.sample(
-            declared_fixed_atoms[s],
-            int(
-                len(declared_fixed_atoms[s]) * (1 - relax_parameters["base_relax_rate"])
-            ),
-        )
+        fixed_atoms += declared_fixed_atoms[s]
     return fixed_atoms
 
 
 def relax_random(
     model: Model,
-    relax_parameters: dict[str, Any],
-) -> list[tuple[clingo.symbol.Symbol, bool]]:
+    relax_rate: int,
+) -> list[Symbol]:
     """
     Relax random number of shown atoms given by the relax_rate.
 
     :param model: model.
     :type model: Model
-    :param relax_parameters: Parameters used to determine relaxed atoms.
-    :type relax_parameters: dict[str, Any]
+    :param relax_rate: Percentage of atoms to relax.
+    :type relax_rate: int
     :return: Fixed (not relaxed) atoms.
-    :rtype: list[tuple[clingo.symbol.Symbol, bool]]
+    :rtype: list[Symbol]
     """
-    fixed_atoms = []
-    sample = random.sample(
-        model.shown, int(len(model.shown) * (1 - relax_parameters["relax_rate"]))
+    fixed_atoms = random.sample(
+        model.shown, round(len(model.shown) * (1 - relax_rate / 100))
     )
-    for atom in sample:
-        fixed_atoms.append((atom, True))
     return fixed_atoms

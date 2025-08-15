@@ -95,7 +95,7 @@ class LNS:
             fixed_atoms = []
             fixed_atoms = self.strategy.relax(self)
 
-            self.strategy.repair(self, fixed_atoms)
+            self.new_model = self.strategy.repair(self, fixed_atoms)
 
             self.strategy.post_repair(self)
 
