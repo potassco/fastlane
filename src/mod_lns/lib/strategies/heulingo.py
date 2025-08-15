@@ -18,7 +18,7 @@ from mod_lns import Timer
 from mod_lns.interfaces.solver import SolverConfig, SolverInterface
 from mod_lns.interfaces.strategy import StrategyInterface
 from mod_lns.lib.parser.heulingo_parser import get_parser
-from mod_lns.lib.solvers.clingo_solver import ClingoSolver
+from mod_lns.lib.solvers import ClingoSolver
 from mod_lns.lib.utils import clamp, get_unique_list
 
 if TYPE_CHECKING:
@@ -526,7 +526,7 @@ class Heulingo(StrategyInterface):
         lns_object.best_model = lns_object.new_model
         return True
 
-    def __calc_opt_bound(self, solver_config: SolverConfig, cost: list[int]):
+    def __calc_opt_bound(self, solver_config: SolverConfig, cost: list[int]) -> None:
         """
         Calculate bound for next step.
 
@@ -643,7 +643,7 @@ class Heulingo(StrategyInterface):
                     return False
         return True
 
-    def _set_lns_solver_time_limit(self) -> None:
+    def _update_lns_solver_time_limit(self) -> None:
         """
         Set the time limit for the LNS solver.
         """
@@ -667,7 +667,7 @@ class Heulingo(StrategyInterface):
         :type lns_object: mod_lns.LNS
         """
         if not self.solver.finished:
-            self._set_lns_solver_time_limit()
+            self._update_lns_solver_time_limit()
 
             self.__calc_opt_bound(
                 self.lns_solver_config,
@@ -1020,7 +1020,7 @@ class Heulingo(StrategyInterface):
         self.lns_solver_config.variability = self.__variability
         lns_object.new_model = self.solver.solve(self.lns_solver_config)
 
-        self._set_lns_solver_time_limit()
+        self._update_lns_solver_time_limit()
 
     # pylint: disable=unused-argument
     def check_accept(

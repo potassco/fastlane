@@ -65,7 +65,7 @@ class ClingoDLSolver(ClingoSolver):
         :default files: None
         """
         self.setup_interrupt_handling()
-        
+
         if files is None:
             files = lns_object.files
 
