@@ -57,6 +57,7 @@ class ClingoSolver(SolverInterface):
         print("interrupted by signal")
         if self.control is not None:
             self.control.interrupt()
+        self.stop = True
 
     def setup_interrupt_handling(self) -> None:
         """

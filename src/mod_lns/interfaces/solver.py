@@ -86,6 +86,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
         self.minimize_variable: Optional[Symbol] = None
         self.log_level: int = 30  # logging.WARNING
         self.logger: Logger = setup_logger("DefaultSolverLogger", self.log_level)
+        self.stop: bool = False
 
     @classmethod
     def __subclasshook__(cls, subclass):  # nocoverage
