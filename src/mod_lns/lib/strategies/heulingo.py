@@ -105,6 +105,7 @@ class HeulingoConfig:
     log_level: int = 30  # logging.WARNING
 
     # general configuration
+    ## solver default has to be set manually in parser
     solver: SolverInterface = field(default_factory=ClingoSolver)
     seed: Optional[int] = None
     time_limit: Optional[int] = None
@@ -137,6 +138,7 @@ class HeulingoConfig:
     lns_opt_heuristic: Optional[str] = None
     lns_restart_on_model: Optional[bool] = None
     lns_heuristic: Optional[str] = "Domain"
+    ## lns_opt_mode default has to be set manually in parser
     lns_opt_mode: dict[str, Any] = field(
         default_factory=lambda: {"mode": None, "nf": None, "modifier": None}
     )
@@ -387,6 +389,12 @@ class Heulingo(StrategyInterface):
     def get_parser(
         self, subparsers: _SubParsersAction[ArgumentParser]
     ) -> ArgumentParser:
+        """
+        Get the argument parser for the Heulingo strategy.
+
+        :param subparsers: Subparsers action
+        :type subparsers: _SubParsersAction[ArgumentParser]
+        """
         parser = get_parser(HeulingoConfig, subparsers)
         parser.set_defaults(strategy=self)
         return parser

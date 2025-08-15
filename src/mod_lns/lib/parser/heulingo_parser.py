@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
 VERSION = "1.0.0"
 
+
 # pylint: disable=too-many-statements
 def get_parser(
     config_cls: type["HeulingoConfig"], subparsers: "_SubParsersAction[ArgumentParser]"
@@ -28,11 +29,16 @@ def get_parser(
     """
     Parse command line options.
 
-    :param args: Command line arguments
-    :type args: str
+    :param subparsers: Subparsers action
+    :type subparsers: _SubParsersAction[ArgumentParser]
     """
 
+    config = config_cls()
+
     def formatter(prog: str) -> RawTextHelpFormatter:
+        """
+        Formatter for help messages.
+        """
         return RawTextHelpFormatter(
             prog,
             max_help_position=10,
@@ -50,7 +56,7 @@ def get_parser(
             Answer Set Programming (ASP).
 
             Check the documentation for a guide on how to use this
-            framework.
+            strategy.
             """
         ),
         formatter_class=formatter,
@@ -176,6 +182,19 @@ def get_parser(
 
     parser.register("type", "configuration", parse_configuration)
 
+    def parse_solve_limit(string: str) -> str:
+        """
+        Parse the solve limit string.
+        """
+        ctl = Control()
+        try:
+            ctl.configuration.solve.solve_limit = string
+        except RuntimeError:
+            parser.error(f"'{string}': Invalid solve limit.")
+        return string
+
+    parser.register("type", "solve_limit", parse_solve_limit)
+
     def parse_minimize_variable(string: str) -> Symbol:
         """
         Parse the minimize variable string.
@@ -245,14 +264,14 @@ def get_parser(
     parser.add_argument(
         "--seed",
         help="set lns seed [%(default)s]",
-        default=None,
+        default=config.seed,
         type=int,
     )
 
     parser.add_argument(
         "--time-limit",
         help="set time limit in seconds [%(default)s]",
-        default=600,
+        default=config.time_limit,
         type=int,
         dest="time_limit",
         metavar="<n>",
@@ -261,7 +280,7 @@ def get_parser(
     parser.add_argument(
         "--max-steps",
         help="set maximum number of LNS steps [%(default)s]",
-        default=None,
+        default=config.max_steps,
         type=int,
         dest="max_steps",
         metavar="<n>",
@@ -270,7 +289,7 @@ def get_parser(
     parser.add_argument(
         "--relax-rate",
         help="set relaxation rate in percent [%(default)s]",
-        default=15,
+        default=config.relax_rate,
         type=int,
         dest="relax_rate",
         metavar="<n>",
@@ -285,7 +304,7 @@ def get_parser(
             "  <n>: Number of threads to use in search\n"
             "  <mode>: Run competition or splitting based search [compete]\n"
         ),
-        default=None,
+        default=config.parallel_mode,
         type="parallel_mode",
         metavar="<arg>",
         dest="parallel_mode",
@@ -294,7 +313,7 @@ def get_parser(
     parser.add_argument(
         "--minimize-variable",
         help="Minimize the integer variable <arg> (only useful with clingo-dl)",
-        default=None,
+        default=config.minimize_variable,
         type=parse_minimize_variable,
         dest="minimize_variable",
         metavar="<arg>",
@@ -303,7 +322,7 @@ def get_parser(
     parser.add_argument(
         "--falsify",
         help="Falsify not projected atoms with the priority",
-        default=None,
+        default=config.falsify,
         type=parse_falsify,
         dest="falsify",
         metavar="{<n>|inf}",
@@ -319,7 +338,7 @@ def get_parser(
     solver_group.add_argument(
         "--init-configuration",
         help="set initial solver configuration [%(default)s]",
-        default=None,
+        default=config.init_configuration,
         type="configuration",
         dest="init_configuration",
         metavar="<arg>",
@@ -327,7 +346,7 @@ def get_parser(
     solver_group.add_argument(
         "--init-opt-strategy",
         help="set initial solver optimization strategy [%(default)s]",
-        default=None,
+        default=config.init_opt_strategy,
         type="opt_strategy",
         dest="init_opt_strategy",
         metavar="<arg>",
@@ -335,7 +354,7 @@ def get_parser(
     solver_group.add_argument(
         "--init-opt-heuristic",
         help="set initial solver optimization heuristic [%(default)s]",
-        default=None,
+        default=config.init_opt_heuristic,
         type=str,
         dest="init_opt_heuristic",
         choices=["sign", "model"],
@@ -359,7 +378,7 @@ def get_parser(
             "  <bound>: <n>\n"
             "    Set initial bound for objective function(s)"
         ),
-        default=None,
+        default=config.init_opt_mode,
         type="init_opt_mode",
         dest="init_opt_mode",
         metavar="<arg>",
@@ -367,15 +386,15 @@ def get_parser(
     solver_group.add_argument(
         "--init-solve-limit",
         help="set initial solver solve limit [%(default)s]",
-        default=None,
-        type=str,
+        default=config.init_solve_limit,
+        type=parse_solve_limit,
         dest="init_solve_limit",
-        metavar="<arg>",
+        metavar="<n>[,<m>]",
     )
     solver_group.add_argument(
         "--init-time-limit",
         help="set initial solver time limit [%(default)s]",
-        default=None,
+        default=config.init_time_limit,
         type=int,
         dest="init_time_limit",
         metavar="<arg>",
@@ -391,7 +410,7 @@ def get_parser(
     lns_group.add_argument(
         "--solve-limit-increase-rate",
         help="set solve limit increase rate in percent [%(default)s]",
-        default=0.01,
+        default=config.solve_limit_increase_rate,
         type=float,
         dest="solve_limit_increase_rate",
         metavar="<f>",
@@ -400,7 +419,7 @@ def get_parser(
     lns_group.add_argument(
         "--time-limit-increase-rate",
         help="set time limit increase rate in percent [%(default)s]",
-        default=0.01,
+        default=config.time_limit_increase_rate,
         type=float,
         dest="time_limit_increase_rate",
         metavar="<f>",
@@ -490,7 +509,7 @@ def get_parser(
             "pmsp",
             "tlsp",
         ],
-        default=None,
+        default=config.heulingo_configuration,
         type=str,
         dest="heulingo_configuration",
     )
@@ -504,7 +523,7 @@ def get_parser(
     lns_solver_group.add_argument(
         "--lns-configuration",
         help="set LNS configuration [%(default)s]",
-        default=None,
+        default=config.lns_configuration,
         type="configuration",
         metavar="<arg>",
         dest="lns_configuration",
@@ -513,7 +532,7 @@ def get_parser(
     lns_solver_group.add_argument(
         "--lns-opt-strategy",
         help="set LNS optimization strategy [%(default)s]",
-        default=None,
+        default=config.lns_opt_strategy,
         type="opt_strategy",
         metavar="<arg>",
         dest="lns_opt_strategy",
@@ -521,7 +540,7 @@ def get_parser(
     lns_solver_group.add_argument(
         "--lns-opt-heuristic",
         help="set LNS optimization heuristic [%(default)s]",
-        default=None,
+        default=config.lns_opt_heuristic,
         type=str,
         choices=["sign", "model"],
         dest="lns_opt_heuristic",
@@ -556,16 +575,16 @@ def get_parser(
     lns_solver_group.add_argument(
         "--lns-solve-limit",
         help="set LNS solve limit [%(default)s]",
-        default=None,
-        type=int,
-        metavar="<n>",
+        default=config.lns_solve_limit,
+        type=parse_solve_limit,
+        metavar="<n>[,<m>]",
         dest="lns_solve_limit",
     )
     lns_solver_group.add_argument(
         "--lns-time-limit",
         help="set LNS time limit [%(default)s]",
         default=None,
-        type=int,
+        type=config.lns_time_limit,
         metavar="<n>",
         dest="lns_time_limit",
     )
