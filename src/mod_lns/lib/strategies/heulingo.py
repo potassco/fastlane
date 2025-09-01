@@ -505,6 +505,26 @@ class Heulingo(StrategyInterface):
         assert isinstance(self.solver, SolverInterface)
         self.solver.ground()
 
+    def _update_time_limit(self, solver_config: SolverConfig) -> None:
+        """
+        Update solve time-limit.
+
+        :param solver_config: Solver configuration to update.
+        :type solver_config: SolverConfig
+        """
+        if self.config.time_limit is not None:
+            solver_tl = solver_config.time_limit
+            if solver_tl is None:
+                solver_config.time_limit = self.timer.remaining_time()
+            elif self.timer.remaining_time() < solver_tl:
+                solver_config.time_limit = self.timer.remaining_time()
+                self.logger.debug("elapsed time: %d seconds", self.timer.get_elapsed_time())
+                self.logger.debug(
+                    "Time limit for solver reduced to %d seconds "
+                    "to fit into overall time limit.",
+                    solver_config.time_limit,
+                )
+
     # pylint: disable=dangerous-default-value
     def get_first_solution(
         self,
@@ -519,6 +539,8 @@ class Heulingo(StrategyInterface):
         :rtype: bool
         """
         assert isinstance(self.solver, SolverInterface)
+        # deduct time used for grounding if needed
+        self._update_time_limit(self.init_solver_config)
         lns_object.new_model = self.solver.solve(self.init_solver_config)
         if lns_object.new_model is None:
             return False
@@ -643,22 +665,6 @@ class Heulingo(StrategyInterface):
                     return False
         return True
 
-    def _update_lns_solver_time_limit(self) -> None:
-        """
-        Set the time limit for the LNS solver.
-        """
-        if self.config.time_limit is not None:
-            lns_tl = self.lns_solver_config.time_limit
-            if lns_tl is None:
-                self.lns_solver_config.time_limit = self.timer.remaining_time()
-            elif self.timer.remaining_time() < lns_tl:
-                self.lns_solver_config.time_limit = self.timer.remaining_time()
-                self.logger.debug(
-                    "Time limit for LNS solver reduced to %d seconds "
-                    " to fit into overall time limit.",
-                    self.lns_solver_config.time_limit,
-                )
-
     def post_first_solution(self, lns_object):
         """
         Actions to perform after finding the first solution.
@@ -667,8 +673,6 @@ class Heulingo(StrategyInterface):
         :type lns_object: mod_lns.LNS
         """
         if not self.solver.finished:
-            self._update_lns_solver_time_limit()
-
             self.__calc_opt_bound(
                 self.lns_solver_config,
                 lns_object.current_model.cost,
@@ -1019,9 +1023,10 @@ class Heulingo(StrategyInterface):
         self.logger.debug(LINE)
 
         self.lns_solver_config.variability = self.__variability
+
+        self._update_time_limit(self.lns_solver_config)
         new_model = self.solver.solve(self.lns_solver_config)
 
-        self._update_lns_solver_time_limit()
         return new_model
 
     # pylint: disable=unused-argument
@@ -1131,7 +1136,7 @@ class Heulingo(StrategyInterface):
         :type solver_config: SolverConfig
         :return: None
         """
-        # dont increase time limit past ovaerall time limit
+        # dont increase time limit past overall time limit
         if self.config.time_limit is not None:
             if self.timer.remaining_time() < self.config.time_limit:
                 return

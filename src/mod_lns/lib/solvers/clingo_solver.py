@@ -246,14 +246,14 @@ class ClingoSolver(SolverInterface):
         self.logger.debug("time-limit: %s", time_limit)
 
         self._timer.reset()
+        if time_limit > 0:
+                self._timer.start(time_limit)
         with self.control.solve(
             assumptions=assumptions,
             on_model=self._on_model,
             on_finish=self._on_finish,
             async_=True,
         ) as handle:
-            if time_limit > 0:
-                self._timer.start(time_limit)
             while not handle.wait(0):
                 if (
                     self._timer.is_ringing
