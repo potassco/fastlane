@@ -583,8 +583,8 @@ def get_parser(
     lns_solver_group.add_argument(
         "--lns-time-limit",
         help="set LNS time limit [%(default)s]",
-        default=None,
-        type=config.lns_time_limit,
+        default=config.lns_time_limit,
+        type=int,
         metavar="<n>",
         dest="lns_time_limit",
     )
