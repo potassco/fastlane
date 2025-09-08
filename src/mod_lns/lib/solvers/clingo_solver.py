@@ -203,11 +203,10 @@ class ClingoSolver(SolverInterface):
         assert isinstance(self.control, clingo.control.Control)
         assert isinstance(self.control.configuration.solve, clingo.Configuration)
         assert isinstance(self.control.configuration.solver, clingo.Configuration)
-        time_limit = 0
+        time_limit: Optional[int] = None
         if config is not None:
             self._variability = config.variability
-            if config.time_limit is not None:
-                time_limit = config.time_limit
+            time_limit = config.time_limit
             if config.configuration is not None:
                 self.control.configuration.configuration = config.configuration
             if config.opt_strategy is not None:
@@ -246,8 +245,7 @@ class ClingoSolver(SolverInterface):
         self.logger.debug("time-limit: %s", time_limit)
 
         self._timer.reset()
-        if time_limit > 0:
-                self._timer.start(time_limit)
+        self._timer.start(time_limit)
         with self.control.solve(
             assumptions=assumptions,
             on_model=self._on_model,

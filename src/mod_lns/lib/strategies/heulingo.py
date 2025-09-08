@@ -14,7 +14,7 @@ import clingo
 from clingo.control import Control
 from clingo.symbol import Function, Number, Symbol, SymbolType
 
-from mod_lns import Timer, Model
+from mod_lns import Model, Timer
 from mod_lns.interfaces.solver import SolverConfig, SolverInterface
 from mod_lns.interfaces.strategy import StrategyInterface
 from mod_lns.lib.parser.heulingo_parser import get_parser
@@ -441,8 +441,7 @@ class Heulingo(StrategyInterface):
         :param lns_object: LNS
         :type lns_object: mod_lns.LNS
         """
-        if self.config.time_limit is not None:
-            self.timer.start(self.config.time_limit)
+        self.timer.start(self.config.time_limit)  # None for no time limit
 
         self.init_solver_config = self.config.get_init_solver_configuration()
         self.lns_solver_config = self.config.get_lns_solver_configuration()
@@ -517,7 +516,9 @@ class Heulingo(StrategyInterface):
                 solver_config.time_limit = self.timer.remaining_time()
             elif self.timer.remaining_time() < solver_tl:
                 solver_config.time_limit = self.timer.remaining_time()
-                self.logger.debug("elapsed time: %d seconds", self.timer.get_elapsed_time())
+                self.logger.debug(
+                    "elapsed time: %d seconds", self.timer.get_elapsed_time()
+                )
                 self.logger.debug(
                     "Time limit for solver reduced to %d seconds "
                     "to fit into overall time limit.",

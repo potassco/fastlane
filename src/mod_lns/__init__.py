@@ -3,6 +3,7 @@ Helper classes.
 """
 
 import time
+from typing import Optional
 
 from clingo import Symbol
 
@@ -60,13 +61,16 @@ class Timer:
         """
         self._started = False
         self._ringing = False
+        self._start_time = 0.0
+        self._time_limit: Optional[int] = None
 
-    def start(self, time_limit: int) -> None:
+    def start(self, time_limit: Optional[int]) -> None:
         """
         Start the timer with a specified time limit.
+        None for no time limit.
 
         :param time_limit: Time limit in seconds.
-        :type time_limit: float
+        :type time_limit: Optional[int]
         """
         self._started = True
         self._ringing = False
@@ -77,16 +81,17 @@ class Timer:
         """
         Reset the timer.
         """
-        self._started = False
-        self._ringing = False
+        self.__init__()
 
     def remaining_time(self) -> int:
         """
         Get the remaining time before the timer rings.
 
-        :return: Remaining time in seconds.
+        :return: Remaining time in seconds, -1 for infinite.
         :rtype: int
         """
+        if self._time_limit is None:
+            return -1
         if not self._started:
             return 0
         elapsed_time = int(time.time() - self._start_time)
@@ -108,6 +113,8 @@ class Timer:
         """
         Check if the timer is ringing (i.e., if the time limit has been reached).
         """
+        if self._time_limit is None:
+            return False
         if self._started and not self._ringing:
             elapsed_time = time.time() - self._start_time
             if elapsed_time >= self._time_limit:
