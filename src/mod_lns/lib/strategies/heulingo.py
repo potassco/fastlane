@@ -111,7 +111,7 @@ class HeulingoConfig:
     time_limit: Optional[int] = None
     max_steps: Optional[int] = None
     parallel_mode: Optional[str] = None
-    relax_rate: int = 15
+    clingo_args: Optional[str] = None
 
     minimize_variable: Optional[Symbol] = None
     falsify: Optional[str] = None
@@ -403,7 +403,6 @@ class Heulingo(StrategyInterface):
         """
         Prepare some values to avoid errors or unexpected behavior.
         """
-        self.config.relax_rate = clamp(self.config.relax_rate, 0, 100)
         self.config.solve_limit_increase_rate = clamp(
             self.config.solve_limit_increase_rate, 0, 100
         )
@@ -491,8 +490,8 @@ class Heulingo(StrategyInterface):
             args.append(f"--seed={self.config.seed}")
         if self.config.parallel_mode is not None:
             args.append(f"--parallel-mode={self.config.parallel_mode}")
-        if self.config.relax_rate is not None:
-            args.append(f"-c n={self.config.relax_rate}")
+        if self.config.clingo_args is not None:
+            args.extend(self.config.clingo_args.split(","))
         self.solver.setup(lns_object, args)
 
     def post_setup(self, lns_object: "LNS"):

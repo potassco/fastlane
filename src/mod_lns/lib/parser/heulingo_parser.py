@@ -287,12 +287,13 @@ def get_parser(
     )
 
     parser.add_argument(
-        "--relax-rate",
-        help="set relaxation rate in percent [%(default)s]",
-        default=config.relax_rate,
-        type=int,
-        dest="relax_rate",
-        metavar="<n>",
+        "--clingo-args",
+        help=("set additional clingo arguments [%(default)s]\n"
+              "only gringo options (without --text) and clasp's search options are supported\n"),
+        default=config.clingo_args,
+        type=str,
+        dest="clingo_args",
+        metavar="<arg[,arg,...]>",
     )
 
     parser.add_argument(
