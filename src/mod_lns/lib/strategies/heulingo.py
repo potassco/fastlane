@@ -358,6 +358,7 @@ class HeulingoConfig:
         config.opt_heuristic = self.lns_opt_heuristic
         if self.lns_restart_on_model is not None:
             config.restart_on_model = str(int(self.lns_restart_on_model))
+        # opt_mode set during lns
         config.heuristic = self.lns_heuristic
         config.solve_limit = self.lns_solve_limit
         config.time_limit = self.lns_time_limit

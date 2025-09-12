@@ -105,7 +105,9 @@ class ClingconSolver(ClingoSolver):
                     print("Optimization:", *self.last_model.cost)
                     break
 
-    def _on_statistics(self, step: StatisticsMap, accu: StatisticsMap) -> None:
+    def _on_statistics(
+        self, step: StatisticsMap, accu: StatisticsMap
+    ) -> None:  # nocoverage
         """
         Update statistics.
 

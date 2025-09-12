@@ -40,7 +40,6 @@ class LNS:
         self.files: list[str] = files
         self.strategy: StrategyInterface = strategy
         self.strategy.init_logger(self.logger)
-        self.start_time: float = 0
         self.step_c: int = 0
 
         self.new_model: Optional[Model] = None

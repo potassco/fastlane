@@ -119,7 +119,9 @@ class ClingoDLSolver(ClingoSolver):
                     print("Optimization:", *self.last_model.cost)
                     break
 
-    def _on_statistics(self, step: StatisticsMap, accu: StatisticsMap) -> None:
+    def _on_statistics(
+        self, step: StatisticsMap, accu: StatisticsMap
+    ) -> None:  # nocoverage
         """
         Update statistics.
 
@@ -131,7 +133,7 @@ class ClingoDLSolver(ClingoSolver):
         assert isinstance(self.theory, ClingoDLTheory)
         self.theory.on_statistics(step, accu)
 
-    def _on_finish(self, res: SolveResult) -> None:
+    def _on_finish(self, res: SolveResult) -> None:  # nocoverage
         """
         Search finished.
 
@@ -176,6 +178,7 @@ class ClingoDLSolver(ClingoSolver):
         :type prev_bound: Optional[int]
         """
         assert isinstance(self.control, clingo.control.Control)
+        assert isinstance(self.theory, ClingoDLTheory)
         assert isinstance(self.control.configuration.solve, clingo.Configuration)
         assert isinstance(self.control.configuration.solve.solve_limit, str)
         solve_limit = self.control.configuration.solve.solve_limit.split(",")

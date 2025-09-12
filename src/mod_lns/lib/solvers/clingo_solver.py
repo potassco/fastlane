@@ -42,6 +42,13 @@ class ClingoSolver(SolverInterface):
         """
         return "clingo"
 
+    def setup_interrupt_handling(self) -> None:
+        """
+        Setup signal handling for interrupts (SIGINT, SIGTERM).
+        """
+        signal.signal(signal.SIGINT, self.interrupt_handler)
+        signal.signal(signal.SIGTERM, self.interrupt_handler)
+
     # pylint: disable=unused-argument
     def interrupt_handler(self, sig: int, frame: Union[None, FrameType]):
         """
@@ -58,13 +65,6 @@ class ClingoSolver(SolverInterface):
         if self.control is not None:
             self.control.interrupt()
         self.stop = True
-
-    def setup_interrupt_handling(self) -> None:
-        """
-        Setup signal handling for interrupts (SIGINT, SIGTERM).
-        """
-        signal.signal(signal.SIGINT, self.interrupt_handler)
-        signal.signal(signal.SIGTERM, self.interrupt_handler)
 
     # pylint: disable=dangerous-default-value
     def setup(
@@ -101,7 +101,7 @@ class ClingoSolver(SolverInterface):
             ctl.load(path)
         self.control, self.theory = ctl, None
 
-    def _on_model(self, model: clingo.solving.Model) -> None:  # nocoverage
+    def _on_model(self, model: clingo.solving.Model) -> None:
         """
         Saves model for later use.
 
@@ -113,7 +113,9 @@ class ClingoSolver(SolverInterface):
         self.last_model.true = model.symbols(atoms=True)
         self.last_model.cost = model.cost
 
-    def _on_statistics(self, step: StatisticsMap, accu: StatisticsMap) -> None:
+    def _on_statistics(
+        self, step: StatisticsMap, accu: StatisticsMap
+    ) -> None:  # nocoverage
         """
         Update statistics.
 
@@ -125,7 +127,7 @@ class ClingoSolver(SolverInterface):
         return
 
     # res: SolverResult
-    def _on_finish(self, res):
+    def _on_finish(self, res) -> None:  # nocoverage
         """
         Search finished.
 
@@ -262,7 +264,6 @@ class ClingoSolver(SolverInterface):
                     self.logger.debug("interrupted by timer")
                     handle.cancel()
         self._interrupted = False
-
         if self.last_model is None and not self.finished:
             self.logger.warning(
                 "The solve-limit or time-limit is not enough to find a solution."

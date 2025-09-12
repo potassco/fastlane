@@ -50,11 +50,6 @@ class Timer:
     Timer class for measuring time intervals.
     """
 
-    _started: bool
-    _ringing: bool
-    _start_time: float
-    _time_limit: int
-
     def __init__(self):
         """
         Initialize the timer.
@@ -92,8 +87,6 @@ class Timer:
         """
         if self._time_limit is None:
             return -1
-        if not self._started:
-            return 0
         elapsed_time = int(time.time() - self._start_time)
         return max(0, self._time_limit - elapsed_time)
 

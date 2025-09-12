@@ -13,7 +13,7 @@ from mod_lns import Model
 def relax_declarative(
     model: Model,
     relax_rate: int,
-) -> list[tuple[clingo.symbol.Symbol, bool]]:
+) -> list[Symbol]:
     """
     Relax portion of selected atoms given by the relax_rate.
     ASP encoding has to contain `_lns_select/1` and `_lns_fix/2` predicates.

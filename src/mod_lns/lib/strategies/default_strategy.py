@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Optional
 import clingo
 from clingo import Symbol
 
-from mod_lns import Timer, Model
+from mod_lns import Model, Timer
 from mod_lns.interfaces.solver import SolverConfig, SolverInterface
 from mod_lns.interfaces.strategy import StrategyInterface
 from mod_lns.lib.parser.default_parser import get_parser

@@ -288,8 +288,10 @@ def get_parser(
 
     parser.add_argument(
         "--clingo-args",
-        help=("set additional clingo arguments [%(default)s]\n"
-              "only gringo options (without --text) and clasp's search options are supported\n"),
+        help=(
+            "set additional clingo arguments [%(default)s]\n"
+            "only gringo options (without --text) and clasp's search options are supported\n"
+        ),
         default=config.clingo_args,
         type=str,
         dest="clingo_args",
