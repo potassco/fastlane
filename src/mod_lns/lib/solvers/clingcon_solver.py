@@ -91,8 +91,8 @@ class ClingconSolver(ClingoSolver):
         self.theory.on_model(model=model)
 
         self.last_model = Model()
-        self.last_model.shown = model.symbols(shown=True)
-        self.last_model.true = model.symbols(atoms=True)
+        self.last_model.shown = list(model.symbols(shown=True))
+        self.last_model.true = list(model.symbols(atoms=True))
         self.last_model.cost = model.cost
 
         self.last_model.assignments = [

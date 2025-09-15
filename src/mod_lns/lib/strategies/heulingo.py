@@ -105,7 +105,7 @@ class HeulingoConfig:
     log_level: int = 30  # logging.WARNING
 
     # general configuration
-    ## solver default has to be set manually in parser
+    # solver default has to be set manually in parser
     solver: SolverInterface = field(default_factory=ClingoSolver)
     seed: Optional[int] = None
     time_limit: Optional[int] = None
@@ -138,7 +138,7 @@ class HeulingoConfig:
     lns_opt_heuristic: Optional[str] = None
     lns_restart_on_model: Optional[bool] = None
     lns_heuristic: Optional[str] = "Domain"
-    ## lns_opt_mode default has to be set manually in parser
+    # lns_opt_mode default has to be set manually in parser
     lns_opt_mode: dict[str, Any] = field(
         default_factory=lambda: {"mode": None, "nf": None, "modifier": None}
     )
@@ -1050,7 +1050,9 @@ class Heulingo(StrategyInterface):
             return False
         cost_tmp = lns_object.new_model.cost
         threshold = cost[:-1]
-        threshold.append(cost[-1] + abs(cost[-1]) * self.config.acceptance_rate / 100)
+        threshold.append(
+            cost[-1] + int(abs(cost[-1]) * self.config.acceptance_rate / 100)
+        )
         self.logger.debug(LINE)
         self.logger.debug("cost_tmp: %s", cost_tmp)
         self.logger.debug("cost: %s", cost)

@@ -12,6 +12,8 @@ from mod_lns import Model, Timer
 from mod_lns.lib.strategies.default_strategy import DefaultStrategy
 from mod_lns.lns import LNS
 
+# pylint: disable=protected-access
+
 
 class TestModel(TestCase):
     """

@@ -11,7 +11,7 @@ from argparse import (
 from textwrap import dedent
 from typing import TYPE_CHECKING, Any
 
-from clingo import Control, Symbol, parse_term
+from clingo import Configuration, Control, Symbol, parse_term
 
 from mod_lns.interfaces.solver import SolverInterface
 from mod_lns.lib.parser.framework_parser import get_classes_from_package
@@ -187,6 +187,7 @@ def get_parser(
         Parse the solve limit string.
         """
         ctl = Control()
+        assert isinstance(ctl.configuration.solve, Configuration)
         try:
             ctl.configuration.solve.solve_limit = string
         except RuntimeError:

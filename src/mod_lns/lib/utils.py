@@ -7,7 +7,7 @@ from typing import Sequence, TypeVar
 import clingo
 
 
-def calculate_variability(list1: Sequence, list2: Sequence) -> int:
+def calculate_variability(list1: Sequence, list2: Sequence) -> float:
     """
     Calculate variability of two lists in percent.
 

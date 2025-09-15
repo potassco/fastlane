@@ -12,11 +12,9 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 import clingo
 from clingo.symbol import Symbol
 
-from mod_lns.utils.logger import setup_logger
-
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # nocoverage
     from mod_lns import Model
-    from mod_lns.lns import LNS  # nocoverage
+    from mod_lns.lns import LNS
 
 
 # pylint: disable=too-many-instance-attributes
@@ -84,8 +82,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
         self.result = "UNKNOWN"
         self.optimum = "unknown"
         self.minimize_variable: Optional[Symbol] = None
-        self.log_level: int = 30  # logging.WARNING
-        self.logger: Logger = setup_logger("DefaultSolverLogger", self.log_level)
+        self.logger: Logger
         self.stop: bool = False
 
     @classmethod
@@ -104,7 +101,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
 
     @classmethod
     @abc.abstractmethod
-    def get_name(cls) -> str:
+    def get_name(cls) -> str:  # nocoverage
         """
         Get the name under which the solver will be listed in options.
 

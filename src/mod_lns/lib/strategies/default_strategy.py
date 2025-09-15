@@ -5,7 +5,7 @@ Default strategy implementing classic LNS with weighted sum as optimization crit
 from __future__ import annotations
 
 import random
-from argparse import Namespace
+from argparse import ArgumentParser, Namespace, _SubParsersAction
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -26,6 +26,7 @@ if TYPE_CHECKING:
 LINE = "--------------------------------------------------------------------------------------"
 
 
+# pylint: disable=too-many-instance-attributes
 @dataclass
 class LNSConfig:
     """
@@ -63,7 +64,7 @@ class LNSConfig:
     log_level: int = field(default=30)
 
     # general configuration
-    ## solver default has to be set manually in parser
+    # solver default has to be set manually in parser
     solver: SolverInterface = field(default_factory=ClingoSolver)
     seed: Optional[int] = None
     time_limit: int = 600
@@ -127,6 +128,7 @@ class DefaultStrategy(StrategyInterface):
         self.lns_solver_config = SolverConfig()
         self.timer = Timer()
 
+    # pylint: disable=protected-access
     def interrupt(self, sig, frame):
         """
         Handle interrupt signal.
@@ -356,6 +358,7 @@ class DefaultStrategy(StrategyInterface):
         :return: Repaired model.
         :rtype: Optional[Model]
         """
+        assert isinstance(self.solver, SolverInterface)
         new_model = self.solver.solve(
             self.lns_solver_config, list(map(lambda x: (x, True), fixed_atoms))
         )
@@ -463,5 +466,3 @@ class DefaultStrategy(StrategyInterface):
         print(f"Iterations: {lns_object.step_c}")
         print(f"Overall time: {self.timer.get_elapsed_time():.3f}s")
         print(LINE)
-
-    from argparse import ArgumentParser, RawTextHelpFormatter, _SubParsersAction

@@ -11,7 +11,7 @@ from clingo import Symbol
 class Model:
     "Simplified Model class"
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.shown: list[Symbol] = []
         self.true: list[Symbol] = []
         self.cost: list[int] = []
@@ -50,13 +50,13 @@ class Timer:
     Timer class for measuring time intervals.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initialize the timer.
         """
-        self._started = False
-        self._ringing = False
-        self._start_time = 0.0
+        self._started: bool = False
+        self._ringing: bool = False
+        self._start_time: float = 0.0
         self._time_limit: Optional[int] = None
 
     def start(self, time_limit: Optional[int]) -> None:
@@ -72,11 +72,12 @@ class Timer:
         self._start_time = time.time()
         self._time_limit = time_limit
 
+    # pylint: disable=unnecessary-dunder-call
     def reset(self) -> None:
         """
         Reset the timer.
         """
-        self.__init__()
+        self.__init__()  # type: ignore
 
     def remaining_time(self) -> int:
         """

@@ -109,8 +109,8 @@ class ClingoSolver(SolverInterface):
         :type model: clingo.solving.Model
         """
         self.last_model = Model()
-        self.last_model.shown = model.symbols(shown=True)
-        self.last_model.true = model.symbols(atoms=True)
+        self.last_model.shown = list(model.symbols(shown=True))
+        self.last_model.true = list(model.symbols(atoms=True))
         self.last_model.cost = model.cost
 
     def _on_statistics(

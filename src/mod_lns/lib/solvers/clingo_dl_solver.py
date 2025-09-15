@@ -105,8 +105,8 @@ class ClingoDLSolver(ClingoSolver):
         self.theory.on_model(model=model)
 
         self.last_model = Model()
-        self.last_model.shown = model.symbols(shown=True)
-        self.last_model.true = model.symbols(atoms=True)
+        self.last_model.shown = list(model.symbols(shown=True))
+        self.last_model.true = list(model.symbols(atoms=True))
         self.last_model.cost = model.cost
 
         self.last_model.assignments = [
@@ -141,7 +141,6 @@ class ClingoDLSolver(ClingoSolver):
         :type res: SolveResult
         """
         self._exhausted = res.exhausted
-        print(res)
         super()._on_finish(res)
 
     def _release_bound(self, bound: int):
