@@ -23,7 +23,7 @@ VERSION = "1.0.0"
 
 
 # pylint: disable=too-many-statements
-def get_parser(
+def get_heulingo_parser(
     config_cls: type["HeulingoConfig"], subparsers: "_SubParsersAction[ArgumentParser]"
 ) -> ArgumentParser:
     """

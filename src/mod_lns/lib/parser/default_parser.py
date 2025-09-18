@@ -22,7 +22,7 @@ VERSION = "1.0.0"
 
 
 # pylint: disable=too-many-statements
-def get_parser(
+def get_default_parser(
     config_cls: type["LNSConfig"], subparsers: "_SubParsersAction[ArgumentParser]"
 ) -> ArgumentParser:
     """
@@ -176,7 +176,7 @@ def get_parser(
     )
 
     lns_group.add_argument(
-        "--constrained",
+        "--lns-constrained",
         help="set LNS to use constrained optimization",
         action="store_true",
         dest="constrained",

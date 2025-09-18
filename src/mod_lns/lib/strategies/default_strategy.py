@@ -15,7 +15,7 @@ from clingo import Symbol
 from mod_lns import Model, Timer
 from mod_lns.interfaces.solver import SolverConfig, SolverInterface
 from mod_lns.interfaces.strategy import StrategyInterface
-from mod_lns.lib.parser.default_parser import get_parser
+from mod_lns.lib.parser.default_parser import get_default_parser
 from mod_lns.lib.relaxation import relax_declarative, relax_random
 from mod_lns.lib.solvers import ClingoSolver
 from mod_lns.lib.utils import calculate_variability
@@ -61,7 +61,7 @@ class LNSConfig:
     """
 
     # utils
-    log_level: int = field(default=30)
+    log_level: int = 30
 
     # general configuration
     # solver default has to be set manually in parser
@@ -128,14 +128,6 @@ class DefaultStrategy(StrategyInterface):
         self.lns_solver_config = SolverConfig()
         self.timer = Timer()
 
-    # pylint: disable=protected-access
-    def interrupt(self, sig, frame):
-        """
-        Handle interrupt signal.
-        """
-        self.timer._ringing = True
-        self.solver.interrupt_handler(sig, frame)
-
     def get_parser(
         self, subparsers: _SubParsersAction[ArgumentParser]
     ) -> ArgumentParser:
@@ -147,7 +139,7 @@ class DefaultStrategy(StrategyInterface):
         :return: Argument parser for the strategy.
         :rtype: ArgumentParser
         """
-        parser = get_parser(LNSConfig, subparsers)
+        parser = get_default_parser(LNSConfig, subparsers)
         parser.set_defaults(strategy=self)
         return parser
 
@@ -442,7 +434,7 @@ class DefaultStrategy(StrategyInterface):
     def print_result(
         self,
         lns_object: "LNS",
-    ) -> None:
+    ) -> None:  # nocoverage
         """
         Print the result of the LNS process.
 

@@ -17,7 +17,7 @@ from clingo.symbol import Function, Number, Symbol, SymbolType
 from mod_lns import Model, Timer
 from mod_lns.interfaces.solver import SolverConfig, SolverInterface
 from mod_lns.interfaces.strategy import StrategyInterface
-from mod_lns.lib.parser.heulingo_parser import get_parser
+from mod_lns.lib.parser.heulingo_parser import get_heulingo_parser
 from mod_lns.lib.solvers import ClingoSolver
 from mod_lns.lib.utils import clamp, get_unique_list
 
@@ -396,7 +396,7 @@ class Heulingo(StrategyInterface):
         :param subparsers: Subparsers action
         :type subparsers: _SubParsersAction[ArgumentParser]
         """
-        parser = get_parser(HeulingoConfig, subparsers)
+        parser = get_heulingo_parser(HeulingoConfig, subparsers)
         parser.set_defaults(strategy=self)
         return parser
 
