@@ -59,22 +59,18 @@ class TestSearch(TestCase):
         seed = 123
         random.seed(seed)
         ref = [
-            (Function("plays", [Number(3), Number(1), Number(1)], True), True),
-            (Function("plays", [Number(5), Number(1), Number(1)], True), True),
-            (Function("plays", [Number(1), Number(2), Number(1)], True), True),
+            Function("plays", [Number(3), Number(1), Number(1)], True),
+            Function("plays", [Number(5), Number(1), Number(1)], True),
+            Function("plays", [Number(1), Number(2), Number(1)], True),
         ]
-        self.assertListEqual(
-            relax_random(model, {"relax_rate": 0.2, "base_relax_rate": 0}), ref
-        )
+        self.assertListEqual(relax_random(model, 20), ref)
 
         random.seed(seed)
         ref = [
-            (Function("plays", [Number(1), Number(1), Number(3)], True), True),
-            (Function("plays", [Number(2), Number(1), Number(3)], True), True),
+            Function("plays", [Number(1), Number(1), Number(3)], True),
+            Function("plays", [Number(2), Number(1), Number(3)], True),
         ]
-        self.assertListEqual(
-            relax_declarative(model, {"relax_rate": 0.2, "base_relax_rate": 0}), ref
-        )
+        self.assertListEqual(relax_declarative(model, 20), ref)
 
         model = Model()
         model.shown = [
@@ -101,12 +97,10 @@ class TestSearch(TestCase):
         ]
         random.seed(seed)
         ref = [
-            (Function("plays", [Number(1), Number(1), Number(3)], True), True),
-            (Function("plays", [Number(2), Number(1), Number(3)], True), True),
+            Function("plays", [Number(1), Number(1), Number(3)], True),
+            Function("plays", [Number(2), Number(1), Number(3)], True),
         ]
-        self.assertListEqual(
-            relax_declarative(model, {"relax_rate": 0.2, "base_relax_rate": 0}), ref
-        )
+        self.assertListEqual(relax_declarative(model, 20), ref)
 
         model = Model()
         model.shown = [
@@ -133,57 +127,6 @@ class TestSearch(TestCase):
         ]
         random.seed(seed)
         ref = [
-            (Function("plays", [Number(1), Number(1), Number(3)], True), True),
+            Function("plays", [Number(1), Number(1), Number(3)], True),
         ]
-        self.assertListEqual(
-            relax_declarative(model, {"relax_rate": 0.2, "base_relax_rate": 0}), ref
-        )
-
-        model = Model()
-        model.shown = [
-            Function("plays", [Number(3), Number(1), Number(1)], True),
-        ]
-        model.true = [
-            Function("_lns_select", [Number(1)], True),
-            Function("_lns_select", [Number(2)], True),
-            Function(
-                "_lns_fix",
-                [
-                    Function("plays", [Number(1), Number(1), Number(3)], True),
-                    Number(1),
-                ],
-                True,
-            ),
-            Function(
-                "_lns_fix",
-                [
-                    Function("plays", [Number(1), Number(2), Number(3)], True),
-                    Number(1),
-                ],
-                True,
-            ),
-            Function(
-                "_lns_fix",
-                [
-                    Function("plays", [Number(2), Number(1), Number(3)], True),
-                    Number(2),
-                ],
-                True,
-            ),
-            Function(
-                "_lns_fix",
-                [
-                    Function("plays", [Number(2), Number(2), Number(3)], True),
-                    Number(2),
-                ],
-                True,
-            ),
-        ]
-        random.seed(seed)
-        ref = [
-            (Function("plays", [Number(1), Number(1), Number(3)], True), True),
-            (Function("plays", [Number(2), Number(2), Number(3)], True), True),
-        ]
-        self.assertListEqual(
-            relax_declarative(model, {"relax_rate": 0, "base_relax_rate": 0.5}), ref
-        )
+        self.assertListEqual(relax_declarative(model, 20), ref)
