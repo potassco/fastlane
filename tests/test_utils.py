@@ -9,9 +9,10 @@ from unittest import TestCase
 from clingo.symbol import Function, Infimum, Number, String, Supremum
 
 from mod_lns.lib.parser.framework_parser import get_framework_parser
-from mod_lns.lib.utils import calculate_variability, fix_symbols, get_unique_list, clamp
+from mod_lns.lib.utils import calculate_variability, clamp, fix_symbols, get_unique_list
 from mod_lns.utils.conversions import args_to_dict, str_to_symbols, symbol_to_str
 from mod_lns.utils.logger import setup_logger
+
 
 class TestUtils(TestCase):
     """
@@ -36,7 +37,6 @@ class TestUtils(TestCase):
         parser = get_framework_parser()
         ret = parser.parse_args(["--log-level", "info", "x.lp", "default"])
         self.assertEqual(ret.log_level, logging.INFO)
-       
 
     def test_symbol_to_str(self):
         """
@@ -130,14 +130,14 @@ class TestLNSUtils(TestCase):
                 ),
             ],
         )
-    
+
     def test_get_unique_list(self):
         """
         Test get_unique_list function.
         """
         l = [2, 1, 2, 2, 3, 1, 4, 5, 5]
         self.assertEqual(get_unique_list(l), [2, 1, 3, 4, 5])
-    
+
     def test_clamp(self):
         """
         Test clamp function.
