@@ -123,7 +123,7 @@ class HeulingoConfig:
     init_restart_on_model: Optional[bool] = None
     init_heuristic: Optional[str] = None
     init_opt_mode: Optional[str] = None
-    init_solve_limit: Optional[str] = "2500000,5000"
+    init_solve_limit: Optional[str] = None
     init_time_limit: Optional[int] = None
 
     # lns configuration
@@ -139,7 +139,7 @@ class HeulingoConfig:
     lns_restart_on_model: Optional[bool] = None
     lns_heuristic: Optional[str] = "Domain"
     # lns_opt_mode default has to be set manually in parser
-    lns_opt_mode: dict[str, Any] = field(
+    lns_opt_mode: dict[str, str] = field(
         default_factory=lambda: {"mode": None, "nf": None, "modifier": None}
     )
     lns_solve_limit: Optional[str] = None
@@ -310,14 +310,14 @@ class HeulingoConfig:
                                 opt_mode["nf"] = None
                                 opt_mode["modifier"] = None
                             elif len(val) == 2:
-                                opt_mode["nf"] = float(val[1])
+                                opt_mode["nf"] = val[1]
                                 opt_mode["modifier"] = "dynamic"
                             elif len(val) >= 3:
                                 if val[-1] == "static":
                                     opt_mode["nf"] = ",".join(val[1:-1])
                                     opt_mode["modifier"] = "static"
                                 else:
-                                    opt_mode["nf"] = float(val[1])
+                                    opt_mode["nf"] = val[1]
                                     opt_mode["modifier"] = "dynamic"
                             setattr(self, key, opt_mode)
                     # if all(x is None for x in getattr(self, key).values()):
@@ -338,6 +338,7 @@ class HeulingoConfig:
         config.opt_heuristic = self.init_opt_heuristic
         if self.init_restart_on_model is not None:
             config.restart_on_model = str(int(self.init_restart_on_model))
+        # heuristics for init solver are experimental
         config.heuristic = self.init_heuristic
         config.opt_mode = self.init_opt_mode
         config.solve_limit = self.init_solve_limit
@@ -358,8 +359,8 @@ class HeulingoConfig:
         config.opt_heuristic = self.lns_opt_heuristic
         if self.lns_restart_on_model is not None:
             config.restart_on_model = str(int(self.lns_restart_on_model))
-        # opt_mode set during lns
         config.heuristic = self.lns_heuristic
+        # opt_mode set during lns
         config.solve_limit = self.lns_solve_limit
         config.time_limit = self.lns_time_limit
         config.seed = self.seed
@@ -377,14 +378,14 @@ class Heulingo(StrategyInterface):
         Initialize the HeulingoLNS strategy.
         """
         super().__init__()
-        self.__lnps_config: list[dict[str, Any]] = []
+        self._lnps_config: list[dict[str, Any]] = []
         self.prev_fixed_atoms: list[Symbol] = []
         self.config = HeulingoConfig()
         self.init_solver_config = SolverConfig()
         self.lns_solver_config = SolverConfig()
-        self.__variability: bool = False
-        self.__falsified: bool = False
-        self.__false_weight = Function("inf")
+        self._variability: bool = False
+        self._falsified: bool = False
+        self._false_weight = Function("inf")
         self.timer = Timer()
 
     def get_parser(
@@ -459,11 +460,11 @@ class Heulingo(StrategyInterface):
         lns_opt_mode = self.config.lns_opt_mode
         if lns_opt_mode["modifier"] is not None and lns_opt_mode["nf"] is not None:
             if lns_opt_mode["modifier"] == "dynamic":
-                if lns_opt_mode["nf"] <= 0:
+                if float(lns_opt_mode["nf"]) <= 0:
                     self.logger.warning(
                         "heulingo may finish without proving optimality because of 0 or less percent of iter-opt-mode"
                     )
-                if lns_opt_mode["nf"] < self.config.acceptance_rate:
+                if float(lns_opt_mode["nf"]) < self.config.acceptance_rate:
                     self.logger.warning(
                         "Rate of iter-opt-mode is less than rate of acceptance-rate"
                     )
@@ -471,9 +472,9 @@ class Heulingo(StrategyInterface):
         random.seed(self.config.seed)
 
         if self.config.falsify is not None:
-            self.__falsified = True
+            self._falsified = True
             if self.config.falsify != "inf":
-                self.__false_weight = Number(int(self.config.falsify))
+                self._false_weight = Number(int(self.config.falsify))
 
     def setup_solver(self, lns_object: "LNS") -> None:
         """
@@ -549,7 +550,7 @@ class Heulingo(StrategyInterface):
         lns_object.best_model = lns_object.new_model
         return True
 
-    def __calc_opt_bound(self, solver_config: SolverConfig, cost: list[int]) -> None:
+    def _calc_opt_bound(self, solver_config: SolverConfig, cost: list[int]) -> None:
         """
         Calculate bound for next step.
 
@@ -566,7 +567,8 @@ class Heulingo(StrategyInterface):
             bounds = cost[:-1]
             bounds.append(
                 math.ceil(
-                    cost[-1] + abs(cost[-1]) * self.config.lns_opt_mode["nf"] / 100
+                    cost[-1]
+                    + abs(cost[-1]) * float(self.config.lns_opt_mode["nf"]) / 100
                 )
                 - 1
             )
@@ -578,7 +580,7 @@ class Heulingo(StrategyInterface):
         elif self.config.lns_opt_mode["mode"] is not None:
             solver_config.opt_mode = self.config.lns_opt_mode["mode"]
 
-    def __load_lnps_config(self, ctl: Control, shown_atoms: list[Symbol]) -> None:
+    def _load_lnps_config(self, ctl: Control, shown_atoms: list[Symbol]) -> None:
         """
         Load LNPS config from model.
 
@@ -591,46 +593,46 @@ class Heulingo(StrategyInterface):
         # which atoms subject to lnps
         for x in ctl.symbolic_atoms.by_signature("_lnps_project", 2):
             args = x.symbol.arguments
-            self.__lnps_config.append(
+            self._lnps_config.append(
                 {"predicate_name": args[0].name, "arity": args[1].number}
             )
 
         # by default select all shown
-        if not self.__lnps_config:
+        if not self._lnps_config:
             atom_dicts = []
             for atom in shown_atoms:
                 atom_dicts.append(
                     {"predicate_name": atom.name, "arity": len(atom.arguments)}
                 )
-            self.__lnps_config = get_unique_list(atom_dicts)
+            self._lnps_config = get_unique_list(atom_dicts)
 
-        for i, _ in enumerate(self.__lnps_config):
+        for i, _ in enumerate(self._lnps_config):
             # _lnps_destroy/4
             for x in ctl.symbolic_atoms.by_signature("_lnps_destroy", 4):
                 args = x.symbol.arguments
-                if (args[0].name == self.__lnps_config[i]["predicate_name"]) and (
-                    args[1].number == self.__lnps_config[i]["arity"]
+                if (args[0].name == self._lnps_config[i]["predicate_name"]) and (
+                    args[1].number == self._lnps_config[i]["arity"]
                 ):
-                    self.__lnps_config[i].setdefault("mask", []).append(args[2].number)
-                    self.__lnps_config[i].setdefault("pn", []).append(args[3])
+                    self._lnps_config[i].setdefault("mask", []).append(args[2].number)
+                    self._lnps_config[i].setdefault("pn", []).append(args[3])
             # _lnps_prioritize/4
             for x in ctl.symbolic_atoms.by_signature("_lnps_prioritize", 4):
                 args = x.symbol.arguments
-                if (args[0].name == self.__lnps_config[i]["predicate_name"]) and (
-                    args[1].number == self.__lnps_config[i]["arity"]
+                if (args[0].name == self._lnps_config[i]["predicate_name"]) and (
+                    args[1].number == self._lnps_config[i]["arity"]
                 ):
-                    self.__lnps_config[i]["weight"] = args[2]
-                    self.__lnps_config[i]["modifier"] = args[3]
+                    self._lnps_config[i]["weight"] = args[2]
+                    self._lnps_config[i]["modifier"] = args[3]
 
-            self.__lnps_config[i].setdefault(
-                "mask", [2 ** self.__lnps_config[i]["arity"] - 1]
+            self._lnps_config[i].setdefault(
+                "mask", [2 ** self._lnps_config[i]["arity"] - 1]
             )
-            self.__lnps_config[i].setdefault("pn", [Function("p", [Number(0)])])
-            self.__lnps_config[i].setdefault("weight", Number(1))
-            self.__lnps_config[i].setdefault("modifier", Function("true"))
+            self._lnps_config[i].setdefault("pn", [Function("p", [Number(0)])])
+            self._lnps_config[i].setdefault("weight", Number(1))
+            self._lnps_config[i].setdefault("modifier", Function("true"))
 
         self.logger.debug(LINE)
-        for conf in self.__lnps_config:
+        for conf in self._lnps_config:
             self.logger.debug(
                 "_lnps_project(%s,%d).", conf["predicate_name"], conf["arity"]
             )
@@ -649,24 +651,25 @@ class Heulingo(StrategyInterface):
                 conf["weight"],
                 conf["modifier"],
             )
-        self.logger.debug("lnps_config: %s", self.__lnps_config)
+        self.logger.debug("lnps_config: %s", self._lnps_config)
 
-    def __check_variability(self):
+    def _check_variability(self) -> bool:
         """
         Check whether the LNPS configuration is variable.
         :return: True if variability is present, False otherwise
-        :rtype: bool"""
-        for conf in self.__lnps_config:
+        :rtype: bool
+        """
+        for conf in self._lnps_config:
             if conf["weight"].type == SymbolType.Function:
                 if conf["weight"].name == "inf":
                     return False
-        if self.__falsified:
-            if self.__false_weight.type == SymbolType.Function:
-                if self.__false_weight.name == "inf":
+        if self._falsified:
+            if self._false_weight.type == SymbolType.Function:
+                if self._false_weight.name == "inf":
                     return False
         return True
 
-    def post_first_solution(self, lns_object):
+    def post_first_solution(self, lns_object) -> None:
         """
         Actions to perform after finding the first solution.
 
@@ -674,18 +677,18 @@ class Heulingo(StrategyInterface):
         :type lns_object: mod_lns.LNS
         """
         if not self.solver.finished:
-            self.__calc_opt_bound(
+            self._calc_opt_bound(
                 self.lns_solver_config,
                 lns_object.current_model.cost,
             )
 
             self.solver.ground([("config", [])])
-            self.__load_lnps_config(self.solver.control, lns_object.current_model.shown)
+            self._load_lnps_config(self.solver.control, lns_object.current_model.shown)
 
             self.logger.debug(LINE)
             rules = ""
             self.logger.debug("#program heuristic(t).")
-            for c in self.__lnps_config:
+            for c in self._lnps_config:
                 a = (
                     c["predicate_name"]
                     + "("
@@ -701,7 +704,7 @@ class Heulingo(StrategyInterface):
                 self.logger.debug(false_constraint)
                 self.logger.debug(heu_statement)
                 rules += true_constraint + false_constraint + heu_statement
-                if self.__falsified:
+                if self._falsified:
                     constraint = f":- {a}, not projected({a},t), __w(inf,t)."
                     heu_statement = f"#heuristic {a} : {a}, not projected({a},t), __w(W,t), W != inf. [W,false]"
                     self.logger.debug(constraint)
@@ -709,7 +712,7 @@ class Heulingo(StrategyInterface):
                     rules += constraint + heu_statement
             self.solver.add("heuristic", ["t"], rules)
 
-            self.__variability = self.__check_variability()
+            self._variability = self._check_variability()
 
     def check_stop(self, lns_object: "LNS") -> bool:
         """
@@ -735,7 +738,7 @@ class Heulingo(StrategyInterface):
             if lns_object.step_c >= self.config.max_steps:
                 print(f"Maximum number of steps ({self.config.max_steps}) reached.")
                 stop = True
-        if self.solver.finished:
+        if self.solver.finished or self.solver.stop:
             stop = True
         return stop
 
@@ -745,9 +748,7 @@ class Heulingo(StrategyInterface):
             f"Iteration: {lns_object.step_c} || {lns_object.best_model.get_cost_str()}"
         )
 
-    def __project(
-        self, shown_atoms: list[Symbol], conf: dict[str, Any]
-    ) -> list[Symbol]:
+    def _project(self, shown_atoms: list[Symbol], conf: dict[str, Any]) -> list[Symbol]:
         """
         Project atoms based on the configuration.
 
@@ -775,7 +776,7 @@ class Heulingo(StrategyInterface):
         return projected_atoms
 
     # pylint: disable=too-many-branches
-    def __filter(
+    def _filter(
         self, atoms: list[Symbol], arity: int, mask: int, pn: Symbol
     ) -> list[Symbol]:
         """
@@ -841,12 +842,9 @@ class Heulingo(StrategyInterface):
         for a in filtered_atoms:
             self.logger.debug("filtered atom (mask:%d, pn:%s): %s", mask, pn, a)
         self.logger.debug(LINE)
-
         return filtered_atoms
 
-    def __destroy(
-        self, shown_atoms: list[Symbol], conf: dict[str, Any]
-    ) -> list[Symbol]:
+    def _destroy(self, shown_atoms: list[Symbol], conf: dict[str, Any]) -> list[Symbol]:
         """
         Destroy a subset of atoms according to the configuration.
 
@@ -873,7 +871,7 @@ class Heulingo(StrategyInterface):
 
         destroyed_atoms = []
         for i in range(len(conf["mask"])):
-            filtered_atoms = self.__filter(
+            filtered_atoms = self._filter(
                 projected_atoms, conf["arity"], conf["mask"][i], conf["pn"][i]
             )
             if conf["pn"][i].arguments[0].number >= 0:
@@ -906,7 +904,7 @@ class Heulingo(StrategyInterface):
 
         return prioritized_atoms
 
-    def __prioritize(
+    def _prioritize(
         self, targets: list[Symbol], conf: dict[str, Any], step: int
     ) -> list[Symbol]:
         """
@@ -930,9 +928,7 @@ class Heulingo(StrategyInterface):
             )
         return heu_atoms
 
-    def __generate_projected_atoms(
-        self, atoms: list[Symbol], step: int
-    ) -> list[Symbol]:
+    def _generate_projected_atoms(self, atoms: list[Symbol], step: int) -> list[Symbol]:
         """
         Generate projected atoms to be fixed.
 
@@ -953,8 +949,7 @@ class Heulingo(StrategyInterface):
         lns_object: "LNS",
     ) -> list[Symbol]:
         """
-        Relax portion of atoms given by the relax_parameters.
-        Use random relaxation.
+        Relax portion of atoms as defined by LNPS configuration.
 
         :param lns_object: LNS object
         :type lns_object: mod_lns.LNS
@@ -962,17 +957,17 @@ class Heulingo(StrategyInterface):
         :rtype: list[Symbol]
         """
         fixed_atoms: list[Symbol] = []
-        for conf in self.__lnps_config:
-            projected = self.__project(lns_object.current_model.shown, conf)
-            undestroyed = self.__destroy(lns_object.current_model.shown, conf)
-            fixed_atoms.extend(self.__prioritize(undestroyed, conf, lns_object.step_c))
-            if self.__falsified:
+        for conf in self._lnps_config:
+            projected = self._project(lns_object.current_model.shown, conf)
+            undestroyed = self._destroy(lns_object.current_model.shown, conf)
+            fixed_atoms.extend(self._prioritize(undestroyed, conf, lns_object.step_c))
+            if self._falsified:
                 fixed_atoms.extend(
-                    self.__generate_projected_atoms(projected, lns_object.step_c)
+                    self._generate_projected_atoms(projected, lns_object.step_c)
                 )
-        if self.__falsified:
+        if self._falsified:
             fixed_atoms.append(
-                Function("__w", [self.__false_weight, Number(lns_object.step_c)])
+                Function("__w", [self._false_weight, Number(lns_object.step_c)])
             )
         return fixed_atoms
 
@@ -1023,7 +1018,7 @@ class Heulingo(StrategyInterface):
         )
         self.logger.debug(LINE)
 
-        self.lns_solver_config.variability = self.__variability
+        self.lns_solver_config.variability = self._variability
 
         self._update_time_limit(self.lns_solver_config)
         new_model = self.solver.solve(self.lns_solver_config)
@@ -1072,7 +1067,7 @@ class Heulingo(StrategyInterface):
         :return: None
         """
         print("New model accepted")
-        self.__calc_opt_bound(
+        self._calc_opt_bound(
             self.lns_solver_config,
             lns_object.current_model.cost,
         )
@@ -1107,7 +1102,7 @@ class Heulingo(StrategyInterface):
             f"New best solution: {lns_object.best_model.get_cost_str()}"
         )
 
-    def __increase_solve_limit(self, solver_config: SolverConfig) -> None:
+    def _increase_solve_limit(self, solver_config: SolverConfig) -> None:
         """
         Increase the solver's solve limit for the next iteration.
 
@@ -1131,7 +1126,7 @@ class Heulingo(StrategyInterface):
 
             solver_config.solve_limit = ",".join(increased_solve_limit)
 
-    def __increase_time_limit(self, solver_config: SolverConfig) -> None:
+    def _increase_time_limit(self, solver_config: SolverConfig) -> None:
         """
         Increase the solver's time limit for the next iteration.
 
@@ -1141,7 +1136,7 @@ class Heulingo(StrategyInterface):
         """
         # dont increase time limit past overall time limit
         if self.config.time_limit is not None:
-            if self.timer.remaining_time() < self.config.time_limit:
+            if self.timer.remaining_time() < solver_config.time_limit:
                 return
         if solver_config.time_limit is not None:
             current_time_limit = solver_config.time_limit
@@ -1158,13 +1153,13 @@ class Heulingo(StrategyInterface):
         :type lns_object: mod_lns.LNS
         :return: None
         """
-        self.__increase_solve_limit(self.lns_solver_config)
-        self.__increase_time_limit(self.lns_solver_config)
+        self._increase_solve_limit(self.lns_solver_config)
+        self._increase_time_limit(self.lns_solver_config)
 
     def print_result(
         self,
         lns_object: "LNS",
-    ) -> None:
+    ) -> None:  # nocoverage
         """
         Print the result of the LNS process.
 

@@ -122,7 +122,7 @@ def get_heulingo_parser(
                 float(values[1])
             except ValueError:
                 parser.error(f"'{string}': Invalid bound. float expected.")
-            opt_mode["nf"] = float(values[1])
+            opt_mode["nf"] = values[1]
             opt_mode["modifier"] = "dynamic"
         elif len(values) >= 3:
             if values[-1] == "static":
@@ -142,16 +142,12 @@ def get_heulingo_parser(
                     float(values[1])
                 except ValueError:
                     parser.error(f"'{string}': Invalid bound. float expected.")
-                opt_mode["nf"] = float(values[1])
+                opt_mode["nf"] = values[1]
                 opt_mode["modifier"] = "dynamic"
             else:
                 parser.error(
                     f"'{string}': Invalid boundary mode. {{static|dynamic}} expected."
                 )
-        else:
-            parser.error(
-                f"'{string}': Invalid optimization mode. {{opt|enum|optN|ignore}} expected."
-            )
         return opt_mode
 
     parser.register("type", "lns_opt_mode", parse_lns_opt_mode)
@@ -318,7 +314,7 @@ def get_heulingo_parser(
         "--minimize-variable",
         help="Minimize the integer variable <arg> (only useful with clingo-dl)",
         default=config.minimize_variable,
-        type=parse_minimize_variable,
+        type="minimize_variable",
         dest="minimize_variable",
         metavar="<arg>",
     )
@@ -327,7 +323,7 @@ def get_heulingo_parser(
         "--falsify",
         help="Falsify not projected atoms with the priority",
         default=config.falsify,
-        type=parse_falsify,
+        type="falsify",
         dest="falsify",
         metavar="{<n>|inf}",
     )
@@ -391,7 +387,7 @@ def get_heulingo_parser(
         "--init-solve-limit",
         help="set initial solver solve limit [%(default)s]",
         default=config.init_solve_limit,
-        type=parse_solve_limit,
+        type="solve_limit",
         dest="init_solve_limit",
         metavar="<n>[,<m>]",
     )
@@ -426,6 +422,15 @@ def get_heulingo_parser(
         default=config.time_limit_increase_rate,
         type=float,
         dest="time_limit_increase_rate",
+        metavar="<f>",
+    )
+
+    lns_group.add_argument(
+        "--acceptance-rate",
+        help="Do not accept solution whose objective value is at least <f>%% worse than current incumbent solution in each iteration [%(default)s]",
+        default=config.acceptance_rate,
+        type=float,
+        dest="acceptance_rate",
         metavar="<f>",
     )
 
@@ -580,7 +585,7 @@ def get_heulingo_parser(
         "--lns-solve-limit",
         help="set LNS solve limit [%(default)s]",
         default=config.lns_solve_limit,
-        type=parse_solve_limit,
+        type="solve_limit",
         metavar="<n>[,<m>]",
         dest="lns_solve_limit",
     )
