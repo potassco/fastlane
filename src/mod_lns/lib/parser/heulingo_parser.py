@@ -427,7 +427,10 @@ def get_heulingo_parser(
 
     lns_group.add_argument(
         "--acceptance-rate",
-        help="Do not accept solution whose objective value is at least <f>%% worse than current incumbent solution in each iteration [%(default)s]",
+        help=(
+            "Do not accept solution whose objective value is at least <f>%% worse\n"
+            "than current incumbent solution in each iteration [%(default)s]"
+        ),
         default=config.acceptance_rate,
         type=float,
         dest="acceptance_rate",

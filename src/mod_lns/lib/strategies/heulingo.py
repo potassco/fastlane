@@ -139,7 +139,7 @@ class HeulingoConfig:
     lns_restart_on_model: Optional[bool] = None
     lns_heuristic: Optional[str] = "Domain"
     # lns_opt_mode default has to be set manually in parser
-    lns_opt_mode: dict[str, str] = field(
+    lns_opt_mode: dict[str, Any] = field(
         default_factory=lambda: {"mode": None, "nf": None, "modifier": None}
     )
     lns_solve_limit: Optional[str] = None
@@ -420,7 +420,10 @@ class Heulingo(StrategyInterface):
         :type args: Namespace
         """
         rest = {}
-        if args.heulingo_configuration is not None:
+        if (
+            hasattr(args, "heulingo_configuration")
+            and args.heulingo_configuration is not None
+        ):
             self.config.heulingo_configuration = args.heulingo_configuration
             self.config.apply_config()
         for attr, value in args.__dict__.items():
@@ -676,6 +679,8 @@ class Heulingo(StrategyInterface):
         :param lns_object: LNS object
         :type lns_object: mod_lns.LNS
         """
+        assert isinstance(self.solver, SolverInterface)
+        assert isinstance(self.solver.control, Control)
         if not self.solver.finished:
             self._calc_opt_bound(
                 self.lns_solver_config,
@@ -683,6 +688,7 @@ class Heulingo(StrategyInterface):
             )
 
             self.solver.ground([("config", [])])
+
             self._load_lnps_config(self.solver.control, lns_object.current_model.shown)
 
             self.logger.debug(LINE)
@@ -1135,7 +1141,7 @@ class Heulingo(StrategyInterface):
         :return: None
         """
         # dont increase time limit past overall time limit
-        if self.config.time_limit is not None:
+        if self.config.time_limit is not None and solver_config.time_limit is not None:
             if self.timer.remaining_time() < solver_config.time_limit:
                 return
         if solver_config.time_limit is not None:

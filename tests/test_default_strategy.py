@@ -15,6 +15,8 @@ from mod_lns.lib.solvers.clingo_solver import ClingoSolver
 from mod_lns.lib.strategies.default_strategy import DefaultStrategy, LNSConfig
 from mod_lns.lns import LNS
 
+# pylint: disable=protected-access
+
 
 class TestDefaultParser(TestCase):
     """

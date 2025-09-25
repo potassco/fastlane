@@ -17,6 +17,8 @@ from mod_lns.lib.solvers.clingo_solver import ClingoSolver
 from mod_lns.lib.strategies.heulingo import Heulingo, HeulingoConfig
 from mod_lns.lns import LNS
 
+# pylint: disable=protected-access, too-many-statements, too-many-lines, too-many-public-methods
+
 
 class TestHeulingoParser(TestCase):
     """
@@ -465,13 +467,13 @@ class TestHeulingo(TestCase):
         Test the _load_lnps_config method.
         """
         self.lns = LNS(["./tests/ref/lnps_ref.lp"], self.strategy)
-        self.solver = ClingoSolver()
-        self.solver.setup(self.lns)
+        solver = ClingoSolver()
+        solver.setup(self.lns)
 
         # default, select all
-        self.solver.control.ground()
+        solver.control.ground()
         self.strategy._load_lnps_config(
-            self.solver.control,
+            solver.control,
             [
                 Function("test", [Number(2), Number(4)], True),
                 Function("plays", [Number(1), Number(2), Number(3)], True),
@@ -501,9 +503,9 @@ class TestHeulingo(TestCase):
 
         # config
         self.strategy._lnps_config = []
-        self.solver.ground([("config", [])])
+        solver.ground([("config", [])])
         self.strategy._load_lnps_config(
-            self.solver.control,
+            solver.control,
             [
                 Function("test", [Number(2), Number(4)], True),
                 Function("plays", [Number(1), Number(2), Number(3)], True),
@@ -561,6 +563,7 @@ class TestHeulingo(TestCase):
         Test the post_first_solution method.
         """
         self.strategy.solver = ClingoSolver()
+        self.strategy.solver.setup(self.lns)
         self.strategy.solver.finished = False
         self.strategy._falsified = True
         self.strategy._variability = False
