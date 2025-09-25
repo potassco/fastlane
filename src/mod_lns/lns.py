@@ -32,17 +32,17 @@ class LNS:
         """
         Initialization of the lns object.
         """
-
+        self.strategy: StrategyInterface = strategy
+        self.strategy.parse_options(args)
         self.logger = setup_logger("LNS", strategy.log_level)
+        self.strategy.init_logger(self.logger)
         self.logger.info("info")
         self.logger.warning("warning")
         self.logger.debug("debug")
         self.logger.error("error")
 
         self.files: list[str] = files
-        self.strategy: StrategyInterface = strategy
-        strategy.parse_options(args)
-        self.strategy.init_logger(self.logger)
+        
         self.step_c: int = 0
 
         self.new_model: Optional[Model] = None
