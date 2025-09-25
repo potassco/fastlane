@@ -13,10 +13,8 @@ def main():
 
     parser = get_framework_parser()
     args = parser.parse_args()
-    strategy = args.strategy
-    strategy.parse_options(args)
 
-    lns = LNS(args.files, strategy)
+    lns = LNS(args.files, args.strategy, args)
     lns.main()
 
 

@@ -2,6 +2,7 @@
 A modifiable large neighborhood search framework.
 """
 
+from argparse import Namespace
 from typing import Optional
 
 from mod_lns import Model
@@ -26,6 +27,7 @@ class LNS:
         self,
         files: list[str],
         strategy: StrategyInterface = DefaultStrategy(),
+        args: Namespace = Namespace(),
     ):
         """
         Initialization of the lns object.
@@ -39,6 +41,7 @@ class LNS:
 
         self.files: list[str] = files
         self.strategy: StrategyInterface = strategy
+        strategy.parse_options(args)
         self.strategy.init_logger(self.logger)
         self.step_c: int = 0
 
