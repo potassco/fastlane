@@ -19,6 +19,7 @@ from mod_lns.lib.parser.default_parser import get_default_parser
 from mod_lns.lib.relaxation import relax_declarative, relax_random
 from mod_lns.lib.solvers import ClingoSolver
 from mod_lns.lib.utils import calculate_variability
+from math import log10
 
 if TYPE_CHECKING:
     from mod_lns.lns import LNS  # nocoverage
@@ -70,6 +71,7 @@ class LNSConfig:
     time_limit: int = 600
     max_steps: int = 2000
     relax_rate: int = 20
+    status_interval: int = 50
 
     # init solver configuration
     init_time_limit: int = 20
@@ -127,6 +129,7 @@ class DefaultStrategy(StrategyInterface):
         self.init_solver_config = SolverConfig()
         self.lns_solver_config = SolverConfig()
         self.timer = Timer()
+        self._iter_format = ""
 
     def get_parser(
         self, subparsers: _SubParsersAction[ArgumentParser]
@@ -275,6 +278,27 @@ class DefaultStrategy(StrategyInterface):
                     lns_object.current_model.cost,
                 )
 
+        # prepare output format and print header
+        time_digits = 5 + 1 + 3  # 5 digits + dot + 3 digits
+        step_digits = 7
+        cost_digits = max(len(lns_object.best_model.get_cost_str()), 4)
+        if self.config.time_limit is not None:
+            time_digits = max(log10(self.config.time_limit) + 1 + 3, time_digits)
+        if self.config.max_steps is not None:
+            step_digits = max(log10(self.config.max_steps), step_digits)
+
+        header = f"{{0:>{time_digits}}} - {{1:>{step_digits}}}: {{2:>{cost_digits}}}"
+        print(header.format("time in s", "step", "cost"))
+
+        self._iter_format = f"{{0:>{time_digits}.3f}} - {{1:>{step_digits}}}: {{2:>{cost_digits}}}"
+        print(
+            self._iter_format.format(
+                self.timer.get_elapsed_time(),
+                "initial",
+                lns_object.best_model.get_cost_str()
+            )
+        )
+
     def check_stop(self, lns_object: LNS) -> bool:
         """
         Check whether to stop LNS.
@@ -311,10 +335,14 @@ class DefaultStrategy(StrategyInterface):
         :param lns_object: LNS object.
         :type lns_object: mod_lns.LNS
         """
-        print(
-            f"{self.timer.get_elapsed_time():.3f}s: "
-            f"Iteration: {lns_object.step_c} || {lns_object.best_model.get_cost_str()}"
-        )
+        if lns_object.step_c % self.config.status_interval == 0:
+            print(
+                self._iter_format.format(
+                    self.timer.get_elapsed_time(),
+                    lns_object.step_c,
+                    lns_object.current_model.get_cost_str()
+                )
+            )
 
     def relax(
         self,
@@ -381,7 +409,6 @@ class DefaultStrategy(StrategyInterface):
         self.logger.debug("variability: %s", vari)
         self.logger.debug("threshold: %s", self.config.accept_variability)
         if vari >= self.config.accept_variability:
-            self.logger.debug("new model accepted")
             return True
         self.logger.debug("new model declined")
         return False
@@ -394,7 +421,7 @@ class DefaultStrategy(StrategyInterface):
         :type lns_object: mod_lns.LNS
         :return: None
         """
-        print("New model accepted")
+        self.logger.debug("new model accepted")
         if self.config.constrained:
             self._calc_opt_bound(
                 self.lns_solver_config,
@@ -426,10 +453,14 @@ class DefaultStrategy(StrategyInterface):
         :type lns_object: mod_lns.LNS
         :return: None
         """
+        self.logger.debug("new best model")
         print(
-            f"{self.timer.get_elapsed_time():.3f}s: "
-            f"New best solution: {lns_object.best_model.get_cost_str()}"
-        )
+                self._iter_format.format(
+                    self.timer.get_elapsed_time(),
+                    lns_object.step_c,
+                    lns_object.current_model.get_cost_str()
+                )
+            )
 
     def print_result(
         self,
