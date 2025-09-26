@@ -252,7 +252,7 @@ class TestHeulingo(TestCase):
 
     def setUp(self) -> None:
         self.strategy = Heulingo()
-        self.strategy.log_level = 50
+        self.strategy.config.log_level = 50
         self.lns = LNS(["./tests/ref/golf.lp"], self.strategy)
 
     def test_get_parser(self):
@@ -302,6 +302,7 @@ class TestHeulingo(TestCase):
             lns_time_limit=20,
             acceptance_rate=None,
             opt=5,
+            log_level=50,
         )
         with mock.patch.object(self.strategy.config, "apply_config") as mock_apply:
             rest = self.strategy.parse_options(args)
@@ -313,7 +314,7 @@ class TestHeulingo(TestCase):
             self.assertEqual(self.strategy.config.lns_solve_limit, "300")
             self.assertEqual(self.strategy.config.lns_time_limit, 20)
             self.assertEqual(self.strategy.solver, args.solver)
-            self.assertEqual(self.strategy.log_level, 30)
+            self.assertEqual(self.strategy._log_level, 50)
             # None -> default value
             self.assertEqual(self.strategy.config.acceptance_rate, 0.0)
             # rest

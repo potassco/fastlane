@@ -3,8 +3,9 @@ Test cases for LNS class.
 """
 
 import time
+from io import StringIO
 from logging import Logger
-from unittest import TestCase
+from unittest import TestCase, mock
 
 from clingo.symbol import Function, Number
 
@@ -57,8 +58,18 @@ class TestModel(TestCase):
             "test=42",
         ]
         model.cost = [2]
-        ref_str = "Answer\nplays(3,1,1)\nAssignments:\ntest=42\nCost: 2\n"
-        self.assertEqual(model.print_model(), ref_str)
+        with mock.patch("sys.stdout", new=StringIO()) as out:
+            model.print_model()
+            self.assertEqual(
+                out.getvalue(),
+                (
+                    "Answer\n"
+                    "plays(3,1,1)\n"
+                    "Assignments:\n"
+                    "test=42\n"
+                    "Cost: 2\n\n"
+                ),
+            )
 
 
 class TestTimer(TestCase):
@@ -151,9 +162,11 @@ class TestLNS(TestCase):
         """
         Test LNS initialization.
         """
-        lns = LNS(["./tests/ref/golf.lp"])
+        strat = DefaultStrategy()
+        strat.config.log_level = 50
+        lns = LNS(["./tests/ref/golf.lp"], strategy=strat)
         self.assertEqual(lns.files, ["./tests/ref/golf.lp"])
-        self.assertIsInstance(lns.strategy, DefaultStrategy)
+        self.assertEqual(lns.strategy, strat)
         self.assertIsInstance(lns.logger, Logger)
         self.assertEqual(lns.step_c, 0)
         self.assertIsInstance(lns.current_model, Model)

@@ -53,7 +53,7 @@ class TestSolverClingo(TestCase):
         self.stype = ClingoSolver
         self.name = "clingo"
         self.strategy = DefaultStrategy()
-        self.strategy.log_level = 50
+        self.strategy.config.log_level = 50
         self.lns = LNS(["./tests/ref/golf.lp"], self.strategy)
 
         # for solve tests
@@ -71,6 +71,7 @@ class TestSolverClingo(TestCase):
         self.assertEqual(self.solver.optimum, "unknown")
         self.assertIsNone(self.solver.minimize_variable)
         self.assertFalse(self.solver.stop)
+        self.assertFalse(self.solver._assumptions_used)
         self.assertIsInstance(self.solver._timer, Timer)
         self.assertFalse(self.solver._interrupted)
         self.assertIsNone(self.solver.last_model)
@@ -120,6 +121,7 @@ class TestSolverClingo(TestCase):
         """
         self.solver.setup(self.lns)
         self.solver.ground()
+        self.solver.control.configuration.solve.models = 2
         self.solver.control.solve(on_model=lambda *args: None)
         stats = self.solver.get_stats()
         self.assertIsNotNone(stats)
@@ -173,6 +175,7 @@ class TestSolverClingo(TestCase):
         """
         self.solver.setup(self.lns)
         self.solver.ground()
+        self.solver.control.configuration.solve.models = 2
         self.assertIsNone(self.solver.last_model)
         self.solver.control.solve(on_model=self.solver._on_model)
         self.assertIsInstance(self.solver.last_model, Model)
@@ -194,6 +197,7 @@ class TestSolverClingo(TestCase):
         self.solver.setup(self.lns)
         self.solver.ground()
         # default run
+        self.solver.control.configuration.solve.models = 2
         model = self.solver.solve()
         self.assertIsInstance(model, Model)
         self.assertIn(self.solver.result, ["SATISFIABLE", "OPTIMUM"])
@@ -209,7 +213,7 @@ class TestSolverClingo(TestCase):
             heuristic="Domain",
             opt_mode="opt,10",
             solve_limit="1000",
-            time_limit=5,
+            time_limit=2,
             seed=42,
             variability=True,
         )
@@ -264,6 +268,16 @@ class TestSolverClingo(TestCase):
             mock_cancel.mock_obj.assert_called_once()
             mock_find_first.assert_called_once()
 
+        # test assumptions being used
+        self.solver.setup(self.lns)
+        self.solver.last_model = Model()
+        assumptions = [(Function("a"), True)]
+        with mock.patch.object(self.solver.control, "solve") as mock_solve:
+            self.assertFalse(self.solver._assumptions_used)
+            self.solver.solve(assumptions=assumptions)
+            self.assertTrue(self.solver._assumptions_used)
+            self.assertEqual(mock_solve.call_args.kwargs["assumptions"], assumptions)
+
 
 class TestClingoDLSolver(TestSolverClingo):
     """
@@ -275,7 +289,7 @@ class TestClingoDLSolver(TestSolverClingo):
         self.stype = ClingoDLSolver
         self.name = "clingo-dl"
         self.strategy = DefaultStrategy()
-        self.strategy.log_level = 50
+        self.strategy.config.log_level = 50
         self.lns = LNS(["./tests/ref/golf.lp"], self.strategy)
         # for solve tests, default
         self.ref_opt_mode = "opt,10"
@@ -442,7 +456,7 @@ class TestClingconSolver(TestSolverClingo):
         self.stype = ClingconSolver
         self.name = "clingcon"
         self.strategy = DefaultStrategy()
-        self.strategy.log_level = 50
+        self.strategy.config.log_level = 50
         self.lns = LNS(["./tests/ref/golf.lp"], self.strategy)
         # for solve tests
         self.ref_opt_mode = "opt,10"

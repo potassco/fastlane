@@ -21,10 +21,14 @@ class TestIntegrationDefaultClingo(TestCase):
     def setUp(self):
         self.strat = DefaultStrategy()
         self.strat.config = LNSConfig(
-            max_steps=20, seed=123, init_time_limit=3, lns_time_limit=3, time_limit=10
+            max_steps=20,
+            seed=123,
+            init_time_limit=3,
+            lns_time_limit=3,
+            time_limit=10,
+            log_level=50,
         )
         self.strat.solver = ClingoSolver()
-        self.strat.log_level = 50
 
     def test_execution(self):
         """
@@ -82,10 +86,14 @@ class TestIntegrationHeulingoClingo(TestIntegrationDefaultClingo):
         super().setUp()
         self.strat = Heulingo()
         self.strat.config = HeulingoConfig(
-            max_steps=20, seed=123, init_time_limit=3, lns_time_limit=3, time_limit=10
+            max_steps=20,
+            seed=123,
+            init_time_limit=3,
+            lns_time_limit=3,
+            time_limit=10,
+            log_level=50,
         )
         self.strat.solver = ClingoSolver()
-        self.strat.log_level = 50
 
 
 class TestIntegrationHeulingoClingoDL(TestIntegrationHeulingoClingo):

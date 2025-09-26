@@ -104,7 +104,7 @@ class TestDefaultStrategy(TestCase):
 
     def setUp(self) -> None:
         self.strategy = DefaultStrategy()
-        self.strategy.log_level = 50
+        self.strategy.config.log_level = 50
         self.lns = LNS(["./tests/ref/golf.lp"], self.strategy)
 
     def test_get_parser(self):
@@ -142,6 +142,7 @@ class TestDefaultStrategy(TestCase):
             lns_solve_limit="300",
             lns_time_limit=20,
             opt=5,
+            log_level=50,
         )
         rest = self.strategy.parse_options(args)
         self.assertEqual(self.strategy.config.solver, args.solver)
@@ -156,7 +157,7 @@ class TestDefaultStrategy(TestCase):
         self.assertEqual(self.strategy.config.lns_solve_limit, "300")
         self.assertEqual(self.strategy.config.lns_time_limit, 20)
         self.assertEqual(self.strategy.solver, args.solver)
-        self.assertEqual(self.strategy.log_level, 30)
+        self.assertEqual(self.strategy._log_level, 50)
         # None -> default value
         self.assertEqual(self.strategy.config.init_time_limit, 20)
         # rest
@@ -263,16 +264,31 @@ class TestDefaultStrategy(TestCase):
         Test the post_first_solution method.
         """
         self.strategy.solver = ClingoSolver()
+        self.strategy.config.time_limit = 12345678
+        self.strategy.config.max_steps = 12345678
         self.lns.current_model.cost = [2, 4]
+        self.lns.best_model.cost = [1, 2, 3, 4]
         with mock.patch.object(
             self.strategy, "_update_lns_solver_time_limit"
         ) as mock_update_time_limit, mock.patch.object(
             self.strategy, "_calc_opt_bound"
-        ) as mock_calc_opt_bound:
+        ) as mock_calc_opt_bound, mock.patch.object(
+            self.strategy.timer, "get_elapsed_time", return_value=2.748
+        ), mock.patch(
+            "sys.stdout", new=StringIO()
+        ) as out:
             self.strategy.solver.finished = True
             self.strategy.post_first_solution(self.lns)
             mock_update_time_limit.assert_not_called()
             mock_calc_opt_bound.assert_not_called()
+            self.assertEqual(self.strategy._iter_format, "{0:>12.3f} - {1:>8}: {2:>7}")
+            self.assertEqual(
+                out.getvalue(),
+                (
+                    "   time in s -     step:    cost\n"
+                    "       2.748 -  initial: 1 2 3 4\n"
+                ),
+            )
 
             self.strategy.solver.finished = False
             self.strategy.config.constrained = False
@@ -301,17 +317,25 @@ class TestDefaultStrategy(TestCase):
         # nothing
         self.assertFalse(self.strategy.check_stop(self.lns))
 
-        # time limit
-        self.strategy.config.time_limit = 42
-        with mock.patch(
-            "mod_lns.Timer.is_ringing", mock.PropertyMock(return_value=True)
-        ):
-            self.assertTrue(self.strategy.check_stop(self.lns))
+        with mock.patch("sys.stdout", new=StringIO()) as out:
+            # time limit
+            self.strategy.config.time_limit = 42
+            with mock.patch(
+                "mod_lns.Timer.is_ringing", mock.PropertyMock(return_value=True)
+            ):
+                self.assertTrue(self.strategy.check_stop(self.lns))
 
-        # step limit
-        self.strategy.config.max_steps = 10
-        self.lns.step_c = 11
-        self.assertTrue(self.strategy.check_stop(self.lns))
+            # step limit
+            self.strategy.config.max_steps = 10
+            self.lns.step_c = 11
+            self.assertTrue(self.strategy.check_stop(self.lns))
+            self.assertEqual(
+                out.getvalue(),
+                (
+                    "Time limit (42 seconds) reached.\n"
+                    "Maximum number of steps (10) reached.\n"
+                ),
+            )
 
         # solver stop
         self.lns.step_c = 0
@@ -322,14 +346,21 @@ class TestDefaultStrategy(TestCase):
         """
         Test the pre_relax method.
         """
+        self.strategy.config.status_interval = 5
         self.lns.step_c = 5
         self.lns.best_model.cost = [2, 4]
-        out = StringIO()
+        with mock.patch("sys.stderr", new=StringIO()) as out:
+            with self.assertRaises(RuntimeError):
+                self.strategy.pre_relax(self.lns)
+
+        with mock.patch("sys.stdout", new=StringIO()) as out:
+            self.strategy.post_first_solution(self.lns)
+
         with mock.patch.object(
             self.strategy.timer, "get_elapsed_time", return_value=10
-        ), mock.patch("sys.stdout", out):
+        ), mock.patch("sys.stdout", new=StringIO()) as out:
             self.strategy.pre_relax(self.lns)
-            self.assertEqual(out.getvalue(), "10.000s: Iteration: 5 || 2 4\n")
+            self.assertEqual(out.getvalue(), "   10.000 -       5:  2 4\n")
 
     def test_relax(self):
         """
@@ -462,9 +493,15 @@ class TestDefaultStrategy(TestCase):
         """
         self.lns.step_c = 5
         self.lns.best_model.cost = [2, 4]
-        out = StringIO()
+        with mock.patch("sys.stderr", new=StringIO()) as out:
+            with self.assertRaises(RuntimeError):
+                self.strategy.better(self.lns)
+
+        with mock.patch("sys.stdout", new=StringIO()) as out:
+            self.strategy.post_first_solution(self.lns)
+
         with mock.patch.object(
             self.strategy.timer, "get_elapsed_time", return_value=10
-        ), mock.patch("sys.stdout", out):
+        ), mock.patch("sys.stdout", new=StringIO()) as out:
             self.strategy.better(self.lns)
-            self.assertEqual(out.getvalue(), "10.000s: New best solution: 2 4\n")
+            self.assertEqual(out.getvalue(), "   10.000 -       5:  2 4\n")
