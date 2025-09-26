@@ -84,6 +84,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
         self.minimize_variable: Optional[Symbol] = None
         self.logger: Logger
         self.stop: bool = False
+        self._assumptions_used = False
 
     @classmethod
     def __subclasshook__(cls, subclass):  # nocoverage

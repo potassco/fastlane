@@ -139,6 +139,13 @@ class ClingconSolver(ClingoSolver):
         assert isinstance(self.theory, ClingconTheory)
         assert isinstance(self.control.configuration.solve, clingo.Configuration)
         assert isinstance(self.control.configuration.solver, clingo.Configuration)
+
+        # remember assumptions were are being used
+        if assumptions:
+            self._assumptions_used = True
+        else:
+            self._assumptions_used = False
+
         time_limit = 0
         if config is not None:
             self._variability = config.variability

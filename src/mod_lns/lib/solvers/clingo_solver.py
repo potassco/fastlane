@@ -139,12 +139,13 @@ class ClingoSolver(SolverInterface):
             if self.last_model is None:
                 self.finished = True
                 return
-
         if (
             self._variability
             and res.exhausted
             and not self.finished
             and not self._interrupted
+            # cant prove optimum with assumptions
+            and not self._assumptions_used
         ):
             if res.unsatisfiable:
                 self.result = "UNSATISFIABLE"
@@ -205,6 +206,13 @@ class ClingoSolver(SolverInterface):
         assert isinstance(self.control, clingo.control.Control)
         assert isinstance(self.control.configuration.solve, clingo.Configuration)
         assert isinstance(self.control.configuration.solver, clingo.Configuration)
+
+        # remember assumptions were are being used
+        if assumptions:
+            self._assumptions_used = True
+        else:
+            self._assumptions_used = False
+
         time_limit: Optional[int] = None
         if config is not None:
             self._variability = config.variability

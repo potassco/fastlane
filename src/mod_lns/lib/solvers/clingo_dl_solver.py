@@ -260,6 +260,13 @@ class ClingoDLSolver(ClingoSolver):
         assert isinstance(self.theory, ClingoDLTheory)
         assert isinstance(self.control.configuration.solve, clingo.Configuration)
         assert isinstance(self.control.configuration.solver, clingo.Configuration)
+
+        # remember assumptions were are being used
+        if assumptions:
+            self._assumptions_used = True
+        else:
+            self._assumptions_used = False
+
         time_limit = 0
         self._search_num += 1
         bound = None
