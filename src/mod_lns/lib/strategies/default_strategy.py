@@ -68,8 +68,8 @@ class LNSConfig:
     # solver default has to be set manually in parser
     solver: SolverInterface = field(default_factory=ClingoSolver)
     seed: Optional[int] = None
-    time_limit: int = 600
-    max_steps: int = 2000
+    time_limit: Optional[int] = 600
+    max_steps: Optional[int] = 2000
     relax_rate: int = 20
     status_interval: int = 50
 
@@ -173,8 +173,7 @@ class DefaultStrategy(StrategyInterface):
         :param lns_object: LNS
         :type lns_object: mod_lns.LNS
         """
-        if self.config.time_limit is not None:
-            self.timer.start(self.config.time_limit)
+        self.timer.start(self.config.time_limit) # None for no time limit
 
         self.init_solver_config = self.config.get_init_solver_configuration()
         self.lns_solver_config = self.config.get_lns_solver_configuration()
@@ -227,6 +226,7 @@ class DefaultStrategy(StrategyInterface):
         :rtype: bool
         """
         assert isinstance(self.solver, SolverInterface)
+        self._update_lns_solver_time_limit()
         lns_object.new_model = self.solver.solve(self.init_solver_config)
         if lns_object.new_model is None:
             return False
@@ -385,10 +385,10 @@ class DefaultStrategy(StrategyInterface):
         :rtype: Optional[Model]
         """
         assert isinstance(self.solver, SolverInterface)
+        self._update_lns_solver_time_limit()
         new_model = self.solver.solve(
             self.lns_solver_config, list(map(lambda x: (x, True), fixed_atoms))
         )
-        self._update_lns_solver_time_limit()
         return new_model
 
     # pylint: disable=unused-argument
