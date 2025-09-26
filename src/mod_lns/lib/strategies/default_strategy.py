@@ -7,6 +7,7 @@ from __future__ import annotations
 import random
 from argparse import ArgumentParser, Namespace, _SubParsersAction
 from dataclasses import dataclass, field
+from math import log10
 from typing import TYPE_CHECKING, Any, Optional
 
 import clingo
@@ -19,7 +20,6 @@ from mod_lns.lib.parser.default_parser import get_default_parser
 from mod_lns.lib.relaxation import relax_declarative, relax_random
 from mod_lns.lib.solvers import ClingoSolver
 from mod_lns.lib.utils import calculate_variability
-from math import log10
 
 if TYPE_CHECKING:
     from mod_lns.lns import LNS  # nocoverage
@@ -283,19 +283,23 @@ class DefaultStrategy(StrategyInterface):
         step_digits = 7
         cost_digits = max(len(lns_object.best_model.get_cost_str()), 4)
         if self.config.time_limit is not None:
-            time_digits = max(log10(self.config.time_limit) + 1 + 3, time_digits)
+            time_digits = max(
+                int(log10(self.config.time_limit)) + 1 + 1 + 3, time_digits
+            )
         if self.config.max_steps is not None:
-            step_digits = max(log10(self.config.max_steps), step_digits)
+            step_digits = max(int(log10(self.config.max_steps)) + 1, step_digits)
 
         header = f"{{0:>{time_digits}}} - {{1:>{step_digits}}}: {{2:>{cost_digits}}}"
         print(header.format("time in s", "step", "cost"))
 
-        self._iter_format = f"{{0:>{time_digits}.3f}} - {{1:>{step_digits}}}: {{2:>{cost_digits}}}"
+        self._iter_format = (
+            f"{{0:>{time_digits}.3f}} - {{1:>{step_digits}}}: {{2:>{cost_digits}}}"
+        )
         print(
             self._iter_format.format(
                 self.timer.get_elapsed_time(),
                 "initial",
-                lns_object.best_model.get_cost_str()
+                lns_object.best_model.get_cost_str(),
             )
         )
 
@@ -335,12 +339,14 @@ class DefaultStrategy(StrategyInterface):
         :param lns_object: LNS object.
         :type lns_object: mod_lns.LNS
         """
+        if self._iter_format == "":
+            raise RuntimeError("pre_relax called before post_first_solution")
         if lns_object.step_c % self.config.status_interval == 0:
             print(
                 self._iter_format.format(
                     self.timer.get_elapsed_time(),
                     lns_object.step_c,
-                    lns_object.current_model.get_cost_str()
+                    lns_object.best_model.get_cost_str(),
                 )
             )
 
@@ -453,14 +459,16 @@ class DefaultStrategy(StrategyInterface):
         :type lns_object: mod_lns.LNS
         :return: None
         """
+        if self._iter_format == "":
+            raise RuntimeError("better called before post_first_solution")
         self.logger.debug("new best model")
         print(
-                self._iter_format.format(
-                    self.timer.get_elapsed_time(),
-                    lns_object.step_c,
-                    lns_object.current_model.get_cost_str()
-                )
+            self._iter_format.format(
+                self.timer.get_elapsed_time(),
+                lns_object.step_c,
+                lns_object.best_model.get_cost_str(),
             )
+        )
 
     def print_result(
         self,
