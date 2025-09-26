@@ -5,15 +5,7 @@
 Implementations of :class:`SolverInterface`
 ============================================
 
-.. currentmodule:: mod_lns.lns_config
-
-Listed below are multiple solver implementations, which can be used on its own or be modified using an
-:class:`LNSConfig` object.
-
-.. currentmodule:: mod_lns.lns
-
-.. note::
-    Changes to the solver might also require changes to the :meth:`on_model` method of the :class:`LNS` class.
+Listed below are multiple solver implementations.
 
 .. currentmodule:: mod_lns.interfaces.solver
 
@@ -35,4 +27,15 @@ Implementation of :class:`SolverInterface` using clingo-dl.
 By default atoms are fixed using assumptions.
 
 .. automodule:: mod_lns.lib.solvers.clingo_dl_solver
+    :members:
+
+.. currentmodule:: mod_lns.interfaces.solver
+
+ClingconSolver
+----------------
+
+Implementation of :class:`SolverInterface` using clingcon.
+By default atoms are fixed using assumptions.
+
+.. automodule:: mod_lns.lib.solvers.clingcon_solver
     :members:
