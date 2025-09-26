@@ -34,7 +34,7 @@ class LNS:
         """
         self.strategy: StrategyInterface = strategy
         self.strategy.parse_options(args)
-        self.logger = setup_logger("LNS", strategy.log_level)
+        self.logger = setup_logger("LNS", strategy._log_level)
         self.strategy.init_logger(self.logger)
         self.logger.info("info")
         self.logger.warning("warning")

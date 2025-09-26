@@ -163,7 +163,7 @@ class DefaultStrategy(StrategyInterface):
                 else:
                     rest[attr] = value
         self.solver = self.config.solver
-        self.log_level = self.config.log_level
+        self._log_level = self.config.log_level
         return rest
 
     def pre_setup(self, lns_object: "LNS"):

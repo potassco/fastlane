@@ -433,7 +433,7 @@ class Heulingo(StrategyInterface):
                 else:
                     rest[attr] = value
         self.solver = self.config.solver
-        self.log_level = self.config.log_level
+        self._log_level = self.config.log_level
 
         self._prep_values()
 

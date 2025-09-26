@@ -45,8 +45,8 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         """
         Initialize strategy interface.
         """
-        self.log_level: int = 30  # logging.WARNING
-        self.logger: Logger = setup_logger("DefaultStrategyLogger", self.log_level)
+        self._log_level: int = 30  # logging.WARNING
+        self.logger: Logger = setup_logger("DefaultStrategyLogger", self._log_level)
         self.solver: Optional[SolverInterface] = None
 
     @classmethod
