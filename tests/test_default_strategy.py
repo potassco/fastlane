@@ -213,22 +213,50 @@ class TestDefaultStrategy(TestCase):
             self.strategy.post_setup(self.lns)
             mock_ground.assert_called_once()
 
+    def test_update_time_limit(self):
+        """
+        Test the _update_time_limit method.
+        """
+        self.strategy.config.time_limit = 42
+        with mock.patch.object(self.strategy.timer, "remaining_time", return_value=21):
+            self.strategy.lns_solver_config.time_limit = None
+            self.strategy._update_time_limit(self.strategy.lns_solver_config)
+            self.assertEqual(self.strategy.lns_solver_config.time_limit, 21)
+
+            self.strategy.lns_solver_config.time_limit = 10
+            self.strategy._update_time_limit(self.strategy.lns_solver_config)
+            self.assertEqual(self.strategy.lns_solver_config.time_limit, 10)
+
+            self.strategy.lns_solver_config.time_limit = 50
+            self.strategy._update_time_limit(self.strategy.lns_solver_config)
+            self.assertEqual(self.strategy.lns_solver_config.time_limit, 21)
+
     def test_get_first_solution(self):
         """
         Test the get_first_solution method.
         """
         self.strategy.solver = ClingoSolver()
         with mock.patch.object(
+            self.strategy, "_update_time_limit"
+        ) as mock_update_time_limit, mock.patch.object(
             self.strategy.solver, "solve", return_value=None
         ) as mock_solve:
             self.assertFalse(self.strategy.get_first_solution(self.lns))
+            mock_update_time_limit.assert_called_once_with(
+                self.strategy.init_solver_config
+            )
             mock_solve.assert_called_once_with(self.strategy.init_solver_config)
 
         model = Model()
         with mock.patch.object(
+            self.strategy, "_update_time_limit"
+        ) as mock_update_time_limit, mock.patch.object(
             self.strategy.solver, "solve", return_value=model
         ) as mock_solve:
             self.assertTrue(self.strategy.get_first_solution(self.lns))
+            mock_update_time_limit.assert_called_once_with(
+                self.strategy.init_solver_config
+            )
             mock_solve.assert_called_once_with(self.strategy.init_solver_config)
             self.assertEqual(self.lns.current_model, model)
             self.assertEqual(self.lns.best_model, model)
@@ -241,24 +269,6 @@ class TestDefaultStrategy(TestCase):
         self.strategy._calc_opt_bound(self.strategy.lns_solver_config, [2, 4])
         self.assertEqual(self.strategy.lns_solver_config.opt_mode, "opt, 2, 3")
 
-    def test_update_lns_solver_time_limit(self):
-        """
-        Test the _update_lns_solver_time_limit method.
-        """
-        self.strategy.config.time_limit = 42
-        with mock.patch.object(self.strategy.timer, "remaining_time", return_value=21):
-            self.strategy.lns_solver_config.time_limit = None
-            self.strategy._update_lns_solver_time_limit()
-            self.assertEqual(self.strategy.lns_solver_config.time_limit, 21)
-
-            self.strategy.lns_solver_config.time_limit = 10
-            self.strategy._update_lns_solver_time_limit()
-            self.assertEqual(self.strategy.lns_solver_config.time_limit, 10)
-
-            self.strategy.lns_solver_config.time_limit = 50
-            self.strategy._update_lns_solver_time_limit()
-            self.assertEqual(self.strategy.lns_solver_config.time_limit, 21)
-
     def test_post_first_solution(self):
         """
         Test the post_first_solution method.
@@ -269,7 +279,7 @@ class TestDefaultStrategy(TestCase):
         self.lns.current_model.cost = [2, 4]
         self.lns.best_model.cost = [1, 2, 3, 4]
         with mock.patch.object(
-            self.strategy, "_update_lns_solver_time_limit"
+            self.strategy, "_update_time_limit"
         ) as mock_update_time_limit, mock.patch.object(
             self.strategy, "_calc_opt_bound"
         ) as mock_calc_opt_bound, mock.patch.object(
@@ -295,7 +305,9 @@ class TestDefaultStrategy(TestCase):
             mock_update_time_limit.reset_mock()
             mock_calc_opt_bound.reset_mock()
             self.strategy.post_first_solution(self.lns)
-            mock_update_time_limit.assert_called_once()
+            mock_update_time_limit.assert_called_once_with(
+                self.strategy.lns_solver_config
+            )
             mock_calc_opt_bound.assert_not_called()
 
             self.strategy.solver.finished = False
@@ -303,7 +315,9 @@ class TestDefaultStrategy(TestCase):
             mock_update_time_limit.reset_mock()
             mock_calc_opt_bound.reset_mock()
             self.strategy.post_first_solution(self.lns)
-            mock_update_time_limit.assert_called_once()
+            mock_update_time_limit.assert_called_once_with(
+                self.strategy.lns_solver_config
+            )
             mock_calc_opt_bound.assert_called_once_with(
                 self.strategy.lns_solver_config, [2, 4]
             )
@@ -404,13 +418,15 @@ class TestDefaultStrategy(TestCase):
         with mock.patch.object(
             self.strategy.solver, "solve", return_value=model
         ) as mock_solve, mock.patch.object(
-            self.strategy, "_update_lns_solver_time_limit"
+            self.strategy, "_update_time_limit"
         ) as mock_update_time_limit:
             self.assertEqual(self.strategy.repair(self.lns, fixed_atoms), model)
             mock_solve.assert_called_once_with(
                 self.strategy.lns_solver_config, assumptions
             )
-            mock_update_time_limit.assert_called_once()
+            mock_update_time_limit.assert_called_once_with(
+                self.strategy.lns_solver_config
+            )
 
     def test_check_accept(self):
         """

@@ -173,7 +173,7 @@ class DefaultStrategy(StrategyInterface):
         :param lns_object: LNS
         :type lns_object: mod_lns.LNS
         """
-        self.timer.start(self.config.time_limit) # None for no time limit
+        self.timer.start(self.config.time_limit)  # None for no time limit
 
         self.init_solver_config = self.config.get_init_solver_configuration()
         self.lns_solver_config = self.config.get_lns_solver_configuration()
@@ -212,6 +212,28 @@ class DefaultStrategy(StrategyInterface):
         assert isinstance(self.solver, SolverInterface)
         self.solver.ground()
 
+    def _update_time_limit(self, solver_config: SolverConfig) -> None:
+        """
+        Update solve time-limit.
+
+        :param solver_config: Solver configuration to update.
+        :type solver_config: SolverConfig
+        """
+        if self.config.time_limit is not None:
+            solver_tl = solver_config.time_limit
+            if solver_tl is None:
+                solver_config.time_limit = self.timer.remaining_time()
+            elif self.timer.remaining_time() < solver_tl:
+                solver_config.time_limit = self.timer.remaining_time()
+                self.logger.debug(
+                    "elapsed time: %d seconds", self.timer.get_elapsed_time()
+                )
+                self.logger.debug(
+                    "Time limit for solver reduced to %d seconds "
+                    "to fit into overall time limit.",
+                    solver_config.time_limit,
+                )
+
     # pylint: disable=dangerous-default-value
     def get_first_solution(
         self,
@@ -226,7 +248,7 @@ class DefaultStrategy(StrategyInterface):
         :rtype: bool
         """
         assert isinstance(self.solver, SolverInterface)
-        self._update_lns_solver_time_limit()
+        self._update_time_limit(self.init_solver_config)
         lns_object.new_model = self.solver.solve(self.init_solver_config)
         if lns_object.new_model is None:
             return False
@@ -246,22 +268,6 @@ class DefaultStrategy(StrategyInterface):
         bound = cost[:-1] + [cost[-1] - 1]
         solver_config.opt_mode = "opt, " + ", ".join([str(c) for c in bound])
 
-    def _update_lns_solver_time_limit(self) -> None:
-        """
-        Set the time limit for the LNS solver.
-        """
-        if self.config.time_limit is not None:
-            lns_tl = self.lns_solver_config.time_limit
-            if lns_tl is None:
-                self.lns_solver_config.time_limit = self.timer.remaining_time()
-            elif self.timer.remaining_time() < lns_tl:
-                self.lns_solver_config.time_limit = self.timer.remaining_time()
-                self.logger.debug(
-                    "Time limit for LNS solver reduced to %d seconds "
-                    " to fit into overall time limit.",
-                    self.lns_solver_config.time_limit,
-                )
-
     def post_first_solution(self, lns_object):
         """
         Actions to perform after finding the first solution.
@@ -270,7 +276,7 @@ class DefaultStrategy(StrategyInterface):
         :type lns_object: mod_lns.LNS
         """
         if not self.solver.finished:
-            self._update_lns_solver_time_limit()
+            self._update_time_limit(self.lns_solver_config)
 
             if self.config.constrained:
                 self._calc_opt_bound(
@@ -385,7 +391,7 @@ class DefaultStrategy(StrategyInterface):
         :rtype: Optional[Model]
         """
         assert isinstance(self.solver, SolverInterface)
-        self._update_lns_solver_time_limit()
+        self._update_time_limit(self.lns_solver_config)
         new_model = self.solver.solve(
             self.lns_solver_config, list(map(lambda x: (x, True), fixed_atoms))
         )
