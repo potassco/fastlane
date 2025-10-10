@@ -10,6 +10,12 @@ Implementations of :class:`StrategyInterface`
 Shown below is a default strategy implementation and a strategy using heuristics and a prioritized
 search called heulingo. Both strategies use their own configuration class.
 
+.. note::
+
+    Heulingo is based on the heulingo clingo application developed by Irumi Sugimori
+    (`Large Neighborhood Prioritized Search for Combinatorial Optimization with
+    Answer Set Programming <https://doi.org/10.24963/kr.2024/72>`_).
+
 Default strategy
 --------------
 
