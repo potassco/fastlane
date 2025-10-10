@@ -1,5 +1,6 @@
 """
-Default strategy implementing classic LNS with weighted sum as optimization criteria and random relaxation.
+Default strategy, supports both a classic and constrained LNS approach as well as
+declarative and random relaxation.
 """
 
 from __future__ import annotations

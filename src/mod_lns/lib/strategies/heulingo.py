@@ -1,5 +1,6 @@
 """
-Default strategy implementing classic LNS with weighted sum as optimization criteria and random relaxation.
+Heulingo, uses heuristics and a prioritized search supporting both random and
+declarative relaxation via a configuration encoding.
 """
 
 from __future__ import annotations

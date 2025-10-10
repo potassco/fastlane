@@ -2,8 +2,7 @@
 A modifiable large neighborhood search framework.
 """
 
-from argparse import Namespace
-from typing import Optional
+from typing import Any, Optional
 
 from mod_lns import Model
 from mod_lns.interfaces.strategy import StrategyInterface
@@ -37,13 +36,9 @@ class LNS:
         self.strategy.parse_options(args)
         self.logger = setup_logger("LNS", strategy._log_level)
         self.strategy.init_logger(self.logger)
-        self.logger.info("info")
-        self.logger.warning("warning")
-        self.logger.debug("debug")
-        self.logger.error("error")
 
         self.files: list[str] = files
-        
+
         self.step_c: int = 0
 
         self.new_model: Optional[Model] = None
@@ -70,6 +65,11 @@ class LNS:
         #   check_better(n,b)
         #       b = n
         #       better()
+
+        self.logger.info("info")
+        self.logger.warning("warning")
+        self.logger.debug("debug")
+        self.logger.error("error")
 
         self.step_c = -1
 
