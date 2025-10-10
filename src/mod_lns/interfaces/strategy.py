@@ -5,7 +5,7 @@ Strategy interface used for LNS.
 from __future__ import annotations
 
 import abc
-from argparse import ArgumentParser, Namespace, _SubParsersAction
+from argparse import ArgumentParser, _SubParsersAction
 from logging import Logger
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -90,12 +90,12 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def parse_options(self, args: Namespace) -> dict[str, Any]:  # nocoverage
+    def parse_options(self, args: dict[str, Any]) -> dict[str, Any]:  # nocoverage
         """
         Parse options from args.
 
         :param args: Parsed arguments.
-        :type args: Namespace
+        :type args: dict[str, Any]
         :return: Remaining unparsed options.
         :rtype: dict[str, Any]
         """

@@ -5,7 +5,7 @@ Default strategy implementing classic LNS with weighted sum as optimization crit
 from __future__ import annotations
 
 import random
-from argparse import ArgumentParser, Namespace, _SubParsersAction
+from argparse import ArgumentParser, _SubParsersAction
 from dataclasses import dataclass, field
 from math import log10
 from typing import TYPE_CHECKING, Any, Optional
@@ -146,19 +146,19 @@ class DefaultStrategy(StrategyInterface):
         parser.set_defaults(strategy=self)
         return parser
 
-    def parse_options(self, args: Namespace) -> dict[str, Any]:
+    def parse_options(self, args: dict[str, Any]) -> dict[str, Any]:
         """
         Parse options from args.
 
         :param args: Parsed arguments.
-        :type args: Namespace
+        :type args: dict[str, Any]
         :return: Remaining unparsed options.
         :rtype: dict[str, Any]
         """
         rest = {}
-        for attr, value in args.__dict__.items():
+        for attr, value in args.items():
             if value is not None:
-                if hasattr(self.config, attr) and value is not None:
+                if hasattr(self.config, attr):
                     setattr(self.config, attr, value)
                 else:
                     rest[attr] = value

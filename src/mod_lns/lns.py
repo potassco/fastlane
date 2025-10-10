@@ -23,11 +23,12 @@ class LNS:
     :default lns_config: LNSConfig()
     """
 
+    # pylint: disable=dangerous-default-value
     def __init__(
         self,
         files: list[str],
         strategy: StrategyInterface = DefaultStrategy(),
-        args: Namespace = Namespace(),
+        args: dict[str, Any] = {},
     ):
         """
         Initialization of the lns object.

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import math
 import random
-from argparse import ArgumentParser, Namespace, _SubParsersAction
+from argparse import ArgumentParser, _SubParsersAction
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
@@ -126,7 +126,7 @@ class HeulingoConfig:
     init_solve_limit: Optional[str] = None
     init_time_limit: Optional[int] = None
 
-    # lns configuration
+    # heulingo configuration
     heulingo_configuration: Optional[str] = None
     solve_limit_increase_rate: float = 0.01
     time_limit_increase_rate: float = 0.01
@@ -146,7 +146,7 @@ class HeulingoConfig:
     lns_time_limit: Optional[int] = None
 
     # lns_configuration_values
-    lns_configuration_values: ClassVar[dict[str, dict[str, Any]]] = {
+    heulingo_configuration_values: ClassVar[dict[str, dict[str, Any]]] = {
         "teaspoon": {
             "parallel_mode": None,
             "init_configuration": "jumpy",
@@ -293,9 +293,10 @@ class HeulingoConfig:
     def apply_config(self) -> None:
         """
         Apply default configuration values.
+        Dont override already set values.
         """
         if self.heulingo_configuration is not None:
-            for key, value in self.lns_configuration_values[
+            for key, value in self.heulingo_configuration_values[
                 self.heulingo_configuration
             ].items():
                 if isinstance(getattr(self, key), dict):
@@ -412,29 +413,34 @@ class Heulingo(StrategyInterface):
             self.config.time_limit_increase_rate, 0, 100
         )
 
-    def parse_options(self, args: Namespace) -> dict[str, Any]:
+    def parse_options(self, args: dict[str, Any]) -> dict[str, Any]:
         """
         Parse command line options.
 
         :param args: Command line arguments
-        :type args: Namespace
+        :type args: dict[str, Any]
         """
+        # argument priority (from high to low):
+        # 1. directly set arguments
+        # 2. directly set config values (defaults)
+        # 3. configuration preset
         rest = {}
         if (
-            hasattr(args, "heulingo_configuration")
-            and args.heulingo_configuration is not None
+            "heulingo_configuration" in args
+            and args["heulingo_configuration"] is not None
         ):
-            self.config.heulingo_configuration = args.heulingo_configuration
+            self.config.heulingo_configuration = args["heulingo_configuration"]
+        if self.config.heulingo_configuration is not None:
             self.config.apply_config()
-        for attr, value in args.__dict__.items():
+        for attr, value in args.items():
+            # Overriding with None can cause issues and is therefore currently not supported
             if value is not None:
-                if hasattr(self.config, attr) and value is not None:
+                if hasattr(self.config, attr):
                     setattr(self.config, attr, value)
                 else:
                     rest[attr] = value
         self.solver = self.config.solver
         self._log_level = self.config.log_level
-
         self._prep_values()
 
         return rest

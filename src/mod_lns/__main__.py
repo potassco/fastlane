@@ -14,7 +14,7 @@ def main():
     parser = get_framework_parser()
     args = parser.parse_args()
 
-    lns = LNS(args.files, args.strategy, args)
+    lns = LNS(args.files, args.strategy, vars(args))
     lns.main()
 
 
