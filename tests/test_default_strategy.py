@@ -128,24 +128,24 @@ class TestDefaultStrategy(TestCase):
         """
         Test the parse_options method.
         """
-        args = argparse.Namespace(
-            solver=ClingoDLSolver(),
-            seed=123,
-            time_limit=42,
-            max_steps=100,
-            relax_rate=20,
-            init_solve_limit="100,200",
-            init_time_limit=None,
-            constrained=True,
-            declarative=True,
-            accept_variability=30,
-            lns_solve_limit="300",
-            lns_time_limit=20,
-            opt=5,
-            log_level=50,
-        )
+        args = {
+            "solver": ClingoDLSolver(),
+            "seed": 123,
+            "time_limit": 42,
+            "max_steps": 100,
+            "relax_rate": 20,
+            "init_solve_limit": "100,200",
+            "init_time_limit": None,
+            "constrained": True,
+            "declarative": True,
+            "accept_variability": 30,
+            "lns_solve_limit": "300",
+            "lns_time_limit": 20,
+            "opt": 5,
+            "log_level": 50,
+        }
         rest = self.strategy.parse_options(args)
-        self.assertEqual(self.strategy.config.solver, args.solver)
+        self.assertEqual(self.strategy.config.solver, args["solver"])
         self.assertEqual(self.strategy.config.seed, 123)
         self.assertEqual(self.strategy.config.time_limit, 42)
         self.assertEqual(self.strategy.config.max_steps, 100)
@@ -156,7 +156,7 @@ class TestDefaultStrategy(TestCase):
         self.assertEqual(self.strategy.config.accept_variability, 30)
         self.assertEqual(self.strategy.config.lns_solve_limit, "300")
         self.assertEqual(self.strategy.config.lns_time_limit, 20)
-        self.assertEqual(self.strategy.solver, args.solver)
+        self.assertEqual(self.strategy.solver, args["solver"])
         self.assertEqual(self.strategy._log_level, 50)
         # None -> default value
         self.assertEqual(self.strategy.config.init_time_limit, 20)
@@ -360,21 +360,9 @@ class TestDefaultStrategy(TestCase):
         """
         Test the pre_relax method.
         """
-        self.strategy.config.status_interval = 5
-        self.lns.step_c = 5
-        self.lns.best_model.cost = [2, 4]
-        with mock.patch("sys.stderr", new=StringIO()) as out:
-            with self.assertRaises(RuntimeError):
-                self.strategy.pre_relax(self.lns)
-
-        with mock.patch("sys.stdout", new=StringIO()) as out:
-            self.strategy.post_first_solution(self.lns)
-
-        with mock.patch.object(
-            self.strategy.timer, "get_elapsed_time", return_value=10
-        ), mock.patch("sys.stdout", new=StringIO()) as out:
-            self.strategy.pre_relax(self.lns)
-            self.assertEqual(out.getvalue(), "   10.000 -       5:  2 4\n")
+        self.strategy._printout = True
+        self.strategy.pre_relax(self.lns)
+        self.assertFalse(self.strategy._printout)
 
     def test_relax(self):
         """
@@ -507,17 +495,34 @@ class TestDefaultStrategy(TestCase):
         """
         Test the better method.
         """
-        self.lns.step_c = 5
+        self.strategy._printout = False
+        self.strategy.better(self.lns)
+        self.assertTrue(self.strategy._printout)
+
+    def test_pre_next_iteration(self):
+        """
+        Test the pre_next_iteration method.
+        """
+        self.strategy._printout = True
+        self.strategy.config.status_interval = 5
+        self.lns.step_c = 4
         self.lns.best_model.cost = [2, 4]
         with mock.patch("sys.stderr", new=StringIO()) as out:
             with self.assertRaises(RuntimeError):
-                self.strategy.better(self.lns)
+                self.strategy.pre_next_iteration(self.lns)
 
-        with mock.patch("sys.stdout", new=StringIO()) as out:
-            self.strategy.post_first_solution(self.lns)
+        self.strategy._iter_format = "{0:>9.3f} - {1:>7}: {2:>4}"
 
         with mock.patch.object(
             self.strategy.timer, "get_elapsed_time", return_value=10
         ), mock.patch("sys.stdout", new=StringIO()) as out:
-            self.strategy.better(self.lns)
+            self.strategy.pre_next_iteration(self.lns)
+            self.assertEqual(out.getvalue(), "   10.000 -       4:  2 4\n")
+
+        self.strategy._printout = False
+        self.lns.step_c = 5
+        with mock.patch.object(
+            self.strategy.timer, "get_elapsed_time", return_value=10
+        ), mock.patch("sys.stdout", new=StringIO()) as out:
+            self.strategy.pre_next_iteration(self.lns)
             self.assertEqual(out.getvalue(), "   10.000 -       5:  2 4\n")
