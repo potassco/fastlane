@@ -3,11 +3,12 @@
 Guide
 ============
 
-In his section we will illustrate an example workflow using this framework step by step. All python code snippets shown here can
-also be found in :file:`./examples/demo.py`.
-The problem we will be looking at is the `Social golfer problem <https://en.wikipedia.org/wiki/Social_golfer_problem>`_ with
-3 players, 3 groups and 3 weeks. We choose a small instance, to keep the run-time as low as possible, while still being able to
-observe the effects of different approaches.
+This section will illustrate how to use this framework by giving some small examples.
+All python code snippets shown here can also be found in :file:`./examples/demo.py`.
+The problem we will be looking at is the 
+`Social golfer problem <https://en.wikipedia.org/wiki/Social_golfer_problem>`_ with
+5 players, 5 groups and 5 weeks. We choose a small instance, to keep the run-time as 
+low as possible, while still being able to observe the effects of different approaches.
 
 
 .. _ref_g_enc:
@@ -15,14 +16,15 @@ observe the effects of different approaches.
 Encoding
 ----------
 
-The corresponding encoding is located in :file:`./examples/golf_demo.lp` and can be divided into two parts.
-The first part represents the basic clingo encoding of the problem, seen below.
+The corresponding encoding is located in :file:`./examples/golf_demo.lp` and can be
+divided into two parts. The first part represents the basic clingo encoding of the
+problem, seen below.
 
 .. code-block::
 
-    #const g=3.
-    #const p=3.
-    #const w=3.
+    #const g=5.
+    #const p=5.
+    #const w=5.
 
     player(1..g*p).
     group(1..g).
@@ -35,9 +37,10 @@ The first part represents the basic clingo encoding of the problem, seen below.
     :~ #count { W : meets(P1,P2,W) } > 1, player(P1), player(P2), P1 < P2. [1,P1]
     #show plays/3.
 
-The second part can be used for declarative relaxation, with the first line defining possible terms to be selected
-during relaxation, in this case weeks "W". The second line then connects the terms "W" with corresponding atoms to be fixed
-(complement of relaxed atoms during search), here all plays/3 atoms in the corresponding week W.
+The second part can be used for declarative relaxation, with the first line defining
+possible terms to be selected during relaxation, in this case weeks "W". The second
+line then connects the terms "W" with corresponding atoms to be fixed (complement of 
+relaxed atoms during search), here all plays/3 atoms in the corresponding week W.
 
 .. code-block::
 
@@ -47,10 +50,11 @@ during relaxation, in this case weeks "W". The second line then connects the ter
 Basics
 -----------------
 
-.. currentmodule:: mod_lns.lns_config
+.. currentmodule:: mod_lns.lib.strategies.default_strategy
 
-As descibed in the :ref:`usage<ref_usage>` section in the most basic case the LNS can be started by only providing
-the corresponding ASP encoding. In this case the default configuration described by :class:`LNSConfig` is used.
+As descibed in the :ref:`usage<ref_usage>` section in the most basic case the LNS
+can be started by only providing the corresponding ASP encodings. In this case the
+:class:`DefaultStrategy` with its default configuration is used.
 
 .. code-block:: python
 
@@ -59,144 +63,161 @@ the corresponding ASP encoding. In this case the default configuration described
     lns = LNS(["examples/golf_demo.lp"])
     lns.main()
 
-We can configure the search my passing a new :class:`LNSConfig` object. During initialization of the the :class:`LNSConfig` the
-following arguments can be provided:
-
-- lns_options: A dictionary of lns specific parameters, such as relax_rate or step limit (see :ref:`lns implementation<ref_lns>` section for more details)
-- clingo_options: A list of clingo options directly passed to the solver during initialization.
-- solver: The solver used for the search. Depending on the configuration class the solver can be modified through different lns_options. The default configuration allows the switch between using assumptions and heuristics when repairing, using the "heuristics" option.
-- strategy: The strategy used for the search. Depending on the configuration class the strategy can be modified through different lns_options. The default configuration allows the switch between classic and constrained LNS using the "constrained" option and the choice of random or declarative relaxation using the "declarative" option.
-
-For now lets just modify the lns_options as seen below (0.2 is also the default relax rate):
-
-.. code-block:: python
-
-    from mod_lns.lns_config import LNSConfig
-
-    cl_config = LNSConfig(
-        lns_options={
-            "seed": 123,
-            "relax_rate": 0.2,
-        })
-    lns = LNS(["examples/golf_demo.lp"], cl_config)
-    lns.main()
-
-You should see 2000 LNS steps, during which the optimization value is reduced relatively quickly from initially 5 to 2.
-The iterations are marked every 50 steps to be able to tell the current state of the search. We can see the that,
-while first improvements come quickly the number of steps required to find the best solutions (cost 0) can not be found
-in the first 2000 steps (found at step 2518).
-Feel free to play around with different seeds and or relax rates to see how that effects the search.
-
-An alternative approach is to "guide" the search by enforcing a strictly better solution by the solver. While in the
-classic approach the solutions are either "worse/equal" or "better", in this approach the solutions are either "unsatisfiable"
-or "better". This leads to signiﬁcantly fewer steps but increases the solve time for each step. Lets try it out.
-
-.. code-block:: python
-
-    hc_config = LNSConfig(
-        lns_options={
-            "constrained": True,
-            "seed": 123,
-            "relax_rate": 0.2,
-            "solve_time_limit": 10
-        })
-
-We can see we need only 34 steps to find the best solution. The increased solve time is on such small instances not visible.
-Feel free to try the above configuration on the 5-5-5 golf instance to see the difference (CTRL + C to interrupt search).
-In the time takes the constrained approach to produce one new solution the classic approach produces 50 or more. Once again
-the correct usage of parameters significantly influences the search. The performance of the constraint approach is for
-example strongly connected to the chosen "solve_time_limit" parameter, try 2s.
+We can configure the search by creating a new strategy object and adjusting the parameters
+of its config attribute, either assigning new values to the existing :class:`LNSConfig`
+object or creating a new object from scratch. Alternatively, commandline options can also
+be passed as a dictionary during initialization of the `LNS` object.
 
 .. note::
-    Constrained approach with a relax rate of 1 corresponds to branch-and-bound search.
+    You can interrupt the framework at any time using `Ctrl+C`. Feel free to interrupt
+    the search once the a solution with cost 0 was found. Since the :class:`DefaultStrategy`
+    uses assumptions and can therefore not prove optimality, the search will continue
+    until the step or time limit is reached, even if an optimal solution was already found.
 
-All of the above approaches use fully random relaxation, i.e. atoms to be fixed are randomly selected from all shown atoms.
-We can enable declarative relaxation to define a set of atoms from which our fixed atoms are randomly chosen.
-The lower part of the :ref:`encoding<ref_g_enc>` section above, describes how the encoding has to be modified to support
-declarative relaxation. In this case a certain number of weeks are randomly selected and all matches in those weeks fixed.
-The declarative relaxation can be enabled as follows:
+    The seed can only influence the search to a certain degree but not
+    guarantee reproducibility, due to different timings and interrupts. For example, if
+    an initial time limit is set, the initial solution can differ between seeds, depending
+    on when/where exactly the solver is interrupted after the time limit is reached.
+
+Classic LNS with random relaxation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+For now lets create a new strategy object `cl_strategy` and assign a new :class:`LNSConfig`
+object to its config attribute. We will set a seed for the random number generator to
+make the search more predictable, a relax rate of 40%, a time limit of 2 seconds for
+the initial solution and a step limit of 500.
 
 .. code-block:: python
 
-    cl_decl_config = LNSConfig(
-            lns_options={
-                "declarative": True,
-                "seed": 123
-            })
+    from mod_lns.lib.strategies.default_strategy import DefaultStrategy, LNSConfig
 
+    cl_strategy = DefaultStrategy()
+    cl_strategy.config = LNSConfig(
+        seed=123, relax_rate=40, init_time_limit=2, max_steps=500
+    )
+    lns = LNS(["examples/golf_demo.lp"], cl_strategy)
+    lns.main()
+
+You should see 500 LNS steps, with the current state of the search printed every 50 steps,
+during which the initial optimization value of 7 is reduced step by step by using the
+default classic LNS approach:
+ - Find the initial solution in 2s with cost 7
+ - Relax 40% of the atoms of the initial solution (randomly chosen)
+ - Find a new solution with no time limit using the remaining 60% of atoms as assumptions  
+   (since we wait until the search is finished the new solution is a local optimum and can
+   never be worse than the previous solutions (worst case, the previous solution is found
+   again))
+ - Check if the new solution should be used as the starting point for the next step:
+  - Accept, if the new solution is different enough (accept_variability) from the previous
+  solution (always accept when using default configuration)
+- Check if the new solution is better than the best solution found so far:
+  - If yes, store it as the new best solution
+- Repeat until the step limit is reached
+
+Try running the search multiple times to see how the results can vary.
+
+Constrained LNS with random relaxation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+An alternative approach is to "guide" the search by enforcing a strictly better solution
+during solving. This significantly increases the performance since we avoid optimizing to
+the level of our current solution. But this also results in solutions with equal cost
+being unsatisfiable, which inturn can not be accepted and used as a starting point for
+the next iteration, which can cause the search to get stuck if the relax rate is too low.
+
+.. code-block:: python
+
+    con_strategy = DefaultStrategy()
+    con_strategy.config = LNSConfig(
+        seed=123, relax_rate=40, init_time_limit=2, max_steps=500, constrained=True
+    )
+
+.. note::
+    Constrained approach with a relax rate of 100 corresponds to branch-and-bound search.
+
+LNS with declarative relaxation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+All of the above approaches use fully random relaxation, i.e. atoms to be fixed are
+randomly selected from all shown atoms. We can enable declarative relaxation to define
+a set of atoms from which our fixed atoms are randomly chosen. The lower part of the
+:ref:`encoding<ref_g_enc>` section above, describes how the encoding has to be modified
+to support declarative relaxation. In this case a certain number of weeks are randomly
+selected and all matches in those weeks fixed. The declarative relaxation can be enabled
+using the `declarative` parameter of the :class:`LNSConfig`.
+
+.. code-block:: python
+
+    cl_decl_strategy = DefaultStrategy()
+    cl_decl_strategy.config = LNSConfig(
+        seed=123, relax_rate=40, init_time_limit=2, max_steps=500, declarative=True
+    )
 
 Advanced
 ---------
 
-The purpose of this framework is to not only plug different building blocks together and enable certain options
-but also allow them to be easily modifiable. Lets try modifying the default configuration, by adding a new option, which,
-when enabled, modifies the provided strategy so that the fixed atoms are printed and we can observe the declarative relaxation.
+One purpose of this framework is to allow users to easily modify and/or create new LNS
+components. Lets try modifying the default strategy so that fixed atoms are printed
+and we can observe the declarative relaxation.
 
-.. note::
-    Example solver and strategy modifications are located inside the :code:`mod_lns.lib.mods` submodule.
-
-To do so we first nees to understand how the :class:`LNSConfig` class works. Inside the :meth:`__init__` method the different
-parameters are registered and, depending on the options, different methods to make changes to strategy and/or solver are called.
-Such methods expand upon or overwrite certain parts of a given class by inheriting said class while creating a new one.
-
-Below is the implementation of our new configuration class:
+To do so we create a new strategy called `NewStrategy` by inheriting the
+:class:`DefaultStrategy` and overwrite the :meth:`relax` method with our new functionality:
 
 .. code-block:: python
 
     from mod_lns.utils.conversions import symbol_to_str
 
-    class NewLNSConfig(LNSConfig):
+    class NewStrategy(DefaultStrategy):
+        def relax(self, lns_object):
+            r = super().relax(lns_object)
+            for s in r:
+                print(symbol_to_str(s))
+            print("--")
+            return r
 
-        def __init__(self, lns_options = {}, clingo_options = []):
-            # add new default value
-            default_options = {
-                "new_opt": False,
-            }
-            self.lns_options = {**default_options, **lns_options}
+.. currentmodule:: mod_lns.interfaces.strategy
 
-            # keep functionality of LNSConfig
-            super().__init__(self.lns_options, clingo_options)
+Similarly we could also create a completely new strategy by implementing the
+:class:`StrategyInterface`.
 
-            # add new functionality
-            if self.lns_options["new_opt"] == True:
-                self._enable_new_opt()
-
-        def _enable_new_opt(self):
-            # get current strategy to modify
-
-            def relax(
-                self,
-                model,
-                relax_parameters,
-            ):
-                # keep functionality
-                r = super(EnNewOpt, self).relax(model,relax_parameters)
-                # new functionality
-                for s in r:
-                    print(symbol_to_str(s[0]))
-                print("--")
-                return r
-            # set new strategy
-            base = type(self.strategy)
-            EnNewOpt = type("EnNewOpt", (base,), {"relax": relax})
-            self.strategy = EnNewOpt()
-
-While this approach keeps all features of the default :class:`LNSConfig`, another approach would be to simply
-overwrite :meth:`self.solver` with a completely new strategy implementing the StrategyInterface.
-
-The new configuration class can then be used exactly the same as :class:`LNSConfig` before:
+The new strategy class can then be used exactly the same as :class:`DefaultStrategy` before:
 
 .. code-block:: python
 
-    cl_decl_custom_config = NewLNSConfig(
-        lns_options={
-            "new_opt": True,
-            "declarative": True,
-            "seed": 123,
-            "max_steps": 5
-        })
+    decl_custom = NewStrategy()
+    decl_custom.config = LNSConfig(
+        seed=123, relax_rate=40, init_time_limit=2, max_steps=5, declarative=True
+    )
+When running the search we can see that at each step all plays/3 atoms of
+three (int(5*(1-0.4))) random weeks are fixed (plays/3: plays(Player,Week,Group)).
 
-When running the search we can see that at each step all plays/3 atoms of two (int(3*(1-0.2))) random weeks are fixed.
+Heulingo
+---------------------
+Another strategy provided by this framework is heulingo, which uses heuristics and
+a prioritized search to negate the disadvantages of the above approaches.
+Since heulingo was initially developed as a clingo application by Irumi Sugimori,
+it provides many options for customization and fine-tuning. Heulingo also
+requires additional configuration encodings to select which and how atoms are destroyed
+and prioritized. For more information on heulingo and its configuration look
+:ref:`here<ref_strat>`.
 
-After this brief guide you should now have a basic understanding of how to run the LNS framework and how to modify the performed
-search through parameters and perform more in-depth modifications to the solver and/or strategy through the configuration class.
+By default heulingo uses the number of conflicts and restarts to decide when to stop
+individual solve calls. For this small example we will set the solve time limits
+`init_time_limit` and `lns_time_limit` to 2, to be able to observe the search progress overall
+multiple iterations.
+
+.. code-block:: python
+
+    from mod_lns.lib.strategies.heulingo import Heulingo, HeulingoConfig
+
+    heuristic_strategy = Heulingo()
+    heuristic_strategy.config = HeulingoConfig(
+        seed=123,
+        init_time_limit=2,
+        lns_time_limit=2,
+        max_steps=500,
+        clingo_args="-c n=40",
+    )
+    lns = LNS(["examples/golf_demo.lp", "examples/golf_lnps.lp"], heuristic_strategy)
+    lns.main()
+
+Since heulingo uses heuristics rather than assumptions, it can also prove optimality
+and stop the search when it does.
+
