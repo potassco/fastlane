@@ -129,7 +129,9 @@ class DefaultStrategy(StrategyInterface):
         self.init_solver_config = SolverConfig()
         self.lns_solver_config = SolverConfig()
         self.timer = Timer()
-        self._iter_format = ""
+
+        self._iter_format: str = ""
+        self._printout: bool = False
 
     def get_parser(
         self, subparsers: _SubParsersAction[ArgumentParser]
@@ -345,16 +347,7 @@ class DefaultStrategy(StrategyInterface):
         :param lns_object: LNS object.
         :type lns_object: mod_lns.LNS
         """
-        if self._iter_format == "":
-            raise RuntimeError("pre_relax called before post_first_solution")
-        if lns_object.step_c % self.config.status_interval == 0:
-            print(
-                self._iter_format.format(
-                    self.timer.get_elapsed_time(),
-                    lns_object.step_c,
-                    lns_object.best_model.get_cost_str(),
-                )
-            )
+        self._printout = False
 
     def relax(
         self,
@@ -465,16 +458,27 @@ class DefaultStrategy(StrategyInterface):
         :type lns_object: mod_lns.LNS
         :return: None
         """
-        if self._iter_format == "":
-            raise RuntimeError("better called before post_first_solution")
         self.logger.debug("new best model")
-        print(
-            self._iter_format.format(
-                self.timer.get_elapsed_time(),
-                lns_object.step_c,
-                lns_object.best_model.get_cost_str(),
+        self._printout = True
+
+    def pre_next_iteration(self, lns_object: "LNS") -> None:
+        """
+        Do something before next iteration.
+
+        :param lns_object: LNS object
+        :type lns_object: mod_lns.LNS
+        :return: None
+        """
+        if self._iter_format == "":
+            raise RuntimeError("pre_relax called before post_first_solution")
+        if self._printout or lns_object.step_c % self.config.status_interval == 0:
+            print(
+                self._iter_format.format(
+                    self.timer.get_elapsed_time(),
+                    lns_object.step_c,
+                    lns_object.best_model.get_cost_str(),
+                )
             )
-        )
 
     def print_result(
         self,

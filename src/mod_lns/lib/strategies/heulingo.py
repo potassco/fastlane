@@ -8,6 +8,7 @@ import math
 import random
 from argparse import ArgumentParser, _SubParsersAction
 from dataclasses import dataclass, field
+from math import log10
 from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 import clingo
@@ -110,6 +111,7 @@ class HeulingoConfig:
     seed: Optional[int] = None
     time_limit: Optional[int] = None
     max_steps: Optional[int] = None
+    status_interval: int = 5
     parallel_mode: Optional[str] = None
     clingo_args: Optional[str] = None
 
@@ -388,6 +390,9 @@ class Heulingo(StrategyInterface):
         self._falsified: bool = False
         self._false_weight = Function("inf")
         self.timer = Timer()
+
+        self._iter_format: str = ""
+        self._printout: bool = False
 
     def get_parser(
         self, subparsers: _SubParsersAction[ArgumentParser]
@@ -726,6 +731,31 @@ class Heulingo(StrategyInterface):
 
             self._variability = self._check_variability()
 
+        # prepare output format and print header
+        time_digits = 5 + 1 + 3  # 5 digits + dot + 3 digits
+        step_digits = 7
+        cost_digits = max(len(lns_object.best_model.get_cost_str()), 4)
+        if self.config.time_limit is not None:
+            time_digits = max(
+                int(log10(self.config.time_limit)) + 1 + 1 + 3, time_digits
+            )
+        if self.config.max_steps is not None:
+            step_digits = max(int(log10(self.config.max_steps)) + 1, step_digits)
+
+        header = f"{{0:>{time_digits}}} - {{1:>{step_digits}}}: {{2:>{cost_digits}}}"
+        print(header.format("time in s", "step", "cost"))
+
+        self._iter_format = (
+            f"{{0:>{time_digits}.3f}} - {{1:>{step_digits}}}: {{2:>{cost_digits}}}"
+        )
+        print(
+            self._iter_format.format(
+                self.timer.get_elapsed_time(),
+                "initial",
+                lns_object.best_model.get_cost_str(),
+            )
+        )
+
     def check_stop(self, lns_object: "LNS") -> bool:
         """
         Check whether to stop LNS.
@@ -755,10 +785,14 @@ class Heulingo(StrategyInterface):
         return stop
 
     def pre_relax(self, lns_object) -> None:
-        print(
-            f"{self.timer.get_elapsed_time():.3f}s: "
-            f"Iteration: {lns_object.step_c} || {lns_object.best_model.get_cost_str()}"
-        )
+        """
+        Actions to perform before relaxing the solution,
+        at the start of a new iteration.
+
+        :param lns_object: LNS object.
+        :type lns_object: mod_lns.LNS
+        """
+        self._printout = False
 
     def _project(self, shown_atoms: list[Symbol], conf: dict[str, Any]) -> list[Symbol]:
         """
@@ -1078,7 +1112,7 @@ class Heulingo(StrategyInterface):
         :type lns_object: mod_lns.LNS
         :return: None
         """
-        print("New model accepted")
+        self.logger.debug("new model accepted")
         self._calc_opt_bound(
             self.lns_solver_config,
             lns_object.current_model.cost,
@@ -1109,10 +1143,8 @@ class Heulingo(StrategyInterface):
         :type lns_object: mod_lns.LNS
         :return: None
         """
-        print(
-            f"{self.timer.get_elapsed_time():.3f}s: "
-            f"New best solution: {lns_object.best_model.get_cost_str()}"
-        )
+        self.logger.debug("new best model")
+        self._printout = True
 
     def _increase_solve_limit(self, solver_config: SolverConfig) -> None:
         """
@@ -1167,6 +1199,17 @@ class Heulingo(StrategyInterface):
         """
         self._increase_solve_limit(self.lns_solver_config)
         self._increase_time_limit(self.lns_solver_config)
+
+        if self._iter_format == "":
+            raise RuntimeError("pre_relax called before post_first_solution")
+        if self._printout or lns_object.step_c % self.config.status_interval == 0:
+            print(
+                self._iter_format.format(
+                    self.timer.get_elapsed_time(),
+                    lns_object.step_c,
+                    lns_object.best_model.get_cost_str(),
+                )
+            )
 
     def print_result(
         self,
