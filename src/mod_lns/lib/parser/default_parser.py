@@ -2,11 +2,7 @@
 Parser for Heulingo strategy in LNS.
 """
 
-from argparse import (
-    ArgumentParser,
-    RawTextHelpFormatter,
-    _SubParsersAction,
-)
+from argparse import ArgumentParser, RawTextHelpFormatter, _SubParsersAction
 from textwrap import dedent
 from typing import TYPE_CHECKING
 

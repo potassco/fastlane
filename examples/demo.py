@@ -55,7 +55,7 @@ def main():
         clingo_args="-c n=40",
     )
     # lns = LNS(["examples/golf_demo.lp", "examples/golf_lnps.lp"], heuristic_strategy)
-    
+
     lns = LNS(["examples/golf_demo.lp"], cl_strategy)
     lns.main()
 
