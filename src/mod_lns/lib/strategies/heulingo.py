@@ -754,7 +754,8 @@ class Heulingo(StrategyInterface):
                 self.timer.get_elapsed_time(),
                 "initial",
                 lns_object.best_model.get_cost_str(),
-            )
+            ),
+            flush=True,
         )
 
     def check_stop(self, lns_object: "LNS") -> bool:
@@ -1209,7 +1210,8 @@ class Heulingo(StrategyInterface):
                     self.timer.get_elapsed_time(),
                     lns_object.step_c,
                     lns_object.best_model.get_cost_str(),
-                )
+                ),
+                flush=True,
             )
 
     def print_result(
