@@ -4,12 +4,14 @@
 #SBATCH --time={walltime}        # walltime
 #SBATCH --cpus-per-task={cpt}    # number of processor cores (i.e. tasks)
 #SBATCH --partition={partition}
+{dist_options}                   # additional dist options (specified via runscript setting)
 
 # Good Idea to stop operation on first error.
 set -e
 
 # Load environment modules for your application here.
-module load lang/Miniforge3/24.1.2-0
+source ~/.bashrc
+source ~/miniconda3/bin/activate
 source activate lns
 
 # Run jobs

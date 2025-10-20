@@ -1,5 +1,5 @@
 """
-Based on clasp.py resultparser by Roland Kaminski.
+Result parser for the mod_lns framework.
 """
 
 import codecs
@@ -16,11 +16,11 @@ lns_re = {
         "float",
         re.compile(r"^(c )?Overall time[ ]*:[ ]*(?P<val>[0-9]+(\.[0-9]+)?)s"),
     ),
-    "cost": (
+    "optimum": (
         "string",
-        re.compile(r"^(c )?Cost[ ]*:[ ]*(?P<val>(-?[0-9]+)( -?[0-9]+)*)[ ]*$"),
+        re.compile(r"^(c )?Optimization[ ]*:[ ]*(?P<val>(-?[0-9]+)( -?[0-9]+)*)[ ]*$"),
     ),
-    "interrupted": ("string", re.compile(r"(c )?(?P<val>INTERRUPTED):")),
+    "interrupted": ("string", re.compile(r"(c )?(?P<val>INTERRUPTED)")),
     "error": ("string", re.compile(r"^\*\*\* ERROR: (?P<val>.*)$")),
     "time": (
         "float",
@@ -28,18 +28,21 @@ lns_re = {
             r"^(Real time \(s\):|\[runlim\] real:)\s*(?P<val>[0-9]+(\.[0-9]+)?)"
         ),
     ),
-    "memerror": (
-        "string",
-        re.compile(r"^\[runlim\] status:\s*out of memory(?P<val>.*)"),
-    ),
     "mem": (
         "float",
         re.compile(r"^\[runlim\] space:[\t]*(?P<val>[0-9]+(\.[0-9]+)?) MB"),
     ),
+    "rstatus": ("string", re.compile(r"^\[runlim\] status:\s*(?P<val>.*)$")),
+    "status": (
+        "string",
+        re.compile(
+            r"^(s )?(?P<val>SATISFIABLE|UNSATISFIABLE|UNKNOWN|OPTIMUM FOUND)[ ]*$"
+        ),
+    ),
 }
 
 
-def parse(root, runspec, instance):
+def parse(root, runspec, instance) -> dict:
     """
     Extracts some clasp statistics.
     """
@@ -61,11 +64,13 @@ def parse(root, runspec, instance):
                             else m.group("val"),
                         )
 
-    if "memerror" in res:
+    if "rstatus" in res and res["rstatus"][1] == "out of memory":
         res["error"] = ("string", "std::bad_alloc")
-        del res["memerror"]
-    result = []
-    error = "error" in res and res["error"][1] != "std::bad_alloc"
+        res["status"] = ("string", "UNKNOWN")
+    result = {}
+    error = "status" not in res or (
+        "error" in res and res["error"][1] != "std::bad_alloc"
+    )
     memout = "error" in res and res["error"][1] == "std::bad_alloc"
 
     timedout = memout or error or res["time"][1] >= timeout or "interrupted" in res
@@ -77,18 +82,18 @@ def parse(root, runspec, instance):
                 root
             )
         )
-    result.append(("error", "float", int(error)))
-    result.append(("timeout", "float", int(timedout)))
-    result.append(("memout", "float", int(memout)))
+    result["error"] = ("float", int(error))
+    result["timeout"] = ("float", int(timedout))
+    result["memout"] = ("float", int(memout))
 
-    if "cost" in res and not " " in res["cost"][1]:
-        result.append(("cost", "float", float(res["cost"][1])))
-        del res["cost"]
+    if "optimum" in res and not " " in res["optimum"][1]:
+        result["optimum"] = ("float", float(res["optimum"][1]))
+        del res["optimum"]
     if "interrupted" in res:
         del res["interrupted"]
     if "error" in res:
         del res["error"]
     for key, val in res.items():
-        result.append((key, val[0], val[1]))
+        result[key] = (val[0], val[1])
 
     return result

@@ -2,18 +2,19 @@
 
 	<machine name="hpc" cpu="24x8xE5520@2.27GHz" memory="24GB"/>
 
-  	<config name="dist-lns" template="templates/seq-lns.sh"/>
+  	<config name="seq-lns" template="templates/seq-lns.sh"/>
 
-	<system name="mod_lns" version="conda" measures="lns" config="dist-lns">
+	<system name="mod_lns" version="conda" measures="lns" config="seq-lns">
+    		<setting name="default_setting" cmdline="default --constrained" tag="basic"/>
+			<setting name="heulingo_setting" cmdline="heulingo --heulingo-configuration=sgp" tag="basic">
+				<encoding file="./configs/sgp/random_N.lp"/>
+			</setting>
+	</system>
 
-    		<setting name="setting-1" cmdline="--max_steps=None --constrained" tag="basic" />
-
-    </system>
-
-	<distjob name="dist-lns" timeout="10" runs="2" script_mode="timeout" walltime="00:01:00" cpt="2" partition="all"/>
+	<distjob name="dist-lns" timeout="1800" runs="2" script_mode="timeout" walltime="1h" cpt="2"/>
 
 	<benchmark name="lns">
-		<folder path="benchmarks/lns/"></folder>
+		<folder path="benchmarks/sgp"/>
 	</benchmark>
 
 	<project name="lns-dist-job" job="dist-lns">
