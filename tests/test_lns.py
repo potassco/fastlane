@@ -67,7 +67,7 @@ class TestModel(TestCase):
                     "plays(3,1,1)\n"
                     "Assignments:\n"
                     "test=42\n"
-                    "Cost: 2\n\n"
+                    "Optimization: 2\n\n"
                 ),
             )
 

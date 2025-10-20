@@ -40,7 +40,7 @@ class Model:
         answer_string = " ".join([str(atom) for atom in self.shown])
         if len(self.assignments) != 0:
             answer_string += "\nAssignments:\n" + " ".join(self.assignments)
-        s = "Answer\n" f"{answer_string}\n" f"Cost: {self.get_cost_str()}\n"
+        s = "Answer\n" f"{answer_string}\n" f"Optimization: {self.get_cost_str()}\n"
         print(s)
         return s
 
