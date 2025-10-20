@@ -6,20 +6,20 @@ Usage
 This framework can be used both as a command line tool and as a python module.
 When using as a command line tool use the `-h` flag to see all available options.
 Since different strategies support wildly different parameters, strategies are implemented as
-subprograms.  
+subprograms.
 To see all available options for specific strategies use the `-h` flag after
 selecting the corresponding subprogram as seen below:
 
 .. code-block:: console
 
-    $ mod_lns -h
-    $ mod_lns examples/golf.lp default -h
+    mod_lns -h
+    mod_lns examples/golf.lp default -h
 
 .. currentmodule:: mod_lns.__init__
 
 The framework currently supports implementation of the clingo, clingo-dl and clingcon solvers,
 a default strategy for basic LNS and heulingo a LNS approach using heuristics and a prioritized search.
-Both strategies can be used in combination with any solver. 
+Both strategies can be used in combination with any solver.
 
 For finer control one can implement their own solver and/or strategy or modify existing ones through inheritance.
 
@@ -45,9 +45,9 @@ step by step introduction to the framework look :ref:`here<ref_guide>`.
     lns = LNS(
         ["./examples/golf.lp"],         # ASP encoding
         strategy,                       # strategy to be used
-        Namespace(                      # set additional parameters
-            time_limit=60,              # overall time limit in seconds
-        )
+        {                               # set additional parameters
+            "time_limit": 60,           # overall time limit in seconds
+        }
     )
 
 .. _ref_enc:
@@ -56,7 +56,7 @@ The same search can be performed through the command line as follows:
 
 .. code-block:: console
 
-    $ mod_lns ./examples/golf.lp default --solver=clingo-dl --seed=123 --time-limit=60
+    mod_lns ./examples/golf.lp default --solver=clingo-dl --seed=123 --time-limit=60
 
 Encoding
 ----------
@@ -76,3 +76,44 @@ a fixation of all plays in the corresponding week.
     For heulingo to function correctly additional helper atoms have be defined in one of the input encodings.
     These include :code:`_lnps_project/2`, :code:`_lnps_destroy/4` and :code:`_lnps_prioritize/4`. For more
     information check the heulingo documentation. An example can be found in :file:`./examples/golf_lnps.lp`.
+
+Benchmark-tool
+--------------------
+
+The :code:`benchmark-tool` directory contains a collection of scripts and files used to run this framework
+with this `benchmark-tool <benchmark_tool>`_.
+
+Usage
+^^^^^^
+
+- Install the benchmark-tool (>v2.0.0)
+- Copy files from the :code:`benchmark-tool` folder to the corresponding folders inside the benchmark-tool
+  directory structure
+- Modify one of the provided runscripts to fit your use-case
+- Make sure mod_lns is correctly installed in a conda environment
+- For benchmarking on a cluster (dist jobs), set the correct environment inside `./templates/single.dist`
+- Otherwise set the conda environment inside the `./programs/mod_lns-conda` script
+
+- All following steps assume you are inside the benchmark-tool folder created by the benchmark-tool
+- Generate a start script using:
+
+.. code-block:: console
+
+    bgen ./runscripts/runscript-dist-lns.xml
+
+- Start the benchmarks by executing either the :code:`start.sh` or :code:`start.py` file found in the
+  machine subfolder of the generated structure
+- Evaluate the benchmarks using:
+
+.. code-block:: console
+
+    beval ./runscripts/runscript-dist-lns.xml | bconv -m "time:t,cost" -o results.ods
+
+
+- The :code:`-m` option accepts a comma-separated list of measures in the form :code:`name[:{t,to,-}]` to be included
+  in the table (optional argument determines coloring)
+- All supported measures are defined in the resultparser
+- For more information check the `benchmark-tool documentation <benchmark_tool_doc>`_.
+
+.. _benchmark_tool: https://github.com/potassco/benchmark-tool
+.. _benchmark_tool_doc: https://potassco.org/benchmark-tool/

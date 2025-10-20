@@ -17,7 +17,7 @@ search called heulingo. Both strategies use their own configuration class.
     Answer Set Programming <https://doi.org/10.24963/kr.2024/72>`_).
 
 Default strategy
---------------
+-----------------
 
 .. automodule:: mod_lns.lib.strategies.default_strategy
     :members:

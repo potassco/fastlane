@@ -6,7 +6,7 @@ An introduction to clingo can be found [here](https://potassco.org/doc/start/).
 You can check a successful installation by running
 
 ```console
-$ mod_lns -h
+mod_lns -h
 ```
 
 The project is hosted on [github](https://github.com/krr-up/large-neighbourhood-search) and should be installed from source.
@@ -23,7 +23,7 @@ We recommend the usage of a clean environment, e.g. using conda.
 Execute the following commands in the top level mod_lns directory:
 
 ```console
-$ git clone https://github.com/potassco/mod_lns
-$ cd mod_lns
-$ pip install .[full]
+git clone https://github.com/potassco/mod_lns
+cd mod_lns
+pip install .[full]
 ```

@@ -5,9 +5,9 @@ Guide
 
 This section will illustrate how to use this framework by giving some small examples.
 All python code snippets shown here can also be found in :file:`./examples/demo.py`.
-The problem we will be looking at is the 
+The problem we will be looking at is the
 `Social golfer problem <https://en.wikipedia.org/wiki/Social_golfer_problem>`_ with
-5 players, 5 groups and 5 weeks. We choose a small instance, to keep the run-time as 
+5 players, 5 groups and 5 weeks. We choose a small instance, to keep the run-time as
 low as possible, while still being able to observe the effects of different approaches.
 
 
@@ -39,7 +39,7 @@ problem, seen below.
 
 The second part can be used for declarative relaxation, with the first line defining
 possible terms to be selected during relaxation, in this case weeks "W". The second
-line then connects the terms "W" with corresponding atoms to be fixed (complement of 
+line then connects the terms "W" with corresponding atoms to be fixed (complement of
 relaxed atoms during search), here all plays/3 atoms in the corresponding week W.
 
 .. code-block::
@@ -100,17 +100,22 @@ the initial solution and a step limit of 500.
 You should see 500 LNS steps, with the current state of the search printed every 50 steps,
 during which the initial optimization value of 7 is reduced step by step by using the
 default classic LNS approach:
- - Find the initial solution in 2s with cost 7
- - Relax 40% of the atoms of the initial solution (randomly chosen)
- - Find a new solution with no time limit using the remaining 60% of atoms as assumptions  
-   (since we wait until the search is finished the new solution is a local optimum and can
-   never be worse than the previous solutions (worst case, the previous solution is found
-   again))
- - Check if the new solution should be used as the starting point for the next step:
+
+- Find the initial solution in 2s with cost 7
+- Relax 40% of the atoms of the initial solution (randomly chosen)
+- Find a new solution with no time limit using the remaining 60% of atoms as assumptions
+  (since we wait until the search is finished the new solution is a local optimum and can
+  never be worse than the previous solutions (worst case, the previous solution is found
+  again))
+- Check if the new solution should be used as the starting point for the next step:
+
   - Accept, if the new solution is different enough (accept_variability) from the previous
-  solution (always accept when using default configuration)
+    solution (always accept when using default configuration)
+
 - Check if the new solution is better than the best solution found so far:
+
   - If yes, store it as the new best solution
+
 - Repeat until the step limit is reached
 
 Try running the search multiple times to see how the results can vary.
@@ -185,6 +190,7 @@ The new strategy class can then be used exactly the same as :class:`DefaultStrat
     decl_custom.config = LNSConfig(
         seed=123, relax_rate=40, init_time_limit=2, max_steps=5, declarative=True
     )
+
 When running the search we can see that at each step all plays/3 atoms of
 three (int(5*(1-0.4))) random weeks are fixed (plays/3: plays(Player,Week,Group)).
 
@@ -220,4 +226,3 @@ multiple iterations.
 
 Since heulingo uses heuristics rather than assumptions, it can also prove optimality
 and stop the search when it does.
-

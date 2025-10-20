@@ -7,8 +7,8 @@ LNS
 
 .. note::
 
-    The default LNS object uses the default strategy :class:`DefaultStrategy` with its :class:`LNSConfig` 
-    configuration class and has the following default parameters: 
+    The default LNS object uses the default strategy :class:`DefaultStrategy` with its :class:`LNSConfig`
+    configuration class and has the following default parameters:
 
     .. code-block:: python
 
