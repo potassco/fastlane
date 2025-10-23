@@ -1,7 +1,9 @@
 #!/bin/bash
 
-# set conda environment, where mod_lns is installed
-CONDAENV=lns
+# Load environment modules for your application here.
+# Only required for seq jobs, for dist jobs see single.dist template.
+#source ~/.bashrc
+#source ~/miniconda3/bin/activate
+#source activate lns
 
-source ~/anaconda3/etc/profile.d/conda.sh && conda activate "${CONDAENV}"
-mod_lns "${@}" 2> solver.err
+exec mod_lns "${@}" 2> solver.err

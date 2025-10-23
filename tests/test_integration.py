@@ -2,177 +2,115 @@
 Integration tests.
 """
 
-from unittest import TestCase
+import io
+from unittest import TestCase, mock
 
-from mod_lns.interfaces.solver import SolverInterface
+from mod_lns.lib.solvers.clingcon_solver import ClingconSolver
 from mod_lns.lib.solvers.clingo_dl_solver import ClingoDLSolver
 from mod_lns.lib.solvers.clingo_solver import ClingoSolver
+from mod_lns.lib.strategies.default_strategy import DefaultStrategy, LNSConfig
+from mod_lns.lib.strategies.heulingo import Heulingo, HeulingoConfig
 from mod_lns.lns import LNS
-from mod_lns.lns_config import LNSConfig
 
 
-class TestIntegrationCommon(TestCase):
+class TestIntegrationDefaultClingo(TestCase):
     """
-    Common integration tests.
+    Integration tests using clingo and default strategy.
     """
 
-    def test_start_sol(self):
-        """
-        Test execution with start sol.
-        """
-        lns = LNS(
-            ["./tests/ref/golf.lp"],
-            LNSConfig(
-                {
-                    "start_sol": "plays(3,1,1) plays(8,1,1) plays(9,1,1) "
-                    "plays(1,2,1) plays(2,2,1) plays(9,2,1) plays(1,3,1)"
-                }
-            ),
+    def setUp(self):
+        self.strat = DefaultStrategy()
+        self.strat.config = LNSConfig(
+            max_steps=20,
+            seed=123,
+            init_time_limit=3,
+            lns_time_limit=3,
+            time_limit=10,
+            log_level=50,
         )
-        lns.main()
+        self.strat.solver = ClingoSolver()
+
+    def test_execution(self):
+        """
+        Test execution.
+        """
+        out = io.StringIO()
+        with mock.patch("sys.stdout", new=out):
+            lns = LNS(["./tests/ref/golf.lp"], strategy=self.strat)
+            lns.main()
+
+    def test_bigger_instance(self):
+        """
+        Test execution with a bigger instance.
+        """
+        out = io.StringIO()
+        with mock.patch("sys.stdout", new=out):
+            lns = LNS(["./tests/ref/golf_big.lp"], strategy=self.strat)
+            lns.main()
 
     def test_faulty_encoding(self):
         """
         Test execution with faulty encoding.
         """
-        lns = LNS(["./tests/ref/bad_encoding.lp"])
+        lns = LNS(["./tests/ref/bad_encoding.lp"], strategy=self.strat)
         with self.assertRaises(SystemExit):
             lns.main()
 
 
-class TestIntegrationClingoClassic(TestCase):
+class TestIntegrationDefaultClingoDL(TestIntegrationDefaultClingo):
     """
-    Integration tests using clingo and classic LNS.
+    Integration tests using clingo-dl and default strategy.
     """
 
-    def setUp(self) -> None:
-        self.solver: SolverInterface = ClingoSolver()
-        self.params = {"max_steps": 100, "seed": 123}
+    def setUp(self):
+        super().setUp()
+        self.strat.solver = ClingoDLSolver()
 
-    def test_rnd(self):
-        """
-        Test classic LNS with random relaxation and assumptions.
-        """
-        lns = LNS(
-            ["./tests/ref/golf.lp"],
-            LNSConfig(self.params, [], solver=self.solver),
+
+class TestIntegrationDefaultClingcon(TestIntegrationDefaultClingo):
+    """
+    Integration tests using clingcon and default strategy.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.strat.solver = ClingconSolver()
+
+
+class TestIntegrationHeulingoClingo(TestIntegrationDefaultClingo):
+    """
+    Integration tests using clingo and Heulingo strategy.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.strat = Heulingo()
+        self.strat.config = HeulingoConfig(
+            max_steps=20,
+            seed=123,
+            init_time_limit=3,
+            lns_time_limit=3,
+            time_limit=10,
+            log_level=50,
         )
-        lns.main()
-
-    def test_decl(self):
-        """
-        Test classic LNS with declarative relaxation and assumptions.
-        """
-        lns = LNS(
-            ["./tests/ref/golf.lp"],
-            LNSConfig({**self.params, **{"declarative": True}}, [], solver=self.solver),
-        )
-        lns.main()
+        self.strat.solver = ClingoSolver()
 
 
-class TestIntegrationClingoClassicHeu(TestIntegrationClingoClassic):
+class TestIntegrationHeulingoClingoDL(TestIntegrationHeulingoClingo):
     """
-    Integration tests using clingo, classic LNS and heuristics.
+    Integration tests using clingo-dl and Heulingo strategy.
     """
 
-    def setUp(self) -> None:
-        self.solver: SolverInterface = ClingoSolver()
-        self.params = {
-            "max_steps": 100,
-            "seed": 123,
-            "heuristics": True,
-        }
+    def setUp(self):
+        super().setUp()
+        self.strat.solver = ClingoDLSolver()
 
 
-class TestIntegrationClingoCons(TestIntegrationClingoClassic):
+class TestIntegrationHeulingoClingcon(TestIntegrationHeulingoClingo):
     """
-    Integration tests using clingo, constrained LNSand constrained LNS.
+    Integration tests using clingcon and Heulingo strategy.
     """
 
-    def setUp(self) -> None:
-        self.solver: SolverInterface = ClingoSolver()
-        self.params = {"max_steps": 100, "seed": 123, "constrained": True}
-
-
-class TestIntegrationClingoConsHeu(TestIntegrationClingoCons):
-    """
-    Integration tests using clingo, constrained LNS and heuristics.
-    """
-
-    def setUp(self) -> None:
-        self.solver: SolverInterface = ClingoSolver()
-        self.params = {
-            "max_steps": 100,
-            "seed": 123,
-            "heuristics": True,
-            "constrained": True,
-        }
-
-
-class TestIntegrationClingoDLClassic(TestCase):
-    """
-    Integration tests using clingo-dl and classic LNS.
-    """
-
-    def setUp(self) -> None:
-        self.solver: SolverInterface = ClingoDLSolver()
-        self.params = {"max_steps": 100, "seed": 123}
-
-    def test_rnd(self):
-        """
-        Test classic LNS with random relaxation and assumptions.
-        """
-        lns = LNS(
-            ["./tests/ref/golf.lp"],
-            LNSConfig(self.params, [], solver=self.solver),
-        )
-        lns.main()
-
-    def test_decl(self):
-        """
-        Test classic LNS with declarative relaxation and assumptions.
-        """
-        lns = LNS(
-            ["./tests/ref/golf.lp"],
-            LNSConfig({**self.params, **{"declarative": True}}, [], solver=self.solver),
-        )
-        lns.main()
-
-
-class TestIntegrationClingoDLClassicHeu(TestIntegrationClingoClassic):
-    """
-    Integration tests using clingo, classic LNS and heuristics.
-    """
-
-    def setUp(self) -> None:
-        self.solver: SolverInterface = ClingoDLSolver()
-        self.params = {
-            "max_steps": 100,
-            "seed": 123,
-            "heuristics": True,
-        }
-
-
-class TestIntegrationClingoDLCons(TestIntegrationClingoDLClassic):
-    """
-    Integration tests using clingo, constrained LNSand constrained LNS.
-    """
-
-    def setUp(self) -> None:
-        self.solver: SolverInterface = ClingoDLSolver()
-        self.params = {"max_steps": 100, "seed": 123, "constrained": True}
-
-
-class TestIntegrationClingoDLConsHeu(TestIntegrationClingoCons):
-    """
-    Integration tests using clingo, constrained LNS and heuristics.
-    """
-
-    def setUp(self) -> None:
-        self.solver: SolverInterface = ClingoDLSolver()
-        self.params = {
-            "max_steps": 100,
-            "seed": 123,
-            "heuristics": True,
-            "constrained": True,
-        }
+    def setUp(self):
+        super().setUp()
+        self.strat.solver = ClingconSolver()

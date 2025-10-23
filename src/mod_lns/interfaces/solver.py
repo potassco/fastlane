@@ -5,12 +5,66 @@ Solver interface used for LNS.
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any, Optional
+from dataclasses import dataclass
+from logging import Logger
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import clingo
+from clingo.symbol import Symbol
 
-if TYPE_CHECKING:
-    from mod_lns.lns import LNS  # nocoverage
+if TYPE_CHECKING:  # nocoverage
+    from mod_lns import Model
+    from mod_lns.lns import LNS
+
+
+# pylint: disable=too-many-instance-attributes
+@dataclass
+class SolverConfig:
+    """
+    Configuration for a solver.
+
+    :param configuration: Used configuration.
+    :type configuration: Optional[str]
+    :default configuration: None
+    :param opt_strategy: Optimization strategy.
+    :type opt_strategy: Optional[str]
+    :default opt_strategy: None
+    :param opt_heuristic: Optimization in heuristic.
+    :type opt_heuristic: Optional[str]
+    :default opt_heuristic: None
+    :param restart_on_model: Restart on model.
+    :type restart_on_model: Optional[str]
+    :default restart_on_model: None
+    :param heuristic: Heuristic to use.
+    :type heuristic: Optional[str]
+    :default heuristic: None
+    :param opt_mode: Optimization mode.
+    :type opt_mode: Optional[str]
+    :default opt_mode: None
+    :param solve_limit: Solve limit.
+    :type solve_limit: Optional[str]
+    :default solve_limit: None
+    :param time_limit: Time limit for solving.
+    :type time_limit: Optional[int]
+    :default time_limit: None
+    :param seed: Random seed.
+    :type seed: Optional[int]
+    :default seed: None
+    :param variability: Variability.
+    :type variability: bool
+    :default variability: True
+    """
+
+    configuration: Optional[str] = None
+    opt_strategy: Optional[str] = None
+    opt_heuristic: Optional[str] = None
+    restart_on_model: Optional[str] = None
+    heuristic: Optional[str] = None
+    opt_mode: Optional[str] = None
+    solve_limit: Optional[str] = None
+    time_limit: Optional[int] = None
+    seed: Optional[int] = None
+    variability: bool = True
 
 
 class SolverInterface(metaclass=abc.ABCMeta):
@@ -18,17 +72,26 @@ class SolverInterface(metaclass=abc.ABCMeta):
     Solver interface.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initialization of the solver object.
         """
         self.control: Optional[clingo.control.Control] = None
         self.theory: Any = None
+        self.finished: bool = False
+        self.result = "UNKNOWN"
+        self.optimum = "unknown"
+        self.minimize_variable: Optional[Symbol] = None
+        self.logger: Logger
+        self.stop: bool = False
+        self._assumptions_used = False
 
     @classmethod
     def __subclasshook__(cls, subclass):  # nocoverage
         return (
-            hasattr(subclass, "setup")
+            hasattr(subclass, "get_name")
+            and callable(subclass.get_name)
+            and hasattr(subclass, "setup")
             and callable(subclass.setup)
             and hasattr(subclass, "repair")
             and callable(subclass.repair)
@@ -37,62 +100,110 @@ class SolverInterface(metaclass=abc.ABCMeta):
             or NotImplemented
         )
 
+    @classmethod
+    @abc.abstractmethod
+    def get_name(cls) -> str:  # nocoverage
+        """
+        Get the name under which the solver will be listed in options.
+
+        :return: Name of the solver.
+        :rtype: str
+        """
+        raise NotImplementedError
+
     # pylint: disable=dangerous-default-value
     @abc.abstractmethod
     def setup(
         self,
         lns_object: LNS,
-        files: Optional[list[str]] = None,
         args: list[str] = [],
+        files: Optional[list[str]] = None,
     ) -> None:  # nocoverage
         """
         Initialization of the solver.
 
         :param lns_object: LNS object.
         :type lns_object: mod_lns.LNS
-        :param files: ASP files to be loaded.
-        :type files: Optional[list[str]]
         :param args: clingo arguments.
         :type args: list[str]
         :default args: []
+        :param files: ASP files to be loaded.
+        :type files: Optional[list[str]]
+        :default files: None
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def repair(
+    def solve(
         self,
-        lns_object: LNS,
-        fixed_atoms: list[tuple[clingo.symbol.Symbol, bool]],
-        time_limit: Optional[int] = None,
-        model_limit: int = 0,
-    ) -> clingo.solving.SolveResult:  # nocoverage
+        config: Optional[SolverConfig],
+        assumptions: list[tuple[clingo.symbol.Symbol, bool]] = [],
+    ) -> Optional[Model]:  # nocoverage
         """
         Solve with fixed atoms.
 
-        :param lns_object: LNS object.
-        :type lns_object: mod_lns.LNS
+        :config: Solver configuration.
+        :type config: SolverConfig
         :param assumptions: Assumptions for solving (fixed atoms).
         :type assumptions: list[tuple[clingo.symbol.Symbol, bool]]
-        :param time_limit: Manually set time limit for solve call.
-        :type time_limit: Optional[int]
-        :default time_limit: None
-        :param model_limit: Set number of calculated models.
-        :type model_limit: int
-        :default model_limit: 0
-        :return: Solve result.
-        :rtype: clingo.solving.SolveResult
+        :default assumptions: []
+        :return: Last obtained model.
+        :rtype: Model
         """
         raise NotImplementedError
 
-    def ground_base(self, lns_object: LNS) -> None:
+    def ground(
+        self,
+        parts: list[tuple[str, list[Symbol]]] = [("base", [])],
+        context: Any = None,
+    ) -> None:
         """
         Ground base encoding.
 
-        :param lns_object: LNS object.
-        :type lns_object: mod_lns.LNS
+        :param parts: Parts to ground.
+        :type parts: list[tuple[str, list[Symbol]]]
+        :param context: Context for grounding.
+        :type context: Any
+        :default context: None
         """
         if isinstance(self.control, clingo.control.Control):
-            self.control.ground([("base", [])], context=lns_object)
+            self.control.ground(parts, context)
+
+    def add(self, name: str, parameters: list[str], program: str) -> None:
+        """
+        Add a program to the solver.
+
+        :param name: Name of the program.
+        :type name: str
+        :param parameters: Parameters for the program.
+        :type parameters: list[str]
+        :param program: Program to be added.
+        :type program: str
+        """
+        if isinstance(self.control, clingo.control.Control):
+            self.control.add(name, parameters, program)
+
+    def assign_external(self, external: Union[Symbol, int], truth: bool) -> None:
+        """
+        Assign truth value to external atom.
+
+        :param external: External atom.
+        :type external: Union[clingo.symbol.Symbol,int]
+        :param truth: Truth value.
+        :type truth: bool
+        """
+        if isinstance(self.control, clingo.control.Control):
+            self.control.assign_external(external, truth)
+
+    def release_external(self, external: Union[Symbol, int]) -> None:
+        """
+        Release external atom.
+
+        :param external: External atom.
+        :type external: Union[clingo.symbol.Symbol,int]
+        """
+        if isinstance(self.control, clingo.control.Control):
+            self.control.release_external(external)
 
     def get_stats(self) -> dict:
         """

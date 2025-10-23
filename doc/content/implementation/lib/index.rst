@@ -23,4 +23,3 @@ some additional helper functions which can be used for LNS.
     utils.rst
     strategies.rst
     relaxation.rst
-    mods.rst

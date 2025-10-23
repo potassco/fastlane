@@ -1,6 +1,6 @@
-#const g=3.
-#const p=3.
-#const w=3.
+#const g=5.
+#const p=5.
+#const w=5.
 
 player(1..g*p).
 group(1..g).

@@ -1,17 +1,14 @@
 #!/bin/bash
 # https://github.com/arminbiere/runlim
 
-CAT="{run.root}/programs/gcat.sh"
-
 cd "$(dirname $0)"
 
-#top -n 1 -b > top.txt
-
-# change runlim version if necessary
-[[ -e .finished ]] || "{run.root}/programs/runlim-2.0.0rc12" \
-	--space-limit=20000 \
+[[ -e .finished ]] || "{run.root}/programs/runlim" \
+	--space-limit={run.memout} \
 	--output-file=runsolver.watcher \
-	--time-limit={run.timeout} \
-	"{run.root}/programs/{run.solver}" {run.args} -i "{run.file}" {run.encodings} > runsolver.solver
+	--real-time-limit={run.timeout} \
+	--single \
+	--kill-delay=5120 \
+	"{run.root}/programs/{run.solver}" {run.files} {run.encodings} {run.args} > runsolver.solver
 
 touch .finished

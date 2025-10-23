@@ -8,12 +8,10 @@ from unittest import TestCase
 
 from clingo.symbol import Function, Infimum, Number, String, Supremum
 
-from mod_lns.lib.solvers.clingo_dl_solver import ClingoDLSolver
-from mod_lns.lib.strategies.default_strategy import DefaultStrategy
-from mod_lns.lib.utils import calculate_variability, fix_symbols
+from mod_lns.lib.parser.framework_parser import get_framework_parser
+from mod_lns.lib.utils import calculate_variability, clamp, fix_symbols, get_unique_list
 from mod_lns.utils.conversions import args_to_dict, str_to_symbols, symbol_to_str
 from mod_lns.utils.logger import setup_logger
-from mod_lns.utils.parser import get_parser
 
 
 class TestUtils(TestCase):
@@ -32,43 +30,13 @@ class TestUtils(TestCase):
         log.info("test123")
         self.assertRegex(sio.getvalue(), "test123")
 
-    def test_parser(self):
+    def test_framework_parser(self):
         """
         Test the parser.
         """
-        parser = get_parser()
-        ret = parser.parse_args(["--log", "info", "-i", "x.lp"])
-        self.assertEqual(ret.log, logging.INFO)
-        ret = parser.parse_args(["-i", "x.lp"])
-        self.assertEqual(ret.input_files, ["x.lp"])
-        ret = parser.parse_args(["-r", "0.4", "-i", "x.lp"])
-        self.assertEqual(ret.relax_rate, 0.4)
-        ret = parser.parse_args(["--relax_rate", "0.5", "-i", "x.lp"])
-        self.assertEqual(ret.relax_rate, 0.5)
-        ret = parser.parse_args(["--solver", "ClingoDLSolver", "-i", "x.lp"])
-        self.assertIsInstance(ret.solver, ClingoDLSolver)
-        ret = parser.parse_args(["--strategy", "DefaultStrategy", "-i", "x.lp"])
-        self.assertIsInstance(ret.strategy, DefaultStrategy)
-        ret = parser.parse_args(["--time_limit", "12", "-i", "x.lp"])
-        self.assertEqual(ret.time_limit, 12)
-        ret = parser.parse_args(["--solve_time_limit", "14", "-i", "x.lp"])
-        self.assertEqual(ret.solve_time_limit, 14)
-        ret = parser.parse_args(["--model_limit", "5", "-i", "x.lp"])
-        self.assertEqual(ret.model_limit, 5)
-        ret = parser.parse_args(["--max_steps", "30", "-i", "x.lp"])
-        self.assertEqual(ret.max_steps, "30")
-        ret = parser.parse_args(["--first_time_limit", "12", "-i", "x.lp"])
-        self.assertEqual(ret.first_time_limit, 12)
-        ret = parser.parse_args(["--first_model_limit", "12", "-i", "x.lp"])
-        self.assertEqual(ret.first_model_limit, 12)
-        ret = parser.parse_args(["--seed", "213", "-i", "x.lp"])
-        self.assertEqual(ret.seed, 213)
-        ret = parser.parse_args(["--heuristics", "-i", "x.lp"])
-        self.assertTrue(ret.heuristics)
-        ret = parser.parse_args(["--constrained", "-i", "x.lp"])
-        self.assertTrue(ret.constrained)
-        ret = parser.parse_args(["--declarative", "-i", "x.lp"])
-        self.assertTrue(ret.declarative)
+        parser = get_framework_parser()
+        ret = parser.parse_args(["--log-level", "info", "x.lp", "default"])
+        self.assertEqual(ret.log_level, logging.INFO)
 
     def test_symbol_to_str(self):
         """
@@ -125,8 +93,8 @@ class TestLNSUtils(TestCase):
         l2 = [1, 3]
         self.assertEqual(calculate_variability(l1, l2), 0)
         l2 = [0, 2, 6, 7]
-        self.assertEqual(calculate_variability(l1, l2), 0.5)
-        self.assertEqual(calculate_variability(l2, l1), 0.5)
+        self.assertEqual(calculate_variability(l1, l2), 50)
+        self.assertEqual(calculate_variability(l2, l1), 50)
 
     def test_fix_symbols(self):
         """
@@ -162,3 +130,19 @@ class TestLNSUtils(TestCase):
                 ),
             ],
         )
+
+    def test_get_unique_list(self):
+        """
+        Test get_unique_list function.
+        """
+        l = [2, 1, 2, 2, 3, 1, 4, 5, 5]
+        self.assertEqual(get_unique_list(l), [2, 1, 3, 4, 5])
+
+    def test_clamp(self):
+        """
+        Test clamp function.
+        """
+        self.assertEqual(clamp(5, 1, 10), 5)
+        self.assertEqual(clamp(-14, 1, 10), 1)
+        self.assertEqual(clamp(15, 1, 10), 10)
+        self.assertEqual(clamp(5.5, 1, 10), 5.5)
