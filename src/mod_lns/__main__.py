@@ -14,6 +14,9 @@ def main():
     parser = get_framework_parser()
     args = parser.parse_args()
 
+    if len(args.files) == 0:
+        parser.error("No input files provided.")
+
     lns = LNS(args.files, args.strategy, vars(args))
     lns.main()
 

@@ -1,5 +1,5 @@
 """
-Parser for Heulingo strategy in LNS.
+Parser for default strategy in LNS.
 """
 
 from argparse import ArgumentParser, RawTextHelpFormatter, _SubParsersAction
