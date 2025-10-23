@@ -16,7 +16,7 @@ import clingo
 from clingo.control import Control
 from clingo.symbol import Function, Number, Symbol, SymbolType
 
-from mod_lns import Model, Timer
+from mod_lns import Model
 from mod_lns.interfaces.solver import SolverConfig, SolverInterface
 from mod_lns.interfaces.strategy import StrategyInterface
 from mod_lns.lib.parser.heulingo_parser import get_heulingo_parser
@@ -385,12 +385,9 @@ class Heulingo(StrategyInterface):
         self._lnps_config: list[dict[str, Any]] = []
         self.prev_fixed_atoms: list[Symbol] = []
         self.config = HeulingoConfig()
-        self.init_solver_config = SolverConfig()
-        self.lns_solver_config = SolverConfig()
         self._variability: bool = False
         self._falsified: bool = False
         self._false_weight = Function("inf")
-        self.timer = Timer()
 
         self._iter_format: str = ""
         self._printout: bool = False

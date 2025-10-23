@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any, Optional
 import clingo
 from clingo import Symbol
 
-from mod_lns import Model, Timer
+from mod_lns import Model
 from mod_lns.interfaces.solver import SolverConfig, SolverInterface
 from mod_lns.interfaces.strategy import StrategyInterface
 from mod_lns.lib.parser.default_parser import get_default_parser
@@ -127,9 +127,6 @@ class DefaultStrategy(StrategyInterface):
         super().__init__()
         self.prev_fixed_atoms: list[clingo.symbol.Symbol] = []
         self.config = LNSConfig()
-        self.init_solver_config = SolverConfig()
-        self.lns_solver_config = SolverConfig()
-        self.timer = Timer()
 
         self._iter_format: str = ""
         self._printout: bool = False

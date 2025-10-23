@@ -11,8 +11,8 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import clingo
 
-from mod_lns import Model
-from mod_lns.interfaces.solver import SolverInterface
+from mod_lns import Model, Timer
+from mod_lns.interfaces.solver import SolverConfig, SolverInterface
 from mod_lns.utils.logger import setup_logger
 
 if TYPE_CHECKING:
@@ -48,6 +48,9 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         self._log_level: int = 30  # logging.WARNING
         self.logger: Logger = setup_logger("DefaultStrategyLogger", self._log_level)
         self.solver: Optional[SolverInterface] = None
+        self.init_solver_config = SolverConfig()
+        self.lns_solver_config = SolverConfig()
+        self.timer = Timer()
 
     @classmethod
     def __subclasshook__(cls, subclass):  # nocoverage
