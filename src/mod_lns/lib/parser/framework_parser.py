@@ -80,6 +80,8 @@ def get_framework_parser() -> ArgumentParser:
 
             This framework can not be run on its own but requires the use of a
             sub command to run a specific LNS strategy.
+
+            You can access the sub command help by using 'mod_lns <strategy> -h'.
             """
         ),
         formatter_class=formatter,
@@ -118,7 +120,9 @@ def get_framework_parser() -> ArgumentParser:
         "--version", "-v", action="version", version=f"%(prog)s {VERSION}"
     )
 
-    parser.add_argument("files", help="ASP input file(s)", nargs="+")
+    # allow no input files for easier sub command help access
+    # existence of files will be checked in __main__.py
+    parser.add_argument("files", help="ASP input file(s)", nargs="*")
 
     subparsers = parser.add_subparsers(
         title="LNS Systems", help="LNS System", required=True
