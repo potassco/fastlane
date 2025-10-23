@@ -4,7 +4,7 @@ Collection of scripts and files used to run this framework with this [benchmark-
 
 ## Usage
 
-- Install the benchmark-tool (>v2.0.0)
+- Install the benchmark-tool (>v2.0.5)
 - Copy files from the `benchmark-tool` folder to the corresponding folders inside the
   benchmark-tool directory structure
 - Modify one of the provided runscripts to fit your use-case
