@@ -13,8 +13,10 @@ git clone https://github.com/potassco/large_neighbourhood_search
 cd large_neighbourhood_search
 conda create -n <env-name> python=3.11
 conda activate <env-name>
-pip install .[full]
+pip install .
 ```
+
+If you want to build the documentation, use `pip install .[full]` instead.
 
 ## Usage
 
