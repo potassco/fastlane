@@ -64,7 +64,7 @@ class ClingoDLSolver(ClingoSolver):
         :type files: Optional[list[str]]
         :default files: None
         """
-        self.setup_interrupt_handling()
+        self.setup_interrupt_handling(lns_object)
 
         if files is None:
             files = lns_object.files

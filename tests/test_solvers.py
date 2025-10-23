@@ -140,19 +140,28 @@ class TestSolverClingo(TestCase):
         """
         Test interrupt_handler method.
         """
-        self.solver.setup_interrupt_handling()
+        self.solver.setup_interrupt_handling(self.lns)
         self.assertFalse(self.solver.finished)
         self.assertFalse(self.solver.stop)
-        signal.raise_signal(signal.SIGINT)
+        with self.assertRaises(SystemExit), mock.patch.object(
+            self.lns.strategy, "print_result"
+        ) as print_result_mock:
+            signal.raise_signal(signal.SIGINT)
+            print_result_mock.assert_called_once_with(self.lns)
         self.assertTrue(self.solver.finished)
         self.assertTrue(self.solver.stop)
 
         self.solver.setup(self.lns)
-        with mock.patch.object(self.solver.control, "interrupt") as mock_interrupt:
+        with self.assertRaises(SystemExit), mock.patch.object(
+            self.solver.control, "interrupt"
+        ) as mock_interrupt, mock.patch.object(
+            self.lns.strategy, "print_result"
+        ) as print_result_mock:
             self.solver.finished = False
             self.solver.stop = False
             signal.raise_signal(signal.SIGTERM)
             mock_interrupt.assert_called_once()
+            print_result_mock.assert_called_once_with(self.lns)
             self.assertTrue(self.solver.finished)
             self.assertTrue(self.solver.stop)
 

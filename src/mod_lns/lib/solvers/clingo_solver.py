@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import signal
 import sys
+from functools import partial
 from types import FrameType
 from typing import TYPE_CHECKING, Optional, Union
 
@@ -42,29 +43,38 @@ class ClingoSolver(SolverInterface):
         """
         return "clingo"
 
-    def setup_interrupt_handling(self) -> None:
+    def setup_interrupt_handling(self, lns_object: LNS) -> None:
         """
         Setup signal handling for interrupts (SIGINT, SIGTERM).
+
+        :param lns_object: LNS object.
+        :type lns_object: mod_lns.LNS
         """
-        signal.signal(signal.SIGINT, self.interrupt_handler)
-        signal.signal(signal.SIGTERM, self.interrupt_handler)
+        handler = partial(self.interrupt_handler, lns_object=lns_object)
+        signal.signal(signal.SIGINT, handler)
+        signal.signal(signal.SIGTERM, handler)
 
     # pylint: disable=unused-argument
-    def interrupt_handler(self, sig: int, frame: Union[None, FrameType]):
+    def interrupt_handler(
+        self, sig: int, frame: Union[None, FrameType], lns_object: LNS
+    ) -> None:
         """
         Signal handler for interrupts (SIGINT, SIGTERM).
 
         :param sig: Signal number.
         :type sig: int
         :param frame: Current stack frame.
-        :type frame: Frame
-        :rtype: dict[str, Any]
+        :type frame: Union[None, FrameType]
+        :param lns_object: LNS object.
+        :type lns_object: mod_lns.LNS
         """
+        print("INTERRUPTED")
         self.finished = True
-        print("interrupted by signal")
         if self.control is not None:
             self.control.interrupt()
         self.stop = True
+        lns_object.strategy.print_result(lns_object)
+        raise SystemExit
 
     # pylint: disable=dangerous-default-value
     def setup(
@@ -85,7 +95,7 @@ class ClingoSolver(SolverInterface):
         :type files: Optional[list[str]]
         :default files: None
         """
-        self.setup_interrupt_handling()
+        self.setup_interrupt_handling(lns_object)
 
         if files is None:
             files = lns_object.files
