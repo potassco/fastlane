@@ -14,21 +14,15 @@ from mod_lns.utils.conversions import symbol_to_str
 def main():
     # classic LNS with random relaxation using clingo with assumptions
     cl_strategy = DefaultStrategy()
-    cl_strategy.config = LNSConfig(
-        seed=123, relax_rate=40, init_time_limit=2, max_steps=500
-    )
+    cl_strategy.config = LNSConfig(seed=123, relax_rate=40, init_time_limit=2, max_steps=500)
 
     # constrained LNS using clingo with assumptions and random relaxation
     con_strategy = DefaultStrategy()
-    con_strategy.config = LNSConfig(
-        seed=123, relax_rate=40, init_time_limit=2, max_steps=500, constrained=True
-    )
+    con_strategy.config = LNSConfig(seed=123, relax_rate=40, init_time_limit=2, max_steps=500, constrained=True)
 
     # classic LNS with declarative relaxation using clingo with assumptions
     cl_decl_strategy = DefaultStrategy()
-    cl_decl_strategy.config = LNSConfig(
-        seed=123, relax_rate=40, init_time_limit=2, max_steps=500, declarative=True
-    )
+    cl_decl_strategy.config = LNSConfig(seed=123, relax_rate=40, init_time_limit=2, max_steps=500, declarative=True)
 
     # Example of custom strategy
     class NewStrategy(DefaultStrategy):
@@ -41,9 +35,7 @@ def main():
 
     # Use new config to inspect declarative relaxation
     decl_custom = NewStrategy()
-    decl_custom.config = LNSConfig(
-        seed=123, relax_rate=40, init_time_limit=2, max_steps=5, declarative=True
-    )
+    decl_custom.config = LNSConfig(seed=123, relax_rate=40, init_time_limit=2, max_steps=5, declarative=True)
 
     # Example using heulingo strategy
     heuristic_strategy = Heulingo()

@@ -24,9 +24,7 @@ lns_re = {
     "error": ("string", re.compile(r"^\*\*\* ERROR: (?P<val>.*)$")),
     "time": (
         "float",
-        re.compile(
-            r"^(Real time \(s\):|\[runlim\] real:)\s*(?P<val>[0-9]+(\.[0-9]+)?)"
-        ),
+        re.compile(r"^(Real time \(s\):|\[runlim\] real:)\s*(?P<val>[0-9]+(\.[0-9]+)?)"),
     ),
     "mem": (
         "float",
@@ -35,9 +33,7 @@ lns_re = {
     "rstatus": ("string", re.compile(r"^\[runlim\] status:\s*(?P<val>.*)$")),
     "status": (
         "string",
-        re.compile(
-            r"^(s )?(?P<val>SATISFIABLE|UNSATISFIABLE|UNKNOWN|OPTIMUM FOUND)[ ]*$"
-        ),
+        re.compile(r"^(s )?(?P<val>SATISFIABLE|UNSATISFIABLE|UNKNOWN|OPTIMUM FOUND)[ ]*$"),
     ),
 }
 
@@ -50,38 +46,28 @@ def parse(root, runspec, instance) -> dict:
     timeout = runspec.project.job.timeout
     res = {"time": ("float", timeout)}
     for f in ["runsolver.solver", "runsolver.watcher"]:
-        with codecs.open(
-            os.path.join(root, f), errors="ignore", encoding="utf-8"
-        ) as file:
+        with codecs.open(os.path.join(root, f), errors="ignore", encoding="utf-8") as file:
             for line in file:
                 for val, reg in lns_re.items():
                     m = reg[1].match(line)
                     if m:
                         res[val] = (
                             reg[0],
-                            float(m.group("val"))
-                            if reg[0] == "float"
-                            else m.group("val"),
+                            float(m.group("val")) if reg[0] == "float" else m.group("val"),
                         )
 
     if "rstatus" in res and res["rstatus"][1] == "out of memory":
         res["error"] = ("string", "std::bad_alloc")
         res["status"] = ("string", "UNKNOWN")
     result = {}
-    error = "status" not in res or (
-        "error" in res and res["error"][1] != "std::bad_alloc"
-    )
+    error = "status" not in res or ("error" in res and res["error"][1] != "std::bad_alloc")
     memout = "error" in res and res["error"][1] == "std::bad_alloc"
 
     timedout = memout or error or res["time"][1] >= timeout or "interrupted" in res
     if timedout:
         res["time"] = ("float", timeout)
     if error:
-        sys.stderr.write(
-            "*** ERROR: Run {0} failed with unrecognized status or error!\n".format(
-                root
-            )
-        )
+        sys.stderr.write("*** ERROR: Run {0} failed with unrecognized status or error!\n".format(root))
     result["error"] = ("float", int(error))
     result["timeout"] = ("float", int(timedout))
     result["memout"] = ("float", int(memout))

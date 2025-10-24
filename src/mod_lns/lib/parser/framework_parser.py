@@ -38,9 +38,7 @@ def get_classes_from_package(package: str, base: type) -> list[type]:
     """
     classes_in_package = []
     # Go through the modules in the package
-    for _, module_name, _ in pkgutil.iter_modules(
-        importlib.import_module(package).__path__
-    ):
+    for _, module_name, _ in pkgutil.iter_modules(importlib.import_module(package).__path__):
         full_module_name = f"{package}.{module_name}"
         # Load the module for inspection
         module = importlib.import_module(full_module_name)
@@ -48,9 +46,7 @@ def get_classes_from_package(package: str, base: type) -> list[type]:
         # Filter for class objects and only objects that exist within the module
         for _, obj in inspect.getmembers(
             module,
-            lambda member, module_name=full_module_name, base=base: inspect.isclass(
-                member
-            )
+            lambda member, module_name=full_module_name, base=base: inspect.isclass(member)
             and member.__module__ == module_name
             and base in inspect.getmro(member),
         ):
@@ -89,8 +85,7 @@ def get_framework_parser() -> ArgumentParser:
 
     # list of supported strategies
     strategies = [
-        (cls.__name__, cls())
-        for cls in get_classes_from_package("mod_lns.lib.strategies", StrategyInterface)
+        (cls.__name__, cls()) for cls in get_classes_from_package("mod_lns.lib.strategies", StrategyInterface)
     ]
 
     levels = [
@@ -100,7 +95,7 @@ def get_framework_parser() -> ArgumentParser:
         ("debug", logging.DEBUG),
     ]
 
-    def get(levels, name):
+    def get(levels: list[tuple[str, int]], name: str) -> int | None:
         for key, val in levels:
             if key == name:
                 return val
@@ -116,17 +111,13 @@ def get_framework_parser() -> ArgumentParser:
         dest="log_level",
     )
 
-    parser.add_argument(
-        "--version", "-v", action="version", version=f"%(prog)s {VERSION}"
-    )
+    parser.add_argument("--version", "-v", action="version", version=f"%(prog)s {VERSION}")
 
     # allow no input files for easier sub command help access
     # existence of files will be checked in __main__.py
     parser.add_argument("files", help="ASP input file(s)", nargs="*")
 
-    subparsers = parser.add_subparsers(
-        title="LNS Systems", help="LNS System", required=True
-    )
+    subparsers = parser.add_subparsers(title="LNS Systems", help="LNS System", required=True)
     for system in strategies:
         system[1].get_parser(subparsers)
 

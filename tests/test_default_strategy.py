@@ -28,9 +28,7 @@ class TestDefaultParser(TestCase):
         Test the parser.
         """
 
-        parser = get_default_parser(
-            LNSConfig, argparse.ArgumentParser().add_subparsers(title="system")
-        )
+        parser = get_default_parser(LNSConfig, argparse.ArgumentParser().add_subparsers(title="system"))
         # general options
         ret = parser.parse_args(["--solver", "clingo"])
         self.assertIsInstance(ret.solver, ClingoSolver)
@@ -169,17 +167,19 @@ class TestDefaultStrategy(TestCase):
         """
         self.strategy.config.time_limit = 42
         self.strategy.config.init_time_limit = None
-        with mock.patch.object(
-            self.strategy.timer, "start"
-        ) as mock_timer_start, mock.patch.object(
-            self.strategy.config,
-            "get_lns_solver_configuration",
-            wraps=self.strategy.config.get_lns_solver_configuration,
-        ) as mock_get_lns_config, mock.patch.object(
-            self.strategy.config,
-            "get_init_solver_configuration",
-            wraps=self.strategy.config.get_init_solver_configuration,
-        ) as mock_get_init_config:
+        with (
+            mock.patch.object(self.strategy.timer, "start") as mock_timer_start,
+            mock.patch.object(
+                self.strategy.config,
+                "get_lns_solver_configuration",
+                wraps=self.strategy.config.get_lns_solver_configuration,
+            ) as mock_get_lns_config,
+            mock.patch.object(
+                self.strategy.config,
+                "get_init_solver_configuration",
+                wraps=self.strategy.config.get_init_solver_configuration,
+            ) as mock_get_init_config,
+        ):
             self.strategy.pre_setup(self.lns)
             mock_timer_start.assert_called_once_with(42)
             mock_get_init_config.assert_called_once()
@@ -236,27 +236,21 @@ class TestDefaultStrategy(TestCase):
         Test the get_first_solution method.
         """
         self.strategy.solver = ClingoSolver()
-        with mock.patch.object(
-            self.strategy, "_update_time_limit"
-        ) as mock_update_time_limit, mock.patch.object(
-            self.strategy.solver, "solve", return_value=None
-        ) as mock_solve:
+        with (
+            mock.patch.object(self.strategy, "_update_time_limit") as mock_update_time_limit,
+            mock.patch.object(self.strategy.solver, "solve", return_value=None) as mock_solve,
+        ):
             self.assertFalse(self.strategy.get_first_solution(self.lns))
-            mock_update_time_limit.assert_called_once_with(
-                self.strategy.init_solver_config
-            )
+            mock_update_time_limit.assert_called_once_with(self.strategy.init_solver_config)
             mock_solve.assert_called_once_with(self.strategy.init_solver_config)
 
         model = Model()
-        with mock.patch.object(
-            self.strategy, "_update_time_limit"
-        ) as mock_update_time_limit, mock.patch.object(
-            self.strategy.solver, "solve", return_value=model
-        ) as mock_solve:
+        with (
+            mock.patch.object(self.strategy, "_update_time_limit") as mock_update_time_limit,
+            mock.patch.object(self.strategy.solver, "solve", return_value=model) as mock_solve,
+        ):
             self.assertTrue(self.strategy.get_first_solution(self.lns))
-            mock_update_time_limit.assert_called_once_with(
-                self.strategy.init_solver_config
-            )
+            mock_update_time_limit.assert_called_once_with(self.strategy.init_solver_config)
             mock_solve.assert_called_once_with(self.strategy.init_solver_config)
             self.assertEqual(self.lns.current_model, model)
             self.assertEqual(self.lns.best_model, model)
@@ -278,20 +272,18 @@ class TestDefaultStrategy(TestCase):
         self.strategy.config.max_steps = 12345678
         self.lns.current_model.cost = [2, 4]
         self.lns.best_model.cost = [1, 2, 3, 4]
-        with mock.patch.object(
-            self.strategy, "_update_time_limit"
-        ) as mock_update_time_limit, mock.patch.object(
-            self.strategy, "_calc_opt_bound"
-        ) as mock_calc_opt_bound, mock.patch.object(
-            self.strategy.timer, "get_elapsed_time", return_value=2.748
-        ), mock.patch(
-            "sys.stdout", new=StringIO()
-        ) as out:
+        with (
+            mock.patch.object(self.strategy, "_update_time_limit") as mock_update_time_limit,
+            mock.patch.object(self.strategy, "_calc_opt_bound") as mock_calc_opt_bound,
+            mock.patch.object(self.strategy.timer, "get_elapsed_time", return_value=2.748),
+            mock.patch("sys.stdout", new=StringIO()) as out,
+        ):
             self.strategy.solver.finished = True
             self.strategy.post_first_solution(self.lns)
             mock_update_time_limit.assert_not_called()
             mock_calc_opt_bound.assert_not_called()
             self.assertEqual(self.strategy._iter_format, "{0:>12.3f} - {1:>8}: {2:>7}")
+            # fmt: off
             self.assertEqual(
                 out.getvalue(),
                 (
@@ -299,15 +291,14 @@ class TestDefaultStrategy(TestCase):
                     "       2.748 -  initial: 1 2 3 4\n"
                 ),
             )
+            # fmt: on
 
             self.strategy.solver.finished = False
             self.strategy.config.constrained = False
             mock_update_time_limit.reset_mock()
             mock_calc_opt_bound.reset_mock()
             self.strategy.post_first_solution(self.lns)
-            mock_update_time_limit.assert_called_once_with(
-                self.strategy.lns_solver_config
-            )
+            mock_update_time_limit.assert_called_once_with(self.strategy.lns_solver_config)
             mock_calc_opt_bound.assert_not_called()
 
             self.strategy.solver.finished = False
@@ -315,12 +306,8 @@ class TestDefaultStrategy(TestCase):
             mock_update_time_limit.reset_mock()
             mock_calc_opt_bound.reset_mock()
             self.strategy.post_first_solution(self.lns)
-            mock_update_time_limit.assert_called_once_with(
-                self.strategy.lns_solver_config
-            )
-            mock_calc_opt_bound.assert_called_once_with(
-                self.strategy.lns_solver_config, [2, 4]
-            )
+            mock_update_time_limit.assert_called_once_with(self.strategy.lns_solver_config)
+            mock_calc_opt_bound.assert_called_once_with(self.strategy.lns_solver_config, [2, 4])
 
     def test_check_stop(self):
         """
@@ -334,15 +321,14 @@ class TestDefaultStrategy(TestCase):
         with mock.patch("sys.stdout", new=StringIO()) as out:
             # time limit
             self.strategy.config.time_limit = 42
-            with mock.patch(
-                "mod_lns.Timer.is_ringing", mock.PropertyMock(return_value=True)
-            ):
+            with mock.patch("mod_lns.Timer.is_ringing", mock.PropertyMock(return_value=True)):
                 self.assertTrue(self.strategy.check_stop(self.lns))
 
             # step limit
             self.strategy.config.max_steps = 10
             self.lns.step_c = 11
             self.assertTrue(self.strategy.check_stop(self.lns))
+            # fmt: off
             self.assertEqual(
                 out.getvalue(),
                 (
@@ -350,6 +336,7 @@ class TestDefaultStrategy(TestCase):
                     "Maximum number of steps (10) reached.\n"
                 ),
             )
+            # fmt: on
 
         # solver stop
         self.lns.step_c = 0
@@ -370,25 +357,22 @@ class TestDefaultStrategy(TestCase):
         """
         x = []
         y = []
-        with mock.patch(
-            "mod_lns.lib.strategies.default_strategy.relax_declarative", return_value=x
-        ) as mock_relax_declarative, mock.patch(
-            "mod_lns.lib.strategies.default_strategy.relax_random", return_value=y
-        ) as mock_relax_random:
+        with (
+            mock.patch(
+                "mod_lns.lib.strategies.default_strategy.relax_declarative", return_value=x
+            ) as mock_relax_declarative,
+            mock.patch("mod_lns.lib.strategies.default_strategy.relax_random", return_value=y) as mock_relax_random,
+        ):
             self.strategy.config.declarative = False
             self.assertEqual(self.strategy.relax(self.lns), y)
             mock_relax_declarative.assert_not_called()
-            mock_relax_random.assert_called_once_with(
-                self.lns.current_model, self.strategy.config.relax_rate
-            )
+            mock_relax_random.assert_called_once_with(self.lns.current_model, self.strategy.config.relax_rate)
 
             self.strategy.config.declarative = True
             mock_relax_declarative.reset_mock()
             mock_relax_random.reset_mock()
             self.assertEqual(self.strategy.relax(self.lns), x)
-            mock_relax_declarative.assert_called_once_with(
-                self.lns.current_model, self.strategy.config.relax_rate
-            )
+            mock_relax_declarative.assert_called_once_with(self.lns.current_model, self.strategy.config.relax_rate)
             mock_relax_random.assert_not_called()
 
     def test_repair(self):
@@ -403,18 +387,13 @@ class TestDefaultStrategy(TestCase):
         assumptions = [
             (Function("a", [Number(1)], True), True),
         ]
-        with mock.patch.object(
-            self.strategy.solver, "solve", return_value=model
-        ) as mock_solve, mock.patch.object(
-            self.strategy, "_update_time_limit"
-        ) as mock_update_time_limit:
+        with (
+            mock.patch.object(self.strategy.solver, "solve", return_value=model) as mock_solve,
+            mock.patch.object(self.strategy, "_update_time_limit") as mock_update_time_limit,
+        ):
             self.assertEqual(self.strategy.repair(self.lns, fixed_atoms), model)
-            mock_solve.assert_called_once_with(
-                self.strategy.lns_solver_config, assumptions
-            )
-            mock_update_time_limit.assert_called_once_with(
-                self.strategy.lns_solver_config
-            )
+            mock_solve.assert_called_once_with(self.strategy.lns_solver_config, assumptions)
+            mock_update_time_limit.assert_called_once_with(self.strategy.lns_solver_config)
 
     def test_check_accept(self):
         """
@@ -466,9 +445,7 @@ class TestDefaultStrategy(TestCase):
 
             self.strategy.config.constrained = True
             self.strategy.accepted(self.lns)
-            mock_calc_opt_bound.assert_called_once_with(
-                self.strategy.lns_solver_config, self.lns.current_model.cost
-            )
+            mock_calc_opt_bound.assert_called_once_with(self.strategy.lns_solver_config, self.lns.current_model.cost)
 
     def test_check_better(self):
         """
@@ -513,16 +490,18 @@ class TestDefaultStrategy(TestCase):
 
         self.strategy._iter_format = "{0:>9.3f} - {1:>7}: {2:>4}"
 
-        with mock.patch.object(
-            self.strategy.timer, "get_elapsed_time", return_value=10
-        ), mock.patch("sys.stdout", new=StringIO()) as out:
+        with (
+            mock.patch.object(self.strategy.timer, "get_elapsed_time", return_value=10),
+            mock.patch("sys.stdout", new=StringIO()) as out,
+        ):
             self.strategy.pre_next_iteration(self.lns)
             self.assertEqual(out.getvalue(), "   10.000 -       4:  2 4\n")
 
         self.strategy._printout = False
         self.lns.step_c = 5
-        with mock.patch.object(
-            self.strategy.timer, "get_elapsed_time", return_value=10
-        ), mock.patch("sys.stdout", new=StringIO()) as out:
+        with (
+            mock.patch.object(self.strategy.timer, "get_elapsed_time", return_value=10),
+            mock.patch("sys.stdout", new=StringIO()) as out,
+        ):
             self.strategy.pre_next_iteration(self.lns)
             self.assertEqual(out.getvalue(), "   10.000 -       5:  2 4\n")

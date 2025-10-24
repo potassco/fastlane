@@ -2,12 +2,12 @@
 Collection of utility functions used for LNS.
 """
 
-from typing import Sequence, TypeVar
+from typing import Any, Sequence, TypeVar
 
 import clingo
 
 
-def calculate_variability(list1: Sequence, list2: Sequence) -> float:
+def calculate_variability(list1: Sequence[Any], list2: Sequence[Any]) -> float:
     """
     Calculate variability of two lists in percent.
 
@@ -16,9 +16,9 @@ def calculate_variability(list1: Sequence, list2: Sequence) -> float:
     100 - completely different
 
     :param list1: First list.
-    :type list1: Sequence
+    :type list1: Sequence[Any]
     :param list2: Second list.
-    :type list2: Sequence
+    :type list2: Sequence[Any]
     :return: Variability of both lists.
     :rtype: float
     """
@@ -46,14 +46,14 @@ def fix_symbols(
     return fixed
 
 
-def get_unique_list(seq: Sequence) -> list:
+def get_unique_list(seq: Sequence[Any]) -> list[Any]:
     """
     Get unique elements from a list while preserving the order.
 
     :param seq: Input sequence.
-    :type seq: Sequence
+    :type seq: Sequence[Any]
     :return: List of unique elements.
-    :rtype: list
+    :rtype: list[Any]
     """
     seen = []
     return [x for x in seq if x not in seen and not seen.append(x)]  # type: ignore

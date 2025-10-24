@@ -71,15 +71,11 @@ def get_heulingo_parser(
             try:
                 x = int(values[0])
             except ValueError:
-                parser.error(
-                    f"'{string}': Invalid number of threads. Integer expected."
-                )
+                parser.error(f"'{string}': Invalid number of threads. Integer expected.")
             try:
                 assert 1 <= x <= 64
             except AssertionError:
-                parser.error(
-                    f"'{string}': Invalid number of threads. 1 <= x <= 64 expected."
-                )
+                parser.error(f"'{string}': Invalid number of threads. 1 <= x <= 64 expected.")
         elif len(values) == 2:
             if values[1] not in ("compete", "split"):
                 parser.error(f"'{string}': Invalid mode. {{compete|split}} expected.")
@@ -103,16 +99,14 @@ def get_heulingo_parser(
     parser.register("type", "init_opt_mode", parse_init_opt_mode)
 
     # pylint: disable=too-many-branches
-    def parse_lns_opt_mode(string: str) -> dict:
+    def parse_lns_opt_mode(string: str) -> dict[str, Any]:
         """
         Parse the lns optimization mode string.
         """
         opt_mode: dict[str, Any] = {}
         values = string.split(",")
         if values[0] not in ("opt", "enum", "optN", "ignore"):
-            parser.error(
-                f"'{string}': Invalid optimization mode. {{opt|enum|optN|ignore}} expected."
-            )
+            parser.error(f"'{string}': Invalid optimization mode. {{opt|enum|optN|ignore}} expected.")
         opt_mode["mode"] = values[0]
         if len(values) == 1:
             opt_mode["nf"] = None
@@ -135,9 +129,7 @@ def get_heulingo_parser(
                 opt_mode["modifier"] = "static"
             elif values[-1] == "dynamic":
                 if len(values) >= 4:
-                    parser.error(
-                        f"'{string}': Invalid number of bounds. Only one boundary expected."
-                    )
+                    parser.error(f"'{string}': Invalid number of bounds. Only one boundary expected.")
                 try:
                     float(values[1])
                 except ValueError:
@@ -145,9 +137,7 @@ def get_heulingo_parser(
                 opt_mode["nf"] = values[1]
                 opt_mode["modifier"] = "dynamic"
             else:
-                parser.error(
-                    f"'{string}': Invalid boundary mode. {{static|dynamic}} expected."
-                )
+                parser.error(f"'{string}': Invalid boundary mode. {{static|dynamic}} expected.")
         return opt_mode
 
     parser.register("type", "lns_opt_mode", parse_lns_opt_mode)
@@ -213,21 +203,16 @@ def get_heulingo_parser(
         try:
             int(string)
         except ValueError:
-            parser.error(
-                f"'{string}': Invalid falsify variable. {{<n>, inf}} expected."
-            )
+            parser.error(f"'{string}': Invalid falsify variable. {{<n>, inf}} expected.")
         return string
 
     parser.register("type", "falsify", parse_falsify)
 
     # list of supported solvers
-    solvers = [
-        (cls.get_name(), cls())
-        for cls in get_classes_from_package("mod_lns.lib.solvers", SolverInterface)
-    ]
+    solvers = [(cls.get_name(), cls()) for cls in get_classes_from_package("mod_lns.lib.solvers", SolverInterface)]
 
-    def get(levels, name):
-        for key, val in levels:
+    def get(solvers: list[tuple[str, SolverInterface]], name: str) -> SolverInterface | None:
+        for key, val in solvers:
             if key == name:
                 return val
         return None  # nocoverage
@@ -238,16 +223,12 @@ def get_heulingo_parser(
         """
         solver = get(solvers, string)
         if solver is None:
-            parser.error(
-                f"'{string}': Invalid solver. Choose from {{{','.join(key for key, _ in solvers)}}}"
-            )
+            parser.error(f"'{string}': Invalid solver. Choose from {{{','.join(key for key, _ in solvers)}}}")
         return solver
 
     parser.register("type", "solver", parse_solver)
 
-    parser.add_argument(
-        "--version", "-v", action="version", version=f"%(prog)s {VERSION}"
-    )
+    parser.add_argument("--version", "-v", action="version", version=f"%(prog)s {VERSION}")
 
     parser.add_argument(
         "--solver",
@@ -330,11 +311,13 @@ def get_heulingo_parser(
 
     #######################
     # Solver options for first solution, collected by hidden parser
+    # fmt: off
     solver_group = parser.add_argument_group(
         "Initial Solver Configuration",
         "Configuration options for the initial solver\n"
         "used to find the first solution.",
     )
+    # fmt: on
     solver_group.add_argument(
         "--init-configuration",
         help="set initial solver configuration [%(default)s]",
@@ -403,9 +386,7 @@ def get_heulingo_parser(
 
     ###################
     # lns options
-    lns_group = parser.add_argument_group(
-        "LNS Configuration", "Configuration options for the LNS"
-    )
+    lns_group = parser.add_argument_group("LNS Configuration", "Configuration options for the LNS")
 
     lns_group.add_argument(
         "--solve-limit-increase-rate",
@@ -528,9 +509,7 @@ def get_heulingo_parser(
 
     ##############################
     # lns solver options
-    lns_solver_group = parser.add_argument_group(
-        "LNS Solver Configuration", "Configuration options for the LNS solver"
-    )
+    lns_solver_group = parser.add_argument_group("LNS Solver Configuration", "Configuration options for the LNS solver")
 
     lns_solver_group.add_argument(
         "--lns-configuration",

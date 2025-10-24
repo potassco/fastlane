@@ -35,12 +35,7 @@ def symbol_to_str(symbol: clingo.Symbol) -> str:
     :rtype: str
     """
     if symbol.type == SymbolType.Function:
-        return (
-            symbol.name
-            + "("
-            + ",".join([symbol_to_str(s) for s in symbol.arguments])
-            + ")"
-        )
+        return symbol.name + "(" + ",".join([symbol_to_str(s) for s in symbol.arguments]) + ")"
     if symbol.type == SymbolType.Number:
         return str(symbol.number)
     if symbol.type == SymbolType.String:

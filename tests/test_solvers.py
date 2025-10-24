@@ -143,20 +143,18 @@ class TestSolverClingo(TestCase):
         self.solver.setup_interrupt_handling(self.lns)
         self.assertFalse(self.solver.finished)
         self.assertFalse(self.solver.stop)
-        with self.assertRaises(SystemExit), mock.patch.object(
-            self.lns.strategy, "print_result"
-        ) as print_result_mock:
+        with self.assertRaises(SystemExit), mock.patch.object(self.lns.strategy, "print_result") as print_result_mock:
             signal.raise_signal(signal.SIGINT)
             print_result_mock.assert_called_once_with(self.lns)
         self.assertTrue(self.solver.finished)
         self.assertTrue(self.solver.stop)
 
         self.solver.setup(self.lns)
-        with self.assertRaises(SystemExit), mock.patch.object(
-            self.solver.control, "interrupt"
-        ) as mock_interrupt, mock.patch.object(
-            self.lns.strategy, "print_result"
-        ) as print_result_mock:
+        with (
+            self.assertRaises(SystemExit),
+            mock.patch.object(self.solver.control, "interrupt") as mock_interrupt,
+            mock.patch.object(self.lns.strategy, "print_result") as print_result_mock,
+        ):
             self.solver.finished = False
             self.solver.stop = False
             signal.raise_signal(signal.SIGTERM)
@@ -229,26 +227,16 @@ class TestSolverClingo(TestCase):
         model = self.solver.solve(config)
         self.assertIsInstance(model, Model)
         self.assertEqual(self.solver._variability, config.variability)
-        self.assertEqual(
-            self.solver.control.configuration.configuration, config.configuration
-        )
-        self.assertEqual(
-            self.solver.control.configuration.solver.opt_strategy, "bb,lin"
-        )
-        self.assertEqual(
-            self.solver.control.configuration.solver.opt_heuristic, "sign,model"
-        )
+        self.assertEqual(self.solver.control.configuration.configuration, config.configuration)
+        self.assertEqual(self.solver.control.configuration.solver.opt_strategy, "bb,lin")
+        self.assertEqual(self.solver.control.configuration.solver.opt_heuristic, "sign,model")
         self.assertEqual(
             self.solver.control.configuration.solver.restart_on_model,
             config.restart_on_model,
         )
         self.assertEqual(self.solver.control.configuration.solver.heuristic, "domain,0")
-        self.assertEqual(
-            self.solver.control.configuration.solve.opt_mode, self.ref_opt_mode
-        )
-        self.assertEqual(
-            self.solver.control.configuration.solve.solve_limit, "1000,umax"
-        )
+        self.assertEqual(self.solver.control.configuration.solve.opt_mode, self.ref_opt_mode)
+        self.assertEqual(self.solver.control.configuration.solve.solve_limit, "1000,umax")
 
         def spy_decorator(method_to_decorate):
             mock_obj = mock.MagicMock()
@@ -265,13 +253,11 @@ class TestSolverClingo(TestCase):
         self.solver.setup(self.lns, [], ["./tests/ref/golf_big.lp"])
         self.solver.ground()
         self.solver.last_model = None
-        with mock.patch(
-            "mod_lns.Timer.is_ringing", mock.PropertyMock(return_value=True)
-        ), mock.patch.object(
-            clingo.SolveHandle, "cancel", mock_cancel
-        ), mock.patch.object(
-            self.solver, "_find_first_solution"
-        ) as mock_find_first:
+        with (
+            mock.patch("mod_lns.Timer.is_ringing", mock.PropertyMock(return_value=True)),
+            mock.patch.object(clingo.SolveHandle, "cancel", mock_cancel),
+            mock.patch.object(self.solver, "_find_first_solution") as mock_find_first,
+        ):
             self.solver.finished = False
             self.solver.solve()
             mock_cancel.mock_obj.assert_called_once()
@@ -329,9 +315,7 @@ class TestClingoDLSolver(TestSolverClingo):
         self.solver.setup(self.lns)
         with mock.patch.object(self.solver.control, "release_external") as mock_release:
             self.solver._release_bound(bound)
-            mock_release.assert_called_once_with(
-                Function("__b", [Number(bound), Number(0)])
-            )
+            mock_release.assert_called_once_with(Function("__b", [Number(bound), Number(0)]))
 
     def test_add_bound(self):
         """
@@ -341,21 +325,15 @@ class TestClingoDLSolver(TestSolverClingo):
         search_num = 1
         self.solver.setup(self.lns)
         self.solver._search_num = search_num
-        with mock.patch.object(
-            self.solver.control, "add"
-        ) as mock_add, mock.patch.object(
-            self.solver.control, "ground"
-        ) as mock_ground, mock.patch.object(
-            self.solver.control, "assign_external"
-        ) as mock_assign:
+        with (
+            mock.patch.object(self.solver.control, "add") as mock_add,
+            mock.patch.object(self.solver.control, "ground") as mock_ground,
+            mock.patch.object(self.solver.control, "assign_external") as mock_assign,
+        ):
             self.solver._add_bound(bound)
-            mock_add.assert_called_once_with(
-                "bound", ["t"], f"#external __b({bound},{search_num})."
-            )
+            mock_add.assert_called_once_with("bound", ["t"], f"#external __b({bound},{search_num}).")
             mock_ground.assert_called_once_with([("bound", [Number(search_num)])])
-            mock_assign.assert_called_once_with(
-                Function("__b", [Number(bound), Number(search_num)]), True
-            )
+            mock_assign.assert_called_once_with(Function("__b", [Number(bound), Number(search_num)]), True)
 
     def test_minimize_variable(self):
         """
@@ -384,19 +362,15 @@ class TestClingoDLSolver(TestSolverClingo):
             )
             return handle
 
-        with mock.patch.object(
-            self.solver.control, "solve", mock_solve
-        ), mock.patch.object(
-            self.solver, "_release_bound"
-        ) as mock_release, mock.patch.object(
-            self.solver, "_add_bound"
-        ) as mock_add:
+        with (
+            mock.patch.object(self.solver.control, "solve", mock_solve),
+            mock.patch.object(self.solver, "_release_bound") as mock_release,
+            mock.patch.object(self.solver, "_add_bound") as mock_add,
+        ):
             self.solver._minimize_variable(prev_bound=43)
             mock_release.assert_called_once_with(43)
             mock_add.assert_called_once_with(41)
-            self.assertEqual(
-                self.solver.control.configuration.solve.solve_limit, "995,990"
-            )
+            self.assertEqual(self.solver.control.configuration.solve.solve_limit, "995,990")
             self.assertEqual(self.solver.result, "OPTIMUM FOUND")
             self.assertEqual(self.solver.optimum, "yes")
 
@@ -405,21 +379,19 @@ class TestClingoDLSolver(TestSolverClingo):
         self.solver._timer._ringing = False
         self.solver.finished = False
 
-        with mock.patch.object(self.solver.control, "solve"), mock.patch.object(
-            self.solver, "_release_bound"
-        ) as mock_release, mock.patch.object(
-            self.solver,
-            "_add_bound",
-            side_effect=lambda prev_bound: setattr(
-                self.solver._timer, "_ringing", True
-            ),
-        ) as mock_add:
+        with (
+            mock.patch.object(self.solver.control, "solve"),
+            mock.patch.object(self.solver, "_release_bound") as mock_release,
+            mock.patch.object(
+                self.solver,
+                "_add_bound",
+                side_effect=lambda prev_bound: setattr(self.solver._timer, "_ringing", True),
+            ) as mock_add,
+        ):
             self.solver._minimize_variable(prev_bound=43)
             mock_release.assert_has_calls([mock.call(43), mock.call(41)])
             mock_add.assert_called_once_with(41)
-            self.assertEqual(
-                self.solver.control.configuration.solve.solve_limit, "1000,1000"
-            )
+            self.assertEqual(self.solver.control.configuration.solve.solve_limit, "1000,1000")
 
         # conflict and restart limit reached
         self.solver._timer._ringing = False
@@ -444,15 +416,14 @@ class TestClingoDLSolver(TestSolverClingo):
         # minimize variable set
         self.solver.minimize_variable = Function("x")
         self.ref_opt_mode = "opt"
-        with mock.patch.object(
-            self.solver, "_minimize_variable"
-        ) as mock_minimize, mock.patch.object(self.solver, "_add_bound") as mock_add:
+        with (
+            mock.patch.object(self.solver, "_minimize_variable") as mock_minimize,
+            mock.patch.object(self.solver, "_add_bound") as mock_add,
+        ):
             super().test_solve()
             mock_add.assert_called_once_with(10)
             # default run, setting of parameters, interruption by timer
-            mock_minimize.assert_has_calls(
-                [mock.call(None), mock.call(10), mock.call(None)]
-            )
+            mock_minimize.assert_has_calls([mock.call(None), mock.call(10), mock.call(None)])
 
 
 class TestClingconSolver(TestSolverClingo):

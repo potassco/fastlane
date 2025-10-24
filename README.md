@@ -1,12 +1,13 @@
 # large_neighbourhood_search
 
-The goal of this project is to implement an extensive and easily modifiable implementation of LNS using the tools of [potassco](https://potassco.org/).
-
+The goal of this project is to implement an extensive and easily modifiable
+implementation of LNS using the tools of [potassco](https://potassco.org/).
 
 ## Installation
 
-The `setuptools` package is required to run the commands below.
-We recommend the usage of conda, which already includes `setuptools` in its default python installation.
+The `setuptools` package is required to run the commands below. We recommend
+the usage of conda, which already includes `setuptools` in its default python
+installation.
 
 ```bash
 git clone https://github.com/potassco/large_neighbourhood_search
@@ -34,6 +35,7 @@ mod_lns <strategy> -h
 
 ## Documentation
 
-A detailed documentation can be build in `./doc` as described in `./doc/README.md`.
-The documentation contains further information regarding usage, a user guide with examples, and
-a description of the frameworks components.
+A detailed documentation can be build in `./doc` as described in
+`./doc/README.md`. The documentation contains further information regarding
+usage, a user guide with examples, and a description of the frameworks
+components.

@@ -6,7 +6,7 @@ from mod_lns.lib.parser.framework_parser import get_framework_parser
 from mod_lns.lns import LNS
 
 
-def main():
+def main() -> None:
     """
     Run the main function.
     """
