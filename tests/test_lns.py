@@ -60,6 +60,7 @@ class TestModel(TestCase):
         model.cost = [2]
         with mock.patch("sys.stdout", new=StringIO()) as out:
             model.print_model()
+            # fmt: off
             self.assertEqual(
                 out.getvalue(),
                 (
@@ -70,6 +71,7 @@ class TestModel(TestCase):
                     "Optimization: 2\n\n"
                 ),
             )
+            # fmt: on
 
 
 class TestTimer(TestCase):

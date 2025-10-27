@@ -75,9 +75,7 @@ class TestUtils(TestCase):
         Test args to dict conversion.
         """
         s = "-a --test=5 -g=3 --help howefow"
-        self.assertDictEqual(
-            args_to_dict(s), {"a": True, "test": "5", "g": "3", "help": True}
-        )
+        self.assertDictEqual(args_to_dict(s), {"a": True, "test": "5", "g": "3", "help": True})
 
 
 class TestLNSUtils(TestCase):

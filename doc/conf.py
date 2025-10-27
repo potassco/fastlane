@@ -18,16 +18,24 @@ autodoc_mock_imports = []
 
 # -- Project information -----------------------------------------------------
 
-_config = configparser.RawConfigParser()
-_config.read(os.path.join("..", "setup.cfg"))
-_meta = dict(_config.items("metadata"))
+# temporary solution until docs are moved to mkdocs
 
-project = _meta["name"]
-copyright = f'{datetime.datetime.now().date().strftime("%Y")}, {_meta["author"]}'
-author = _meta["author"]
+#_config = configparser.RawConfigParser()
+#_config.read(os.path.join("..", "pyproject.toml"))
+#_meta = dict(_config.items("project"))
+_meta = {
+    "name": "LNS",
+    "author": "Tom Schmidt",
+    "version": "5.0.3",
+    "url": "https://github.com/krr-up/large-neighbourhood-search",
+}
+
+#project = _meta["name"]
+copyright = f'{datetime.datetime.now().date().strftime("%Y")}'#, {_meta["author"]}'
+#author = _meta["author"]
 
 # The full version, including alpha/beta/rc tags
-release = _meta["version"]
+#release = _meta["version"]
 
 # -- General configuration ---------------------------------------------------
 
@@ -95,7 +103,7 @@ html_theme_options = {
             """,
             "class": "",
         },
-    ]
+    ],
     # Toc options
 }
 

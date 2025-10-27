@@ -1,7 +1,8 @@
 # Installation
 
-mod_lns requires clingo 5.8+, clingo-dl 1.5+, clingcon 5.2+ and Python 3.10+. We recommend version 3.11.
-An introduction to clingo can be found [here](https://potassco.org/doc/start/).
+mod_lns requires clingo 5.8+, clingo-dl 1.5+, clingcon 5.2+ and Python 3.11+.
+We recommend version 3.11. An introduction to clingo can be found
+[here](https://potassco.org/doc/start/).
 
 You can check a successful installation by running
 
@@ -9,7 +10,9 @@ You can check a successful installation by running
 mod_lns -h
 ```
 
-The project is hosted on [github](https://github.com/krr-up/large-neighbourhood-search) and should be installed from source.
+The project is hosted on
+[github](https://github.com/krr-up/large-neighbourhood-search) and should be
+installed from source.
 
 ```{warning}
 This project is still in active development.

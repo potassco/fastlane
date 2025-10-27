@@ -87,7 +87,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
         self._assumptions_used = False
 
     @classmethod
-    def __subclasshook__(cls, subclass):  # nocoverage
+    def __subclasshook__(cls, subclass: type) -> bool:  # nocoverage
         return (
             hasattr(subclass, "get_name")
             and callable(subclass.get_name)
@@ -205,12 +205,12 @@ class SolverInterface(metaclass=abc.ABCMeta):
         if isinstance(self.control, clingo.control.Control):
             self.control.release_external(external)
 
-    def get_stats(self) -> dict:
+    def get_stats(self) -> dict[str, Any]:
         """
         Get statistics of the last solve call.
 
         :return: Statistics dictionary.
-        :rtype: dict
+        :rtype: dict[str, Any]
         """
         if isinstance(self.control, clingo.control.Control):
             return self.control.statistics

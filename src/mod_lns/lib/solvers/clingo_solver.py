@@ -55,9 +55,7 @@ class ClingoSolver(SolverInterface):
         signal.signal(signal.SIGTERM, handler)
 
     # pylint: disable=unused-argument
-    def interrupt_handler(
-        self, sig: int, frame: Union[None, FrameType], lns_object: LNS
-    ) -> None:
+    def interrupt_handler(self, sig: int, frame: Union[None, FrameType], lns_object: LNS) -> None:
         """
         Signal handler for interrupts (SIGINT, SIGTERM).
 
@@ -102,7 +100,7 @@ class ClingoSolver(SolverInterface):
 
         self.logger = lns_object.logger
 
-        def custom_logger(mc, msg):  # nocoverage
+        def custom_logger(mc: clingo.MessageCode, msg: str) -> None:  # nocoverage
             if mc != clingo.MessageCode.Other:
                 print(msg, file=sys.stderr)
 
@@ -111,21 +109,19 @@ class ClingoSolver(SolverInterface):
             ctl.load(path)
         self.control, self.theory = ctl, None
 
-    def _on_model(self, model: clingo.solving.Model) -> None:
+    def _on_model(self, model: clingo.Model) -> None:
         """
         Saves model for later use.
 
         :param model: Model found during solving.
-        :type model: clingo.solving.Model
+        :type model: Model
         """
         self.last_model = Model()
         self.last_model.shown = list(model.symbols(shown=True))
         self.last_model.true = list(model.symbols(atoms=True))
         self.last_model.cost = model.cost
 
-    def _on_statistics(
-        self, step: StatisticsMap, accu: StatisticsMap
-    ) -> None:  # nocoverage
+    def _on_statistics(self, step: StatisticsMap, accu: StatisticsMap) -> None:  # nocoverage
         """
         Update statistics.
 
@@ -136,8 +132,7 @@ class ClingoSolver(SolverInterface):
         """
         return
 
-    # res: SolverResult
-    def _on_finish(self, res) -> None:  # nocoverage
+    def _on_finish(self, res: clingo.SolveResult) -> None:  # nocoverage
         """
         Search finished.
 
@@ -164,9 +159,7 @@ class ClingoSolver(SolverInterface):
                 self.optimum = "yes"
             self.finished = True
 
-    def _find_first_solution(
-        self, assumptions: list[tuple[clingo.symbol.Symbol, bool]] = []
-    ) -> None:
+    def _find_first_solution(self, assumptions: list[tuple[clingo.symbol.Symbol, bool]] = []) -> None:
         """
         Try harder to find first solution.
 
@@ -179,9 +172,7 @@ class ClingoSolver(SolverInterface):
         models_tmp = self.control.configuration.solve.models
         self.control.configuration.solve.solve_limit = "umax"
         self.control.configuration.solve.models = 1
-        self.logger.debug(
-            "solve-limit: %s", self.control.configuration.solve.solve_limit
-        )
+        self.logger.debug("solve-limit: %s", self.control.configuration.solve.solve_limit)
         self.logger.debug("models: %s", self.control.configuration.solve.models)
 
         with self.control.solve(
@@ -234,9 +225,7 @@ class ClingoSolver(SolverInterface):
             if config.opt_heuristic is not None:
                 self.control.configuration.solver.opt_heuristic = config.opt_heuristic
             if config.restart_on_model is not None:
-                self.control.configuration.solver.restart_on_model = (
-                    config.restart_on_model
-                )
+                self.control.configuration.solver.restart_on_model = config.restart_on_model
             if config.heuristic is not None:
                 self.control.configuration.solver.heuristic = config.heuristic
             if config.opt_mode is not None:
@@ -245,23 +234,13 @@ class ClingoSolver(SolverInterface):
                 self.control.configuration.solve.solve_limit = config.solve_limit
 
         self.logger.debug("configuration: %s", self.control.configuration.configuration)
-        self.logger.debug(
-            "opt-strategy: %s", self.control.configuration.solver.opt_strategy
-        )
-        self.logger.debug(
-            "parallel-mode: %s", self.control.configuration.solve.parallel_mode
-        )
-        self.logger.debug(
-            "opt-heuristic: %s", self.control.configuration.solver.opt_heuristic
-        )
-        self.logger.debug(
-            "restart-on-model: %s", self.control.configuration.solver.restart_on_model
-        )
+        self.logger.debug("opt-strategy: %s", self.control.configuration.solver.opt_strategy)
+        self.logger.debug("parallel-mode: %s", self.control.configuration.solve.parallel_mode)
+        self.logger.debug("opt-heuristic: %s", self.control.configuration.solver.opt_heuristic)
+        self.logger.debug("restart-on-model: %s", self.control.configuration.solver.restart_on_model)
         self.logger.debug("heuristic: %s", self.control.configuration.solver.heuristic)
         self.logger.debug("opt-mode: %s", self.control.configuration.solve.opt_mode)
-        self.logger.debug(
-            "solve-limit: %s", self.control.configuration.solve.solve_limit
-        )
+        self.logger.debug("solve-limit: %s", self.control.configuration.solve.solve_limit)
         self.logger.debug("time-limit: %s", time_limit)
 
         self._timer.reset()
@@ -273,11 +252,7 @@ class ClingoSolver(SolverInterface):
             async_=True,
         ) as handle:
             while not handle.wait(0):
-                if (
-                    self._timer.is_ringing
-                    and not self._interrupted
-                    and not self.finished
-                ):
+                if self._timer.is_ringing and not self._interrupted and not self.finished:
                     self._interrupted = True
                     self.logger.debug("interrupted by timer")
                     handle.cancel()

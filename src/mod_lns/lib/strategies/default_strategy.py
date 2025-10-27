@@ -19,7 +19,7 @@ from mod_lns.interfaces.solver import SolverConfig, SolverInterface
 from mod_lns.interfaces.strategy import StrategyInterface
 from mod_lns.lib.parser.default_parser import get_default_parser
 from mod_lns.lib.relaxation import relax_declarative, relax_random
-from mod_lns.lib.solvers import ClingoSolver
+from mod_lns.lib.solvers.clingo_solver import ClingoSolver
 from mod_lns.lib.utils import calculate_variability
 
 if TYPE_CHECKING:
@@ -131,9 +131,7 @@ class DefaultStrategy(StrategyInterface):
         self._iter_format: str = ""
         self._printout: bool = False
 
-    def get_parser(
-        self, subparsers: _SubParsersAction[ArgumentParser]
-    ) -> ArgumentParser:
+    def get_parser(self, subparsers: _SubParsersAction[ArgumentParser]) -> ArgumentParser:
         """
         Parse command line options.
 
@@ -166,7 +164,7 @@ class DefaultStrategy(StrategyInterface):
         self._log_level = self.config.log_level
         return rest
 
-    def pre_setup(self, lns_object: "LNS"):
+    def pre_setup(self, lns_object: "LNS") -> None:
         """
         Perform actions before solver setup.
 
@@ -189,7 +187,7 @@ class DefaultStrategy(StrategyInterface):
 
         random.seed(self.config.seed)
 
-    def setup_solver(self, lns_object):
+    def setup_solver(self, lns_object: "LNS") -> None:
         """
         Setup the solver for LNS.
 
@@ -202,7 +200,7 @@ class DefaultStrategy(StrategyInterface):
             args.append(f"--seed={self.config.seed}")
         self.solver.setup(lns_object, args)
 
-    def post_setup(self, lns_object: "LNS"):
+    def post_setup(self, lns_object: "LNS") -> None:
         """
         Perform actions after solver setup.
 
@@ -225,12 +223,9 @@ class DefaultStrategy(StrategyInterface):
                 solver_config.time_limit = self.timer.remaining_time()
             elif self.timer.remaining_time() < solver_tl:
                 solver_config.time_limit = self.timer.remaining_time()
+                self.logger.debug("elapsed time: %d seconds", self.timer.get_elapsed_time())
                 self.logger.debug(
-                    "elapsed time: %d seconds", self.timer.get_elapsed_time()
-                )
-                self.logger.debug(
-                    "Time limit for solver reduced to %d seconds "
-                    "to fit into overall time limit.",
+                    "Time limit for solver reduced to %d seconds to fit into overall time limit.",
                     solver_config.time_limit,
                 )
 
@@ -268,13 +263,14 @@ class DefaultStrategy(StrategyInterface):
         bound = cost[:-1] + [cost[-1] - 1]
         solver_config.opt_mode = "opt, " + ", ".join([str(c) for c in bound])
 
-    def post_first_solution(self, lns_object):
+    def post_first_solution(self, lns_object: "LNS") -> None:
         """
         Actions to perform after finding the first solution.
 
         :param lns_object: LNS object
         :type lns_object: mod_lns.LNS
         """
+        assert isinstance(self.solver, SolverInterface)
         if not self.solver.finished:
             self._update_time_limit(self.lns_solver_config)
 
@@ -289,18 +285,14 @@ class DefaultStrategy(StrategyInterface):
         step_digits = 7
         cost_digits = max(len(lns_object.best_model.get_cost_str()), 4)
         if self.config.time_limit is not None:
-            time_digits = max(
-                int(log10(self.config.time_limit)) + 1 + 1 + 3, time_digits
-            )
+            time_digits = max(int(log10(self.config.time_limit)) + 1 + 1 + 3, time_digits)
         if self.config.max_steps is not None:
             step_digits = max(int(log10(self.config.max_steps)) + 1, step_digits)
 
         header = f"{{0:>{time_digits}}} - {{1:>{step_digits}}}: {{2:>{cost_digits}}}"
         print(header.format("time in s", "step", "cost"))
 
-        self._iter_format = (
-            f"{{0:>{time_digits}.3f}} - {{1:>{step_digits}}}: {{2:>{cost_digits}}}"
-        )
+        self._iter_format = f"{{0:>{time_digits}.3f}} - {{1:>{step_digits}}}: {{2:>{cost_digits}}}"
         print(
             self._iter_format.format(
                 self.timer.get_elapsed_time(),
@@ -384,9 +376,7 @@ class DefaultStrategy(StrategyInterface):
         """
         assert isinstance(self.solver, SolverInterface)
         self._update_time_limit(self.lns_solver_config)
-        new_model = self.solver.solve(
-            self.lns_solver_config, list(map(lambda x: (x, True), fixed_atoms))
-        )
+        new_model = self.solver.solve(self.lns_solver_config, list(map(lambda x: (x, True), fixed_atoms)))
         return new_model
 
     # pylint: disable=unused-argument

@@ -30,9 +30,7 @@ class TestHeulingoParser(TestCase):
         Test the parser.
         """
 
-        parser = get_heulingo_parser(
-            HeulingoConfig, argparse.ArgumentParser().add_subparsers(title="system")
-        )
+        parser = get_heulingo_parser(HeulingoConfig, argparse.ArgumentParser().add_subparsers(title="system"))
         # general options
         ret = parser.parse_args(["--solver", "clingo"])
         self.assertIsInstance(ret.solver, ClingoSolver)
@@ -112,21 +110,13 @@ class TestHeulingoParser(TestCase):
         ret = parser.parse_args(["--lns-restart-on-model"])
         self.assertTrue(ret.lns_restart_on_model)
         ret = parser.parse_args(["--lns-opt-mode", "opt"])
-        self.assertDictEqual(
-            ret.lns_opt_mode, {"mode": "opt", "nf": None, "modifier": None}
-        )
+        self.assertDictEqual(ret.lns_opt_mode, {"mode": "opt", "nf": None, "modifier": None})
         ret = parser.parse_args(["--lns-opt-mode", "optN,10"])
-        self.assertDictEqual(
-            ret.lns_opt_mode, {"mode": "optN", "nf": "10", "modifier": "dynamic"}
-        )
+        self.assertDictEqual(ret.lns_opt_mode, {"mode": "optN", "nf": "10", "modifier": "dynamic"})
         ret = parser.parse_args(["--lns-opt-mode", "optN,10,5,static"])
-        self.assertDictEqual(
-            ret.lns_opt_mode, {"mode": "optN", "nf": "10,5", "modifier": "static"}
-        )
+        self.assertDictEqual(ret.lns_opt_mode, {"mode": "optN", "nf": "10,5", "modifier": "static"})
         ret = parser.parse_args(["--lns-opt-mode", "optN,10,dynamic"])
-        self.assertDictEqual(
-            ret.lns_opt_mode, {"mode": "optN", "nf": "10", "modifier": "dynamic"}
-        )
+        self.assertDictEqual(ret.lns_opt_mode, {"mode": "optN", "nf": "10", "modifier": "dynamic"})
         with self.assertRaises(SystemExit), mock.patch("sys.stderr", new=StringIO()):
             parser.parse_args(["--lns-opt-mode", "abc"])
         with self.assertRaises(SystemExit), mock.patch("sys.stderr", new=StringIO()):
@@ -163,42 +153,30 @@ class TestHeulingoConfig(TestCase):
         self.assertIsNone(config.init_configuration)
         self.assertIsNone(config.init_opt_strategy)
         self.assertIsNone(config.init_solve_limit)
-        self.assertDictEqual(
-            config.lns_opt_mode, {"mode": None, "nf": None, "modifier": None}
-        )
+        self.assertDictEqual(config.lns_opt_mode, {"mode": None, "nf": None, "modifier": None})
         self.assertIsNone(config.lns_solve_limit)
         config.apply_config()
         self.assertEqual(config.init_configuration, "handy")
         self.assertEqual(config.init_opt_strategy, "usc,3")
         self.assertEqual(config.init_solve_limit, "900000")
-        self.assertDictEqual(
-            config.lns_opt_mode, {"mode": "opt", "nf": "0", "modifier": "dynamic"}
-        )
+        self.assertDictEqual(config.lns_opt_mode, {"mode": "opt", "nf": "0", "modifier": "dynamic"})
         self.assertEqual(config.lns_solve_limit, "40000")
 
         config.heulingo_configuration = "test"
         config.lns_opt_mode = {"mode": None, "nf": None, "modifier": None}
         config.heulingo_configuration_values["test"] = {"lns_opt_mode": "opt"}
         config.apply_config()
-        self.assertDictEqual(
-            config.lns_opt_mode, {"mode": "opt", "nf": None, "modifier": None}
-        )
+        self.assertDictEqual(config.lns_opt_mode, {"mode": "opt", "nf": None, "modifier": None})
 
         config.lns_opt_mode = {"mode": None, "nf": None, "modifier": None}
         config.heulingo_configuration_values["test"] = {"lns_opt_mode": "opt,0"}
         config.apply_config()
-        self.assertDictEqual(
-            config.lns_opt_mode, {"mode": "opt", "nf": "0", "modifier": "dynamic"}
-        )
+        self.assertDictEqual(config.lns_opt_mode, {"mode": "opt", "nf": "0", "modifier": "dynamic"})
 
         config.lns_opt_mode = {"mode": None, "nf": None, "modifier": None}
-        config.heulingo_configuration_values["test"] = {
-            "lns_opt_mode": "opt,1,2,static"
-        }
+        config.heulingo_configuration_values["test"] = {"lns_opt_mode": "opt,1,2,static"}
         config.apply_config()
-        self.assertDictEqual(
-            config.lns_opt_mode, {"mode": "opt", "nf": "1,2", "modifier": "static"}
-        )
+        self.assertDictEqual(config.lns_opt_mode, {"mode": "opt", "nf": "1,2", "modifier": "static"})
 
     def test_get_init_solver_configuration(self):
         """
@@ -285,9 +263,7 @@ class TestHeulingo(TestCase):
             wraps=mod_lns.lib.strategies.heulingo.clamp,
         ) as mock_clamp:
             self.strategy._prep_values()
-            mock_clamp.assert_has_calls(
-                [mock.call(140, 0, 100), mock.call(-20, 0, 100)]
-            )
+            mock_clamp.assert_has_calls([mock.call(140, 0, 100), mock.call(-20, 0, 100)])
             self.assertEqual(self.strategy.config.solve_limit_increase_rate, 100)
             self.assertEqual(self.strategy.config.time_limit_increase_rate, 0)
 
@@ -337,17 +313,19 @@ class TestHeulingo(TestCase):
         self.strategy.config.falsify = "3"
         self.assertFalse(self.strategy._falsified)
         self.assertEqual(self.strategy._false_weight, Function("inf"))
-        with mock.patch.object(
-            self.strategy.timer, "start"
-        ) as mock_timer_start, mock.patch.object(
-            self.strategy.config,
-            "get_lns_solver_configuration",
-            wraps=self.strategy.config.get_lns_solver_configuration,
-        ) as mock_get_lns_config, mock.patch.object(
-            self.strategy.config,
-            "get_init_solver_configuration",
-            wraps=self.strategy.config.get_init_solver_configuration,
-        ) as mock_get_init_config:
+        with (
+            mock.patch.object(self.strategy.timer, "start") as mock_timer_start,
+            mock.patch.object(
+                self.strategy.config,
+                "get_lns_solver_configuration",
+                wraps=self.strategy.config.get_lns_solver_configuration,
+            ) as mock_get_lns_config,
+            mock.patch.object(
+                self.strategy.config,
+                "get_init_solver_configuration",
+                wraps=self.strategy.config.get_init_solver_configuration,
+            ) as mock_get_init_config,
+        ):
             self.strategy.pre_setup(self.lns)
             mock_timer_start.assert_called_once_with(42)
             mock_get_init_config.assert_called_once()
@@ -375,9 +353,7 @@ class TestHeulingo(TestCase):
         self.strategy.config.minimize_variable = Function("x")
         with mock.patch.object(self.strategy.solver, "setup") as mock_setup:
             self.strategy.setup_solver(self.lns)
-            mock_setup.assert_called_once_with(
-                self.lns, ["--seed=123", "--parallel-mode=4,split", "--c n=42", "-n 3"]
-            )
+            mock_setup.assert_called_once_with(self.lns, ["--seed=123", "--parallel-mode=4,split", "--c n=42", "-n 3"])
             self.assertEqual(self.strategy.solver.minimize_variable, Function("x"))
 
     def test_post_setup(self):
@@ -412,21 +388,19 @@ class TestHeulingo(TestCase):
         Test the get_first_solution method.
         """
         self.strategy.solver = ClingoSolver()
-        with mock.patch.object(
-            self.strategy.solver, "solve", return_value=None
-        ) as mock_solve, mock.patch.object(
-            self.strategy, "_update_time_limit"
-        ) as mock_update_time:
+        with (
+            mock.patch.object(self.strategy.solver, "solve", return_value=None) as mock_solve,
+            mock.patch.object(self.strategy, "_update_time_limit") as mock_update_time,
+        ):
             self.assertFalse(self.strategy.get_first_solution(self.lns))
             mock_update_time.assert_called_once_with(self.strategy.init_solver_config)
             mock_solve.assert_called_once_with(self.strategy.init_solver_config)
 
         model = Model()
-        with mock.patch.object(
-            self.strategy.solver, "solve", return_value=model
-        ) as mock_solve, mock.patch.object(
-            self.strategy, "_update_time_limit"
-        ) as mock_update_time:
+        with (
+            mock.patch.object(self.strategy.solver, "solve", return_value=model) as mock_solve,
+            mock.patch.object(self.strategy, "_update_time_limit") as mock_update_time,
+        ):
             self.assertTrue(self.strategy.get_first_solution(self.lns))
             mock_solve.assert_called_once_with(self.strategy.init_solver_config)
             mock_update_time.assert_called_once_with(self.strategy.init_solver_config)
@@ -594,34 +568,25 @@ class TestHeulingo(TestCase):
             "__w(W,t), W != inf. [W,false]"
         )
 
-        with mock.patch.object(
-            self.strategy, "_calc_opt_bound"
-        ) as mock_calc_opt, mock.patch.object(
-            self.strategy.solver, "ground"
-        ) as mock_ground, mock.patch.object(
-            self.strategy, "_load_lnps_config"
-        ) as mock_load_lnps, mock.patch.object(
-            self.strategy.solver, "add"
-        ) as mock_add, mock.patch.object(
-            self.strategy, "_check_variability", return_value=True
-        ) as mock_check_var, mock.patch.object(
-            self.strategy.timer, "get_elapsed_time", return_value=2.748
-        ), mock.patch(
-            "sys.stdout", new=StringIO()
-        ) as out:
+        with (
+            mock.patch.object(self.strategy, "_calc_opt_bound") as mock_calc_opt,
+            mock.patch.object(self.strategy.solver, "ground") as mock_ground,
+            mock.patch.object(self.strategy, "_load_lnps_config") as mock_load_lnps,
+            mock.patch.object(self.strategy.solver, "add") as mock_add,
+            mock.patch.object(self.strategy, "_check_variability", return_value=True) as mock_check_var,
+            mock.patch.object(self.strategy.timer, "get_elapsed_time", return_value=2.748),
+            mock.patch("sys.stdout", new=StringIO()) as out,
+        ):
             self.strategy.post_first_solution(self.lns)
-            mock_calc_opt.assert_called_once_with(
-                self.strategy.lns_solver_config, self.lns.current_model.cost
-            )
+            mock_calc_opt.assert_called_once_with(self.strategy.lns_solver_config, self.lns.current_model.cost)
             mock_ground.assert_called_once_with([("config", [])])
-            mock_load_lnps.assert_called_once_with(
-                self.strategy.solver.control, self.lns.current_model.shown
-            )
+            mock_load_lnps.assert_called_once_with(self.strategy.solver.control, self.lns.current_model.shown)
             mock_add.assert_called_once_with("heuristic", ["t"], rules)
             mock_check_var.assert_called_once()
             self.assertTrue(self.strategy._variability)
 
             self.assertEqual(self.strategy._iter_format, "{0:>12.3f} - {1:>8}: {2:>7}")
+            # fmt: off
             self.assertEqual(
                 out.getvalue(),
                 (
@@ -629,6 +594,7 @@ class TestHeulingo(TestCase):
                     "       2.748 -  initial: 1 2 3 4\n"
                 ),
             )
+            # fmt: on
 
     def test_check_stop(self):
         """
@@ -641,9 +607,7 @@ class TestHeulingo(TestCase):
 
         # time limit
         self.strategy.config.time_limit = 42
-        with mock.patch(
-            "mod_lns.Timer.is_ringing", mock.PropertyMock(return_value=True)
-        ):
+        with mock.patch("mod_lns.Timer.is_ringing", mock.PropertyMock(return_value=True)):
             self.assertTrue(self.strategy.check_stop(self.lns))
 
         # step limit
@@ -693,15 +657,11 @@ class TestHeulingo(TestCase):
             Function("plays", [Number(1), Number(2), Number(3)], True),
             Function("plays", [Number(3), Number(2), Number(3)], True),
         ]
-        filtered_atoms = self.strategy._filter(
-            shown_atoms, 3, 6, Function("p", [Number(50)], True)
-        )
+        filtered_atoms = self.strategy._filter(shown_atoms, 3, 6, Function("p", [Number(50)], True))
         self.assertEqual(len(filtered_atoms), 1)
         self.assertTrue(filtered_atoms[0] in shown_atoms)
 
-        filtered_atoms = self.strategy._filter(
-            shown_atoms, 3, 7, Function("n", [Number(1)], True)
-        )
+        filtered_atoms = self.strategy._filter(shown_atoms, 3, 7, Function("n", [Number(1)], True))
         self.assertEqual(len(filtered_atoms), 1)
         self.assertTrue(filtered_atoms[0] in shown_atoms)
 
@@ -728,9 +688,7 @@ class TestHeulingo(TestCase):
             "modifier": Function("true"),
         }
         filtered_atoms = [Function("plays", [Number(1), Number(2), Number(3)], True)]
-        with mock.patch.object(
-            self.strategy, "_filter", return_value=filtered_atoms
-        ) as mock_filter:
+        with mock.patch.object(self.strategy, "_filter", return_value=filtered_atoms) as mock_filter:
             self.assertListEqual(
                 self.strategy._destroy(shown_atoms, config),
                 [Function("plays", [Number(3), Number(2), Number(3)], True)],
@@ -820,53 +778,58 @@ class TestHeulingo(TestCase):
             Function("plays", [Number(1), Number(2), Number(3)], True),
             Function("plays", [Number(3), Number(2), Number(3)], True),
         ]
-        with mock.patch.object(
-            self.strategy,
-            "_project",
-            return_value=[
-                Function("plays", [Number(1), Number(2), Number(3)], True),
-                Function("plays", [Number(3), Number(2), Number(3)], True),
-            ],
-        ) as mock_project, mock.patch.object(
-            self.strategy,
-            "_destroy",
-            return_value=[Function("plays", [Number(1), Number(2), Number(3)], True)],
-        ) as mock_destroy, mock.patch.object(
-            self.strategy,
-            "_prioritize",
-            return_value=[
-                Function(
-                    "heuristic",
-                    [
-                        Function("plays", [Number(1), Number(2), Number(3)], True),
-                        Number(1),
-                        Function("true"),
-                        Number(42),
-                    ],
-                )
-            ],
-        ) as mock_prioritize, mock.patch.object(
-            self.strategy,
-            "_generate_projected_atoms",
-            return_value=[
-                Function(
-                    "projected",
-                    [
-                        Function("plays", [Number(1), Number(2), Number(3)], True),
-                        Number(42),
-                    ],
-                    True,
-                ),
-                Function(
-                    "projected",
-                    [
-                        Function("plays", [Number(3), Number(2), Number(3)], True),
-                        Number(42),
-                    ],
-                    True,
-                ),
-            ],
-        ) as mock_generate:
+        with (
+            mock.patch.object(
+                self.strategy,
+                "_project",
+                return_value=[
+                    Function("plays", [Number(1), Number(2), Number(3)], True),
+                    Function("plays", [Number(3), Number(2), Number(3)], True),
+                ],
+            ) as mock_project,
+            mock.patch.object(
+                self.strategy,
+                "_destroy",
+                return_value=[Function("plays", [Number(1), Number(2), Number(3)], True)],
+            ) as mock_destroy,
+            mock.patch.object(
+                self.strategy,
+                "_prioritize",
+                return_value=[
+                    Function(
+                        "heuristic",
+                        [
+                            Function("plays", [Number(1), Number(2), Number(3)], True),
+                            Number(1),
+                            Function("true"),
+                            Number(42),
+                        ],
+                    )
+                ],
+            ) as mock_prioritize,
+            mock.patch.object(
+                self.strategy,
+                "_generate_projected_atoms",
+                return_value=[
+                    Function(
+                        "projected",
+                        [
+                            Function("plays", [Number(1), Number(2), Number(3)], True),
+                            Number(42),
+                        ],
+                        True,
+                    ),
+                    Function(
+                        "projected",
+                        [
+                            Function("plays", [Number(3), Number(2), Number(3)], True),
+                            Number(42),
+                        ],
+                        True,
+                    ),
+                ],
+            ) as mock_generate,
+        ):
             self.assertListEqual(
                 self.strategy.relax(self.lns),
                 [
@@ -899,12 +862,8 @@ class TestHeulingo(TestCase):
                     Function("__w", [Number(12), Number(42)], True),
                 ],
             )
-            mock_project.assert_called_once_with(
-                self.lns.current_model.shown, self.strategy._lnps_config[0]
-            )
-            mock_destroy.assert_called_once_with(
-                self.lns.current_model.shown, self.strategy._lnps_config[0]
-            )
+            mock_project.assert_called_once_with(self.lns.current_model.shown, self.strategy._lnps_config[0])
+            mock_destroy.assert_called_once_with(self.lns.current_model.shown, self.strategy._lnps_config[0])
             mock_prioritize.assert_called_once_with(
                 [Function("plays", [Number(1), Number(2), Number(3)], True)],
                 self.strategy._lnps_config[0],
@@ -950,19 +909,14 @@ class TestHeulingo(TestCase):
         ]
         new_model = Model()
 
-        with mock.patch.object(
-            self.strategy.solver, "release_external"
-        ) as mock_release_external, mock.patch.object(
-            self.strategy.solver, "add"
-        ) as mock_add, mock.patch.object(
-            self.strategy.solver, "ground"
-        ) as mock_ground, mock.patch.object(
-            self.strategy.solver, "assign_external"
-        ) as mock_assign_external, mock.patch.object(
-            self.strategy, "_update_time_limit"
-        ) as mock_update_time, mock.patch.object(
-            self.strategy.solver, "solve", return_value=new_model
-        ) as mock_solve:
+        with (
+            mock.patch.object(self.strategy.solver, "release_external") as mock_release_external,
+            mock.patch.object(self.strategy.solver, "add") as mock_add,
+            mock.patch.object(self.strategy.solver, "ground") as mock_ground,
+            mock.patch.object(self.strategy.solver, "assign_external") as mock_assign_external,
+            mock.patch.object(self.strategy, "_update_time_limit") as mock_update_time,
+            mock.patch.object(self.strategy.solver, "solve", return_value=new_model) as mock_solve,
+        ):
             self.assertEqual(self.strategy.repair(self.lns, fixed_atoms), new_model)
             mock_release_external.assert_called_once_with(
                 Function(
@@ -976,9 +930,7 @@ class TestHeulingo(TestCase):
                     True,
                 )
             )
-            mock_add.assert_called_once_with(
-                "external", ["t"], "#external heuristic(plays(3,2,3),1,true,42)."
-            )
+            mock_add.assert_called_once_with("external", ["t"], "#external heuristic(plays(3,2,3),1,true,42).")
             mock_ground.assert_has_calls(
                 [
                     mock.call([("external", [Number(42)])]),
@@ -1022,9 +974,7 @@ class TestHeulingo(TestCase):
         """
         with mock.patch.object(self.strategy, "_calc_opt_bound") as mock_calc_opt_bound:
             self.strategy.accepted(self.lns)
-            mock_calc_opt_bound.assert_called_once_with(
-                self.strategy.lns_solver_config, self.lns.current_model.cost
-            )
+            mock_calc_opt_bound.assert_called_once_with(self.strategy.lns_solver_config, self.lns.current_model.cost)
 
     def test_check_better(self):
         """
@@ -1089,34 +1039,30 @@ class TestHeulingo(TestCase):
         self.strategy.config.status_interval = 5
         self.lns.step_c = 4
         self.lns.best_model.cost = [2, 4]
-        with mock.patch.object(
-            self.strategy, "_increase_solve_limit"
-        ) as mock_increase_solve, mock.patch.object(
-            self.strategy, "_increase_time_limit"
-        ) as mock_increase_time, mock.patch(
-            "sys.stderr", new=StringIO()
-        ) as out:
+        with (
+            mock.patch.object(self.strategy, "_increase_solve_limit") as mock_increase_solve,
+            mock.patch.object(self.strategy, "_increase_time_limit") as mock_increase_time,
+            mock.patch("sys.stderr", new=StringIO()) as out,
+        ):
             with self.assertRaises(RuntimeError):
                 self.strategy.pre_next_iteration(self.lns)
-                mock_increase_solve.assert_called_once_with(
-                    self.strategy.lns_solver_config
-                )
-                mock_increase_time.assert_called_once_with(
-                    self.strategy.lns_solver_config
-                )
+                mock_increase_solve.assert_called_once_with(self.strategy.lns_solver_config)
+                mock_increase_time.assert_called_once_with(self.strategy.lns_solver_config)
 
         self.strategy._iter_format = "{0:>9.3f} - {1:>7}: {2:>4}"
 
-        with mock.patch.object(
-            self.strategy.timer, "get_elapsed_time", return_value=10
-        ), mock.patch("sys.stdout", new=StringIO()) as out:
+        with (
+            mock.patch.object(self.strategy.timer, "get_elapsed_time", return_value=10),
+            mock.patch("sys.stdout", new=StringIO()) as out,
+        ):
             self.strategy.pre_next_iteration(self.lns)
             self.assertEqual(out.getvalue(), "   10.000 -       4:  2 4\n")
 
         self.strategy._printout = False
         self.lns.step_c = 5
-        with mock.patch.object(
-            self.strategy.timer, "get_elapsed_time", return_value=10
-        ), mock.patch("sys.stdout", new=StringIO()) as out:
+        with (
+            mock.patch.object(self.strategy.timer, "get_elapsed_time", return_value=10),
+            mock.patch("sys.stdout", new=StringIO()) as out,
+        ):
             self.strategy.pre_next_iteration(self.lns)
             self.assertEqual(out.getvalue(), "   10.000 -       5:  2 4\n")

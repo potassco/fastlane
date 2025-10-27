@@ -6,8 +6,9 @@ on:
       - main
       - master
       - dev
-      - Version-4
+      - wip
   pull_request:
+  workflow_call:
 
 env:
   FORCE_COLOR: "3"
@@ -23,10 +24,10 @@ jobs:
 
     steps:
     - name: "checkout repository"
-      uses: actions/checkout@v3
+      uses: actions/checkout@v5
 
     - name: "setup python 3.11"
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v6
       with:
         python-version: 3.11
   

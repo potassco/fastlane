@@ -54,13 +54,10 @@ def get_default_parser(
     )
 
     # list of supported solvers
-    solvers = [
-        (cls.get_name(), cls())
-        for cls in get_classes_from_package("mod_lns.lib.solvers", SolverInterface)
-    ]
+    solvers = [(cls.get_name(), cls()) for cls in get_classes_from_package("mod_lns.lib.solvers", SolverInterface)]
 
-    def get(levels, name):
-        for key, val in levels:
+    def get(solvers: list[tuple[str, SolverInterface]], name: str) -> SolverInterface | None:
+        for key, val in solvers:
             if key == name:
                 return val
         return None  # nocoverage
@@ -71,9 +68,7 @@ def get_default_parser(
         """
         solver = get(solvers, string)
         if solver is None:
-            parser.error(
-                f"'{string}': Invalid solver. Choose from {{{','.join(key for key, _ in solvers)}}}"
-            )
+            parser.error(f"'{string}': Invalid solver. Choose from {{{','.join(key for key, _ in solvers)}}}")
         return solver
 
     parser.register("type", "solver", parse_solver)
@@ -92,9 +87,7 @@ def get_default_parser(
 
     parser.register("type", "solve_limit", parse_solve_limit)
 
-    parser.add_argument(
-        "--version", "-v", action="version", version=f"%(prog)s {VERSION}"
-    )
+    parser.add_argument("--version", "-v", action="version", version=f"%(prog)s {VERSION}")
 
     parser.add_argument(
         "--solver",
@@ -141,11 +134,13 @@ def get_default_parser(
 
     #######################
     # Solver options for first solution, collected by hidden parser
+    # fmt: off
     solver_group = parser.add_argument_group(
         "Initial Solver Configuration",
         "Configuration options for the initial solver\n"
         "used to find the first solution.",
     )
+    # fmt: on
 
     solver_group.add_argument(
         "--init-solve-limit",
@@ -167,9 +162,7 @@ def get_default_parser(
 
     ###################
     # lns options
-    lns_group = parser.add_argument_group(
-        "LNS Configuration", "Configuration options for the LNS"
-    )
+    lns_group = parser.add_argument_group("LNS Configuration", "Configuration options for the LNS")
 
     lns_group.add_argument(
         "--lns-constrained",
@@ -194,9 +187,7 @@ def get_default_parser(
 
     ##############################
     # lns solver options
-    lns_solver_group = parser.add_argument_group(
-        "LNS Solver Configuration", "Configuration options for the LNS solver"
-    )
+    lns_solver_group = parser.add_argument_group("LNS Solver Configuration", "Configuration options for the LNS solver")
 
     lns_solver_group.add_argument(
         "--lns-solve-limit",

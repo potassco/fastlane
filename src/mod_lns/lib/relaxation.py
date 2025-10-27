@@ -67,7 +67,5 @@ def relax_random(
     :return: Fixed (not relaxed) atoms.
     :rtype: list[Symbol]
     """
-    fixed_atoms = random.sample(
-        model.shown, round(len(model.shown) * (1 - relax_rate / 100))
-    )
+    fixed_atoms = random.sample(model.shown, round(len(model.shown) * (1 - relax_rate / 100)))
     return fixed_atoms

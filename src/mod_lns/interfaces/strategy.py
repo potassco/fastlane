@@ -53,7 +53,7 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         self.timer = Timer()
 
     @classmethod
-    def __subclasshook__(cls, subclass):  # nocoverage
+    def __subclasshook__(cls, subclass: type) -> bool:  # nocoverage
         return (
             hasattr(subclass, "get_parser")
             and callable(subclass.get_parser)
@@ -79,9 +79,7 @@ class StrategyInterface(metaclass=abc.ABCMeta):
         )
 
     @abc.abstractmethod
-    def get_parser(
-        self, subparsers: _SubParsersAction[ArgumentParser]
-    ) -> ArgumentParser:  # nocoverage
+    def get_parser(self, subparsers: _SubParsersAction[ArgumentParser]) -> ArgumentParser:  # nocoverage
         """
         Get parser for strategy.
 
