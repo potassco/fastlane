@@ -166,6 +166,7 @@ class TestLNS(TestCase):
         """
         strat = DefaultStrategy()
         strat.config.log_level = 50
+        strat.config.relax_rate = 20
         lns = LNS(["./tests/ref/golf.lp"], strategy=strat)
         self.assertEqual(lns.files, ["./tests/ref/golf.lp"])
         self.assertEqual(lns.strategy, strat)

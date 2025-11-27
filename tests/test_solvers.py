@@ -54,6 +54,7 @@ class TestSolverClingo(TestCase):
         self.name = "clingo"
         self.strategy = DefaultStrategy()
         self.strategy.config.log_level = 50
+        self.strategy.config.relax_rate = 20
         self.lns = LNS(["./tests/ref/golf.lp"], self.strategy)
 
         # for solve tests
@@ -285,6 +286,7 @@ class TestClingoDLSolver(TestSolverClingo):
         self.name = "clingo-dl"
         self.strategy = DefaultStrategy()
         self.strategy.config.log_level = 50
+        self.strategy.config.relax_rate = 20
         self.lns = LNS(["./tests/ref/golf.lp"], self.strategy)
         # for solve tests, default
         self.ref_opt_mode = "opt,10"
@@ -437,6 +439,7 @@ class TestClingconSolver(TestSolverClingo):
         self.name = "clingcon"
         self.strategy = DefaultStrategy()
         self.strategy.config.log_level = 50
+        self.strategy.config.relax_rate = 20
         self.lns = LNS(["./tests/ref/golf.lp"], self.strategy)
         # for solve tests
         self.ref_opt_mode = "opt,10"

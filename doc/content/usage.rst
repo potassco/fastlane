@@ -47,6 +47,7 @@ step by step introduction to the framework look :ref:`here<ref_guide>`.
         strategy,                       # strategy to be used
         {                               # set additional parameters
             "time_limit": 60,           # overall time limit in seconds
+            "relax_rate": 20,           # percentage of solution to be relaxed
         }
     )
 

@@ -42,7 +42,7 @@ def get_default_parser(
         help="Default strategy for LNS",
         description=dedent(
             """\
-            default
+            Default strategy
             An implementation of Large Neighbourhood Search (LNS)
             based on Answer Set Programming (ASP).
 
@@ -183,6 +183,28 @@ def get_default_parser(
         type=int,
         dest="accept_variability",
         metavar="<n>",
+    )
+    lns_group.add_argument(
+        "--preset",
+        help=(
+            f"Set LNS configuration preset\n"
+            f"<arg>: {{basic}}\n"
+            f"basic:  Basic configuration suitable for many problems.\n"
+            f"Presets:\n"
+            f"[basic]:\n"
+            f" --time-limit={config_cls.preset_values['basic']['time_limit']}"
+            f" --max-steps={config_cls.preset_values['basic']['max_steps']}"
+            f" --relax-rate={config_cls.preset_values['basic']['relax_rate']}\n"
+            f" --init-time-limit={config_cls.preset_values['basic']['init_time_limit']}"
+            f" --init-solve-limit={config_cls.preset_values['basic']['init_solve_limit']}\n"
+            f" --lns-time-limit={config_cls.preset_values['basic']['lns_time_limit']}"
+            f" --lns-solve-limit={config_cls.preset_values['basic']['lns_solve_limit']}"
+        ),
+        choices=["basic"],
+        default=config.preset,
+        type=str,
+        dest="preset",
+        metavar="<arg>",
     )
 
     ##############################
