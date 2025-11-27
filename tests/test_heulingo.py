@@ -98,8 +98,8 @@ class TestHeulingoParser(TestCase):
         self.assertEqual(ret.time_limit_increase_rate, 2.0)
         ret = parser.parse_args(["--acceptance-rate", "5.0"])
         self.assertEqual(ret.acceptance_rate, 5.0)
-        ret = parser.parse_args(["--heulingo-configuration", "tsp"])
-        self.assertEqual(ret.heulingo_configuration, "tsp")
+        ret = parser.parse_args(["--preset", "tsp"])
+        self.assertEqual(ret.preset, "tsp")
         # lns solver options
         ret = parser.parse_args(["--lns-opt-strategy", "usc,11"])
         self.assertEqual(ret.lns_opt_strategy, "usc,11")
@@ -144,39 +144,43 @@ class TestHeulingoConfig(TestCase):
     Test cases for the HeulingoConfig class.
     """
 
-    def test_apply_config(self):
+    def test_apply_preset(self):
         """
-        Test the apply_config method.
+        Test the apply_preset method.
         """
         config = HeulingoConfig()
-        config.heulingo_configuration = "sd"
+        config.preset = "sd"
         self.assertIsNone(config.init_configuration)
         self.assertIsNone(config.init_opt_strategy)
         self.assertIsNone(config.init_solve_limit)
         self.assertDictEqual(config.lns_opt_mode, {"mode": None, "nf": None, "modifier": None})
         self.assertIsNone(config.lns_solve_limit)
-        config.apply_config()
+        config.apply_preset()
         self.assertEqual(config.init_configuration, "handy")
         self.assertEqual(config.init_opt_strategy, "usc,3")
         self.assertEqual(config.init_solve_limit, "900000")
         self.assertDictEqual(config.lns_opt_mode, {"mode": "opt", "nf": "0", "modifier": "dynamic"})
         self.assertEqual(config.lns_solve_limit, "40000")
 
-        config.heulingo_configuration = "test"
+        config.preset = "test"
         config.lns_opt_mode = {"mode": None, "nf": None, "modifier": None}
-        config.heulingo_configuration_values["test"] = {"lns_opt_mode": "opt"}
-        config.apply_config()
+        config.preset_values["test"] = {"lns_opt_mode": "opt"}
+        config.apply_preset()
         self.assertDictEqual(config.lns_opt_mode, {"mode": "opt", "nf": None, "modifier": None})
 
         config.lns_opt_mode = {"mode": None, "nf": None, "modifier": None}
-        config.heulingo_configuration_values["test"] = {"lns_opt_mode": "opt,0"}
-        config.apply_config()
+        config.preset_values["test"] = {"lns_opt_mode": "opt,0"}
+        config.apply_preset()
         self.assertDictEqual(config.lns_opt_mode, {"mode": "opt", "nf": "0", "modifier": "dynamic"})
 
         config.lns_opt_mode = {"mode": None, "nf": None, "modifier": None}
-        config.heulingo_configuration_values["test"] = {"lns_opt_mode": "opt,1,2,static"}
-        config.apply_config()
+        config.preset_values["test"] = {"lns_opt_mode": "opt,1,2,static"}
+        config.apply_preset()
         self.assertDictEqual(config.lns_opt_mode, {"mode": "opt", "nf": "1,2", "modifier": "static"})
+
+        config.preset = "unknown"
+        with self.assertRaises(ValueError):
+            config.apply_preset()
 
     def test_get_init_solver_configuration(self):
         """
@@ -272,7 +276,7 @@ class TestHeulingo(TestCase):
         Test the parse_options method.
         """
         args = {
-            "heulingo_configuration": "tsp",
+            "preset": "tsp",
             "solver": ClingoDLSolver(),
             "seed": 123,
             "init_solve_limit": "100,200",
@@ -282,10 +286,10 @@ class TestHeulingo(TestCase):
             "opt": 5,
             "log_level": 50,
         }
-        with mock.patch.object(self.strategy.config, "apply_config") as mock_apply:
+        with mock.patch.object(self.strategy.config, "apply_preset") as mock_apply:
             rest = self.strategy.parse_options(args)
             mock_apply.assert_called_once()
-            self.assertEqual(self.strategy.config.heulingo_configuration, "tsp")
+            self.assertEqual(self.strategy.config.preset, "tsp")
             self.assertEqual(self.strategy.config.solver, args["solver"])
             self.assertEqual(self.strategy.config.seed, 123)
             self.assertEqual(self.strategy.config.init_solve_limit, "100,200")

@@ -19,7 +19,7 @@ from mod_lns.lib.parser.framework_parser import get_classes_from_package
 if TYPE_CHECKING:
     from mod_lns.lib.strategies.heulingo import HeulingoConfig  # nocoverage
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 
 
 # pylint: disable=too-many-statements
@@ -419,75 +419,75 @@ def get_heulingo_parser(
     )
 
     lns_group.add_argument(
-        "--heulingo-configuration",
+        "--preset",
         help=(
-            f"Set heulingo configuration\n"
-            f"<arg>: {{teaspoon|tsp|sgp|spg|wsc[,<scale>]|sd}}\n"
+            f"Set heulingo configuration preset\n"
+            f"<arg>: {{teaspoon|tsp|sgp|spg|wsc[-<scale>]|sd}}\n"
             f"  teaspoon: Use defaults geared towards CB-CTT problems\n"
             f"  tsp     : Use defaults geared towards traveling salesperson problem\n"
             f"  sgp     : Use defaults geared towards social golfer problem\n"
             f"  spg     : Use defaults geared towards sudoku puzzle generation\n"
             f"  wsc     : Use defaults geared towards weighted strategic companies\n"
-            f"    <scale>: Use defaults geared towards {{medium|large}} instances [medium]\n"
+            f"  -<scale>: Use defaults geared towards {{medium|large}} instances [medium]\n"
             f"  sd      : Use defaults geared towards shift design\n"
             f"  pup     : Use defaults geared towards partner units problem\n"
-            f"Heulingo configurations:\n"
+            f"Presets:\n"
             f"[teaspoon]:\n"
-            f" --init-configuration={config_cls.heulingo_configuration_values['teaspoon']['init_configuration']}"
-            f" --init-opt-strategy={config_cls.heulingo_configuration_values['teaspoon']['init_opt_strategy']}"
-            f" --init-solve-limit={config_cls.heulingo_configuration_values['teaspoon']['init_solve_limit']}\n"
-            f" --lns-configuration={config_cls.heulingo_configuration_values['teaspoon']['lns_configuration']}"
-            f" --lns-opt-strategy={config_cls.heulingo_configuration_values['teaspoon']['lns_opt_strategy']}"
-            f" --lns-opt-heuristic={config_cls.heulingo_configuration_values['teaspoon']['lns_opt_heuristic']}\n"
+            f" --init-configuration={config_cls.preset_values['teaspoon']['init_configuration']}"
+            f" --init-opt-strategy={config_cls.preset_values['teaspoon']['init_opt_strategy']}"
+            f" --init-solve-limit={config_cls.preset_values['teaspoon']['init_solve_limit']}\n"
+            f" --lns-configuration={config_cls.preset_values['teaspoon']['lns_configuration']}"
+            f" --lns-opt-strategy={config_cls.preset_values['teaspoon']['lns_opt_strategy']}"
+            f" --lns-opt-heuristic={config_cls.preset_values['teaspoon']['lns_opt_heuristic']}\n"
             f" --lns-restart-on-model"
-            f" --lns-solve-limit={config_cls.heulingo_configuration_values['teaspoon']['lns_solve_limit']}\n"
+            f" --lns-solve-limit={config_cls.preset_values['teaspoon']['lns_solve_limit']}\n"
             f"[tsp]:\n"
-            f" --init-solve-limit={config_cls.heulingo_configuration_values['tsp']['init_solve_limit']}"
-            f" --lns-solve-limit={config_cls.heulingo_configuration_values['tsp']['lns_solve_limit']}\n"
+            f" --init-solve-limit={config_cls.preset_values['tsp']['init_solve_limit']}"
+            f" --lns-solve-limit={config_cls.preset_values['tsp']['lns_solve_limit']}\n"
             f"[sgp]:\n"
-            f" --init-solve-limit={config_cls.heulingo_configuration_values['sgp']['init_solve_limit']}"
-            f" --lns-opt-mode={config_cls.heulingo_configuration_values['sgp']['lns_opt_mode']}"
-            f" --lns-solve-limit={config_cls.heulingo_configuration_values['sgp']['lns_solve_limit']}\n"
+            f" --init-solve-limit={config_cls.preset_values['sgp']['init_solve_limit']}"
+            f" --lns-opt-mode={config_cls.preset_values['sgp']['lns_opt_mode']}"
+            f" --lns-solve-limit={config_cls.preset_values['sgp']['lns_solve_limit']}\n"
             f"[spg]:\n"
-            f" -t{config_cls.heulingo_configuration_values['spg']['parallel_mode']}"
-            f" --init-configuration={config_cls.heulingo_configuration_values['spg']['init_configuration']}"
-            f" --init-solve-limit={config_cls.heulingo_configuration_values['spg']['init_solve_limit']}"
-            f" --lns-solve-limit={config_cls.heulingo_configuration_values['spg']['lns_solve_limit']}\n"
+            f" -t{config_cls.preset_values['spg']['parallel_mode']}"
+            f" --init-configuration={config_cls.preset_values['spg']['init_configuration']}"
+            f" --init-solve-limit={config_cls.preset_values['spg']['init_solve_limit']}"
+            f" --lns-solve-limit={config_cls.preset_values['spg']['lns_solve_limit']}\n"
             f"[wsc-medium]:\n"
-            f" --init-opt-strategy={config_cls.heulingo_configuration_values['wsc-medium']['init_opt_strategy']}"
-            f" --init-solve-limit={config_cls.heulingo_configuration_values['wsc-medium']['init_solve_limit']}"
-            f" --lns-opt-strategy={config_cls.heulingo_configuration_values['wsc-medium']['lns_opt_strategy']}\n"
-            f" --lns-solve-limit={config_cls.heulingo_configuration_values['wsc-medium']['lns_solve_limit']}\n"
+            f" --init-opt-strategy={config_cls.preset_values['wsc-medium']['init_opt_strategy']}"
+            f" --init-solve-limit={config_cls.preset_values['wsc-medium']['init_solve_limit']}"
+            f" --lns-opt-strategy={config_cls.preset_values['wsc-medium']['lns_opt_strategy']}\n"
+            f" --lns-solve-limit={config_cls.preset_values['wsc-medium']['lns_solve_limit']}\n"
             f"[wsc-large]:\n"
-            f" --init-opt-strategy={config_cls.heulingo_configuration_values['wsc-large']['init_opt_strategy']}"
-            f" --init-solve-limit={config_cls.heulingo_configuration_values['wsc-large']['init_solve_limit']}"
-            f" --lns-opt-strategy={config_cls.heulingo_configuration_values['wsc-large']['lns_opt_strategy']}\n"
-            f" --lns-solve-limit={config_cls.heulingo_configuration_values['wsc-large']['lns_solve_limit']}\n"
+            f" --init-opt-strategy={config_cls.preset_values['wsc-large']['init_opt_strategy']}"
+            f" --init-solve-limit={config_cls.preset_values['wsc-large']['init_solve_limit']}"
+            f" --lns-opt-strategy={config_cls.preset_values['wsc-large']['lns_opt_strategy']}\n"
+            f" --lns-solve-limit={config_cls.preset_values['wsc-large']['lns_solve_limit']}\n"
             f"[sd]:\n"
-            f" --init-configuration={config_cls.heulingo_configuration_values['sd']['init_configuration']}"
-            f" --init-opt-strategy={config_cls.heulingo_configuration_values['sd']['init_opt_strategy']}"
-            f" --init-solve-limit={config_cls.heulingo_configuration_values['sd']['init_solve_limit']}\n"
-            f" --lns-opt-mode={config_cls.heulingo_configuration_values['sd']['lns_opt_mode']}"
-            f" --lns-solve-limit={config_cls.heulingo_configuration_values['sd']['lns_solve_limit']}\n"
+            f" --init-configuration={config_cls.preset_values['sd']['init_configuration']}"
+            f" --init-opt-strategy={config_cls.preset_values['sd']['init_opt_strategy']}"
+            f" --init-solve-limit={config_cls.preset_values['sd']['init_solve_limit']}\n"
+            f" --lns-opt-mode={config_cls.preset_values['sd']['lns_opt_mode']}"
+            f" --lns-solve-limit={config_cls.preset_values['sd']['lns_solve_limit']}\n"
             f"[pup]:\n"
-            f" --init-configuration={config_cls.heulingo_configuration_values['pup']['init_configuration']}"
-            f" --init-opt-strategy={config_cls.heulingo_configuration_values['pup']['init_opt_strategy']}"
-            f" --init-solve-limit={config_cls.heulingo_configuration_values['pup']['init_solve_limit']}\n"
-            f" --lns-opt-strategy={config_cls.heulingo_configuration_values['pup']['lns_opt_strategy']}"
-            f" --lns-solve-limit={config_cls.heulingo_configuration_values['pup']['lns_solve_limit']}\n"
+            f" --init-configuration={config_cls.preset_values['pup']['init_configuration']}"
+            f" --init-opt-strategy={config_cls.preset_values['pup']['init_opt_strategy']}"
+            f" --init-solve-limit={config_cls.preset_values['pup']['init_solve_limit']}\n"
+            f" --lns-opt-strategy={config_cls.preset_values['pup']['lns_opt_strategy']}"
+            f" --lns-solve-limit={config_cls.preset_values['pup']['lns_solve_limit']}\n"
             f"[pmsp]:\n"
-            f" --init-solve-limit={config_cls.heulingo_configuration_values['pmsp']['init_solve_limit']}"
-            f" --init-time-limit={config_cls.heulingo_configuration_values['pmsp']['init_time_limit']}"
-            f" --lns-opt-mode={config_cls.heulingo_configuration_values['pmsp']['lns_opt_mode']}\n"
-            f" --lns-solve-limit={config_cls.heulingo_configuration_values['pmsp']['lns_solve_limit']}"
-            f" --lns-time-limit={config_cls.heulingo_configuration_values['pmsp']['lns_time_limit']}\n"
+            f" --init-solve-limit={config_cls.preset_values['pmsp']['init_solve_limit']}"
+            f" --init-time-limit={config_cls.preset_values['pmsp']['init_time_limit']}"
+            f" --lns-opt-mode={config_cls.preset_values['pmsp']['lns_opt_mode']}\n"
+            f" --lns-solve-limit={config_cls.preset_values['pmsp']['lns_solve_limit']}"
+            f" --lns-time-limit={config_cls.preset_values['pmsp']['lns_time_limit']}\n"
             f"[tlsp]:\n"
-            f" --init-configuration={config_cls.heulingo_configuration_values['tlsp']['init_configuration']}"
-            f" --init-opt-strategy={config_cls.heulingo_configuration_values['tlsp']['init_opt_strategy']}"
-            f" --init-solve-limit={config_cls.heulingo_configuration_values['tlsp']['init_solve_limit']}\n"
-            f" --lns-opt-strategy={config_cls.heulingo_configuration_values['tlsp']['lns_opt_strategy']}"
-            f" --lns-opt-mode={config_cls.heulingo_configuration_values['tlsp']['lns_opt_mode']}"
-            f" --lns-solve-limit={config_cls.heulingo_configuration_values['tlsp']['lns_solve_limit']}"
+            f" --init-configuration={config_cls.preset_values['tlsp']['init_configuration']}"
+            f" --init-opt-strategy={config_cls.preset_values['tlsp']['init_opt_strategy']}"
+            f" --init-solve-limit={config_cls.preset_values['tlsp']['init_solve_limit']}\n"
+            f" --lns-opt-strategy={config_cls.preset_values['tlsp']['lns_opt_strategy']}"
+            f" --lns-opt-mode={config_cls.preset_values['tlsp']['lns_opt_mode']}"
+            f" --lns-solve-limit={config_cls.preset_values['tlsp']['lns_solve_limit']}"
         ),
         choices=[
             "teaspoon",
@@ -502,9 +502,10 @@ def get_heulingo_parser(
             "pmsp",
             "tlsp",
         ],
-        default=config.heulingo_configuration,
+        default=config.preset,
         type=str,
-        dest="heulingo_configuration",
+        dest="preset",
+        metavar="<arg>",
     )
 
     ##############################
