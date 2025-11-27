@@ -202,7 +202,7 @@ class DefaultStrategy(StrategyInterface):
                 else:
                     rest[attr] = value
         if self.config.relax_rate is None:
-            raise ValueError("relax_rate must be set. Either directly or via configuration preset.")
+            raise ValueError("relax_rate must be set. Either directly, via configuration, or preset.")
         self.solver = self.config.solver
         self._log_level = self.config.log_level
         return rest
