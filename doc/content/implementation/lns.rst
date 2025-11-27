@@ -58,8 +58,8 @@ LNS
         init_solve_limit: Optional[str] = "2500000,5000"
         
         # lns solver configuration
-        lns_time_limit: Optional[int] = None
-        lns_solve_limit: Optional[str] = None
+        lns_time_limit: Optional[int] = 20
+        lns_solve_limit: Optional[str] = "2500000,5000"
  
 
     .. currentmodule:: mod_lns.lib

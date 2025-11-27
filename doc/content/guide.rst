@@ -52,15 +52,15 @@ Basics
 
 .. currentmodule:: mod_lns.lib.strategies.default_strategy
 
-As descibed in the :ref:`usage<ref_usage>` section in the most basic case the LNS
-can be started by only providing the corresponding ASP encodings. In this case the
-:class:`DefaultStrategy` with its default configuration is used.
+As descibed in the :ref:`usage<ref_usage>` section, the LNS can be started by only
+providing the corresponding ASP encodings and the configuration preset. In this
+case the :class:`DefaultStrategy` with its 'basic' preset is used.
 
 .. code-block:: python
 
     from mod_lns.lns import LNS
 
-    lns = LNS(["examples/golf_demo.lp"])
+    lns = LNS(["examples/golf_demo.lp"], args={"preset": "basic"})
     lns.main()
 
 We can configure the search by creating a new strategy object and adjusting the parameters
