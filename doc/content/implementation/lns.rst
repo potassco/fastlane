@@ -17,17 +17,17 @@ LNS
 
         # general configuration
         solver: SolverInterface = ClingoSolver()    # Solver to be used
-        seed: Optional[int] = None                  # Seed used for both solving and random relaxation
-        time_limit: Optional[int] = None            # Overall time limit for the search in seconds
-        max_steps: Optional[int] = None             # Step limit for the search
-        relax_rate: Optional[int] = None            # Relax rate in percent
+        seed: Optional[int] = UNSET                 # Seed used for both solving and random relaxation
+        time_limit: Optional[int] = UNSET           # Overall time limit for the search in seconds
+        max_steps: Optional[int] = UNSET            # Step limit for the search
+        relax_rate: int = 20                        # Relax rate in percent
         status_interval: int = 50                   # Interval in steps for logging the current status
         preset: Optional[str] = None                # Preset configuration to be applied
 
         # init solver configuration
-        init_time_limit: Optional[int] = None       # Time limit for the initial solve call in seconds
-        init_solve_limit: Optional[str] = None      # Stop initial solve call after this many conflicts
-                                                    # and restarts, "umax,umax" for no limit
+        init_time_limit: Optional[int] = 10         # Time limit for the initial solve call in seconds
+        init_solve_limit: Optional[str] = UNSET     # Stop initial solve call after this many conflicts
+                                                    # and restarts, None or "umax,umax" for no limit
 
         # lns configuration
         constrained: bool = False                   # Use constrained LNS approach
@@ -37,11 +37,13 @@ LNS
                                                     # 0 = always accept, should be lower than relax rate
 
         # lns solver configuration
-        lns_time_limit: Optional[int] = None        # Time limit for the iterative solve calls in seconds
-        lns_solve_limit: Optional[str] = None       # Stop iterative solve calls after this many conflicts
+        lns_time_limit: Optional[int] = 20          # Time limit for the iterative solve calls in seconds
+        lns_solve_limit: Optional[str] = UNSET      # Stop iterative solve calls after this many conflicts
                                                     # and restarts, None or "umax,umax" for no limit
 
-
+    `UNSET` is used as a marker to differentiate between parameters that were not set and those
+    that were explicitly set to `None`. Before starting the search, all remaining `UNSET` parameters
+    will be set to `None`.
     Additional default parameters can be set using the `preset` argument/option. The `basic`
     preset has the following values:
 

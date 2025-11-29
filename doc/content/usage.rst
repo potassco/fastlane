@@ -31,8 +31,7 @@ When using the framework as a python module, the LNS object has to be initialize
 strategy. After the initialization of the strategy, parameters can be set through the strategy's configuration class.
 Alternatively, a dictionary of parameters can be passed during initialization of the `LNS` object. The 'preset'
 parameter can be used to set multiple parameters at once according to predefined presets. Manually set parameters
-will always override preset values.
-A relaxation rate has to be set either directly, via configuration or preset.
+will always override preset values. And preset values will overwrite default configuration values.
 An example of the LNS initialization can be seen below or in :file:`./examples/demo.py`. For a more detailed and
 step by step introduction to the framework look :ref:`here<ref_guide>`.
 
@@ -50,7 +49,6 @@ step by step introduction to the framework look :ref:`here<ref_guide>`.
         strategy,                       # strategy to be used
         {                               # set additional parameters
             "time_limit": 60,           # overall time limit in seconds
-            "relax_rate": 20,           # percentage of solution to be relaxed
         }
     )
 
