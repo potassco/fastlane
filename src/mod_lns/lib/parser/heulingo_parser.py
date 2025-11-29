@@ -9,10 +9,11 @@ from argparse import (
     _SubParsersAction,
 )
 from textwrap import dedent
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from clingo import Configuration, Control, Symbol, parse_term
 
+from mod_lns import UNSET
 from mod_lns.interfaces.solver import SolverInterface
 from mod_lns.lib.parser.framework_parser import get_classes_from_package
 
@@ -168,12 +169,14 @@ def get_heulingo_parser(
 
     parser.register("type", "configuration", parse_configuration)
 
-    def parse_solve_limit(string: str) -> str:
+    def parse_solve_limit(string: str) -> Optional[str]:
         """
         Parse the solve limit string.
         """
         ctl = Control()
         assert isinstance(ctl.configuration.solve, Configuration)
+        if string.lower() == "none":
+            return None
         try:
             ctl.configuration.solve.solve_limit = string
         except RuntimeError:
@@ -207,6 +210,22 @@ def get_heulingo_parser(
         return string
 
     parser.register("type", "falsify", parse_falsify)
+
+    def parse_pos_int_or_none(string: str) -> Optional[int]:
+        """
+        Parse an positive integer or None.
+        """
+        if string.lower() == "none":
+            return None
+        try:
+            value = int(string)
+        except ValueError:
+            parser.error(f"'{string}': Invalid positive integer.")
+        if value < 0:
+            parser.error(f"'{string}': Value must be non-negative.")
+        return value
+
+    parser.register("type", "pos_int_or_none", parse_pos_int_or_none)
 
     # list of supported solvers
     solvers = [(cls.get_name(), cls()) for cls in get_classes_from_package("mod_lns.lib.solvers", SolverInterface)]
@@ -243,14 +262,14 @@ def get_heulingo_parser(
         "--seed",
         help="set lns seed [%(default)s]",
         default=config.seed,
-        type=int,
+        type="pos_int_or_none",
     )
 
     parser.add_argument(
         "--time-limit",
         help="set time limit in seconds [%(default)s]",
         default=config.time_limit,
-        type=int,
+        type="pos_int_or_none",
         dest="time_limit",
         metavar="<n>",
     )
@@ -259,7 +278,7 @@ def get_heulingo_parser(
         "--max-steps",
         help="set maximum number of LNS steps [%(default)s]",
         default=config.max_steps,
-        type=int,
+        type="pos_int_or_none",
         dest="max_steps",
         metavar="<n>",
     )
@@ -378,7 +397,7 @@ def get_heulingo_parser(
         "--init-time-limit",
         help="set initial solver time limit [%(default)s]",
         default=config.init_time_limit,
-        type=int,
+        type="pos_int_or_none",
         dest="init_time_limit",
         metavar="<arg>",
     )
@@ -559,7 +578,7 @@ def get_heulingo_parser(
             "                   solutions whose objective value is at least <f>%% worse than\n"
             "                   current incumbent solution are not obtained"
         ),
-        default=None,
+        default=UNSET,
         type="lns_opt_mode",
         dest="lns_opt_mode",
         metavar="<arg>",
@@ -576,7 +595,7 @@ def get_heulingo_parser(
         "--lns-time-limit",
         help="set LNS time limit [%(default)s]",
         default=config.lns_time_limit,
-        type=int,
+        type="pos_int_or_none",
         metavar="<n>",
         dest="lns_time_limit",
     )

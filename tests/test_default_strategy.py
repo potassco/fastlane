@@ -8,7 +8,7 @@ from unittest import TestCase, mock
 
 from clingo.symbol import Function, Number
 
-from mod_lns import Model
+from mod_lns import UNSET, Model
 from mod_lns.lib.parser.default_parser import get_default_parser
 from mod_lns.lib.solvers.clingo_dl_solver import ClingoDLSolver
 from mod_lns.lib.solvers.clingo_solver import ClingoSolver
@@ -47,10 +47,18 @@ class TestDefaultParser(TestCase):
         self.assertEqual(ret.init_solve_limit, "100")
         ret = parser.parse_args(["--init-solve-limit", "100,200"])
         self.assertEqual(ret.init_solve_limit, "100,200")
+        ret = parser.parse_args(["--init-solve-limit", "None"])
+        self.assertEqual(ret.init_solve_limit, None)
         with self.assertRaises(SystemExit), mock.patch("sys.stderr", new=StringIO()):
             parser.parse_args(["--init-solve-limit", "abc"])
         ret = parser.parse_args(["--init-time-limit", "42"])
         self.assertEqual(ret.init_time_limit, 42)
+        ret = parser.parse_args(["--init-time-limit", "None"])
+        self.assertEqual(ret.init_time_limit, None)
+        with self.assertRaises(SystemExit), mock.patch("sys.stderr", new=StringIO()):
+            parser.parse_args(["--init-time-limit", "abc"])
+        with self.assertRaises(SystemExit), mock.patch("sys.stderr", new=StringIO()):
+            parser.parse_args(["--init-time-limit", "-20"])
         # lns options
         ret = parser.parse_args(["--lns-constrained"])
         self.assertEqual(ret.constrained, True)
@@ -73,6 +81,9 @@ class TestLNSConfig(TestCase):
     """
     Test cases for LNSConfig class.
     """
+
+    def setUp(self):
+        self.config = LNSConfig()
 
     def test_config(self):
         """
@@ -98,14 +109,14 @@ class TestLNSConfig(TestCase):
         """
         Test the apply_preset method.
         """
-        config = LNSConfig()
+        config = self.config
         config.preset = "basic"
-        self.assertIsNone(config.time_limit)
-        self.assertIsNone(config.max_steps)
-        self.assertIsNone(config.init_time_limit)
-        self.assertIsNone(config.init_solve_limit)
-        self.assertIsNone(config.lns_time_limit)
-        self.assertIsNone(config.lns_solve_limit)
+        self.assertEqual(config.time_limit, UNSET)
+        self.assertEqual(config.max_steps, UNSET)
+        self.assertEqual(config.init_time_limit, 10)
+        self.assertEqual(config.init_solve_limit, UNSET)
+        self.assertEqual(config.lns_time_limit, 20)
+        self.assertEqual(config.lns_solve_limit, UNSET)
         config.apply_preset()
         self.assertEqual(config.time_limit, 600)
         self.assertEqual(config.max_steps, 2000)
@@ -117,6 +128,15 @@ class TestLNSConfig(TestCase):
         config.preset = "unknown"
         with self.assertRaises(ValueError):
             config.apply_preset()
+
+    def test_prepare(self):
+        """
+        Test the prepare method.
+        """
+        config = self.config
+        self.assertEqual(config.time_limit, UNSET)
+        config.prepare()
+        self.assertIsNone(config.time_limit)
 
 
 class TestDefaultStrategy(TestCase):
@@ -174,10 +194,10 @@ class TestDefaultStrategy(TestCase):
         # overwrite preset
         self.assertEqual(self.strategy.config.time_limit, 42)
         self.assertEqual(self.strategy.config.init_solve_limit, "100,200")
+        self.assertEqual(self.strategy.config.init_time_limit, None)
         # from preset
         self.assertEqual(self.strategy.config.max_steps, 2000)
         self.assertEqual(self.strategy.config.relax_rate, 20)
-        self.assertEqual(self.strategy.config.init_time_limit, 20)
         self.assertEqual(self.strategy.config.lns_solve_limit, "2500000,5000")
         self.assertEqual(self.strategy.config.lns_time_limit, 20)
         self.assertEqual(self.strategy.solver, args["solver"])
@@ -185,11 +205,6 @@ class TestDefaultStrategy(TestCase):
         self.assertEqual(self.strategy.config.status_interval, 50)
         # rest
         self.assertEqual(rest, {"opt": 5})
-
-        self.setUp()
-        self.strategy.config.relax_rate = None
-        with self.assertRaises(ValueError):
-            self.strategy.parse_options({})
 
     def test_pre_setup(self):
         """

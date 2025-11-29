@@ -9,11 +9,39 @@ from unittest import TestCase, mock
 
 from clingo.symbol import Function, Number
 
-from mod_lns import Model, Timer
+from mod_lns import Model, Timer, UnsetMarker
 from mod_lns.lib.strategies.default_strategy import DefaultStrategy
 from mod_lns.lns import LNS
 
 # pylint: disable=protected-access
+
+
+class TestUnsetMarker(TestCase):
+    """
+    Test cases for UnsetMarker class.
+    """
+
+    def setUp(self):
+        self.marker = UnsetMarker()
+
+    def test_singleton(self):
+        """
+        Test that UnsetMarker is a singleton.
+        """
+        other_marker = UnsetMarker()
+        self.assertIs(self.marker, other_marker)
+
+    def test_str_representation(self):
+        """
+        Test string representation of UnsetMarker.
+        """
+        self.assertEqual(repr(self.marker), "UNSET")
+
+    def test_bool_representation(self):
+        """
+        Test boolean representation of UnsetMarker.
+        """
+        self.assertFalse(bool(self.marker))
 
 
 class TestModel(TestCase):
@@ -166,7 +194,6 @@ class TestLNS(TestCase):
         """
         strat = DefaultStrategy()
         strat.config.log_level = 50
-        strat.config.relax_rate = 20
         lns = LNS(["./tests/ref/golf.lp"], strategy=strat)
         self.assertEqual(lns.files, ["./tests/ref/golf.lp"])
         self.assertEqual(lns.strategy, strat)

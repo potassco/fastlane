@@ -7,14 +7,14 @@ from __future__ import annotations
 
 import random
 from argparse import ArgumentParser, _SubParsersAction
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from math import log10
 from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 import clingo
 from clingo import Symbol
 
-from mod_lns import Model
+from mod_lns import UNSET, Model
 from mod_lns.interfaces.solver import SolverConfig, SolverInterface
 from mod_lns.interfaces.strategy import StrategyInterface
 from mod_lns.lib.parser.default_parser import get_default_parser
@@ -72,16 +72,16 @@ class LNSConfig:
     # general configuration
     # solver default has to be set manually in parser
     solver: SolverInterface = field(default_factory=ClingoSolver)
-    seed: Optional[int] = None
-    time_limit: Optional[int] = None  # 600
-    max_steps: Optional[int] = None  # 2000
-    relax_rate: Optional[int] = None  # 20
+    seed: Optional[int] = UNSET
+    time_limit: Optional[int] = UNSET
+    max_steps: Optional[int] = UNSET
+    relax_rate: int = 20
     status_interval: int = 50
     preset: Optional[str] = None
 
     # init solver configuration
-    init_time_limit: Optional[int] = None  # 20
-    init_solve_limit: Optional[str] = None  # "2500000,5000"
+    init_time_limit: Optional[int] = 10
+    init_solve_limit: Optional[str] = UNSET
 
     # lns configuration
     constrained: bool = False
@@ -89,8 +89,8 @@ class LNSConfig:
     accept_variability: int = 0
 
     # lns solver configuration
-    lns_time_limit: Optional[int] = None  # 20
-    lns_solve_limit: Optional[str] = None  # "2500000,5000"
+    lns_time_limit: Optional[int] = 20
+    lns_solve_limit: Optional[str] = UNSET
 
     # configuration values
     preset_values: ClassVar[dict[str, dict[str, Any]]] = {
@@ -108,17 +108,24 @@ class LNSConfig:
     def apply_preset(self) -> None:
         """
         Apply preset configuration if specified.
-        Dont override already set values.
+        UNSET values do not overwrite default values.
         """
         if self.preset is not None:
             if self.preset in self.preset_values:
-                config = self.preset_values[self.preset]
-                for key, value in config.items():
-                    # only overwrite if not set by user
-                    if getattr(self, key) is None:
+                for key, value in self.preset_values[self.preset].items():
+                    if value is not UNSET and hasattr(self, key):
                         setattr(self, key, value)
             else:
                 raise ValueError(f"Unknown preset: {self.preset}")
+
+    def prepare(self) -> None:
+        """
+        Prepare configuration by replacing UNSET with None.
+        """
+        for field_obj in fields(self):
+            value = getattr(self, field_obj.name)
+            if value is UNSET:
+                setattr(self, field_obj.name, None)
 
     def get_init_solver_configuration(self) -> SolverConfig:
         """
@@ -188,21 +195,20 @@ class DefaultStrategy(StrategyInterface):
         """
         # argument priority (from high to low):
         # 1. directly set arguments
-        # 2. directly set config values (defaults)
-        # 3. configuration preset
+        # 2. configuration preset
+        # 3. directly set config values (defaults)
         rest = {}
         if "preset" in args and args["preset"] is not None:
             self.config.preset = args["preset"]
         if self.config.preset is not None:
             self.config.apply_preset()
         for attr, value in args.items():
-            if value is not None:
+            if value is not UNSET:
                 if hasattr(self.config, attr):
                     setattr(self.config, attr, value)
                 else:
                     rest[attr] = value
-        if self.config.relax_rate is None:
-            raise ValueError("relax_rate must be set. Either directly, via configuration, or preset.")
+        self.config.prepare()
         self.solver = self.config.solver
         self._log_level = self.config.log_level
         return rest
