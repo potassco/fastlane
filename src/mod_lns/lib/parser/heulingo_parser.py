@@ -9,17 +9,18 @@ from argparse import (
     _SubParsersAction,
 )
 from textwrap import dedent
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from clingo import Configuration, Control, Symbol, parse_term
 
+from mod_lns import UNSET
 from mod_lns.interfaces.solver import SolverInterface
 from mod_lns.lib.parser.framework_parser import get_classes_from_package
 
 if TYPE_CHECKING:
     from mod_lns.lib.strategies.heulingo import HeulingoConfig  # nocoverage
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 
 
 # pylint: disable=too-many-statements
@@ -168,12 +169,14 @@ def get_heulingo_parser(
 
     parser.register("type", "configuration", parse_configuration)
 
-    def parse_solve_limit(string: str) -> str:
+    def parse_solve_limit(string: str) -> Optional[str]:
         """
         Parse the solve limit string.
         """
         ctl = Control()
         assert isinstance(ctl.configuration.solve, Configuration)
+        if string.lower() == "none":
+            return None
         try:
             ctl.configuration.solve.solve_limit = string
         except RuntimeError:
@@ -207,6 +210,22 @@ def get_heulingo_parser(
         return string
 
     parser.register("type", "falsify", parse_falsify)
+
+    def parse_pos_int_or_none(string: str) -> Optional[int]:
+        """
+        Parse an positive integer or None.
+        """
+        if string.lower() == "none":
+            return None
+        try:
+            value = int(string)
+        except ValueError:
+            parser.error(f"'{string}': Invalid positive integer.")
+        if value < 0:
+            parser.error(f"'{string}': Value must be non-negative.")
+        return value
+
+    parser.register("type", "pos_int_or_none", parse_pos_int_or_none)
 
     # list of supported solvers
     solvers = [(cls.get_name(), cls()) for cls in get_classes_from_package("mod_lns.lib.solvers", SolverInterface)]
@@ -243,14 +262,14 @@ def get_heulingo_parser(
         "--seed",
         help="set lns seed [%(default)s]",
         default=config.seed,
-        type=int,
+        type="pos_int_or_none",
     )
 
     parser.add_argument(
         "--time-limit",
         help="set time limit in seconds [%(default)s]",
         default=config.time_limit,
-        type=int,
+        type="pos_int_or_none",
         dest="time_limit",
         metavar="<n>",
     )
@@ -259,7 +278,7 @@ def get_heulingo_parser(
         "--max-steps",
         help="set maximum number of LNS steps [%(default)s]",
         default=config.max_steps,
-        type=int,
+        type="pos_int_or_none",
         dest="max_steps",
         metavar="<n>",
     )
@@ -378,7 +397,7 @@ def get_heulingo_parser(
         "--init-time-limit",
         help="set initial solver time limit [%(default)s]",
         default=config.init_time_limit,
-        type=int,
+        type="pos_int_or_none",
         dest="init_time_limit",
         metavar="<arg>",
     )
@@ -419,75 +438,75 @@ def get_heulingo_parser(
     )
 
     lns_group.add_argument(
-        "--heulingo-configuration",
+        "--preset",
         help=(
-            f"Set heulingo configuration\n"
-            f"<arg>: {{teaspoon|tsp|sgp|spg|wsc[,<scale>]|sd}}\n"
+            f"Set heulingo configuration preset\n"
+            f"<arg>: {{teaspoon|tsp|sgp|spg|wsc[-<scale>]|sd}}\n"
             f"  teaspoon: Use defaults geared towards CB-CTT problems\n"
             f"  tsp     : Use defaults geared towards traveling salesperson problem\n"
             f"  sgp     : Use defaults geared towards social golfer problem\n"
             f"  spg     : Use defaults geared towards sudoku puzzle generation\n"
             f"  wsc     : Use defaults geared towards weighted strategic companies\n"
-            f"    <scale>: Use defaults geared towards {{medium|large}} instances [medium]\n"
+            f"  -<scale>: Use defaults geared towards {{medium|large}} instances [medium]\n"
             f"  sd      : Use defaults geared towards shift design\n"
             f"  pup     : Use defaults geared towards partner units problem\n"
-            f"Heulingo configurations:\n"
+            f"Presets:\n"
             f"[teaspoon]:\n"
-            f" --init-configuration={config_cls.heulingo_configuration_values['teaspoon']['init_configuration']}"
-            f" --init-opt-strategy={config_cls.heulingo_configuration_values['teaspoon']['init_opt_strategy']}"
-            f" --init-solve-limit={config_cls.heulingo_configuration_values['teaspoon']['init_solve_limit']}\n"
-            f" --lns-configuration={config_cls.heulingo_configuration_values['teaspoon']['lns_configuration']}"
-            f" --lns-opt-strategy={config_cls.heulingo_configuration_values['teaspoon']['lns_opt_strategy']}"
-            f" --lns-opt-heuristic={config_cls.heulingo_configuration_values['teaspoon']['lns_opt_heuristic']}\n"
+            f" --init-configuration={config_cls.preset_values['teaspoon']['init_configuration']}"
+            f" --init-opt-strategy={config_cls.preset_values['teaspoon']['init_opt_strategy']}"
+            f" --init-solve-limit={config_cls.preset_values['teaspoon']['init_solve_limit']}\n"
+            f" --lns-configuration={config_cls.preset_values['teaspoon']['lns_configuration']}"
+            f" --lns-opt-strategy={config_cls.preset_values['teaspoon']['lns_opt_strategy']}"
+            f" --lns-opt-heuristic={config_cls.preset_values['teaspoon']['lns_opt_heuristic']}\n"
             f" --lns-restart-on-model"
-            f" --lns-solve-limit={config_cls.heulingo_configuration_values['teaspoon']['lns_solve_limit']}\n"
+            f" --lns-solve-limit={config_cls.preset_values['teaspoon']['lns_solve_limit']}\n"
             f"[tsp]:\n"
-            f" --init-solve-limit={config_cls.heulingo_configuration_values['tsp']['init_solve_limit']}"
-            f" --lns-solve-limit={config_cls.heulingo_configuration_values['tsp']['lns_solve_limit']}\n"
+            f" --init-solve-limit={config_cls.preset_values['tsp']['init_solve_limit']}"
+            f" --lns-solve-limit={config_cls.preset_values['tsp']['lns_solve_limit']}\n"
             f"[sgp]:\n"
-            f" --init-solve-limit={config_cls.heulingo_configuration_values['sgp']['init_solve_limit']}"
-            f" --lns-opt-mode={config_cls.heulingo_configuration_values['sgp']['lns_opt_mode']}"
-            f" --lns-solve-limit={config_cls.heulingo_configuration_values['sgp']['lns_solve_limit']}\n"
+            f" --init-solve-limit={config_cls.preset_values['sgp']['init_solve_limit']}"
+            f" --lns-opt-mode={config_cls.preset_values['sgp']['lns_opt_mode']}"
+            f" --lns-solve-limit={config_cls.preset_values['sgp']['lns_solve_limit']}\n"
             f"[spg]:\n"
-            f" -t{config_cls.heulingo_configuration_values['spg']['parallel_mode']}"
-            f" --init-configuration={config_cls.heulingo_configuration_values['spg']['init_configuration']}"
-            f" --init-solve-limit={config_cls.heulingo_configuration_values['spg']['init_solve_limit']}"
-            f" --lns-solve-limit={config_cls.heulingo_configuration_values['spg']['lns_solve_limit']}\n"
+            f" -t{config_cls.preset_values['spg']['parallel_mode']}"
+            f" --init-configuration={config_cls.preset_values['spg']['init_configuration']}"
+            f" --init-solve-limit={config_cls.preset_values['spg']['init_solve_limit']}"
+            f" --lns-solve-limit={config_cls.preset_values['spg']['lns_solve_limit']}\n"
             f"[wsc-medium]:\n"
-            f" --init-opt-strategy={config_cls.heulingo_configuration_values['wsc-medium']['init_opt_strategy']}"
-            f" --init-solve-limit={config_cls.heulingo_configuration_values['wsc-medium']['init_solve_limit']}"
-            f" --lns-opt-strategy={config_cls.heulingo_configuration_values['wsc-medium']['lns_opt_strategy']}\n"
-            f" --lns-solve-limit={config_cls.heulingo_configuration_values['wsc-medium']['lns_solve_limit']}\n"
+            f" --init-opt-strategy={config_cls.preset_values['wsc-medium']['init_opt_strategy']}"
+            f" --init-solve-limit={config_cls.preset_values['wsc-medium']['init_solve_limit']}"
+            f" --lns-opt-strategy={config_cls.preset_values['wsc-medium']['lns_opt_strategy']}\n"
+            f" --lns-solve-limit={config_cls.preset_values['wsc-medium']['lns_solve_limit']}\n"
             f"[wsc-large]:\n"
-            f" --init-opt-strategy={config_cls.heulingo_configuration_values['wsc-large']['init_opt_strategy']}"
-            f" --init-solve-limit={config_cls.heulingo_configuration_values['wsc-large']['init_solve_limit']}"
-            f" --lns-opt-strategy={config_cls.heulingo_configuration_values['wsc-large']['lns_opt_strategy']}\n"
-            f" --lns-solve-limit={config_cls.heulingo_configuration_values['wsc-large']['lns_solve_limit']}\n"
+            f" --init-opt-strategy={config_cls.preset_values['wsc-large']['init_opt_strategy']}"
+            f" --init-solve-limit={config_cls.preset_values['wsc-large']['init_solve_limit']}"
+            f" --lns-opt-strategy={config_cls.preset_values['wsc-large']['lns_opt_strategy']}\n"
+            f" --lns-solve-limit={config_cls.preset_values['wsc-large']['lns_solve_limit']}\n"
             f"[sd]:\n"
-            f" --init-configuration={config_cls.heulingo_configuration_values['sd']['init_configuration']}"
-            f" --init-opt-strategy={config_cls.heulingo_configuration_values['sd']['init_opt_strategy']}"
-            f" --init-solve-limit={config_cls.heulingo_configuration_values['sd']['init_solve_limit']}\n"
-            f" --lns-opt-mode={config_cls.heulingo_configuration_values['sd']['lns_opt_mode']}"
-            f" --lns-solve-limit={config_cls.heulingo_configuration_values['sd']['lns_solve_limit']}\n"
+            f" --init-configuration={config_cls.preset_values['sd']['init_configuration']}"
+            f" --init-opt-strategy={config_cls.preset_values['sd']['init_opt_strategy']}"
+            f" --init-solve-limit={config_cls.preset_values['sd']['init_solve_limit']}\n"
+            f" --lns-opt-mode={config_cls.preset_values['sd']['lns_opt_mode']}"
+            f" --lns-solve-limit={config_cls.preset_values['sd']['lns_solve_limit']}\n"
             f"[pup]:\n"
-            f" --init-configuration={config_cls.heulingo_configuration_values['pup']['init_configuration']}"
-            f" --init-opt-strategy={config_cls.heulingo_configuration_values['pup']['init_opt_strategy']}"
-            f" --init-solve-limit={config_cls.heulingo_configuration_values['pup']['init_solve_limit']}\n"
-            f" --lns-opt-strategy={config_cls.heulingo_configuration_values['pup']['lns_opt_strategy']}"
-            f" --lns-solve-limit={config_cls.heulingo_configuration_values['pup']['lns_solve_limit']}\n"
+            f" --init-configuration={config_cls.preset_values['pup']['init_configuration']}"
+            f" --init-opt-strategy={config_cls.preset_values['pup']['init_opt_strategy']}"
+            f" --init-solve-limit={config_cls.preset_values['pup']['init_solve_limit']}\n"
+            f" --lns-opt-strategy={config_cls.preset_values['pup']['lns_opt_strategy']}"
+            f" --lns-solve-limit={config_cls.preset_values['pup']['lns_solve_limit']}\n"
             f"[pmsp]:\n"
-            f" --init-solve-limit={config_cls.heulingo_configuration_values['pmsp']['init_solve_limit']}"
-            f" --init-time-limit={config_cls.heulingo_configuration_values['pmsp']['init_time_limit']}"
-            f" --lns-opt-mode={config_cls.heulingo_configuration_values['pmsp']['lns_opt_mode']}\n"
-            f" --lns-solve-limit={config_cls.heulingo_configuration_values['pmsp']['lns_solve_limit']}"
-            f" --lns-time-limit={config_cls.heulingo_configuration_values['pmsp']['lns_time_limit']}\n"
+            f" --init-solve-limit={config_cls.preset_values['pmsp']['init_solve_limit']}"
+            f" --init-time-limit={config_cls.preset_values['pmsp']['init_time_limit']}"
+            f" --lns-opt-mode={config_cls.preset_values['pmsp']['lns_opt_mode']}\n"
+            f" --lns-solve-limit={config_cls.preset_values['pmsp']['lns_solve_limit']}"
+            f" --lns-time-limit={config_cls.preset_values['pmsp']['lns_time_limit']}\n"
             f"[tlsp]:\n"
-            f" --init-configuration={config_cls.heulingo_configuration_values['tlsp']['init_configuration']}"
-            f" --init-opt-strategy={config_cls.heulingo_configuration_values['tlsp']['init_opt_strategy']}"
-            f" --init-solve-limit={config_cls.heulingo_configuration_values['tlsp']['init_solve_limit']}\n"
-            f" --lns-opt-strategy={config_cls.heulingo_configuration_values['tlsp']['lns_opt_strategy']}"
-            f" --lns-opt-mode={config_cls.heulingo_configuration_values['tlsp']['lns_opt_mode']}"
-            f" --lns-solve-limit={config_cls.heulingo_configuration_values['tlsp']['lns_solve_limit']}"
+            f" --init-configuration={config_cls.preset_values['tlsp']['init_configuration']}"
+            f" --init-opt-strategy={config_cls.preset_values['tlsp']['init_opt_strategy']}"
+            f" --init-solve-limit={config_cls.preset_values['tlsp']['init_solve_limit']}\n"
+            f" --lns-opt-strategy={config_cls.preset_values['tlsp']['lns_opt_strategy']}"
+            f" --lns-opt-mode={config_cls.preset_values['tlsp']['lns_opt_mode']}"
+            f" --lns-solve-limit={config_cls.preset_values['tlsp']['lns_solve_limit']}"
         ),
         choices=[
             "teaspoon",
@@ -502,9 +521,10 @@ def get_heulingo_parser(
             "pmsp",
             "tlsp",
         ],
-        default=config.heulingo_configuration,
+        default=config.preset,
         type=str,
-        dest="heulingo_configuration",
+        dest="preset",
+        metavar="<arg>",
     )
 
     ##############################
@@ -558,7 +578,7 @@ def get_heulingo_parser(
             "                   solutions whose objective value is at least <f>%% worse than\n"
             "                   current incumbent solution are not obtained"
         ),
-        default=None,
+        default=UNSET,
         type="lns_opt_mode",
         dest="lns_opt_mode",
         metavar="<arg>",
@@ -575,7 +595,7 @@ def get_heulingo_parser(
         "--lns-time-limit",
         help="set LNS time limit [%(default)s]",
         default=config.lns_time_limit,
-        type=int,
+        type="pos_int_or_none",
         metavar="<n>",
         dest="lns_time_limit",
     )

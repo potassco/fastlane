@@ -7,14 +7,14 @@ from __future__ import annotations
 
 import random
 from argparse import ArgumentParser, _SubParsersAction
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from math import log10
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 import clingo
 from clingo import Symbol
 
-from mod_lns import Model
+from mod_lns import UNSET, Model
 from mod_lns.interfaces.solver import SolverConfig, SolverInterface
 from mod_lns.interfaces.strategy import StrategyInterface
 from mod_lns.lib.parser.default_parser import get_default_parser
@@ -41,15 +41,19 @@ class LNSConfig:
     :param seed: Random seed.
     :type seed: int
     :param time_limit: Time limit for each LNS iteration.
-    :type time_limit: int
+    :type time_limit: Optional[int]
     :param max_steps: Maximum number of steps for LNS.
-    :type max_steps: int
+    :type max_steps: Optional[int]
     :param relax_rate: Relaxation rate for LNS.
     :type relax_rate: int
+    :param status_interval: Interval for status updates.
+    :type status_interval: int
+    :param preset: Preset configuration name.
+    :type preset: Optional[str]
     :param init_time_limit: Time limit for the initial solver.
-    :type init_time_limit: int
+    :type init_time_limit: Optional[int]
     :param init_solve_limit: Solve limit for the initial solver.
-    :type init_solve_limit: str
+    :type init_solve_limit: Optional[str]
     :param constrained: Whether to use constrained optimization.
     :type constrained: bool
     :param declarative: Whether to use declarative relaxation.
@@ -57,9 +61,9 @@ class LNSConfig:
     :param accept_variability: Required variability for new solutions.
     :type accept_variability: int
     :param lns_time_limit: Time limit for LNS solver.
-    :type lns_time_limit: int
+    :type lns_time_limit: Optional[int]
     :param lns_solve_limit: Solve limit for LNS solver.
-    :type lns_solve_limit: str
+    :type lns_solve_limit: Optional[str]
     """
 
     # utils
@@ -68,15 +72,16 @@ class LNSConfig:
     # general configuration
     # solver default has to be set manually in parser
     solver: SolverInterface = field(default_factory=ClingoSolver)
-    seed: Optional[int] = None
-    time_limit: Optional[int] = 600
-    max_steps: Optional[int] = 2000
+    seed: Optional[int] = UNSET
+    time_limit: Optional[int] = UNSET
+    max_steps: Optional[int] = UNSET
     relax_rate: int = 20
     status_interval: int = 50
+    preset: Optional[str] = None
 
     # init solver configuration
-    init_time_limit: int = 20
-    init_solve_limit: Optional[str] = "2500000,5000"
+    init_time_limit: Optional[int] = 10
+    init_solve_limit: Optional[str] = UNSET
 
     # lns configuration
     constrained: bool = False
@@ -84,8 +89,43 @@ class LNSConfig:
     accept_variability: int = 0
 
     # lns solver configuration
-    lns_time_limit: int = 20
-    lns_solve_limit: Optional[str] = "2500000,5000"
+    lns_time_limit: Optional[int] = 20
+    lns_solve_limit: Optional[str] = UNSET
+
+    # configuration values
+    preset_values: ClassVar[dict[str, dict[str, Any]]] = {
+        "basic": {
+            "time_limit": 600,
+            "max_steps": 2000,
+            "relax_rate": 20,
+            "init_time_limit": 20,
+            "init_solve_limit": "2500000,5000",
+            "lns_time_limit": 20,
+            "lns_solve_limit": "2500000,5000",
+        }
+    }
+
+    def apply_preset(self) -> None:
+        """
+        Apply preset configuration if specified.
+        UNSET values do not overwrite default values.
+        """
+        if self.preset is not None:
+            if self.preset in self.preset_values:
+                for key, value in self.preset_values[self.preset].items():
+                    if value is not UNSET and hasattr(self, key):
+                        setattr(self, key, value)
+            else:
+                raise ValueError(f"Unknown preset: {self.preset}")
+
+    def prepare(self) -> None:
+        """
+        Prepare configuration by replacing UNSET with None.
+        """
+        for field_obj in fields(self):
+            value = getattr(self, field_obj.name)
+            if value is UNSET:
+                setattr(self, field_obj.name, None)
 
     def get_init_solver_configuration(self) -> SolverConfig:
         """
@@ -153,13 +193,22 @@ class DefaultStrategy(StrategyInterface):
         :return: Remaining unparsed options.
         :rtype: dict[str, Any]
         """
+        # argument priority (from high to low):
+        # 1. directly set arguments
+        # 2. configuration preset
+        # 3. directly set config values (defaults)
         rest = {}
+        if "preset" in args and args["preset"] is not None:
+            self.config.preset = args["preset"]
+        if self.config.preset is not None:
+            self.config.apply_preset()
         for attr, value in args.items():
-            if value is not None:
+            if value is not UNSET:
                 if hasattr(self.config, attr):
                     setattr(self.config, attr, value)
                 else:
                     rest[attr] = value
+        self.config.prepare()
         self.solver = self.config.solver
         self._log_level = self.config.log_level
         return rest
@@ -355,6 +404,7 @@ class DefaultStrategy(StrategyInterface):
         :return: Fixed (not relaxed) atoms.
         :rtype: list[Symbol]
         """
+        assert self.config.relax_rate is not None
         if self.config.declarative:
             return relax_declarative(lns_object.current_model, self.config.relax_rate)
         return relax_random(lns_object.current_model, self.config.relax_rate)

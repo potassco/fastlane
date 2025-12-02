@@ -4,7 +4,7 @@ Parser for default strategy in LNS.
 
 from argparse import ArgumentParser, RawTextHelpFormatter, _SubParsersAction
 from textwrap import dedent
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from clingo import Configuration, Control
 
@@ -14,7 +14,7 @@ from mod_lns.lib.parser.framework_parser import get_classes_from_package
 if TYPE_CHECKING:
     from mod_lns.lib.strategies.default_strategy import LNSConfig  # nocoverage
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 
 
 # pylint: disable=too-many-statements
@@ -42,7 +42,7 @@ def get_default_parser(
         help="Default strategy for LNS",
         description=dedent(
             """\
-            default
+            Default strategy
             An implementation of Large Neighbourhood Search (LNS)
             based on Answer Set Programming (ASP).
 
@@ -73,19 +73,36 @@ def get_default_parser(
 
     parser.register("type", "solver", parse_solver)
 
-    def parse_solve_limit(string: str) -> str:
+    def parse_solve_limit(string: str) -> Optional[str]:
         """
         Parse the solve limit string.
         """
         ctl = Control()
         assert isinstance(ctl.configuration.solve, Configuration)
+        if string.lower() == "none":
+            return None
         try:
             ctl.configuration.solve.solve_limit = string
         except RuntimeError:
             parser.error(f"'{string}': Invalid solve limit.")
         return string
 
+    def parse_pos_int_or_none(string: str) -> Optional[int]:
+        """
+        Parse an positive integer or None.
+        """
+        if string.lower() == "none":
+            return None
+        try:
+            value = int(string)
+        except ValueError:
+            parser.error(f"'{string}': Invalid positive integer.")
+        if value < 0:
+            parser.error(f"'{string}': Value must be non-negative.")
+        return value
+
     parser.register("type", "solve_limit", parse_solve_limit)
+    parser.register("type", "pos_int_or_none", parse_pos_int_or_none)
 
     parser.add_argument("--version", "-v", action="version", version=f"%(prog)s {VERSION}")
 
@@ -109,7 +126,7 @@ def get_default_parser(
         "--time-limit",
         help="set time limit in seconds [%(default)s]",
         default=config.time_limit,
-        type=int,
+        type="pos_int_or_none",
         dest="time_limit",
         metavar="<n>",
     )
@@ -118,7 +135,7 @@ def get_default_parser(
         "--max-steps",
         help="set maximum number of LNS steps [%(default)s]",
         default=config.max_steps,
-        type=int,
+        type="pos_int_or_none",
         dest="max_steps",
         metavar="<n>",
     )
@@ -146,7 +163,7 @@ def get_default_parser(
         "--init-solve-limit",
         help="set initial solver solve limit [%(default)s]",
         default=config.init_solve_limit,
-        type=parse_solve_limit,
+        type="solve_limit",
         dest="init_solve_limit",
         metavar="<n>[,<m>]",
     )
@@ -154,7 +171,7 @@ def get_default_parser(
         "--init-time-limit",
         help="set initial solver time limit [%(default)s]",
         default=config.init_time_limit,
-        type=int,
+        type="pos_int_or_none",
         dest="init_time_limit",
         metavar="<n>",
     )
@@ -184,6 +201,28 @@ def get_default_parser(
         dest="accept_variability",
         metavar="<n>",
     )
+    lns_group.add_argument(
+        "--preset",
+        help=(
+            f"Set LNS configuration preset\n"
+            f"<arg>: {{basic}}\n"
+            f"basic:  Basic configuration suitable for many problems.\n"
+            f"Presets:\n"
+            f"[basic]:\n"
+            f" --time-limit={config_cls.preset_values['basic']['time_limit']}"
+            f" --max-steps={config_cls.preset_values['basic']['max_steps']}"
+            f" --relax-rate={config_cls.preset_values['basic']['relax_rate']}\n"
+            f" --init-time-limit={config_cls.preset_values['basic']['init_time_limit']}"
+            f" --init-solve-limit={config_cls.preset_values['basic']['init_solve_limit']}\n"
+            f" --lns-time-limit={config_cls.preset_values['basic']['lns_time_limit']}"
+            f" --lns-solve-limit={config_cls.preset_values['basic']['lns_solve_limit']}"
+        ),
+        choices=["basic"],
+        default=config.preset,
+        type=str,
+        dest="preset",
+        metavar="<arg>",
+    )
 
     ##############################
     # lns solver options
@@ -193,7 +232,7 @@ def get_default_parser(
         "--lns-solve-limit",
         help="set LNS solve limit [%(default)s]",
         default=config.lns_solve_limit,
-        type=parse_solve_limit,
+        type="solve_limit",
         metavar="<n>[,<m>]",
         dest="lns_solve_limit",
     )
@@ -201,7 +240,7 @@ def get_default_parser(
         "--lns-time-limit",
         help="set LNS time limit [%(default)s]",
         default=config.lns_time_limit,
-        type=int,
+        type="pos_int_or_none",
         metavar="<n>",
         dest="lns_time_limit",
     )

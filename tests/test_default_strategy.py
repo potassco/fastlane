@@ -8,7 +8,7 @@ from unittest import TestCase, mock
 
 from clingo.symbol import Function, Number
 
-from mod_lns import Model
+from mod_lns import UNSET, Model
 from mod_lns.lib.parser.default_parser import get_default_parser
 from mod_lns.lib.solvers.clingo_dl_solver import ClingoDLSolver
 from mod_lns.lib.solvers.clingo_solver import ClingoSolver
@@ -47,10 +47,18 @@ class TestDefaultParser(TestCase):
         self.assertEqual(ret.init_solve_limit, "100")
         ret = parser.parse_args(["--init-solve-limit", "100,200"])
         self.assertEqual(ret.init_solve_limit, "100,200")
+        ret = parser.parse_args(["--init-solve-limit", "None"])
+        self.assertEqual(ret.init_solve_limit, None)
         with self.assertRaises(SystemExit), mock.patch("sys.stderr", new=StringIO()):
             parser.parse_args(["--init-solve-limit", "abc"])
         ret = parser.parse_args(["--init-time-limit", "42"])
         self.assertEqual(ret.init_time_limit, 42)
+        ret = parser.parse_args(["--init-time-limit", "None"])
+        self.assertEqual(ret.init_time_limit, None)
+        with self.assertRaises(SystemExit), mock.patch("sys.stderr", new=StringIO()):
+            parser.parse_args(["--init-time-limit", "abc"])
+        with self.assertRaises(SystemExit), mock.patch("sys.stderr", new=StringIO()):
+            parser.parse_args(["--init-time-limit", "-20"])
         # lns options
         ret = parser.parse_args(["--lns-constrained"])
         self.assertEqual(ret.constrained, True)
@@ -74,6 +82,9 @@ class TestLNSConfig(TestCase):
     Test cases for LNSConfig class.
     """
 
+    def setUp(self):
+        self.config = LNSConfig()
+
     def test_config(self):
         """
         Test the LNSConfig class.
@@ -94,6 +105,39 @@ class TestLNSConfig(TestCase):
         self.assertEqual(lns_config.time_limit, 20)
         self.assertEqual(lns_config.seed, 123)
 
+    def test_apply_preset(self):
+        """
+        Test the apply_preset method.
+        """
+        config = self.config
+        config.preset = "basic"
+        self.assertEqual(config.time_limit, UNSET)
+        self.assertEqual(config.max_steps, UNSET)
+        self.assertEqual(config.init_time_limit, 10)
+        self.assertEqual(config.init_solve_limit, UNSET)
+        self.assertEqual(config.lns_time_limit, 20)
+        self.assertEqual(config.lns_solve_limit, UNSET)
+        config.apply_preset()
+        self.assertEqual(config.time_limit, 600)
+        self.assertEqual(config.max_steps, 2000)
+        self.assertEqual(config.init_time_limit, 20)
+        self.assertEqual(config.init_solve_limit, "2500000,5000")
+        self.assertEqual(config.lns_time_limit, 20)
+        self.assertEqual(config.lns_solve_limit, "2500000,5000")
+
+        config.preset = "unknown"
+        with self.assertRaises(ValueError):
+            config.apply_preset()
+
+    def test_prepare(self):
+        """
+        Test the prepare method.
+        """
+        config = self.config
+        self.assertEqual(config.time_limit, UNSET)
+        config.prepare()
+        self.assertIsNone(config.time_limit)
+
 
 class TestDefaultStrategy(TestCase):
     """
@@ -103,6 +147,7 @@ class TestDefaultStrategy(TestCase):
     def setUp(self) -> None:
         self.strategy = DefaultStrategy()
         self.strategy.config.log_level = 50
+        self.strategy.config.relax_rate = 20
         self.lns = LNS(["./tests/ref/golf.lp"], self.strategy)
 
     def test_get_parser(self):
@@ -130,34 +175,34 @@ class TestDefaultStrategy(TestCase):
             "solver": ClingoDLSolver(),
             "seed": 123,
             "time_limit": 42,
-            "max_steps": 100,
-            "relax_rate": 20,
+            "preset": "basic",
             "init_solve_limit": "100,200",
             "init_time_limit": None,
             "constrained": True,
             "declarative": True,
             "accept_variability": 30,
-            "lns_solve_limit": "300",
-            "lns_time_limit": 20,
             "opt": 5,
             "log_level": 50,
         }
         rest = self.strategy.parse_options(args)
         self.assertEqual(self.strategy.config.solver, args["solver"])
         self.assertEqual(self.strategy.config.seed, 123)
-        self.assertEqual(self.strategy.config.time_limit, 42)
-        self.assertEqual(self.strategy.config.max_steps, 100)
-        self.assertEqual(self.strategy.config.relax_rate, 20)
-        self.assertEqual(self.strategy.config.init_solve_limit, "100,200")
         self.assertEqual(self.strategy.config.constrained, True)
         self.assertEqual(self.strategy.config.declarative, True)
         self.assertEqual(self.strategy.config.accept_variability, 30)
-        self.assertEqual(self.strategy.config.lns_solve_limit, "300")
+        self.assertEqual(self.strategy._log_level, 50)
+        # overwrite preset
+        self.assertEqual(self.strategy.config.time_limit, 42)
+        self.assertEqual(self.strategy.config.init_solve_limit, "100,200")
+        self.assertEqual(self.strategy.config.init_time_limit, None)
+        # from preset
+        self.assertEqual(self.strategy.config.max_steps, 2000)
+        self.assertEqual(self.strategy.config.relax_rate, 20)
+        self.assertEqual(self.strategy.config.lns_solve_limit, "2500000,5000")
         self.assertEqual(self.strategy.config.lns_time_limit, 20)
         self.assertEqual(self.strategy.solver, args["solver"])
-        self.assertEqual(self.strategy._log_level, 50)
-        # None -> default value
-        self.assertEqual(self.strategy.config.init_time_limit, 20)
+        # default
+        self.assertEqual(self.strategy.config.status_interval, 50)
         # rest
         self.assertEqual(rest, {"opt": 5})
 

@@ -3,9 +3,30 @@ Helper classes.
 """
 
 import time
-from typing import Optional
+from typing import Any, Optional
 
 from clingo import Symbol
+
+
+class UnsetMarker:
+    """
+    Singleton helper class to distinguish between unset and None.
+    """
+
+    def __new__(cls) -> "UnsetMarker":
+        if not hasattr(cls, "instance"):
+            cls.instance = super(UnsetMarker, cls).__new__(cls)
+        return cls.instance
+
+    def __bool__(self) -> bool:
+        return False
+
+    def __repr__(self) -> str:
+        return "UNSET"
+
+
+# ! assigned variables should support None as value
+UNSET: Any = UnsetMarker()
 
 
 class Model:

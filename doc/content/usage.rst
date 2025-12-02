@@ -29,7 +29,9 @@ The implementations of provided solvers and strategies can be found in the :ref:
 
 When using the framework as a python module, the LNS object has to be initialized with the encoding files and the
 strategy. After the initialization of the strategy, parameters can be set through the strategy's configuration class.
-Alternatively, parameters can be passed during initialization of the `LNS` object by using a Namespace object.
+Alternatively, a dictionary of parameters can be passed during initialization of the `LNS` object. The 'preset'
+parameter can be used to set multiple parameters at once according to predefined presets. Manually set parameters
+will always override preset values. And preset values will overwrite default configuration values.
 An example of the LNS initialization can be seen below or in :file:`./examples/demo.py`. For a more detailed and
 step by step introduction to the framework look :ref:`here<ref_guide>`.
 
@@ -56,7 +58,7 @@ The same search can be performed through the command line as follows:
 
 .. code-block:: console
 
-    mod_lns ./examples/golf.lp default --solver=clingo-dl --seed=123 --time-limit=60
+    mod_lns ./examples/golf.lp default --solver=clingo-dl --seed=123 --time-limit=60 --relax-rate=20
 
 Encoding
 ----------

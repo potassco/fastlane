@@ -8,7 +8,7 @@ from __future__ import annotations
 import math
 import random
 from argparse import ArgumentParser, _SubParsersAction
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from math import log10
 from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
@@ -16,7 +16,7 @@ import clingo
 from clingo.control import Control
 from clingo.symbol import Function, Number, Symbol, SymbolType
 
-from mod_lns import Model
+from mod_lns import UNSET, Model
 from mod_lns.interfaces.solver import SolverConfig, SolverInterface
 from mod_lns.interfaces.strategy import StrategyInterface
 from mod_lns.lib.parser.heulingo_parser import get_heulingo_parser
@@ -109,9 +109,9 @@ class HeulingoConfig:
     # general configuration
     # solver default has to be set manually in parser
     solver: SolverInterface = field(default_factory=ClingoSolver)
-    seed: Optional[int] = None
-    time_limit: Optional[int] = None
-    max_steps: Optional[int] = None
+    seed: Optional[int] = UNSET
+    time_limit: Optional[int] = UNSET
+    max_steps: Optional[int] = UNSET
     status_interval: int = 5
     parallel_mode: Optional[str] = None
     clingo_args: Optional[str] = None
@@ -125,12 +125,12 @@ class HeulingoConfig:
     init_opt_heuristic: Optional[str] = None
     init_restart_on_model: Optional[bool] = None
     init_heuristic: Optional[str] = None
-    init_opt_mode: Optional[str] = None
-    init_solve_limit: Optional[str] = None
-    init_time_limit: Optional[int] = None
+    init_opt_mode: Optional[str] = UNSET
+    init_solve_limit: Optional[str] = UNSET
+    init_time_limit: Optional[int] = UNSET
 
     # heulingo configuration
-    heulingo_configuration: Optional[str] = None
+    preset: Optional[str] = None
     solve_limit_increase_rate: float = 0.01
     time_limit_increase_rate: float = 0.01
     acceptance_rate: float = 0.0
@@ -143,11 +143,12 @@ class HeulingoConfig:
     lns_heuristic: Optional[str] = "Domain"
     # lns_opt_mode default has to be set manually in parser
     lns_opt_mode: dict[str, Any] = field(default_factory=lambda: {"mode": None, "nf": None, "modifier": None})
-    lns_solve_limit: Optional[str] = None
-    lns_time_limit: Optional[int] = None
+    lns_solve_limit: Optional[str] = UNSET
+    lns_time_limit: Optional[int] = UNSET
 
     # lns_configuration_values
-    heulingo_configuration_values: ClassVar[dict[str, dict[str, Any]]] = {
+    # UNSET does not overwrite above default values when applying presets
+    preset_values: ClassVar[dict[str, dict[str, Any]]] = {
         "teaspoon": {
             "parallel_mode": None,
             "init_configuration": "jumpy",
@@ -290,38 +291,52 @@ class HeulingoConfig:
         },
     }
 
-    # pylint: disable=too-many-nested-blocks
-    def apply_config(self) -> None:
+    # pylint: disable=too-many-nested-blocks, too-many-branches
+    def apply_preset(self) -> None:
         """
-        Apply default configuration values.
+        Apply preset configuration values.
         Dont override already set values.
         """
-        if self.heulingo_configuration is not None:
-            for key, value in self.heulingo_configuration_values[self.heulingo_configuration].items():
-                if isinstance(getattr(self, key), dict):
-                    if key == "lns_opt_mode":
-                        if all(x is None for x in getattr(self, key).values()) and isinstance(value, str):
-                            opt_mode: dict[str, Any] = {}
-                            val = value.split(",")
-                            opt_mode["mode"] = val[0]
-                            if len(val) == 1:
-                                opt_mode["nf"] = None
-                                opt_mode["modifier"] = None
-                            elif len(val) == 2:
-                                opt_mode["nf"] = val[1]
-                                opt_mode["modifier"] = "dynamic"
-                            elif len(val) >= 3:
-                                if val[-1] == "static":
-                                    opt_mode["nf"] = ",".join(val[1:-1])
-                                    opt_mode["modifier"] = "static"
-                                else:
-                                    opt_mode["nf"] = val[1]
-                                    opt_mode["modifier"] = "dynamic"
-                            setattr(self, key, opt_mode)
-                    # if all(x is None for x in getattr(self, key).values()):
-                    #     setattr(self, key, value)
-                elif getattr(self, key) is None:
-                    setattr(self, key, value)
+        if self.preset is not None:
+            if self.preset in self.preset_values:
+                for key, value in self.preset_values[self.preset].items():
+                    if value is not UNSET:
+                        if isinstance(getattr(self, key), dict):
+                            if key == "lns_opt_mode":
+                                if all(x is None for x in getattr(self, key).values()) and isinstance(value, str):
+                                    opt_mode: dict[str, Any] = {}
+                                    val = value.split(",")
+                                    opt_mode["mode"] = val[0]
+                                    if len(val) == 1:
+                                        opt_mode["nf"] = None
+                                        opt_mode["modifier"] = None
+                                    elif len(val) == 2:
+                                        opt_mode["nf"] = val[1]
+                                        opt_mode["modifier"] = "dynamic"
+                                    elif len(val) >= 3:
+                                        if val[-1] == "static":
+                                            opt_mode["nf"] = ",".join(val[1:-1])
+                                            opt_mode["modifier"] = "static"
+                                        else:
+                                            opt_mode["nf"] = val[1]
+                                            opt_mode["modifier"] = "dynamic"
+                                    setattr(self, key, opt_mode)
+                        elif hasattr(self, key):
+                            setattr(self, key, value)
+            else:
+                raise ValueError(f"Unknown preset: {self.preset}")
+
+    def prepare(self) -> None:
+        """
+        Prepare configuration by replacing UNSET with None
+        and clamp some values to avoid errors or unexpected behavior.
+        """
+        for field_obj in fields(self):
+            value = getattr(self, field_obj.name)
+            if value is UNSET:
+                setattr(self, field_obj.name, None)
+        self.solve_limit_increase_rate = clamp(self.solve_limit_increase_rate, 0, 100)
+        self.time_limit_increase_rate = clamp(self.time_limit_increase_rate, 0, 100)
 
     def get_init_solver_configuration(self) -> SolverConfig:
         """
@@ -397,13 +412,6 @@ class Heulingo(StrategyInterface):
         parser.set_defaults(strategy=self)
         return parser
 
-    def _prep_values(self) -> None:
-        """
-        Prepare some values to avoid errors or unexpected behavior.
-        """
-        self.config.solve_limit_increase_rate = clamp(self.config.solve_limit_increase_rate, 0, 100)
-        self.config.time_limit_increase_rate = clamp(self.config.time_limit_increase_rate, 0, 100)
-
     def parse_options(self, args: dict[str, Any]) -> dict[str, Any]:
         """
         Parse command line options.
@@ -413,24 +421,22 @@ class Heulingo(StrategyInterface):
         """
         # argument priority (from high to low):
         # 1. directly set arguments
-        # 2. directly set config values (defaults)
-        # 3. configuration preset
+        # 2. configuration preset
+        # 3. directly set config values (defaults)
         rest = {}
-        if "heulingo_configuration" in args and args["heulingo_configuration"] is not None:
-            self.config.heulingo_configuration = args["heulingo_configuration"]
-        if self.config.heulingo_configuration is not None:
-            self.config.apply_config()
+        if "preset" in args and args["preset"] is not None:
+            self.config.preset = args["preset"]
+        if self.config.preset is not None:
+            self.config.apply_preset()
         for attr, value in args.items():
-            # Overriding with None can cause issues and is therefore currently not supported
-            if value is not None:
+            if value is not UNSET:
                 if hasattr(self.config, attr):
                     setattr(self.config, attr, value)
                 else:
                     rest[attr] = value
+        self.config.prepare()
         self.solver = self.config.solver
         self._log_level = self.config.log_level
-        self._prep_values()
-
         return rest
 
     def pre_setup(self, lns_object: "LNS") -> None:

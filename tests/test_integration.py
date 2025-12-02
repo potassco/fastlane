@@ -27,6 +27,7 @@ class TestIntegrationDefaultClingo(TestCase):
             lns_time_limit=3,
             time_limit=10,
             log_level=50,
+            relax_rate=20,
         )
         self.strat.solver = ClingoSolver()
 
