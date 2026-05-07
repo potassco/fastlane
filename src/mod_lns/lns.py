@@ -9,6 +9,8 @@ from mod_lns.interfaces.strategy import StrategyInterface
 from mod_lns.lib.strategies.default_strategy import DefaultStrategy
 from mod_lns.utils.logger import setup_logger
 
+LINE = "--------------------------------------------------------------------------------------"
+
 
 # pylint: disable=too-many-instance-attributes
 class LNS:
@@ -73,33 +75,55 @@ class LNS:
 
         self.step_c = -1
 
+        self.logger.debug(LINE)
+        self.logger.debug("pre_setup")
         self.strategy.pre_setup(self)
 
+        self.logger.debug(LINE)
+        self.logger.debug("solver_setup")
         self.strategy.setup_solver(self)
 
+        self.logger.debug(LINE)
+        self.logger.debug("post_setup")
         self.strategy.post_setup(self)
 
         self.step_c = 0
 
         # get first solution - to be reworked
+        # TODO exit if optimum
+        self.logger.debug(LINE)
+        self.logger.debug("get first solution")
         if not self.strategy.get_first_solution(
             self,
         ):
             self.logger.error("First solution could not be obtained")
             raise SystemExit
 
+        self.logger.debug(LINE)
+        self.logger.debug("post first solution")
         self.strategy.post_first_solution(self)
 
+        self.logger.debug(LINE)
+        self.logger.debug("start LNS loop")
         while not self.strategy.check_stop(self):
             self.step_c += 1
 
+            self.logger.debug(LINE)
+            self.logger.debug(f"iteration {self.step_c}")
+            self.logger.debug("pre_relax")
             self.strategy.pre_relax(self)
 
+            self.logger.debug(LINE)
+            self.logger.debug("relax")
             fixed_atoms = []
             fixed_atoms = self.strategy.relax(self)
 
+            self.logger.debug(LINE)
+            self.logger.debug(f"repair with {len(fixed_atoms)} fixed atoms")
             self.new_model = self.strategy.repair(self, fixed_atoms)
 
+            self.logger.debug(LINE)
+            self.logger.debug("post_repair")
             self.strategy.post_repair(self)
 
             if self.strategy.check_accept(self):

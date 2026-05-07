@@ -103,8 +103,8 @@ class ClingoDLSolver(ClingoSolver):
         self.theory.on_model(model=model)
 
         self.last_model = Model()
-        self.last_model.shown = list(model.symbols(shown=True))
-        self.last_model.true = list(model.symbols(atoms=True))
+        self.last_model.shown = set(model.symbols(shown=True))
+        self.last_model.true = set(model.symbols(atoms=True))
         self.last_model.cost = model.cost
 
         self.last_model.assignments = [f"{key}={val}" for key, val in self.theory.assignment(model.thread_id)]
@@ -114,6 +114,9 @@ class ClingoDLSolver(ClingoSolver):
                     self.last_model.cost = [int(val)]  # type: ignore
                     print("Optimization:", *self.last_model.cost)
                     break
+
+        self.stats["time_to_last_model"] = self._cutoff_timer.get_elapsed_time()
+        self._cutoff_timer.restart()
 
     def _on_statistics(self, step: StatisticsMap, accu: StatisticsMap) -> None:  # nocoverage
         """
@@ -251,13 +254,14 @@ class ClingoDLSolver(ClingoSolver):
         else:
             self._assumptions_used = False
 
-        time_limit = 0
+        time_limit: Optional[int] = None
+        cutoff: Optional[int] = None
         self._search_num += 1
         bound = None
         if config is not None:
             self._variability = config.variability
-            if config.time_limit is not None:
-                time_limit = config.time_limit
+            time_limit = config.time_limit
+            cutoff = config.cutoff
             if config.configuration is not None:
                 self.control.configuration.configuration = config.configuration
             if config.opt_strategy is not None:
@@ -288,10 +292,14 @@ class ClingoDLSolver(ClingoSolver):
         self.logger.debug("opt-mode: %s", self.control.configuration.solve.opt_mode)
         self.logger.debug("solve-limit: %s", self.control.configuration.solve.solve_limit)
         self.logger.debug("time-limit: %s", time_limit)
+        self.logger.debug("cutoff: %s", cutoff)
 
         self.theory.prepare(self.control)
 
-        self._timer.reset()
+        self._solve_timer.reset()
+        self._solve_timer.start(time_limit)
+        self._cutoff_timer.reset()
+        self._cutoff_timer.start(cutoff)
         with self.control.solve(
             assumptions=assumptions,
             on_model=self._on_model,
@@ -299,12 +307,17 @@ class ClingoDLSolver(ClingoSolver):
             on_statistics=self._on_statistics,
             async_=True,
         ) as handle:
-            if time_limit > 0:
-                self._timer.start(time_limit)
+            ringing_timers = []
             while not handle.wait(0):
-                if self._timer.is_ringing and not self._interrupted and not self.finished:
+                if self._solve_timer.is_ringing:
+                    ringing_timers.append("solve_timer")
+                    self.logger.debug("solve timer ringing after %s seconds", self._solve_timer.get_elapsed_time())
+                if self._cutoff_timer.is_ringing:
+                    ringing_timers.append("cutoff_timer")
+                    self.logger.debug("cutoff timer ringing after %s seconds", self._cutoff_timer.get_elapsed_time())
+                if ringing_timers and not self._interrupted and not self.finished:
                     self._interrupted = True
-                    self.logger.debug("interrupted by timer")
+                    self.logger.debug("interrupted by timer(s): %s", ", ".join(ringing_timers))
                     handle.cancel()
         self._interrupted = False
 
@@ -312,11 +325,11 @@ class ClingoDLSolver(ClingoSolver):
             # use remaining time to minimize variable
             self._minimize_variable(bound)
 
-        if self.last_model is None and not self.finished:
-            self.logger.warning(
-                "The solve-limit or time-limit is not enough to find a solution."
-                "Therefore, the first solution found is used as the initial solution."
-            )
-            self._find_first_solution()
+        # if self.last_model is None and not self.finished:
+        #     self.logger.warning(
+        #         "The solve-limit or time-limit is not enough to find a solution."
+        #         "Therefore, the first solution found is used as the initial solution."
+        #     )
+        #     self._find_first_solution()
 
         return self.last_model

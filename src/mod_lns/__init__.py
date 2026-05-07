@@ -33,8 +33,8 @@ class Model:
     "Simplified Model class"
 
     def __init__(self) -> None:
-        self.shown: list[Symbol] = []
-        self.true: list[Symbol] = []
+        self.shown: set[Symbol] = set()
+        self.true: set[Symbol] = set()
         self.cost: list[int] = []
         self.assignments: list[str] = []
         self.opt: bool = False
@@ -93,12 +93,20 @@ class Timer:
         self._start_time = time.time()
         self._time_limit = time_limit
 
-    # pylint: disable=unnecessary-dunder-call
     def reset(self) -> None:
         """
         Reset the timer.
         """
-        self.__init__()  # type: ignore
+        self._started: bool = False
+        self._ringing: bool = False
+        self._start_time: float = 0.0
+
+    def restart(self) -> None:
+        """
+        Restart the timer with the same time limit.
+        """
+        self.reset()
+        self.start(self._time_limit)
 
     def remaining_time(self) -> int:
         """
@@ -117,10 +125,10 @@ class Timer:
         Get the elapsed time since the timer started.
 
         :return: Elapsed time in seconds.
-        :rtype: int
+        :rtype: float
         """
         if not self._started:
-            return 0
+            return 0.0
         return time.time() - self._start_time
 
     @property
