@@ -47,6 +47,9 @@ class SolverConfig:
     :param time_limit: Time limit for solving.
     :type time_limit: Optional[int]
     :default time_limit: None
+    :param cutoff: Cutoff value.
+    :type cutoff: Optional[int]
+    :default cutoff: None
     :param seed: Random seed.
     :type seed: Optional[int]
     :default seed: None
@@ -63,6 +66,7 @@ class SolverConfig:
     opt_mode: Optional[str] = None
     solve_limit: Optional[str] = None
     time_limit: Optional[int] = None
+    cutoff: Optional[int] = None
     seed: Optional[int] = None
     variability: bool = True
 
@@ -85,6 +89,9 @@ class SolverInterface(metaclass=abc.ABCMeta):
         self.logger: Logger
         self.stop: bool = False
         self._assumptions_used = False
+        self.last_model: Optional[Model] = None
+
+        self.stats: dict[str, Any] = {}
 
     @classmethod
     def __subclasshook__(cls, subclass: type) -> bool:  # nocoverage
