@@ -17,7 +17,7 @@ from mod_lns import Model, Timer
 from mod_lns.interfaces.solver import SolverConfig, SolverInterface
 
 if TYPE_CHECKING:
-    from mod_lns.lns import LNS  # nocoverage
+    from mod_lns.new_lns import LNS  # nocoverage
 
 
 # pylint: disable=too-many-instance-attributes
@@ -71,7 +71,7 @@ class ClingoSolver(SolverInterface):
         if self.control is not None:
             self.control.interrupt()
         self.stop = True
-        lns_object.strategy.print_result(lns_object)
+        lns_object.print_result()
         raise SystemExit
 
     # pylint: disable=dangerous-default-value
