@@ -2,24 +2,24 @@
 Parser for default strategy in LNS.
 """
 
-from argparse import ArgumentParser, RawTextHelpFormatter, _SubParsersAction
-import logging
-from textwrap import dedent
-from typing import no_type_check, Optional
-import pkgutil
 import importlib
-import sys
 import inspect
+import logging
+import pkgutil
+import sys
+from argparse import ArgumentParser, RawTextHelpFormatter
+from textwrap import dedent
+from typing import Optional, no_type_check
+
 from clingo import Configuration, Control
 
 from mod_lns.interfaces.solver import SolverInterface
-from mod_lns.lib import parser
-from mod_lns.lns_config import LNSConfig
 from mod_lns.lib.converter import (
     AutoDestructionConverter,
     AverageDestructionConverter,
     LastImprovementDestructionConverter,
 )
+from mod_lns.lns_config import LNSConfig
 
 if sys.version_info[1] < 8:
     import importlib_metadata as metadata  # nocoverage
@@ -27,6 +27,7 @@ else:
     from importlib import metadata  # nocoverage
 
 VERSION = metadata.version("mod_lns")
+
 
 class OptionsParser:
     """
@@ -91,7 +92,6 @@ class OptionsParser:
             formatter_class=cls.formatter,
         )
 
-
         logging_levels = {
             "error": logging.ERROR,
             "warning": logging.WARNING,
@@ -101,7 +101,10 @@ class OptionsParser:
 
         parser.register("type", "logging_level", lambda name: logging_levels.get(name))
 
-        solvers = {solver_cls.get_name(): solver_cls() for solver_cls in cls.get_classes_from_package("mod_lns.lib.solvers", SolverInterface)}
+        solvers = {
+            solver_cls.get_name(): solver_cls()
+            for solver_cls in cls.get_classes_from_package("mod_lns.lib.solvers", SolverInterface)
+        }
 
         def parse_solver(solvers: dict[str, SolverInterface], string: str) -> SolverInterface:
             """
@@ -111,7 +114,7 @@ class OptionsParser:
             if solver is None:
                 parser.error(f"'{string}': Invalid solver. Choose from {','.join(solvers.keys())}")
             return solver
-        
+
         parser.register("type", "solver", lambda string: parse_solver(solvers, string))
 
         def parse_pos_int_or_none(string: str) -> Optional[int]:
@@ -143,7 +146,7 @@ class OptionsParser:
             except RuntimeError:
                 parser.error(f"'{string}': Invalid solve limit.")
             return string
-    
+
         parser.register("type", "solve_limit", parse_solve_limit)
 
         def parse_percent(string: str, msg: str = "Invalid percentage, percentage must be between 0 and 100.") -> int:
@@ -157,7 +160,7 @@ class OptionsParser:
             if not (0 <= value <= 100):
                 parser.error(f"'{string}': {msg}")
             return value
-        
+
         parser.register("type", "percent", parse_percent)
 
         def parse_relaxation(string: str) -> tuple[bool, int]:
@@ -182,15 +185,15 @@ class OptionsParser:
             "last-improv": LastImprovementDestructionConverter(),
         }
 
-        def parse_auto_converter(converters: dict[str, AutoDestructionConverter], string: str) -> AutoDestructionConverter:
+        def parse_auto_converter(
+            converters: dict[str, AutoDestructionConverter], string: str
+        ) -> AutoDestructionConverter:
             """
             Parse the auto converter string.
             """
             converter = converters.get(string)
             if converter is None:
-                parser.error(
-                    f"'{string}': Invalid auto converter. Choose from {','.join(converters.keys())}"
-                )
+                parser.error(f"'{string}': Invalid auto converter. Choose from {','.join(converters.keys())}")
             return converter
 
         parser.register("type", "auto_converter", lambda string: parse_auto_converter(converters, string))
@@ -248,8 +251,7 @@ class OptionsParser:
         # init solver options
         init_solver_group = parser.add_argument_group(
             "Initial Solver Configuration",
-            "Configuration options for the initial solver\n"
-            "used to find the first solution.",
+            "Configuration options for the initial solver\n" "used to find the first solution.",
         )
 
         init_solver_group.add_argument(
@@ -304,7 +306,7 @@ class OptionsParser:
         lns_group.add_argument(
             "--auto-converter",
             help=(
-                "Set automatic destroy percentage converter [%(default)s]\n" \
+                "Set automatic destroy percentage converter [%(default)s]\n"
                 "last-improv: Set auto destroy rate based on actually relaxed atoms during last improvement.\n"
                 "avg:         Set auto destroy rate based on average percentages of relaxed atoms during all improvements.\n"
                 "Note: Used for --relaxation=simple,auto and _lns_relax_op/2 for --relaxation=declarative.\n"
@@ -316,7 +318,7 @@ class OptionsParser:
             dest="auto_converter",
             metavar=f"{{{','.join(converters.keys())}}}",
         )
-        
+
         lns_group.add_argument(
             "--accept-variability",
             help="set required variability to accept new solutions in percent [%(default)s]",
@@ -376,11 +378,7 @@ class OptionsParser:
 
         ##########
         # parameters
-    
+
         parser.add_argument("files", help="ASP input file(s)", nargs="+")
 
         return parser
-
-
-
-

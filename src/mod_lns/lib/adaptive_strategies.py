@@ -7,8 +7,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
 from mod_lns import Model
-
-from .converter import AutoDestructionConverter
+from mod_lns.lib.converter import AutoDestructionConverter, LastImprovementDestructionConverter
 
 if TYPE_CHECKING:
     from mod_lns.lns import LNS  # nocoverage
@@ -62,6 +61,152 @@ class AdaptiveStrategy(ABC):
         :return: New LNPS configuration.
         :rtype: dict[str, Any]
         """
+
+    def _get_operator_values(self, config_name: str, alnps_config: dict[str, Any]) -> dict[str, Any]:
+        """
+        Convert key into corresponding LNPS configuration.
+
+        :param config_name: Name of LNPS configuration.
+        :type config_name: str
+        :param alnps_config: ALNPS configuration.
+        :type alnps_config: dict[str, Any]
+        :return: LNPS configuration corresponding to key.
+        :rtype: dict[str, Any]
+        """
+        config = {
+            "name": config_name,
+            "project_operators": [],
+            "destroy_operators": [],
+            "prioritize_operators": [],
+        }
+
+        # project
+        for operator_name in alnps_config["configs"][config_name]["project_operators"]:
+            config["project_operators"].append(
+                {"name": operator_name, "signatures": alnps_config["project_operators"][operator_name]}
+            )
+        # destroy
+        for operator_name in alnps_config["configs"][config_name]["destroy_operators"]:
+            config["destroy_operators"].append(
+                {"name": operator_name, "percents_or_numbers": alnps_config["destroy_operators"][operator_name]}
+            )
+
+        # prioritize
+        for operator_name in alnps_config["configs"][config_name]["prioritize_operators"]:
+            heuristic_modifier = alnps_config["prioritize_operators"][operator_name]
+            config["prioritize_operators"].append(
+                {
+                    "name": operator_name,
+                    "value": heuristic_modifier["value"],
+                    "modifier": heuristic_modifier["modifier"],
+                }
+            )
+
+        config["config_repr"] = self._format_lnps_config(config)
+
+        return config
+
+    def _format_lnps_config(self, lnps_config: dict[str, Any]) -> str:
+        """
+        Convert LNPS configuration into string.
+
+        :param lnps_config: LNPS configuration.
+        :type lnps_config: dict[str, Any]
+        :return: String representing LNPS configuration.
+        :rtype: str
+        """
+        project_operators = ",".join(
+            project_operator["name"]
+            + "["
+            + ",".join(f"({signature[0]},{signature[1]})" for signature in project_operator["signatures"])
+            + "]"
+            for project_operator in lnps_config["project_operators"]
+        )
+
+        destroy_operators = ",".join(
+            destroy_operator["name"]
+            + "["
+            + ",".join(
+                (
+                    f"{percent_or_number['type']}({percent_or_number['value']})"
+                    if percent_or_number["value"] is not None
+                    else percent_or_number["type"]
+                )
+                for percent_or_number in destroy_operator["percents_or_numbers"]
+            )
+            + "]"
+            for destroy_operator in lnps_config["destroy_operators"]
+        )
+
+        prioritize_operators = ",".join(
+            f"{prioritize_operator['name']}[{prioritize_operator['value']},{prioritize_operator['modifier']}]"
+            for prioritize_operator in lnps_config["prioritize_operators"]
+        )
+
+        return f"{lnps_config['name']}[project_operators={{{project_operators}}},destroy_operators={{{destroy_operators}}},prioritize_operators={{{prioritize_operators}}}]"
+
+
+class StaticStrategy(AdaptiveStrategy):
+    """
+    Static strategy that always selects the same LNPS configuration.
+
+    :param config_name: Name of LNPS configuration to always select.
+    :type config_name: str
+    """
+
+    def __init__(self, converter: AutoDestructionConverter = LastImprovementDestructionConverter()):
+        self._converter = converter
+
+    def _select_config(self, alnps_config: dict[str, Any]) -> dict[str, Any]:
+        """
+        Select first LNPS configuration.
+
+        :param alnps_config: ALNPS configuration.
+        :type alnps_config: dict[str, Any]
+        :return: Selected LNPS configuration.
+        :rtype: dict[str, Any]
+        """
+        selected_config = list(alnps_config["configs"].keys())[0]
+        lnps_config = self._get_operator_values(selected_config, alnps_config)
+        return lnps_config
+
+    def get_initial_config(self, alnps_config: dict[str, Any], initial_model: Model) -> dict[str, Any]:
+        """
+        Get initial LNPS configuration.
+
+        :param alnps_config: ALNPS configuration.
+        :type alnps_config: dict[str, Any]
+        :param initial_model: Initial model.
+        :type initial_model: Model
+        :return: LNPS configuration dictionary with the following keys:
+            - "name" (str): Name of LNPS configuration.
+            - "project_operators" (list[str]): List of project operator names.
+            - "destroy_operators" (list[dict[str, Any]]): List of names and percentages or numbers of destroy operators.
+            - "prioritize_operators" (list[dict[str, Any]]): List of names, heuristic modifiers, and their values of prioritize operators.
+            - "key" (tuple[Any, ...]): Key of LNPS configuration.
+            - "config_repr" (str): String representation of LNPS configuration.
+        :rtype: dict[str, Any]
+        """
+        return self._converter.convert_config(self._select_config(alnps_config))
+
+    def update_config(
+        self, lnps_config: dict[str, Any], alnps_config: dict[str, Any], stats: list[dict[str, Any]], lns_object: "LNS"
+    ) -> dict[str, Any]:
+        """
+        Return the same LNPS configuration without updating.
+
+        :param lnps_config: Current LNPS configuration.
+        :type lnps_config: dict[str, Any]
+        :param alnps_config: ALNPS configuration.
+        :type alnps_config: dict[str, Any]
+        :param stats: Statistics.
+        :type stats: list[dict[str, Any]]
+        :param lns_object: LNS object.
+        :type lns_object: mod_lns.LNS
+        :return: Same LNPS configuration as input.
+        :rtype: dict[str, Any]
+        """
+        return lnps_config
 
 
 class RouletteWheelStrategy(AdaptiveStrategy):
@@ -128,50 +273,6 @@ class RouletteWheelStrategy(AdaptiveStrategy):
 
         # if logger.isEnabledFor(logging.DEBUG):
         #     logger.debug("Initial weight:", initial_weight)
-
-    def _get_operator_values(self, config_name: str, alnps_config: dict[str, Any]) -> dict[str, Any]:
-        """
-        Convert key into corresponding LNPS configuration.
-
-        :param config_name: Name of LNPS configuration.
-        :type config_name: str
-        :param alnps_config: ALNPS configuration.
-        :type alnps_config: dict[str, Any]
-        :return: LNPS configuration corresponding to key.
-        :rtype: dict[str, Any]
-        """
-        config = {
-            "name": config_name,
-            "project_operators": [],
-            "destroy_operators": [],
-            "prioritize_operators": [],
-        }
-
-        # project
-        for operator_name in alnps_config["configs"][config_name]["project_operators"]:
-            config["project_operators"].append(
-                {"name": operator_name, "signatures": alnps_config["project_operators"][operator_name]}
-            )
-        # destroy
-        for operator_name in alnps_config["configs"][config_name]["destroy_operators"]:
-            config["destroy_operators"].append(
-                {"name": operator_name, "percents_or_numbers": alnps_config["destroy_operators"][operator_name]}
-            )
-
-        # prioritize
-        for operator_name in alnps_config["configs"][config_name]["prioritize_operators"]:
-            heuristic_modifier = alnps_config["prioritize_operators"][operator_name]
-            config["prioritize_operators"].append(
-                {
-                    "name": operator_name,
-                    "value": heuristic_modifier["value"],
-                    "modifier": heuristic_modifier["modifier"],
-                }
-            )
-
-        config["config_repr"] = self._format_lnps_config(config)
-
-        return config
 
     def _select_config(self, alnps_config: dict[str, Any]) -> dict[str, Any]:
         """
@@ -282,42 +383,3 @@ class RouletteWheelStrategy(AdaptiveStrategy):
         # if logger.isEnabledFor(logging.DEBUG):
         #     logger.debug(lnps_config["config_repr"], "weight:", weight, "->", new_weight)
         return self._converter.convert_config(self._select_config(alnps_config), lns_object)
-
-    def _format_lnps_config(self, lnps_config: dict[str, Any]) -> str:
-        """
-        Convert LNPS configuration into string.
-
-        :param lnps_config: LNPS configuration.
-        :type lnps_config: dict[str, Any]
-        :return: String representing LNPS configuration.
-        :rtype: str
-        """
-        project_operators = ",".join(
-            project_operator["name"]
-            + "["
-            + ",".join(f"({signature[0]},{signature[1]})" for signature in project_operator["signatures"])
-            + "]"
-            for project_operator in lnps_config["project_operators"]
-        )
-
-        destroy_operators = ",".join(
-            destroy_operator["name"]
-            + "["
-            + ",".join(
-                (
-                    f"{percent_or_number['type']}({percent_or_number['value']})"
-                    if percent_or_number["value"] is not None
-                    else percent_or_number["type"]
-                )
-                for percent_or_number in destroy_operator["percents_or_numbers"]
-            )
-            + "]"
-            for destroy_operator in lnps_config["destroy_operators"]
-        )
-
-        prioritize_operators = ",".join(
-            f"{prioritize_operator['name']}[{prioritize_operator['value']},{prioritize_operator['modifier']}]"
-            for prioritize_operator in lnps_config["prioritize_operators"]
-        )
-
-        return f"{lnps_config['name']}[project_operators={{{project_operators}}},destroy_operators={{{destroy_operators}}},prioritize_operators={{{prioritize_operators}}}]"

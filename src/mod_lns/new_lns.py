@@ -2,20 +2,22 @@
 A modifiable large neighborhood search framework.
 """
 
-from typing import Any, Optional
 import random
-from math import log10
-from clingo import Symbol
-from mod_lns import Model, UNSET, Timer
-from mod_lns.interfaces.strategy import StrategyInterface
-from mod_lns.lib.strategies.default_strategy import DefaultStrategy
-from mod_lns.utils.logger import setup_logger
-from mod_lns.lns_config import LNSConfig
+from typing import Any, Optional
+
+from clingo import Function, Number, Symbol
+
+from mod_lns import UNSET, Model, Timer
 from mod_lns.interfaces.solver import SolverConfig
-from mod_lns.lib.utils import update_time_limit, calculate_variability
+from mod_lns.lib.adaptive_strategies import AdaptiveStrategy, StaticStrategy
 from mod_lns.lib.modules.constrained import get_opt_bound
+from mod_lns.lib.modules.heuristics import generate_heuristic_subprogram
 from mod_lns.lib.modules.output import get_output_format
+from mod_lns.lib.parser.new_config_parser import ConfigParser
 from mod_lns.lib.relaxation import relax_declarative, relax_random
+from mod_lns.lib.utils import calculate_variability, update_time_limit
+from mod_lns.lns_config import LNSConfig
+from mod_lns.utils.logger import setup_logger
 
 LINE = "--------------------------------------------------------------------------------------"
 
@@ -42,7 +44,7 @@ class LNS:
         """
         Initialization of the lns object.
         """
-        self.config = config
+        self.config: LNSConfig = config
         self.parse_options(args)
         self.logger = setup_logger("LNS", self.config.log_level)
 
@@ -54,15 +56,24 @@ class LNS:
         self.current_model: Model = Model()
         self.best_model: Model = Model()
 
+        # parsed declarative configuration
+        self._declarative_config: dict[str, Any] = {}
+        # declarative configuration for current iteration
+        self._declarative_config_current: dict[str, Any] = {}
         self.prev_fixed_atoms: set[Symbol] = set()
+        self._variable_model: bool = False
+        self._adaptive_strategy: AdaptiveStrategy = StaticStrategy()
+        # remove?
+        self._falsified: bool = False
+        self._false_weight: Function = Function("inf")
 
-        self.init_solver_config = SolverConfig()
-        self.lns_solver_config = SolverConfig()
+        self.init_solver_config: SolverConfig = SolverConfig()
+        self.lns_solver_config: SolverConfig = SolverConfig()
 
-        self.timer = Timer()
+        self.timer: Timer = Timer()
 
-        self._printout = False
-        self._iter_format = ""
+        self._printout: bool = False
+        self._iter_format: str = ""
 
     def parse_options(self, args: dict[str, Any]) -> dict[str, Any]:
         """
@@ -111,23 +122,45 @@ class LNS:
             elif tl < init_tl:
                 self.init_solver_config.time_limit = tl
 
+        lns_opt_mode = self.config.lns_opt_mode
+        if lns_opt_mode["modifier"] is not None and lns_opt_mode["nf"] is not None:
+            if lns_opt_mode["modifier"] == "dynamic":
+                if float(lns_opt_mode["nf"]) <= 0:
+                    self.logger.warning(
+                        "heulingo may finish without proving optimality because of 0 or less percent of lns-opt-mode"
+                    )
+                if float(lns_opt_mode["nf"]) < self.config.accept_improvement:
+                    self.logger.warning("Rate of lns-opt-mode is less than improvement acceptance rate")
+
         random.seed(self.config.seed)
+
+        # if self.config.falsify is not None:
+        #     self._falsified = True
+        #     if self.config.falsify != "inf":
+        #         self._false_weight = Number(int(self.config.falsify))
 
     def setup_solver(self) -> None:
         """
         Setup the solver for LNS.
         """
+        if self.config.minimize_variable is not None:
+            self.solver.minimize_variable = self.config.minimize_variable
+
         args = []
         if self.config.seed is not None:
             args.append(f"--seed={self.config.seed}")
+        if self.config.parallel_mode is not None:
+            args.append(f"--parallel-mode={self.config.parallel_mode}")
+        if self.config.clingo_args is not None:
+            args.extend(self.config.clingo_args.split(","))
         self.solver.setup(self, args)
-    
+
     def post_setup(self) -> None:
         """
         Perform actions after solver setup.
         """
         self.solver.ground()
-    
+
     def get_first_solution(self) -> bool:
         """
         Find initial solution.
@@ -142,18 +175,34 @@ class LNS:
         self.current_model = self.new_model
         self.best_model = self.new_model
         return True
-    
+
     def post_first_solution(self) -> None:
         """
         Actions to perform after finding the first solution.
         """
         if not self.solver.finished:
             update_time_limit(self, self.lns_solver_config)
-            if self.config.constrained:
-                self.lns_solver_config.opt_mode = get_opt_bound(self.current_model.cost)
+
+            if self.config.declarative or self.config.use_heuristics or self.config.adaptive:
+                self._declarative_config = ConfigParser.parse_lns_config(self)
+
+                # adaptive
+                if self.config.adaptive:
+                    self._adaptive_strategy = self.config.build_adaptive_strategy(self._declarative_config["strategy"])
+                self._declarative_config_current = self._adaptive_strategy.get_initial_config(
+                    self._declarative_config, self.current_model
+                )
+
+                # heuristics
+                if self.config.use_heuristics:
+                    heuristics = generate_heuristic_subprogram(self._declarative_config)
+                    self.logger.debug("Adding heuristics:\n%s", heuristics)
+                    self.solver.add("heuristic", ["t"], heuristics)
 
         # prepare output format and print header
-        header, self._iter_format = get_output_format(self.best_model.get_cost_str(), self.config.time_limit, self.config.max_steps)
+        header, self._iter_format = get_output_format(
+            self.best_model.get_cost_str(), self.config.time_limit, self.config.max_steps
+        )
         print(header.format("time in s", "step", "cost"))
         print(
             self._iter_format.format(
@@ -163,7 +212,7 @@ class LNS:
             ),
             flush=True,
         )
-    
+
     def check_stop(self) -> bool:
         """
         Check whether to stop LNS.
@@ -196,6 +245,8 @@ class LNS:
         """
         self._printout = False
 
+        self._variability = self._check_variability()
+
     def relax(self) -> set[Symbol]:
         """
         Relax portion of atoms given by the relax_parameters.
@@ -218,16 +269,20 @@ class LNS:
         :return: Repaired model.
         :rtype: Optional[Model]
         """
+        lns_opt_mode = self.config.lns_opt_mode
+        if lns_opt_mode["mode"] is not None:
+            self.lns_solver_config.opt_mode = get_opt_bound(
+                self.current_model.cost, lns_opt_mode["mode"], lns_opt_mode["modifier"], lns_opt_mode["nf"]
+            )
         update_time_limit(self, self.lns_solver_config)
         # assumptions
         new_model = self.solver.solve(self.lns_solver_config, list(map(lambda x: (x, True), fixed_atoms)))
         return new_model
-    
+
     def post_repair(self) -> None:
         """
         Actions to perform after repairing the solution.
         """
-        pass
 
     def check_accept(self) -> bool:
         """
@@ -250,7 +305,7 @@ class LNS:
             return True
         self.logger.debug("new model declined")
         return False
-    
+
     def accepted(self) -> None:
         """
         Do something after new model is accepted.
@@ -268,7 +323,7 @@ class LNS:
             self.logger.debug("No new model found, not better.")
             return False
         return self.new_model.cost < self.best_model.cost
-    
+
     def better(self) -> None:
         """
         Do something after new model is better than the best model.
@@ -291,7 +346,7 @@ class LNS:
                 ),
                 flush=True,
             )
-    
+
     def print_result(self) -> None:  # nocoverage
         """
         Print the result of the LNS process.
