@@ -13,7 +13,7 @@ from clingo import Symbol
 
 from mod_lns import UNSET
 from mod_lns.interfaces.solver import SolverConfig, SolverInterface
-from mod_lns.lib.adaptive_strategies import AdaptiveStrategy, RouletteWheelStrategy
+from mod_lns.lib.adaptive_strategies import AdaptiveStrategy, RouletteWheelStrategy, StaticStrategy
 from mod_lns.lib.converter import AutoDestructionConverter, LastImprovementDestructionConverter
 from mod_lns.lib.solvers.clingo_solver import ClingoSolver
 from mod_lns.lib.utils import clamp
@@ -69,6 +69,7 @@ class LNSConfig:
     # solver default has to be set manually in parser
     solver: SolverInterface = field(default_factory=ClingoSolver)
     seed: Optional[int] = UNSET
+    # time limit for entire program
     time_limit: Optional[int] = UNSET
     max_steps: Optional[int] = UNSET
 
@@ -76,6 +77,7 @@ class LNSConfig:
 
     parallel_mode: Optional[str] = None
     clingo_args: Optional[list[str]] = None
+    context: Any = None
 
     # remove?
     minimize_variable: Optional[Symbol] = None
@@ -84,15 +86,19 @@ class LNSConfig:
     preset: Optional[str] = None
 
     # adaptive
-    adaptive: bool = False
+    # combine into one option --strategy=[roulette[learning_rate,lex_weight],static], default static
     lex_weight: int = 1000
     learning_rate: float = 0.5
-    default_adaptive_strategy_name: str = "roulette"
+    default_adaptive_strategy_name: str = "static"
+    # converter default has to be set manually in parser
     auto_converter: AutoDestructionConverter = field(default_factory=LastImprovementDestructionConverter)
 
     # init solver configuration
+    # time limit for initial solution
     init_time_limit: Optional[int] = 2
     init_solve_limit: Optional[str] = UNSET
+    # time limit to find new model during initial solving
+    init_cutoff: Optional[int] = UNSET
 
     init_configuration: Optional[str] = None
     init_opt_strategy: Optional[str] = None
@@ -102,21 +108,26 @@ class LNSConfig:
     init_opt_mode: Optional[str] = UNSET
 
     # lns configuration
-    constrained: bool = False
+    constrained: bool = False  # covered by lns_opt_mode
     # set via --relaxation=[simple[rate],declarative]
     relaxation: tuple[str, int] = ("simple", 60)
     declarative: bool = False
     relax_rate: int = 20
-    use_heuristics: bool = True
+    use_heuristics: bool = False
     accept_variability: int = 0
-    accept_improvement: float = 0.0
+    accept_improvement: int = 0
 
     # lns solver configuration
+    # time limit for solver in each LNS step
     lns_time_limit: Optional[int] = 20
     lns_solve_limit: Optional[str] = UNSET
+    # time limit to find new model during lns solving
+    lns_cutoff: Optional[int] = UNSET
 
-    lns_solve_limit_increase_rate: float = 0.01
-    lns_time_limit_increase_rate: float = 0.01
+    lns_time_limit_increase_rate: int = 0
+    lns_solve_limit_increase_rate: int = 0
+    lns_cutoff_threshold: Optional[int] = UNSET
+    lns_cutoff_increase_rate: Optional[int] = 0
 
     lns_configuration: Optional[str] = None
     lns_opt_strategy: Optional[str] = None
@@ -178,7 +189,7 @@ class LNSConfig:
         """
         Return supported adaptive strategy names.
         """
-        return ["roulette"]
+        return ["roulette", "static"]
 
     # name -> strat object, init strat with params later (setup())
     def build_adaptive_strategy(self, strategy_name: str) -> AdaptiveStrategy:
@@ -187,6 +198,8 @@ class LNSConfig:
         """
         if strategy_name == "roulette":
             return RouletteWheelStrategy(self.learning_rate, self.lex_weight, self.auto_converter)
+        elif strategy_name == "static":
+            return StaticStrategy(self.auto_converter)
         raise ValueError(
             f"Unknown adaptive strategy '{strategy_name}'. "
             f"Supported strategies: {','.join(self.get_supported_adaptive_strategy_names())}"

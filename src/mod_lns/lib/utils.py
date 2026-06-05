@@ -4,13 +4,19 @@ Collection of utility functions used for LNS.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Sequence, TypeVar
+import math
+from typing import TYPE_CHECKING, Any, Optional, Sequence, TypeVar
 
 import clingo
+from clingo import Symbol
+
+from mod_lns import Timer
 
 if TYPE_CHECKING:
     from mod_lns.interfaces.solver import SolverConfig  # nocoverage
     from mod_lns.new_lns import LNS  # nocoverage
+
+UINT_MAX = 4294967295
 
 
 def calculate_variability(list1: Sequence[Any], list2: Sequence[Any]) -> float:
@@ -103,3 +109,91 @@ def update_time_limit(lns_object: "LNS", solver_config: "SolverConfig") -> None:
                 "Time limit for solver reduced to %d seconds to fit into overall time limit.",
                 solver_config.time_limit,
             )
+
+
+def format_atoms(atoms: set[Symbol]) -> str:
+    """
+    Format set of atoms into sorted space-separated string.
+
+    :param atoms: Set of atoms.
+    :type atoms: set[Symbol]
+    :return: Formatted atom string.
+    :rtype: str
+    """
+    return " ".join([str(atom) for atom in sorted(atoms)])
+
+
+def increase_solve_limit(current_solve_limit: str, increase_rate: float) -> str:
+    """
+    Increase solve limit by a percentage.
+
+    :param current_solve_limit: Current solve limit as string (e.g., "1000ms", "10s").
+    :type current_solve_limit: str
+    :param increase_rate: Percentage to increase the solve limit (e.g., 20 for 20%).
+    :type increase_rate: float
+    :return: New solve limit as string.
+    :rtype: str
+    """
+    if increase_rate == 0:
+        return current_solve_limit
+    increased_solve_limit = []
+    for n in current_solve_limit.split(","):
+        if n == "umax":
+            increased_solve_limit.append(n)
+        else:
+            new_n = math.ceil(int(n) * increase_rate / 100 + int(n))
+            if new_n <= UINT_MAX:
+                increased_solve_limit.append(str(new_n))
+            else:
+                increased_solve_limit.append("umax")
+
+    return ",".join(increased_solve_limit)
+
+
+def increase_time_limit(timer: Timer, time_limit: Optional[int], solver_time_limit: int, increase_rate: float) -> int:
+    """
+    Increase time limit by a percentage.
+
+    :param current_time_limit: Current time limit in seconds (or None for unlimited).
+    :type current_time_limit: int | None
+    :param increase_rate: Percentage to increase the time limit (e.g., 20 for 20%).
+    :type increase_rate: float
+    :return: New time limit in seconds (or None for unlimited).
+    :rtype: int
+    """
+    if increase_rate == 0:
+        return solver_time_limit
+    # dont increase time limit past overall time limit
+    if time_limit is not None:
+        if timer.remaining_time() < solver_time_limit:
+            return solver_time_limit
+    current_time_limit = solver_time_limit
+    return math.ceil(current_time_limit * increase_rate / 100 + current_time_limit)
+
+
+def increase_cutoff(
+    current_cutoff: int,
+    cutoff_threshold: int,
+    increase_rate: int,
+    timer: Timer,
+    time_limit: Optional[int],
+    latest_stats: dict[str, Any],
+) -> int:
+    """
+    Update the solver's cutoff for the next iteration.
+
+    :param solver_config: Solver configuration
+    :type solver_config: SolverConfig
+    :return: int
+    """
+    if increase_rate == 0:
+        return current_cutoff
+    # dont increase time limit past overall time limit
+    if time_limit is not None:
+        if timer.remaining_time() < current_cutoff:
+            return current_cutoff
+    if (
+        latest_stats.get("no_improvement_cutoff_count", 0) != 0
+        and latest_stats.get("no_improvement_cutoff_count", 0) % cutoff_threshold == 0
+    ):
+        return math.ceil(current_cutoff * increase_rate / 100 + current_cutoff)

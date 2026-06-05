@@ -57,7 +57,7 @@ class ConfigParser:
     #     return project_operators, projected_signatures
 
     @classmethod
-    def _parse_project_operator(cls, solver: SolverInterface) -> dict[str, set[tuple[str, int]]]:
+    def _parse_project_operator(cls, solver: SolverInterface, declarative: bool) -> dict[str, set[tuple[str, int]]]:
         """
         Extract project operator names and predicate signatures of projected atoms from model.
 
@@ -68,34 +68,35 @@ class ConfigParser:
         """
         project_operators: dict[str, set[tuple[str, int]]] = {}
 
-        for atom in solver.control.symbolic_atoms.by_signature("_project_op", 2):
-            args = atom.symbol.arguments
-            if args[0].type != SymbolType.String:
-                operator = str(args[0])
-            else:
-                operator = args[0].string
-            project_operators.setdefault(operator, set())
-            if args[1].type == SymbolType.Function and len(args[1].arguments) == 2:
-                signature = args[1].arguments
-                # TODO catch bad args
-                # project_operators[operator].add({"name": signature[0].name, "arity": signature[1].number})
-                project_operators[operator].add((signature[0].name, signature[1].number))
-            else:
-                # logger.warning(f"_project/2: Second argument {args[1]} is not a valid signature.")
-                continue
+        if declarative:
+            for atom in solver.control.symbolic_atoms.by_signature("_project_op", 2):
+                args = atom.symbol.arguments
+                if args[0].type != SymbolType.String:
+                    operator = str(args[0])
+                else:
+                    operator = args[0].string
+                project_operators.setdefault(operator, set())
+                if args[1].type == SymbolType.Function and len(args[1].arguments) == 2:
+                    signature = args[1].arguments
+                    # TODO catch bad args
+                    # project_operators[operator].add({"name": signature[0].name, "arity": signature[1].number})
+                    project_operators[operator].add((signature[0].name, signature[1].number))
+                else:
+                    # logger.warning(f"_project/2: Second argument {args[1]} is not a valid signature.")
+                    continue
 
-        # TODO
-        # from specifications
-        # for atom in solver.control.symbolic_atoms.by_signature("_project", 2):
-        #     args = atom.symbol.arguments
-        #     operator = str(args[0])
-        #     if operator not in project_operators:
-        #         project_operators.setdefault(operator, set())
-        #         if cls._is_atom(args[1]):
-        #             project_operators[operator].add({"name": args[1].name, "arity": len(args[1].arguments)})
-        #         else:
-        #             #logger.warning(f"_project/2: Second argument {args[1]} is not a valid signature.")
-        #             continue
+            # TODO
+            # from specifications
+            # for atom in solver.control.symbolic_atoms.by_signature("_project", 2):
+            #     args = atom.symbol.arguments
+            #     operator = str(args[0])
+            #     if operator not in project_operators:
+            #         project_operators.setdefault(operator, set())
+            #         if cls._is_atom(args[1]):
+            #             project_operators[operator].add({"name": args[1].name, "arity": len(args[1].arguments)})
+            #         else:
+            #             #logger.warning(f"_project/2: Second argument {args[1]} is not a valid signature.")
+            #             continue
 
         # no operators defined -> default to all shown
         if not project_operators:
@@ -122,7 +123,7 @@ class ConfigParser:
         return (term.match("p", 1) or term.match("n", 1)) and term.arguments[0].type == SymbolType.Number
 
     @classmethod
-    def _parse_destroy_operators(cls, solver: SolverInterface) -> dict[str, list[dict[str, Any]]]:
+    def _parse_destroy_operators(cls, solver: SolverInterface, declarative: bool) -> dict[str, list[dict[str, Any]]]:
         """
         Extract and validate destroy operators from atoms of _destroy/2 in model.
 
@@ -133,49 +134,50 @@ class ConfigParser:
         """
         destroy_operators: dict[str, list[dict[str, Any]]] = {}
 
-        for atom in solver.control.symbolic_atoms.by_signature("_destroy_op", 2):
-            args = atom.symbol.arguments
-            if args[0].type != SymbolType.String:
-                operator = str(args[0])
-            else:
-                operator = args[0].string
-            if operator in destroy_operators:
-                # logger.warning(f"_destroy/2: Multiple definitions of destroy operator {operator}. Ignoring {atom}.")
-                continue
-            destroy_operators.setdefault(operator, [{"type": "auto", "value": None}])
-            parameter = args[1]
-            if parameter.type == SymbolType.Function:
-                percents_or_numbers = []
-                if parameter.name:
-                    if parameter.match("auto", 0):
-                        # default
-                        # percents_or_numbers = [{"type": "auto", "value": None}]
-                        continue
-                    elif cls._is_percent_or_number(parameter):
-                        percents_or_numbers = [{"type": parameter.name, "value": parameter.arguments[0].number}]
-                    else:
-                        # logger.warning(f"_destroy/2: Second argument {second_arg} is invalid. (atom: {atom})")
-                        continue
+        if declarative:
+            for atom in solver.control.symbolic_atoms.by_signature("_destroy_op", 2):
+                args = atom.symbol.arguments
+                if args[0].type != SymbolType.String:
+                    operator = str(args[0])
                 else:
-                    for arg in parameter.arguments:
-                        if cls._is_percent_or_number(arg):
-                            percents_or_numbers.append({"type": arg.name, "value": arg.arguments[0].number})
+                    operator = args[0].string
+                if operator in destroy_operators:
+                    # logger.warning(f"_destroy/2: Multiple definitions of destroy operator {operator}. Ignoring {atom}.")
+                    continue
+                destroy_operators.setdefault(operator, [{"type": "auto", "value": None}])
+                parameter = args[1]
+                if parameter.type == SymbolType.Function:
+                    percents_or_numbers = []
+                    if parameter.name:
+                        if parameter.match("auto", 0):
+                            # default
+                            # percents_or_numbers = [{"type": "auto", "value": None}]
+                            continue
+                        elif cls._is_percent_or_number(parameter):
+                            percents_or_numbers = [{"type": parameter.name, "value": parameter.arguments[0].number}]
                         else:
                             # logger.warning(f"_destroy/2: Second argument {second_arg} is invalid. (atom: {atom})")
-                            break
-                    # ?? TODO check arg missmatch
-                    # _destroy_op("random_n", (p(10),p(20))).
-                    # _destroy("random_n", plays(P,W,G), P,W,G) :- plays(P,W,G).
-                    # --
-                    # _destroy_op("random_n", (p(10),p(20))).
-                    # _destroy("random_n", plays(P,W,G), W) :- plays(P,W,G).
-                    if len(percents_or_numbers) < len(parameter.arguments):
-                        continue
-            else:
-                # logger.warning(f"_destroy/2: Second argument {second_arg} is invalid. (atom: {atom})")
-                continue
+                            continue
+                    else:
+                        for arg in parameter.arguments:
+                            if cls._is_percent_or_number(arg):
+                                percents_or_numbers.append({"type": arg.name, "value": arg.arguments[0].number})
+                            else:
+                                # logger.warning(f"_destroy/2: Second argument {second_arg} is invalid. (atom: {atom})")
+                                break
+                        # ?? TODO check arg missmatch
+                        # _destroy_op("random_n", (p(10),p(20))).
+                        # _destroy("random_n", plays(P,W,G), P,W,G) :- plays(P,W,G).
+                        # --
+                        # _destroy_op("random_n", (p(10),p(20))).
+                        # _destroy("random_n", plays(P,W,G), W) :- plays(P,W,G).
+                        if len(percents_or_numbers) < len(parameter.arguments):
+                            continue
+                else:
+                    # logger.warning(f"_destroy/2: Second argument {second_arg} is invalid. (atom: {atom})")
+                    continue
 
-            destroy_operators[operator] = percents_or_numbers
+                destroy_operators[operator] = percents_or_numbers
 
         if not destroy_operators:
             destroy_operators["default"] = [{"type": "auto", "value": None}]
@@ -228,7 +230,7 @@ class ConfigParser:
         )
 
     @classmethod
-    def _parse_prioritize_operators(cls, solver: SolverInterface) -> dict[str, dict[str, Any]]:
+    def _parse_prioritize_operators(cls, solver: SolverInterface, declarative: bool) -> dict[str, dict[str, Any]]:
         """
         Extract and validate prioritize operators from atoms of _prioritize/3 in model.
 
@@ -239,32 +241,33 @@ class ConfigParser:
         """
         prioritize_operators: dict[str, dict[str, Any]] = {}
 
-        for atom in solver.control.symbolic_atoms.by_signature("_prioritize_op", 3):
-            args = atom.symbol.arguments
-            if args[0].type != SymbolType.String:
-                operator = str(args[0])
-            else:
-                operator = args[0].string
-            if operator in prioritize_operators:
-                # logger.warning(f"_prioritize/3: Multiple definitions of prioritize operator {operator}. Ignoring {atom}.")
-                continue
-            prioritize_operators.setdefault(operator, {"value": 1, "modifier": "true"})
+        if declarative:
+            for atom in solver.control.symbolic_atoms.by_signature("_prioritize_op", 3):
+                args = atom.symbol.arguments
+                if args[0].type != SymbolType.String:
+                    operator = str(args[0])
+                else:
+                    operator = args[0].string
+                if operator in prioritize_operators:
+                    # logger.warning(f"_prioritize/3: Multiple definitions of prioritize operator {operator}. Ignoring {atom}.")
+                    continue
+                prioritize_operators.setdefault(operator, {"value": 1, "modifier": "true"})
 
-            value_param = args[1]
-            if value_param.match("inf", 0):
-                value = "inf"
-            elif value_param.type == SymbolType.Number:
-                value = value_param.number
-            else:
-                # logger.warning(f"_prioritize/3: Second argument {value_param} is neither an integer nor inf. (atom: {atom})")
-                continue
+                value_param = args[1]
+                if value_param.match("inf", 0):
+                    value = "inf"
+                elif value_param.type == SymbolType.Number:
+                    value = value_param.number
+                else:
+                    # logger.warning(f"_prioritize/3: Second argument {value_param} is neither an integer nor inf. (atom: {atom})")
+                    continue
 
-            modifier_param = args[2]
-            if cls._is_heuristic_modifier(modifier_param):
-                prioritize_operators[operator] = {"value": value, "modifier": modifier_param.name}
-            else:
-                # logger.warning(f"_prioritize/3: Third argument {modifier_param} is not one of: sign, level, true, false, init, factor. (atom: {atom})")
-                continue
+                modifier_param = args[2]
+                if cls._is_heuristic_modifier(modifier_param):
+                    prioritize_operators[operator] = {"value": value, "modifier": modifier_param.name}
+                else:
+                    # logger.warning(f"_prioritize/3: Third argument {modifier_param} is not one of: sign, level, true, false, init, factor. (atom: {atom})")
+                    continue
 
         if not prioritize_operators:
             prioritize_operators["default"] = {"value": 1, "modifier": "true"}
@@ -305,6 +308,7 @@ class ConfigParser:
         defined_project_operators: list[str],
         defined_destroy_operators: list[str],
         defined_prioritize_operators: list[str],
+        declarative: bool,
     ) -> dict[str, dict[str, list[str]]]:
         """
         Extract and validate configurations from atoms of _config/4.
@@ -332,30 +336,31 @@ class ConfigParser:
             {"index": 3, "key": "prioritize_operators", "type": "Prioritize"},
         ]
 
-        for atom in solver.control.symbolic_atoms.by_signature("_config", 4):
-            args = atom.symbol.arguments
-            if args[0].type != SymbolType.String:
-                config_name = str(args[0])
-            else:
-                config_name = args[0].string
-            configs.setdefault(
-                config_name, {"project_operators": set(), "destroy_operators": set(), "prioritize_operators": set()}
-            )
+        if declarative:
+            for atom in solver.control.symbolic_atoms.by_signature("_config", 4):
+                args = atom.symbol.arguments
+                if args[0].type != SymbolType.String:
+                    config_name = str(args[0])
+                else:
+                    config_name = args[0].string
+                configs.setdefault(
+                    config_name, {"project_operators": set(), "destroy_operators": set(), "prioritize_operators": set()}
+                )
 
-            # TODO support for multi ops required? _config("Random", "plays_3", ("random_n";"random_40"), "1_true").
-            for info in operator_args_info:
-                key = info["key"]
-                operator_atom = args[info["index"]]
-                if operator_atom.type != SymbolType.String:
-                    operator_name = str(operator_atom)
-                else:
-                    operator_name = operator_atom.string
-                if operator_name in defined_operators[key]:
-                    configs[config_name][key].add(operator_name)
-                else:
-                    raise RuntimeError(
-                        f"_config/4: {info['type']} operator {operator_name} is not defined. (atom: {atom})"
-                    )
+                # TODO support for multi ops required? _config("Random", "plays_3", ("random_n";"random_40"), "1_true").
+                for info in operator_args_info:
+                    key = info["key"]
+                    operator_atom = args[info["index"]]
+                    if operator_atom.type != SymbolType.String:
+                        operator_name = str(operator_atom)
+                    else:
+                        operator_name = operator_atom.string
+                    if operator_name in defined_operators[key]:
+                        configs[config_name][key].add(operator_name)
+                    else:
+                        raise RuntimeError(
+                            f"_config/4: {info['type']} operator {operator_name} is not defined. (atom: {atom})"
+                        )
 
         if not configs:
             configs["default"] = defined_operators
@@ -375,6 +380,7 @@ class ConfigParser:
         defined_configs: dict[str, dict[str, list[str]]],
         supported_strategies: list[str],
         default_strategy: str,
+        declarative: bool,
     ) -> tuple[str, dict[str, dict[str, list[str]]]]:
         """
         Extract and validate strategy and configurations subject to selection from atoms of _strategy/2.
@@ -393,27 +399,28 @@ class ConfigParser:
         strategy: Optional[str] = None
         candidate_configs = {}
 
-        for atom in solver.control.symbolic_atoms.by_signature("_strategy", 2):
-            args = atom.symbol.arguments
-            if args[0].type != SymbolType.String:
-                strategy_name = str(args[0])
-            else:
-                strategy_name = args[0].string
-            if strategy_name not in supported_strategies:
-                # logger.warning(f"_strategy/2: Strategy {strategy_name} is not supported. (atom: {atom})")
-                continue
+        if declarative:
+            for atom in solver.control.symbolic_atoms.by_signature("_strategy", 2):
+                args = atom.symbol.arguments
+                if args[0].type != SymbolType.String:
+                    strategy_name = str(args[0])
+                else:
+                    strategy_name = args[0].string
+                if strategy_name not in supported_strategies:
+                    # logger.warning(f"_strategy/2: Strategy {strategy_name} is not supported. (atom: {atom})")
+                    continue
 
-            if strategy is not None:
-                # logger.warning(f"_strategy/2: Multiple strategies specified. Using {strategy} and ignoring {strategy_name}. (atom: {atom})")
-                break
-            strategy = strategy_name
+                if strategy is not None:
+                    # logger.warning(f"_strategy/2: Multiple strategies specified. Using {strategy} and ignoring {strategy_name}. (atom: {atom})")
+                    break
+                strategy = strategy_name
 
-            config_name = str(args[1])
-            if config_name in defined_configs:
-                candidate_configs[config_name] = defined_configs[config_name]
-            else:
-                # logger.warning(f"_strategy/2: Config {config_name} is not defined. (atom: {atom})")
-                continue
+                config_name = str(args[1])
+                if config_name in defined_configs:
+                    candidate_configs[config_name] = defined_configs[config_name]
+                else:
+                    # logger.warning(f"_strategy/2: Config {config_name} is not defined. (atom: {atom})")
+                    continue
 
         if not candidate_configs:
             # TODO maybe deep copy needed
@@ -459,9 +466,17 @@ class ConfigParser:
         """
         solver = lns_object.solver
         config = lns_object.config
-        project_operators = cls._parse_project_operator(solver)
-        destroy_operators = cls._parse_destroy_operators(solver)
-        prioritize_operators = cls._parse_prioritize_operators(solver)
+        declarative = config.declarative
+        project_operators = cls._parse_project_operator(solver, declarative)
+        destroy_operators = cls._parse_destroy_operators(solver, declarative)
+        if not declarative:
+            if config.relax_rate > 0:
+                dest_op = [{"type": "p", "value": config.relax_rate}]
+            else:
+                dest_op = [{"type": "auto", "value": None}]
+            destroy_operators = {"default": dest_op}
+
+        prioritize_operators = cls._parse_prioritize_operators(solver, declarative)
         alnps_config = {
             "project_operators": project_operators,
             "destroy_operators": destroy_operators,
@@ -469,19 +484,21 @@ class ConfigParser:
         }
 
         defined_configs = cls._parse_configs(
-            solver, list(project_operators.keys()), list(destroy_operators.keys()), list(prioritize_operators.keys())
+            solver,
+            list(project_operators.keys()),
+            list(destroy_operators.keys()),
+            list(prioritize_operators.keys()),
+            declarative,
         )
-        if config.adaptive:
-            strategy, candidate_configs = cls._parse_strategy(
-                solver,
-                defined_configs,
-                config.get_supported_adaptive_strategy_names(),
-                config.default_adaptive_strategy_name,
-            )
-            alnps_config["configs"] = candidate_configs
-            alnps_config["strategy"] = strategy
-        else:
-            alnps_config["configs"] = defined_configs
+        strategy, candidate_configs = cls._parse_strategy(
+            solver,
+            defined_configs,
+            config.get_supported_adaptive_strategy_names(),
+            config.default_adaptive_strategy_name,
+            declarative,
+        )
+        alnps_config["configs"] = candidate_configs
+        alnps_config["strategy"] = strategy
         lns_object.logger.debug("ALNPS configuration: %s", cls._format_lns_config(alnps_config))
         return alnps_config
 
@@ -601,13 +618,11 @@ class ConfigParser:
 
     @classmethod
     def get_atom_term_pairs(
-        cls, model: Model, op_specs: dict[str, set[Symbol]], projected_atoms: set[Symbol], destroy_operator_name: str
+        cls, op_specs: dict[str, set[Symbol]], projected_atoms: set[Symbol], destroy_operator_name: str
     ) -> list[dict[str, Symbol]]:
         """
         Extract atoms subject to destruction and corresponding terms from atoms of _destroy/3.
 
-        :param model: Model containing the atoms.
-        :type model: Model
         :param op_specs: Operation specifications.
         :type op_specs: dict[str, set[Symbol]]
         :param projected_atoms: Projected atoms.
