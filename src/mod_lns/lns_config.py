@@ -95,7 +95,7 @@ class LNSConfig:
 
     # init solver configuration
     # time limit for initial solution
-    init_time_limit: Optional[int] = 2
+    init_time_limit: Optional[int] = 20
     init_solve_limit: Optional[str] = None
     # time limit to find new model during initial solving
     init_cutoff: Optional[int] = None
@@ -109,7 +109,7 @@ class LNSConfig:
 
     # lns configuration
     constrained: bool = False  # covered by lns_opt_mode
-    # set via --relaxation=[simple[rate],declarative]
+    # set via --relaxation=[simple,[rate],declarative]
     relaxation: tuple[str, int] = ("simple", 20)
     declarative: bool = False
     relax_rate: int = 20
@@ -139,26 +139,33 @@ class LNSConfig:
 
     # configuration values
     preset_values: ClassVar[dict[str, dict[str, Any]]] = {
-        "basic": {
-            "time_limit": 600,
-            "max_steps": 2000,
-            "relaxation": ("simple", 20),
+        "basic_assumptions": {
+            "relaxation": ("simple", 40),
             "init_time_limit": 20,
-            "init_solve_limit": "2500000,5000",
             "lns_time_limit": 20,
-            "lns_solve_limit": "2500000,5000",
+            "use_heuristics": False,
         },
         "auto_heuristics": {
-            "time_limit": 600,
-            "max_steps": 2000,
             "relaxation": ("simple", "auto"),
             "init_time_limit": 20,
             "init_solve_limit": "2500000,5000",
             "lns_time_limit": 20,
             "lns_solve_limit": "2500000,5000",
-            "default_adaptive_strategy_name": "static",
             "use_heuristics": True,
-            "constrained": True,
+        },
+        "adaptive_heulingo": {
+            "relaxation": ("declarative", 0),
+            "use_heuristics": True,
+            "default_adaptive_strategy_name": "roulette",
+            "learning_rate": 0.5,
+            "auto_converter": field(default_factory=LastImprovementDestructionConverter),
+            "lex_weight": 1000,
+            "lns_restart_on_model": False,
+            "init_cutoff": 10,
+            "lns_cutoff": 5,
+            "lns_cutoff_threshold": 2,
+            "lns_cutoff_increase_rate": 5,
+            "lns_heuristic": "Domain",
         },
     }
 

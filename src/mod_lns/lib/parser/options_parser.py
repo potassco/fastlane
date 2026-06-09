@@ -419,6 +419,19 @@ class OptionsParser:
 
         parser.register("type", "configuration", parse_configuration)
 
+        def parse_heuristic(string: str) -> str:
+            """
+            Parse the heuristic string.
+            """
+            ctl = Control()
+            try:
+                ctl.configuration.solver.heuristic = string  # type: ignore
+            except RuntimeError:
+                parser.error(f"'{string}': Invalid heuristic.")
+            return string
+
+        parser.register("type", "heuristic", parse_heuristic)
+
         def replace_default(text: str, default_value: Any) -> str:
             """Render config defaults in help while argparse default remains UNSET."""
             return text.replace("%(default)s", str(default_value))
@@ -452,19 +465,38 @@ class OptionsParser:
                 f"Set LNS configuration preset [{LNSConfig.preset}]\n"
                 "Manually set parameters take precedence over presets.\n"
                 "Presets can be used as a base configuration and then manually adjust individual parameters as needed.\n"
-                "<arg>: {basic}\n"
-                "basic:  Basic configuration suitable for many problems.\n"
+                "<arg>: {basic_assumptions|auto_heuristics|adaptive_heulingo}\n"
+                "basic_assumptions:  Basic configuration using assumptions and a fixed relax rate.\n"
+                "auto_heuristics:  Configuration using heuristics and an automatically calculated relax rate.\n"
+                "adaptive_heulingo:  Configuration corresponding to default adaptive heulingo. Config encoding is required!\n"
                 "Presets:\n"
-                "[basic]:\n"
-                f" --time-limit={LNSConfig.preset_values['basic']['time_limit']}"
-                f" --max-steps={LNSConfig.preset_values['basic']['max_steps']}"
-                f" --relaxation={LNSConfig.preset_values['basic']['relaxation'][0]},{LNSConfig.preset_values['basic']['relaxation'][1] if LNSConfig.preset_values['basic']['relaxation'][1] > 0 else 'auto'}\n"
-                f" --init-time-limit={LNSConfig.preset_values['basic']['init_time_limit']}"
-                f" --init-solve-limit={LNSConfig.preset_values['basic']['init_solve_limit']}\n"
-                f" --lns-time-limit={LNSConfig.preset_values['basic']['lns_time_limit']}"
-                f" --lns-solve-limit={LNSConfig.preset_values['basic']['lns_solve_limit']}"
+                "[basic_assumptions]:\n"
+                f" --relaxation={LNSConfig.preset_values['basic_assumptions']['relaxation'][0]},{LNSConfig.preset_values['basic_assumptions']['relaxation'][1]}"
+                f" --init-time-limit={LNSConfig.preset_values['basic_assumptions']['init_time_limit']}"
+                f" --lns-time-limit={LNSConfig.preset_values['basic_assumptions']['lns_time_limit']}\n"
+                f" --use-heuristics={LNSConfig.preset_values['basic_assumptions']['use_heuristics']}\n"
+                "[auto_heuristics]:\n"
+                f" --relaxation={LNSConfig.preset_values['auto_heuristics']['relaxation'][0]},{LNSConfig.preset_values['auto_heuristics']['relaxation'][1]}"
+                f" --init-time-limit={LNSConfig.preset_values['auto_heuristics']['init_time_limit']}"
+                f" --init-solve-limit={LNSConfig.preset_values['auto_heuristics']['init_solve_limit']}\n"
+                f" --lns-time-limit={LNSConfig.preset_values['auto_heuristics']['lns_time_limit']}"
+                f" --lns-solve-limit={LNSConfig.preset_values['auto_heuristics']['lns_solve_limit']}"
+                f" --use-heuristics={LNSConfig.preset_values['auto_heuristics']['use_heuristics']}\n"
+                "[adaptive_heulingo]:\n"
+                f" --relaxation={LNSConfig.preset_values['adaptive_heulingo']['relaxation'][0]},{LNSConfig.preset_values['adaptive_heulingo']['relaxation'][1]}"
+                f" --use-heuristics={LNSConfig.preset_values['adaptive_heulingo']['use_heuristics']}"
+                f" --default-adaptive-strategy={LNSConfig.preset_values['adaptive_heulingo']['default_adaptive_strategy_name']}\n"
+                f" --learning-rate={LNSConfig.preset_values['adaptive_heulingo']['learning_rate']}"
+                f" --lex-weight={LNSConfig.preset_values['adaptive_heulingo']['lex_weight']}"
+                f' --auto-converter="last-improv"\n'
+                f" --lns-restart-on-model={LNSConfig.preset_values['adaptive_heulingo']['lns_restart_on_model']}"
+                f" --init-cutoff={LNSConfig.preset_values['adaptive_heulingo']['init_cutoff']}"
+                f" --lns-cutoff={LNSConfig.preset_values['adaptive_heulingo']['lns_cutoff']}\n"
+                f" --lns-cutoff-threshold={LNSConfig.preset_values['adaptive_heulingo']['lns_cutoff_threshold']}"
+                f" --lns-cutoff-increase-rate={LNSConfig.preset_values['adaptive_heulingo']['lns_cutoff_increase_rate']}"
+                f" --lns-heuristic={LNSConfig.preset_values['adaptive_heulingo']['lns_heuristic']}\n"
             ),
-            choices=["basic", "auto_heuristics"],
+            choices=["basic_assumptions", "auto_heuristics", "adaptive_heulingo"],
             default=UNSET,
             type=str,
             dest="preset",
@@ -609,7 +641,9 @@ class OptionsParser:
         )
         init_solver_group.add_argument(
             "--init-opt-heuristic",
-            help=replace_default("Set initial solver optimization heuristic [%(default)s]", LNSConfig.init_opt_heuristic),
+            help=replace_default(
+                "Set initial solver optimization heuristic [%(default)s]", LNSConfig.init_opt_heuristic
+            ),
             default=UNSET,
             type=str,
             dest="init_opt_heuristic",
@@ -754,7 +788,8 @@ class OptionsParser:
         lns_group.add_argument(
             "--accept-variability",
             help=replace_default(
-                "Set required variability to accept new solutions in percent [%(default)s]", LNSConfig.accept_variability
+                "Set required variability to accept new solutions in percent [%(default)s]",
+                LNSConfig.accept_variability,
             ),
             default=UNSET,
             type="percent",
@@ -832,6 +867,13 @@ class OptionsParser:
             type=str,
             choices=["sign", "model"],
             dest="lns_opt_heuristic",
+        )
+        lns_solver_group.add_argument(
+            "--lns-heuristic",
+            help=replace_default("Set LNS decision heuristic [%(default)s]", LNSConfig.lns_heuristic),
+            default=UNSET,
+            type="heuristic",
+            dest="lns_heuristic",
         )
         lns_solver_group.add_argument(
             "--lns-restart-on-model",
