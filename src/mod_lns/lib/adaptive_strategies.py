@@ -206,7 +206,7 @@ class StaticStrategy(AdaptiveStrategy):
         :return: Same LNPS configuration as input.
         :rtype: dict[str, Any]
         """
-        return lnps_config
+        return self._converter.convert_config(self._select_config(alnps_config), lns_object)
 
 
 class RouletteWheelStrategy(AdaptiveStrategy):

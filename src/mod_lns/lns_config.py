@@ -19,7 +19,7 @@ from mod_lns.lib.solvers.clingo_solver import ClingoSolver
 from mod_lns.lib.utils import clamp
 
 if TYPE_CHECKING:
-    from mod_lns.new_lns import LNS  # nocoverage
+    from mod_lns.lns import LNS  # nocoverage
 
 LINE = "--------------------------------------------------------------------------------------"
 

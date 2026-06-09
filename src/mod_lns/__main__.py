@@ -2,7 +2,7 @@
 The main entry point for the application.
 """
 
-from mod_lns.lib.parser.framework_parser import get_framework_parser
+from mod_lns.lib.parser.options_parser import OptionsParser
 from mod_lns.lns import LNS
 
 
@@ -10,14 +10,16 @@ def main() -> None:
     """
     Run the main function.
     """
-
-    parser = get_framework_parser()
+    # parser as cls with cls.methods
+    parser = OptionsParser.get_parser()
     args = parser.parse_args()
+
+    # args.files=["examples/golf.lp"]
 
     if len(args.files) == 0:
         parser.error("No input files provided.")
 
-    lns = LNS(args.files, args.strategy, vars(args))
+    lns = LNS(args.files, vars(args))
     lns.main()
 
 

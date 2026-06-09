@@ -14,7 +14,7 @@ from mod_lns import Timer
 
 if TYPE_CHECKING:
     from mod_lns.interfaces.solver import SolverConfig  # nocoverage
-    from mod_lns.new_lns import LNS  # nocoverage
+    from mod_lns.lns import LNS  # nocoverage
 
 UINT_MAX = 4294967295
 

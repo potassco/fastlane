@@ -202,7 +202,7 @@ class LastImprovementDestructionConverter(AutoDestructionConverter):
         projected_atoms = self._get_projected_atoms(current_model, op_specs, project_operators)
 
         destruction_candidate_atoms = ConfigParser.get_destruction_candidate_atoms(
-            current_model, op_specs, projected_atoms, destroy_operator_name
+            op_specs, projected_atoms, destroy_operator_name
         )
         actual_destruction_percent = calculate_actual_destruction_percent(destruction_candidate_atoms, new_model)
         self._actual_destruction_percent_cache[key] = actual_destruction_percent
@@ -277,7 +277,6 @@ class AverageDestructionConverter(AutoDestructionConverter):
             projected_atoms.update(ConfigParser.get_projected_atoms(current_model, op_specs, project_operator_name))
 
         destruction_candidate_atoms = ConfigParser.get_destruction_candidate_atoms(
-            current_model,
             op_specs,
             projected_atoms,
             destroy_operator_name,

@@ -10,7 +10,7 @@ import clingo
 from clingo.symbol import Function, Symbol, SymbolType
 
 from mod_lns import Model
-from mod_lns.lib.parser.new_config_parser import ConfigParser
+from mod_lns.lib.parser.config_parser import ConfigParser
 from mod_lns.lib.utils import format_atoms
 
 LINE = "-" * 50
