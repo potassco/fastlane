@@ -68,10 +68,10 @@ class LNSConfig:
     # general configuration
     # solver default has to be set manually in parser
     solver: SolverInterface = field(default_factory=ClingoSolver)
-    seed: Optional[int] = UNSET
+    seed: Optional[int] = None
     # time limit for entire program
-    time_limit: Optional[int] = UNSET
-    max_steps: Optional[int] = UNSET
+    time_limit: Optional[int] = None
+    max_steps: Optional[int] = None
 
     status_interval: int = 50
 
@@ -96,21 +96,21 @@ class LNSConfig:
     # init solver configuration
     # time limit for initial solution
     init_time_limit: Optional[int] = 2
-    init_solve_limit: Optional[str] = UNSET
+    init_solve_limit: Optional[str] = None
     # time limit to find new model during initial solving
-    init_cutoff: Optional[int] = UNSET
+    init_cutoff: Optional[int] = None
 
     init_configuration: Optional[str] = None
     init_opt_strategy: Optional[str] = None
     init_opt_heuristic: Optional[str] = None
     init_restart_on_model: Optional[bool] = None
     # init_heuristic: Optional[str] = None
-    init_opt_mode: Optional[str] = UNSET
+    init_opt_mode: Optional[str] = None
 
     # lns configuration
     constrained: bool = False  # covered by lns_opt_mode
     # set via --relaxation=[simple[rate],declarative]
-    relaxation: tuple[str, int] = ("simple", 60)
+    relaxation: tuple[str, int] = ("simple", 20)
     declarative: bool = False
     relax_rate: int = 20
     use_heuristics: bool = False
@@ -120,13 +120,13 @@ class LNSConfig:
     # lns solver configuration
     # time limit for solver in each LNS step
     lns_time_limit: Optional[int] = 20
-    lns_solve_limit: Optional[str] = UNSET
+    lns_solve_limit: Optional[str] = None
     # time limit to find new model during lns solving
-    lns_cutoff: Optional[int] = UNSET
+    lns_cutoff: Optional[int] = None
 
     lns_time_limit_increase_rate: int = 0
     lns_solve_limit_increase_rate: int = 0
-    lns_cutoff_threshold: Optional[int] = UNSET
+    lns_cutoff_threshold: Optional[int] = None
     lns_cutoff_increase_rate: Optional[int] = 0
 
     lns_configuration: Optional[str] = None
@@ -147,40 +147,71 @@ class LNSConfig:
             "init_solve_limit": "2500000,5000",
             "lns_time_limit": 20,
             "lns_solve_limit": "2500000,5000",
-        }
+        },
+        "auto_heuristics": {
+            "time_limit": 600,
+            "max_steps": 2000,
+            "relaxation": ("simple", "auto"),
+            "init_time_limit": 20,
+            "init_solve_limit": "2500000,5000",
+            "lns_time_limit": 20,
+            "lns_solve_limit": "2500000,5000",
+            "default_adaptive_strategy_name": "static",
+            "use_heuristics": True,
+            "constrained": True,
+        },
     }
+
+    def _parse_lns_opt_mode_string(self, value: str) -> dict[str, Any]:
+        """
+        Parse string representation of lns_opt_mode.
+
+        :param value: String representation.
+        :type value: str
+        :return: Parsed opt mode.
+        :rtype: dict[str, Any]
+        """
+        opt_mode: dict[str, Any] = {}
+        val = value.split(",")
+        opt_mode["mode"] = val[0]
+        if len(val) == 1:
+            opt_mode["nf"] = None
+            opt_mode["modifier"] = None
+        elif len(val) == 2:
+            opt_mode["nf"] = val[1]
+            opt_mode["modifier"] = "dynamic"
+        elif val[-1] == "static":
+            opt_mode["nf"] = ",".join(val[1:-1])
+            opt_mode["modifier"] = "static"
+        else:
+            opt_mode["nf"] = val[1]
+            opt_mode["modifier"] = "dynamic"
+        return opt_mode
+
+    def apply_overrides(self, overrides: dict[str, Any]) -> None:
+        """
+        Apply overrides to this config.
+
+        UNSET values are ignored, all other values (including None) are applied.
+
+        :param overrides: Candidate override values.
+        :type overrides: dict[str, Any]
+        """
+        for key, value in overrides.items():
+            if value is UNSET or not hasattr(self, key):
+                continue
+            if key == "lns_opt_mode" and isinstance(value, str):
+                setattr(self, key, self._parse_lns_opt_mode_string(value))
+            else:
+                setattr(self, key, value)
 
     def apply_preset(self) -> None:
         """
         Apply preset configuration if specified.
-        UNSET values do not overwrite default values.
         """
         if self.preset is not None:
             if self.preset in self.preset_values:
-                for key, value in self.preset_values[self.preset].items():
-                    if value is not UNSET:
-                        if isinstance(getattr(self, key), dict):
-                            if key == "lns_opt_mode":
-                                if all(x is None for x in getattr(self, key).values()) and isinstance(value, str):
-                                    opt_mode: dict[str, Any] = {}
-                                    val = value.split(",")
-                                    opt_mode["mode"] = val[0]
-                                    if len(val) == 1:
-                                        opt_mode["nf"] = None
-                                        opt_mode["modifier"] = None
-                                    elif len(val) == 2:
-                                        opt_mode["nf"] = val[1]
-                                        opt_mode["modifier"] = "dynamic"
-                                    elif len(val) >= 3:
-                                        if val[-1] == "static":
-                                            opt_mode["nf"] = ",".join(val[1:-1])
-                                            opt_mode["modifier"] = "static"
-                                        else:
-                                            opt_mode["nf"] = val[1]
-                                            opt_mode["modifier"] = "dynamic"
-                                    setattr(self, key, opt_mode)
-                        elif hasattr(self, key):
-                            setattr(self, key, value)
+                self.apply_overrides(self.preset_values[self.preset])
             else:
                 raise ValueError(f"Unknown preset: {self.preset}")
 
@@ -215,7 +246,7 @@ class LNSConfig:
             if value is UNSET:
                 setattr(self, field_obj.name, None)
         self.declarative = self.relaxation[0] == "declarative"
-        self.relax_rate = self.relaxation[1]
+        self.relax_rate = self.relaxation[1] if isinstance(self.relaxation[1], int) else -1
         if self.constrained and self.lns_opt_mode["mode"] is None:
             self.lns_opt_mode["mode"] = "opt"
             self.lns_opt_mode["modifier"] = "dynamic"

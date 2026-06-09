@@ -419,33 +419,37 @@ class OptionsParser:
 
         parser.register("type", "configuration", parse_configuration)
 
+        def replace_default(text: str, default_value: Any) -> str:
+            """Render config defaults in help while argparse default remains UNSET."""
+            return text.replace("%(default)s", str(default_value))
+
         ##########
         # general options
         parser.add_argument("--version", "-v", action="version", version=f"%(prog)s {VERSION}")
 
         parser.add_argument(
             "--log-level",
-            default="warning",
+            default=UNSET,
             choices=logging_levels.values(),
             metavar=f"{{{','.join(logging_levels.keys())}}}",
-            help="Set log level [%(default)s]",
+            help=replace_default("Set log level [%(default)s]", "warning"),
             type="logging_level",
             dest="log_level",
         )
 
         parser.add_argument(
             "--solver",
-            default="clingo",
+            default=UNSET,
             choices=solvers.values(),
             metavar=f"{{{','.join(solvers.keys())}}}",
-            help="Set LNS solver [%(default)s]",
+            help=replace_default("Set LNS solver [%(default)s]", "clingo"),
             type="solver",
         )
 
         parser.add_argument(
             "--preset",
             help=(
-                "Set LNS configuration preset [%(default)s]\n"
+                f"Set LNS configuration preset [{LNSConfig.preset}]\n"
                 "Manually set parameters take precedence over presets.\n"
                 "Presets can be used as a base configuration and then manually adjust individual parameters as needed.\n"
                 "<arg>: {basic}\n"
@@ -460,8 +464,8 @@ class OptionsParser:
                 f" --lns-time-limit={LNSConfig.preset_values['basic']['lns_time_limit']}"
                 f" --lns-solve-limit={LNSConfig.preset_values['basic']['lns_solve_limit']}"
             ),
-            choices=["basic"],
-            default=LNSConfig.preset,
+            choices=["basic", "auto_heuristics"],
+            default=UNSET,
             type=str,
             dest="preset",
             metavar="<arg>",
@@ -469,16 +473,16 @@ class OptionsParser:
 
         parser.add_argument(
             "--seed",
-            default=LNSConfig.seed,
+            default=UNSET,
             metavar="<n>",
-            help="Set LNS seed [%(default)s]",
+            help=replace_default("Set LNS seed [%(default)s]", LNSConfig.seed),
             type=int,
         )
 
         parser.add_argument(
             "--time-limit",
-            help="Set time limit in seconds [%(default)s]",
-            default=LNSConfig.time_limit,
+            help=replace_default("Set time limit in seconds [%(default)s]", LNSConfig.time_limit),
+            default=UNSET,
             type="pos_int_or_none",
             dest="time_limit",
             metavar="<n>",
@@ -486,8 +490,8 @@ class OptionsParser:
 
         parser.add_argument(
             "--max-steps",
-            help="Set maximum number of LNS steps [%(default)s]",
-            default=LNSConfig.max_steps,
+            help=replace_default("Set maximum number of LNS steps [%(default)s]", LNSConfig.max_steps),
+            default=UNSET,
             type="pos_int_or_none",
             dest="max_steps",
             metavar="<n>",
@@ -502,7 +506,7 @@ class OptionsParser:
                 "  <n>: Number of threads to use in search\n"
                 "  <mode>: Run competition or splitting based search [compete]\n"
             ),
-            default=LNSConfig.parallel_mode,
+            default=UNSET,
             type="parallel_mode",
             metavar="<arg>",
             dest="parallel_mode",
@@ -511,10 +515,10 @@ class OptionsParser:
         parser.add_argument(
             "--clingo-args",
             help=(
-                "Set additional clingo arguments [%(default)s]\n"
+                f"Set additional clingo arguments [{LNSConfig.clingo_args}]\n"
                 "Only gringo options (without --text) and clasp's search options are supported.\n"
             ),
-            default=LNSConfig.clingo_args,
+            default=UNSET,
             type=str,
             dest="clingo_args",
             metavar="<arg[,arg,...]>",
@@ -522,8 +526,10 @@ class OptionsParser:
 
         parser.add_argument(
             "--context",
-            help="Path to context file defining context class for @-syntax [%(default)s]",
-            default=LNSConfig.context,
+            help=replace_default(
+                "Path to context file defining context class for @-syntax [%(default)s]", LNSConfig.context
+            ),
+            default=UNSET,
             type="context",
             dest="context",
             metavar="<arg>",
@@ -531,8 +537,11 @@ class OptionsParser:
 
         parser.add_argument(
             "--minimize-variable",
-            help="Minimize the integer variable <arg> (only useful with clingo-dl) [%(default)s]",
-            default=LNSConfig.minimize_variable,
+            help=replace_default(
+                "Minimize the integer variable <arg> (only useful with clingo-dl) [%(default)s]",
+                LNSConfig.minimize_variable,
+            ),
+            default=UNSET,
             type="minimize_variable",
             dest="minimize_variable",
             metavar="<arg>",
@@ -540,8 +549,8 @@ class OptionsParser:
 
         parser.add_argument(
             "--falsify",
-            help="Falsify not projected atoms with the priority [%(default)s]",
-            default=LNSConfig.falsify,
+            help=replace_default("Falsify not projected atoms with the priority [%(default)s]", LNSConfig.falsify),
+            default=UNSET,
             type="falsify",
             dest="falsify",
             metavar="{<n>|inf}",
@@ -556,8 +565,8 @@ class OptionsParser:
 
         init_solver_group.add_argument(
             "--init-time-limit",
-            help="Set initial solver time limit [%(default)s]",
-            default=LNSConfig.init_time_limit,
+            help=replace_default("Set initial solver time limit [%(default)s]", LNSConfig.init_time_limit),
+            default=UNSET,
             type="pos_int_or_none",
             dest="init_time_limit",
             metavar="<n>",
@@ -565,8 +574,8 @@ class OptionsParser:
 
         init_solver_group.add_argument(
             "--init-cutoff",
-            help="Set initial solver cutoff [%(default)s]",
-            default=LNSConfig.init_cutoff,
+            help=replace_default("Set initial solver cutoff [%(default)s]", LNSConfig.init_cutoff),
+            default=UNSET,
             type="pos_int_or_none",
             dest="init_cutoff",
             metavar="<arg>",
@@ -574,8 +583,8 @@ class OptionsParser:
 
         init_solver_group.add_argument(
             "--init-solve-limit",
-            help="Set initial solver solve limit [%(default)s]",
-            default=LNSConfig.init_solve_limit,
+            help=replace_default("Set initial solver solve limit [%(default)s]", LNSConfig.init_solve_limit),
+            default=UNSET,
             type="solve_limit",
             dest="init_solve_limit",
             metavar="<n>[,<m>]",
@@ -584,32 +593,33 @@ class OptionsParser:
         # fmt: on
         init_solver_group.add_argument(
             "--init-configuration",
-            help="Set initial solver configuration [%(default)s]",
-            default=LNSConfig.init_configuration,
+            help=replace_default("Set initial solver configuration [%(default)s]", LNSConfig.init_configuration),
+            default=UNSET,
             type="configuration",
             dest="init_configuration",
             metavar="<arg>",
         )
         init_solver_group.add_argument(
             "--init-opt-strategy",
-            help="Set initial solver optimization strategy [%(default)s]",
-            default=LNSConfig.init_opt_strategy,
+            help=replace_default("Set initial solver optimization strategy [%(default)s]", LNSConfig.init_opt_strategy),
+            default=UNSET,
             type="opt_strategy",
             dest="init_opt_strategy",
             metavar="<arg>",
         )
         init_solver_group.add_argument(
             "--init-opt-heuristic",
-            help="Set initial solver optimization heuristic [%(default)s]",
-            default=LNSConfig.init_opt_heuristic,
+            help=replace_default("Set initial solver optimization heuristic [%(default)s]", LNSConfig.init_opt_heuristic),
+            default=UNSET,
             type=str,
             dest="init_opt_heuristic",
             choices=["sign", "model"],
         )
         init_solver_group.add_argument(
             "--init-restart-on-model",
-            help="Set initial solver restart on model [%(default)s]",
+            help=replace_default("Set initial solver restart on model [%(default)s]", LNSConfig.init_restart_on_model),
             action=BooleanOptionalAction,
+            default=UNSET,
             dest="init_restart_on_model",
         )
         init_solver_group.add_argument(
@@ -625,7 +635,7 @@ class OptionsParser:
                 "  <bound>: <n>\n"
                 "    Set initial bound for objective function(s)"
             ),
-            default=LNSConfig.init_opt_mode,
+            default=UNSET,
             type="init_opt_mode",
             dest="init_opt_mode",
             metavar="<arg>",
@@ -645,9 +655,9 @@ class OptionsParser:
             "--default-adaptive-strategy",
             help=(
                 "Set default adaptive strategy for selecting LNS configurations in each iteration.\n"
-                "Will be overwritten by strategy defined in config encoding. [%(default)s]\n"
+                f"Will be overwritten by strategy defined in config encoding. [{LNSConfig.default_adaptive_strategy_name}]\n"
             ),
-            default=LNSConfig.default_adaptive_strategy_name,
+            default=UNSET,
             choices=adaptive_strategies,
             type="adaptive_strategy",
             dest="default_adaptive_strategy_name",
@@ -656,8 +666,11 @@ class OptionsParser:
 
         adaptive_group.add_argument(
             "--lex-weight",
-            help="Set weight factor for scalarizing lexicographic costs to <n> (<n> > 0) [%(default)s]",
-            default=LNSConfig.lex_weight,
+            help=replace_default(
+                "Set weight factor for scalarizing lexicographic costs to <n> (<n> > 0) [%(default)s]",
+                LNSConfig.lex_weight,
+            ),
+            default=UNSET,
             type="pos_int",
             dest="lex_weight",
             metavar="<n>",
@@ -665,8 +678,11 @@ class OptionsParser:
 
         adaptive_group.add_argument(
             "--learning-rate",
-            help="Set learning rate for updating config weights to <f> (0 < <f> < 1) [%(default)s]",
-            default=LNSConfig.learning_rate,
+            help=replace_default(
+                "Set learning rate for updating config weights to <f> (0 < <f> < 1) [%(default)s]",
+                LNSConfig.learning_rate,
+            ),
+            default=UNSET,
             type="0_1_float",
             dest="learning_rate",
             metavar="<f>",
@@ -682,20 +698,27 @@ class OptionsParser:
         # --bound?
         lns_group.add_argument(
             "--constrained",
-            help="Short-hand for --lns-opt-mode=opt,0,dynamic, set LNS to use constrained optimization",
+            help=replace_default(
+                "Short-hand for --lns-opt-mode=opt,0,dynamic, set LNS to use constrained optimization [%(default)s]",
+                LNSConfig.constrained,
+            ),
             action="store_true",
+            default=UNSET,
             dest="constrained",
         )
 
         lns_group.add_argument(
             "--relaxation",
-            help=(
-                "Set relaxation mode and rate for simple relaxation in percent [%(default)s]\n"
-                "<rate>:      Relaxation rate between 0 and 100 or 'auto' for automatic rate.\n"
-                "             See --auto-converter options for details on how the automatic rate is calculated.\n"
-                "declarative: Use declarative relaxation, LNS configuration encoding has to be provided as input file."
+            help=replace_default(
+                (
+                    "Set relaxation mode and rate for simple relaxation in percent [%(default)s]\n"
+                    "<rate>:      Relaxation rate between 0 and 100 or 'auto' for automatic rate.\n"
+                    "             See --auto-converter options for details on how the automatic rate is calculated.\n"
+                    "declarative: Use declarative relaxation, LNS configuration encoding has to be provided as input file."
+                ),
+                f"{LNSConfig.relaxation[0]},{LNSConfig.relaxation[1] if LNSConfig.relaxation[1] > 0 else 'auto'}",
             ),
-            default=f"{LNSConfig.relaxation[0]},{LNSConfig.relaxation[1] if LNSConfig.relaxation[1] > 0 else 'auto'}",
+            default=UNSET,
             type="relaxation",
             dest="relaxation",
             metavar="{simple,<rate>|declarative}",
@@ -704,8 +727,10 @@ class OptionsParser:
         # TODO -> --fix={assumptions,heuristics}
         lns_group.add_argument(
             "--use-heuristics",
-            help="Use heuristics instead of assumptions to fix non-relaxed atoms [%(default)s]",
-            default=LNSConfig.use_heuristics,
+            help=replace_default(
+                "Use heuristics instead of assumptions to fix non-relaxed atoms [%(default)s]", LNSConfig.use_heuristics
+            ),
+            default=UNSET,
             type=bool,
             dest="use_heuristics",
         )
@@ -713,13 +738,13 @@ class OptionsParser:
         lns_group.add_argument(
             "--auto-converter",
             help=(
-                "Set automatic destroy percentage converter [%(default)s]\n"
+                "Set automatic destroy percentage converter [last-improv]\n"
                 "last-improv: Set auto destroy rate based on actually relaxed atoms during last improvement.\n"
                 "avg:         Set auto destroy rate based on average percentages of relaxed atoms during all improvements.\n"
                 "Note: Used for --relaxation=simple,auto and _lns_relax_op/2 for --relaxation=declarative.\n"
                 "      Best used together with --repair=heuristics"
             ),
-            default="last-improv",
+            default=UNSET,
             choices=list(converters.values()),
             type="auto_converter",
             dest="auto_converter",
@@ -728,8 +753,10 @@ class OptionsParser:
 
         lns_group.add_argument(
             "--accept-variability",
-            help="Set required variability to accept new solutions in percent [%(default)s]",
-            default=LNSConfig.accept_variability,
+            help=replace_default(
+                "Set required variability to accept new solutions in percent [%(default)s]", LNSConfig.accept_variability
+            ),
+            default=UNSET,
             type="percent",
             dest="accept_variability",
             metavar="<n>",
@@ -739,9 +766,9 @@ class OptionsParser:
             "--accept-improvement",
             help=(
                 "Do not accept solution whose objective value is at least <n>%% worse\n"
-                "than current incumbent solution in each iteration [%(default)s]"
+                f"than current incumbent solution in each iteration [{LNSConfig.accept_improvement}]"
             ),
-            default=LNSConfig.accept_improvement,
+            default=UNSET,
             type="percent",
             dest="accept_improvement",
             metavar="<n>",
@@ -756,8 +783,8 @@ class OptionsParser:
 
         lns_solver_group.add_argument(
             "--lns-time-limit",
-            help="Set LNS time limit [%(default)s]",
-            default=LNSConfig.lns_time_limit,
+            help=replace_default("Set LNS time limit [%(default)s]", LNSConfig.lns_time_limit),
+            default=UNSET,
             type="pos_int_or_none",
             metavar="<n>",
             dest="lns_time_limit",
@@ -765,8 +792,8 @@ class OptionsParser:
 
         lns_solver_group.add_argument(
             "--lns-cutoff",
-            help="Set LNS cutoff [%(default)s]",
-            default=LNSConfig.lns_cutoff,
+            help=replace_default("Set LNS cutoff [%(default)s]", LNSConfig.lns_cutoff),
+            default=UNSET,
             type="pos_int_or_none",
             metavar="<n>",
             dest="lns_cutoff",
@@ -774,8 +801,8 @@ class OptionsParser:
 
         lns_solver_group.add_argument(
             "--lns-solve-limit",
-            help="Set LNS solve limit [%(default)s]",
-            default=LNSConfig.lns_solve_limit,
+            help=replace_default("Set LNS solve limit [%(default)s]", LNSConfig.lns_solve_limit),
+            default=UNSET,
             type="solve_limit",
             metavar="<n>[,<m>]",
             dest="lns_solve_limit",
@@ -783,8 +810,8 @@ class OptionsParser:
 
         lns_solver_group.add_argument(
             "--lns-configuration",
-            help="Set LNS configuration [%(default)s]",
-            default=LNSConfig.lns_configuration,
+            help=replace_default("Set LNS configuration [%(default)s]", LNSConfig.lns_configuration),
+            default=UNSET,
             type="configuration",
             metavar="<arg>",
             dest="lns_configuration",
@@ -792,24 +819,25 @@ class OptionsParser:
 
         lns_solver_group.add_argument(
             "--lns-opt-strategy",
-            help="Set LNS optimization strategy [%(default)s]",
-            default=LNSConfig.lns_opt_strategy,
+            help=replace_default("Set LNS optimization strategy [%(default)s]", LNSConfig.lns_opt_strategy),
+            default=UNSET,
             type="opt_strategy",
             metavar="<arg>",
             dest="lns_opt_strategy",
         )
         lns_solver_group.add_argument(
             "--lns-opt-heuristic",
-            help="Set LNS optimization heuristic [%(default)s]",
-            default=LNSConfig.lns_opt_heuristic,
+            help=replace_default("Set LNS optimization heuristic [%(default)s]", LNSConfig.lns_opt_heuristic),
+            default=UNSET,
             type=str,
             choices=["sign", "model"],
             dest="lns_opt_heuristic",
         )
         lns_solver_group.add_argument(
             "--lns-restart-on-model",
-            help="Set LNS restart on model",
+            help=replace_default("Set LNS restart on model [%(default)s]", LNSConfig.lns_restart_on_model),
             action=BooleanOptionalAction,
+            default=UNSET,
             dest="lns_restart_on_model",
         )
         # TODO "lt" vs "leq"
@@ -837,8 +865,10 @@ class OptionsParser:
 
         lns_solver_group.add_argument(
             "--lns-time-limit-increase-rate",
-            help="Set time limit increase rate in percent [%(default)s]",
-            default=LNSConfig.lns_time_limit_increase_rate,
+            help=replace_default(
+                "Set time limit increase rate in percent [%(default)s]", LNSConfig.lns_time_limit_increase_rate
+            ),
+            default=UNSET,
             type="percent",
             dest="lns_time_limit_increase_rate",
             metavar="<n>",
@@ -847,9 +877,9 @@ class OptionsParser:
         lns_solver_group.add_argument(
             "--lns-cutoff-threshold",
             help=(
-                "Increase cut-off-time if the number of consecutive iterations without improvement reaches <n> [%(default)s]"
+                f"Increase cut-off-time if the number of consecutive iterations without improvement reaches <n> [{LNSConfig.lns_cutoff_threshold}]"
             ),
-            default=LNSConfig.lns_cutoff_threshold,
+            default=UNSET,
             type="pos_int_or_none",
             metavar="<n>",
             dest="lns_cutoff_threshold",
@@ -857,9 +887,9 @@ class OptionsParser:
         lns_solver_group.add_argument(
             "--lns-cutoff-increase-rate",
             help=(
-                "Increase cut-off-time by <n>%% if the number of consecutive iterations without improvement reaches cut-off-no-improv-threshold [%(default)s]"
+                f"Increase cut-off-time by <n>%% if the number of consecutive iterations without improvement reaches cut-off-no-improv-threshold [{LNSConfig.lns_cutoff_increase_rate}]"
             ),
-            default=LNSConfig.lns_cutoff_increase_rate,
+            default=UNSET,
             type="percent",
             metavar="<n>",
             dest="lns_cutoff_increase_rate",
@@ -867,8 +897,10 @@ class OptionsParser:
 
         lns_solver_group.add_argument(
             "--lns-solve-limit-increase-rate",
-            help="Set solve limit increase rate in percent [%(default)s]",
-            default=LNSConfig.lns_solve_limit_increase_rate,
+            help=replace_default(
+                "Set solve limit increase rate in percent [%(default)s]", LNSConfig.lns_solve_limit_increase_rate
+            ),
+            default=UNSET,
             type="percent",
             dest="lns_solve_limit_increase_rate",
             metavar="<n>",
