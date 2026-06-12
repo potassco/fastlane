@@ -4,7 +4,7 @@ from clingo import SymbolicAtoms
 from clingo.symbol import Symbol, SymbolType, Tuple_
 
 from mod_lns import Model
-from mod_lns.interfaces.solver import SolverInterface
+from mod_lns.interfaces.solver import Solver
 
 if TYPE_CHECKING:
     from mod_lns.lns import LNS  # nocoverage
@@ -57,7 +57,7 @@ class ConfigParser:
     #     return project_operators, projected_signatures
 
     @classmethod
-    def _parse_project_operator(cls, solver: SolverInterface, declarative: bool) -> dict[str, set[tuple[str, int]]]:
+    def _parse_project_operator(cls, solver: Solver, declarative: bool) -> dict[str, set[tuple[str, int]]]:
         """
         Extract project operator names and predicate signatures of projected atoms from model.
 
@@ -123,7 +123,7 @@ class ConfigParser:
         return (term.match("p", 1) or term.match("n", 1)) and term.arguments[0].type == SymbolType.Number
 
     @classmethod
-    def _parse_destroy_operators(cls, solver: SolverInterface, declarative: bool) -> dict[str, list[dict[str, Any]]]:
+    def _parse_destroy_operators(cls, solver: Solver, declarative: bool) -> dict[str, list[dict[str, Any]]]:
         """
         Extract and validate destroy operators from atoms of _destroy/2 in model.
 
@@ -230,7 +230,7 @@ class ConfigParser:
         )
 
     @classmethod
-    def _parse_prioritize_operators(cls, solver: SolverInterface, declarative: bool) -> dict[str, dict[str, Any]]:
+    def _parse_prioritize_operators(cls, solver: Solver, declarative: bool) -> dict[str, dict[str, Any]]:
         """
         Extract and validate prioritize operators from atoms of _prioritize/3 in model.
 
@@ -304,7 +304,7 @@ class ConfigParser:
     @classmethod
     def _parse_configs(
         cls,
-        solver: SolverInterface,
+        solver: Solver,
         defined_project_operators: list[str],
         defined_destroy_operators: list[str],
         defined_prioritize_operators: list[str],
@@ -376,7 +376,7 @@ class ConfigParser:
     @classmethod
     def _parse_strategy(
         cls,
-        solver: SolverInterface,
+        solver: Solver,
         defined_configs: dict[str, dict[str, list[str]]],
         supported_strategies: list[str],
         default_strategy: str,
@@ -436,7 +436,7 @@ class ConfigParser:
         """
         Extract and validate LNS configuration from model.
 
-        ALNPS configuration includes project operator names, predicate signatures of projected atoms,
+        LNS configuration includes project operator names, predicate signatures of projected atoms,
         destroy operator definitions, prioritize operator definitions,
         configuration definitions and strategy name.
 
@@ -446,7 +446,7 @@ class ConfigParser:
         :type supported_strategies: list[str]
         :param default_strategy: Name of strategy to use when not specified.
         :type default_strategy: str
-        :return: ALNPS configuration dictionary with the following keys:
+        :return: LNS configuration dictionary with the following keys:
             - "project_operators" (set[str]): Set of project operator names.
             - "projected_signatures" (list[dict[str, Any]]): List of dictionaries with the following keys:
                 - "name" (str): Predicate name of projected atom.
@@ -465,7 +465,7 @@ class ConfigParser:
         :rtype: dict[str, Any]
         """
         solver = lns_object.solver
-        config = lns_object.config
+        config = lns_object.options
         declarative = config.declarative
         project_operators = cls._parse_project_operator(solver, declarative)
         destroy_operators = cls._parse_destroy_operators(solver, declarative)
@@ -477,7 +477,7 @@ class ConfigParser:
             destroy_operators = {"default": dest_op}
 
         prioritize_operators = cls._parse_prioritize_operators(solver, declarative)
-        alnps_config = {
+        config_catalog = {
             "project_operators": project_operators,
             "destroy_operators": destroy_operators,
             "prioritize_operators": prioritize_operators,
@@ -497,24 +497,24 @@ class ConfigParser:
             config.default_adaptive_strategy_name,
             declarative,
         )
-        alnps_config["configs"] = candidate_configs
-        alnps_config["strategy"] = strategy
-        lns_object.logger.debug("ALNPS configuration: %s", cls._format_lns_config(alnps_config))
-        return alnps_config
+        config_catalog["configs"] = candidate_configs
+        config_catalog["strategy"] = strategy
+        lns_object.logger.debug("LNS configuration: %s", cls._format_lns_config(config_catalog))
+        return config_catalog
 
     @classmethod
-    def _format_lns_config(cls, alnps_config: dict[str, Any]) -> str:
+    def _format_lns_config(cls, config_catalog: dict[str, Any]) -> str:
         """
-        Convert ALNPS configuration into string.
+        Convert LNS configuration into string.
 
-        :param alnps_config: ALNPS configuration.
-        :type alnps_config: dict[str, Any]
-        :return: String representing ALNPS configuration.
+        :param config_catalog: LNS configuration.
+        :type config_catalog: dict[str, Any]
+        :return: String representing LNS configuration.
         :rtype: str
         """
         project_operators = ",".join(
             name + "{" + ",".join(f"{signature[0]}/{signature[1]}" for signature in signatures) + "}"
-            for name, signatures in alnps_config["project_operators"].items()
+            for name, signatures in config_catalog["project_operators"].items()
         )
 
         destroy_operators = ",".join(
@@ -525,17 +525,17 @@ class ConfigParser:
                 for pn in percents_or_numbers_list
             )
             + "}"
-            for name, percents_or_numbers_list in alnps_config["destroy_operators"].items()
+            for name, percents_or_numbers_list in config_catalog["destroy_operators"].items()
         )
 
         prioritize_operators = ",".join(
             name + "{" + f"{modifiers_and_values['value']},{modifiers_and_values['modifier']}" + "}"
-            for name, modifiers_and_values in alnps_config["prioritize_operators"].items()
+            for name, modifiers_and_values in config_catalog["prioritize_operators"].items()
         )
 
         out = f"project_operators={{{project_operators}}}, destroy_operators={{{destroy_operators}}}, prioritize_operators={{{prioritize_operators}}}"
 
-        if "configs" in alnps_config:
+        if "configs" in config_catalog:
             configs = ",".join(
                 config
                 + "["
@@ -547,12 +547,12 @@ class ConfigParser:
                 + ",".join(operators["prioritize_operators"])
                 + "}"
                 + "]"
-                for config, operators in alnps_config["configs"].items()
+                for config, operators in config_catalog["configs"].items()
             )
             out += f", configs={{{configs}}}"
 
-        if "strategy" in alnps_config:
-            strategy = alnps_config["strategy"]
+        if "strategy" in config_catalog:
+            strategy = config_catalog["strategy"]
             out += f", strategy={strategy}"
 
         return out

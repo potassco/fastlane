@@ -2,8 +2,8 @@
 The main entry point for the application.
 """
 
-from mod_lns.lib.parser.options_parser import OptionsParser
 from mod_lns.lns import LNS
+from mod_lns.parser.options_parser import OptionsParser
 
 
 def main() -> None:

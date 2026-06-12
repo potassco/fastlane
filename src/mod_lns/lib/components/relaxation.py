@@ -10,8 +10,8 @@ import clingo
 from clingo.symbol import Function, Symbol, SymbolType
 
 from mod_lns import Model
-from mod_lns.lib.parser.config_parser import ConfigParser
 from mod_lns.lib.utils import format_atoms
+from mod_lns.parser.config_parser import ConfigParser
 
 LINE = "-" * 50
 
@@ -209,16 +209,12 @@ def _destroy(config: dict, projected_atoms: set[Symbol], logger: Logger) -> set[
 
 def relax_config(model: Model, config: dict, logger: Logger) -> set[Symbol]:
     """
-    Relax portion of atoms as defined by LNPS configuration.
+    Relax portion of atoms as defined by LNS configuration.
 
-    :param lns_object: LNS object
-    :type lns_object: mod_lns.LNS
+    :param config: LNS configuration dictionary.
+    :type config: dict
     :return: Set of heuristic atoms
     :rtype: set[Symbol]
     """
-    fixed_atoms: set[Symbol] = set()
     projected = _project(model, config, logger)
-
-    # undestroyed = self._destroy(model, projected)
-    # fixed_atoms.update(self._prioritize(model, undestroyed, lns_object.step_c))
     return _destroy(config, projected, logger)

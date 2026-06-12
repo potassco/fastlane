@@ -1,23 +1,27 @@
+"""
+Components for implementing fixation via heuristics in the context of LNS.
+"""
+
 from typing import Any
 
 from clingo.symbol import Function, Number, Symbol
 
-from mod_lns.lib.parser.config_parser import ConfigParser
+from mod_lns.parser.config_parser import ConfigParser
 
 
-def generate_heuristic_subprogram(lns_config: dict[str, Any]) -> str:
+def generate_heuristic_subprogram(config_catalog: dict[str, Any]) -> str:
     """
     Generate #heuristic statements for LNPS and integrity constraints for LNS
     from predicate signatures of projected atoms.
 
-    :param lns_config: LNS configuration dictionary.
-    :type lns_config: dict[str, Any]
+    :param config_catalog: LNS configuration catalog.
+    :type config_catalog: dict[str, Any]
     :return: #heuristic statements and integrity constraints.
     :rtype: str
     """
     heuristic_subprogram = ""
     # TODO maybe signatures into lns dict
-    for signature in set().union(*lns_config["project_operators"].values()):
+    for signature in set().union(*config_catalog["project_operators"].values()):
         name = signature[0]
         args = ",".join(["X" + str(i) for i in range(signature[1])])
         atom = f"{name}({args})"
@@ -29,12 +33,12 @@ def generate_heuristic_subprogram(lns_config: dict[str, Any]) -> str:
     return heuristic_subprogram
 
 
-def get_fixed_atoms_heuristics(config: dict, fixed_atoms: set[Symbol], step: int) -> set[Symbol]:
+def get_fixed_atoms_heuristics(active_config: dict, fixed_atoms: set[Symbol], step: int) -> set[Symbol]:
     """
     Get fixed atoms according to heuristics.
 
-    :param config: LNS configuration dictionary.
-    :type config: dict
+    :param active_config: LNS configuration dictionary.
+    :type active_config: dict
     :param fixed_atoms: Set of fixed atoms from previous iteration.
     :type fixed_atoms: set[Symbol]
     :param step: Current LNS iteration.
@@ -45,8 +49,10 @@ def get_fixed_atoms_heuristics(config: dict, fixed_atoms: set[Symbol], step: int
     prioritized_atoms: set[Symbol] = set()
     heu_atoms: set[Symbol] = set()
 
-    for prioritize_operator in config["prioritize_operators"]:
-        targets = ConfigParser.get_heuristic_targets(config["op_specs"], fixed_atoms, prioritize_operator["name"])
+    for prioritize_operator in active_config["prioritize_operators"]:
+        targets = ConfigParser.get_heuristic_targets(
+            active_config["op_specs"], fixed_atoms, prioritize_operator["name"]
+        )
         for target in targets:
             prioritized_atoms.add(target)
             if prioritize_operator["value"] == "inf":

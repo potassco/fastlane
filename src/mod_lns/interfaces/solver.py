@@ -4,7 +4,7 @@ Solver interface used for LNS.
 
 from __future__ import annotations
 
-import abc
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from logging import Logger
 from typing import TYPE_CHECKING, Any, Optional, Union
@@ -71,7 +71,7 @@ class SolverConfig:
     variability: bool = True
 
 
-class SolverInterface(metaclass=abc.ABCMeta):
+class Solver(ABC):
     """
     Solver interface.
     """
@@ -108,7 +108,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
         )
 
     @classmethod
-    @abc.abstractmethod
+    @abstractmethod
     def get_name(cls) -> str:  # nocoverage
         """
         Get the name under which the solver will be listed in options.
@@ -119,7 +119,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     # pylint: disable=dangerous-default-value
-    @abc.abstractmethod
+    @abstractmethod
     def setup(
         self,
         lns_object: LNS,
@@ -140,7 +140,7 @@ class SolverInterface(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
+    @abstractmethod
     def solve(
         self,
         config: Optional[SolverConfig],

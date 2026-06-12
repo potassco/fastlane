@@ -97,7 +97,7 @@ def update_time_limit(lns_object: "LNS", solver_config: "SolverConfig") -> None:
     :param solver_config: Solver configuration to update.
     :type solver_config: SolverConfig
     """
-    if lns_object.config.time_limit is not None:
+    if lns_object.options.time_limit is not None:
         solver_tl = solver_config.time_limit
         remaining_time = lns_object.timer.remaining_time()  # return float, cast to int (maybe in solver)
         if solver_tl is None:

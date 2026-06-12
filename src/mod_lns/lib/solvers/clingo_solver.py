@@ -14,14 +14,14 @@ import clingo
 from clingo.statistics import StatisticsMap
 
 from mod_lns import Model, Timer
-from mod_lns.interfaces.solver import SolverConfig, SolverInterface
+from mod_lns.interfaces.solver import Solver, SolverConfig
 
 if TYPE_CHECKING:
     from mod_lns.lns import LNS  # nocoverage
 
 
 # pylint: disable=too-many-instance-attributes
-class ClingoSolver(SolverInterface):
+class ClingoSolver(Solver):
     """
     clingo solver.
     """

@@ -1,3 +1,7 @@
+"""
+Components related to constrained optimization in the context of LNS.
+"""
+
 import math
 
 

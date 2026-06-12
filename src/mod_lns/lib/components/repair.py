@@ -1,16 +1,19 @@
+"""
+Components for repairing solutions in the context of LNS.
+"""
+
+
 from logging import Logger
 from typing import Optional
 
 from clingo.symbol import Number, Symbol
 
 from mod_lns import Model
-from mod_lns.interfaces.solver import SolverConfig, SolverInterface
-from mod_lns.lib.relaxation import LINE
+from mod_lns.interfaces.solver import Solver, SolverConfig
+from mod_lns.lib.components.relaxation import LINE
 
 
-def repair_assumptions(
-    solver: SolverInterface, solver_config: SolverConfig, fixed_atoms: set[Symbol]
-) -> Optional[Model]:
+def repair_assumptions(solver: Solver, solver_config: SolverConfig, fixed_atoms: set[Symbol]) -> Optional[Model]:
     """
     Repair solution by assuming fixed atoms.
     """
@@ -18,7 +21,7 @@ def repair_assumptions(
 
 
 def repair_heuristics(
-    solver: SolverInterface,
+    solver: Solver,
     solver_config: SolverConfig,
     fixed_atoms_heuristics: set[Symbol],
     prev_fixed_atoms_heuristics: set[Symbol],

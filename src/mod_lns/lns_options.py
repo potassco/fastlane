@@ -1,6 +1,5 @@
 """
-Default strategy, supports both a classic and constrained LNS approach as well as
-declarative and random relaxation.
+Class containing all LNS options and their default values, as well as methods for applying presets and overrides.
 """
 
 from __future__ import annotations
@@ -12,9 +11,12 @@ import clingo
 from clingo import Symbol
 
 from mod_lns import UNSET
-from mod_lns.interfaces.solver import SolverConfig, SolverInterface
-from mod_lns.lib.adaptive_strategies import AdaptiveStrategy, RouletteWheelStrategy, StaticStrategy
-from mod_lns.lib.converter import AutoDestructionConverter, LastImprovementDestructionConverter
+from mod_lns.interfaces.adaptive_strategy import AdaptiveStrategy
+from mod_lns.interfaces.auto_destruction_converter import AutoDestructionConverter
+from mod_lns.interfaces.solver import Solver, SolverConfig
+from mod_lns.lib.adaptive_strategies.roulette_wheel import RouletteWheelStrategy
+from mod_lns.lib.adaptive_strategies.static import StaticStrategy
+from mod_lns.lib.auto_destruction_converters.last_improv import LastImprovementDestructionConverter
 from mod_lns.lib.solvers.clingo_solver import ClingoSolver
 from mod_lns.lib.utils import clamp
 
@@ -26,14 +28,14 @@ LINE = "------------------------------------------------------------------------
 
 # pylint: disable=too-many-instance-attributes
 @dataclass
-class LNSConfig:
+class LNSOptions:
     """
     Configuration for LNS.
 
     :param log_level: Logging level.
     :type log_level: int
     :param solver: Solver to use.
-    :type solver: SolverInterface
+    :type solver: Solver
     :param seed: Random seed.
     :type seed: int
     :param time_limit: Time limit for each LNS iteration.
@@ -67,7 +69,7 @@ class LNSConfig:
 
     # general configuration
     # solver default has to be set manually in parser
-    solver: SolverInterface = field(default_factory=ClingoSolver)
+    solver: Solver = field(default_factory=ClingoSolver)
     seed: Optional[int] = None
     # time limit for entire program
     time_limit: Optional[int] = None
