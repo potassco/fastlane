@@ -17,8 +17,8 @@ class StaticStrategy(AdaptiveStrategy):
     """
     Static strategy that always selects the same LNPS configuration.
 
-    :param config_name: Name of LNPS configuration to always select.
-    :type config_name: str
+    :param converter: Converter for computing destruction percentages of auto-mode destroy operators.
+    :type converter: AutoDestructionConverter
     """
 
     def __init__(self, converter: AutoDestructionConverter = LastImprovementDestructionConverter()):
@@ -41,17 +41,22 @@ class StaticStrategy(AdaptiveStrategy):
         """
         Get initial LNS configuration.
 
-        :param config_catalog: Configuration catalog.
+        :param config_catalog: Config catalog.
         :type config_catalog: dict[str, Any]
         :param initial_model: Initial model.
         :type initial_model: Model
-        :return: LNS configuration dictionary with the following keys:
+        :return: LNS configuration dictionary.
+
+            The returned dictionary contains these keys:
             - "name" (str): Name of LNS configuration.
-            - "project_operators" (list[str]): List of project operator names.
-            - "destroy_operators" (list[dict[str, Any]]): List of names and percentages or numbers of destroy operators.
-            - "prioritize_operators" (list[dict[str, Any]]): List of names, heuristic modifiers, and their values of prioritize operators.
-            - "key" (tuple[Any, ...]): Key of LNS configuration.
-            - "config_repr" (str): String representation of LNS configuration.
+            - "project_operators" (list[str]):
+                List of project operator names.
+            - "destroy_operators" (list[dict[str, Any]]):
+                List of names and percentages or numbers of destroy operators.
+            - "prioritize_operators" (list[dict[str, Any]]):
+                List of names, heuristic modifiers, and their values of prioritize operators.
+            - "config_repr" (str):
+                String representation of LNS configuration.
         :rtype: dict[str, Any]
         """
         return self._converter.convert_auto_in_config(self._select_config(config_catalog))
@@ -72,9 +77,7 @@ class StaticStrategy(AdaptiveStrategy):
         :type config_catalog: dict[str, Any]
         :param stats: Statistics.
         :type stats: list[dict[str, Any]]
-        :param lns_object: LNS object.
-        :type lns_object: mod_lns.LNS
-        :return: Same LNS configuration as input.
+        :return: New LNS configuration.
         :rtype: dict[str, Any]
         """
         return self._converter.convert_auto_in_config(self._select_config(config_catalog), lns_object)

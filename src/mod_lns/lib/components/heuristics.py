@@ -20,7 +20,6 @@ def generate_heuristic_subprogram(config_catalog: dict[str, Any]) -> str:
     :rtype: str
     """
     heuristic_subprogram = ""
-    # TODO maybe signatures into lns dict
     for signature in set().union(*config_catalog["project_operators"].values()):
         name = signature[0]
         args = ",".join(["X" + str(i) for i in range(signature[1])])
@@ -33,12 +32,16 @@ def generate_heuristic_subprogram(config_catalog: dict[str, Any]) -> str:
     return heuristic_subprogram
 
 
-def get_fixed_atoms_heuristics(active_config: dict, fixed_atoms: set[Symbol], step: int) -> set[Symbol]:
+def get_fixed_atoms_heuristics(
+    active_config: dict, spec_ops: dict[str, set[Symbol]], fixed_atoms: set[Symbol], step: int
+) -> set[Symbol]:
     """
     Get fixed atoms according to heuristics.
 
     :param active_config: LNS configuration dictionary.
     :type active_config: dict
+    :param spec_ops: Dictionary of operator specifications.
+    :type spec_ops: dict[str, set[Symbol]]
     :param fixed_atoms: Set of fixed atoms from previous iteration.
     :type fixed_atoms: set[Symbol]
     :param step: Current LNS iteration.
@@ -50,9 +53,7 @@ def get_fixed_atoms_heuristics(active_config: dict, fixed_atoms: set[Symbol], st
     heu_atoms: set[Symbol] = set()
 
     for prioritize_operator in active_config["prioritize_operators"]:
-        targets = ConfigParser.get_heuristic_targets(
-            active_config["op_specs"], fixed_atoms, prioritize_operator["name"]
-        )
+        targets = ConfigParser.get_heuristic_targets(spec_ops, fixed_atoms, prioritize_operator["name"])
         for target in targets:
             prioritized_atoms.add(target)
             if prioritize_operator["value"] == "inf":

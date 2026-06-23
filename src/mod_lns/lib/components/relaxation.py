@@ -6,8 +6,7 @@ import random
 from logging import Logger  # nocoverage
 from typing import Any
 
-import clingo
-from clingo.symbol import Function, Symbol, SymbolType
+from clingo.symbol import Symbol, SymbolType
 
 from mod_lns import Model
 from mod_lns.lib.utils import format_atoms
@@ -33,7 +32,7 @@ def relax_declarative(
     """
     fixed_atoms: set[Symbol] = set()
     selected_atoms: set[Symbol] = set()
-    declared_fixed_atoms: dict[clingo.symbol.Symbol, set[Symbol]] = {}
+    declared_fixed_atoms: dict[Symbol, set[Symbol]] = {}
     # !inefficient
     for atom in model.true:
         # get possible selection
@@ -77,17 +76,23 @@ def relax_random(
     return set(fixed_atoms)
 
 
-def _project(model: Model, config: dict, logger: Logger) -> set[Symbol]:
+def _project(model: Model, runtime: dict, logger: Logger) -> set[Symbol]:
     """
-    Project atoms based on the configuration.
+    Project atoms based on the runtime configuration.
 
+    :param model: Model containing the atoms.
+    :type model: Model
+    :param runtime: Runtime configuration dictionary.
+    :type runtime: dict
+    :param logger: Logger for debugging.
+    :type logger: Logger
     :return: Set of projected atoms
     :rtype: set[Symbol]
     """
     projected_atoms = set()
 
-    for project_operator in config["project_operators"]:
-        projected_atoms.update(ConfigParser.get_projected_atoms(model, config["op_specs"], project_operator["name"]))
+    for project_operator in runtime["project_operators"]:
+        projected_atoms.update(ConfigParser.get_projected_atoms(model, runtime["op_specs"], project_operator["name"]))
 
     logger.debug(f"{len(projected_atoms)} projected atoms: {format_atoms(projected_atoms)}")
     logger.debug(LINE)
@@ -104,7 +109,7 @@ def _destroy_atoms_if_term_selected(
 
     :param atom_term_pairs: Atoms subject to destruction and corresponding terms.
     :type atom_term_pairs: list[dict[str, Symbol]]
-    :param percent_or_number: What percentage (or how many) terms are selected by.
+    :param percent_or_number: What percentage (or how many) terms are selected.
     :type percent_or_number: dict[str, Any]
     :return: Destroyed atoms.
     :rtype: set[Symbol]
@@ -127,23 +132,25 @@ def _destroy_atoms_if_term_selected(
     return destroyed_atoms
 
 
-# TODO subset of args selected
+# !todo subset of args selected
+
+
 def _destroy_atoms_if_all_args_selected(
     atom_term_pairs: list[dict[str, Symbol]], percents_or_numbers: list[dict[str, Any]]
 ) -> set[Symbol]:
     """
-    Randomly select arguments by given percentages (or numbers)
-    and return all atoms corresponding to terms whose all arguments are selected.
+    Randomly select arguments based on the specified percentages (or numbers),
+    and return all atoms whose terms have all their arguments selected.
 
     :param atom_term_pairs: Atoms subject to destruction and corresponding terms.
     :type atom_term_pairs: list[dict[str, Symbol]]
-    :param percents_or_numbers: What percentages (or how many) arguments are selected by.
+    :param percents_or_numbers: What percentages (or how many) arguments are selected.
     :type percents_or_numbers: list[dict[str, Any]]
     :return: Destroyed atoms.
     :rtype: set[Symbol]
     """
 
-    def _is_tuple(self, term: Symbol) -> bool:
+    def _is_tuple(term: Symbol) -> bool:
         return term.type == SymbolType.Function and not term.name
 
     candidate_args = [set() for i in range(len(percents_or_numbers))]
@@ -171,21 +178,21 @@ def _destroy_atoms_if_all_args_selected(
     return destroyed_atoms
 
 
-def _destroy(config: dict, projected_atoms: set[Symbol], logger: Logger) -> set[Symbol]:
+def _destroy(runtime: dict, projected_atoms: set[Symbol], logger: Logger) -> set[Symbol]:
     """
-    Destroy a subset of atoms according to the configuration.
+    Destroy a subset of atoms according to the runtime configuration.
 
-    :param model: Model containing the atoms.
-    :type model: Model
+    :param runtime: Runtime configuration dictionary.
+    :type runtime: dict
     :param projected_atoms: Set of projected atoms
     :type projected_atoms: set[Symbol]
     :return: Set of prioritized atoms
     :rtype: set[Symbol]
     """
     destroyed_atoms: set[Symbol] = set()
-    for destroy_operator in config["destroy_operators"]:
+    for destroy_operator in runtime["destroy_operators"]:
         atom_term_pairs = ConfigParser.get_atom_term_pairs(
-            config["op_specs"], projected_atoms, destroy_operator["name"]
+            runtime["op_specs"], projected_atoms, destroy_operator["name"]
         )
         if len(destroy_operator["percents_or_numbers"]) == 1:
             destroyed_atoms.update(
@@ -207,14 +214,14 @@ def _destroy(config: dict, projected_atoms: set[Symbol], logger: Logger) -> set[
     return prioritized_atoms
 
 
-def relax_config(model: Model, config: dict, logger: Logger) -> set[Symbol]:
+def relax_config(model: Model, runtime: dict, logger: Logger) -> set[Symbol]:
     """
     Relax portion of atoms as defined by LNS configuration.
 
-    :param config: LNS configuration dictionary.
-    :type config: dict
+    :param runtime: LNS runtime dictionary.
+    :type runtime: dict
     :return: Set of heuristic atoms
     :rtype: set[Symbol]
     """
-    projected = _project(model, config, logger)
-    return _destroy(config, projected, logger)
+    projected = _project(model, runtime, logger)
+    return _destroy(runtime, projected, logger)

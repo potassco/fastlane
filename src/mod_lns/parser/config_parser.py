@@ -1,6 +1,9 @@
+"""
+Parser for LNS configuration inside ASP encodings.
+"""
+
 from typing import TYPE_CHECKING, Any, Optional
 
-from clingo import SymbolicAtoms
 from clingo.symbol import Symbol, SymbolType, Tuple_
 
 from mod_lns import Model
@@ -27,12 +30,15 @@ class ConfigParser:
         """
         return term.type == SymbolType.Function and term.name
 
-    # TODO
     # project operator can not be created through _project/2
     # @classmethod
-    # def _get_project_operators_and_signatures_from_project2(cls, model: Model) -> tuple[set[str], list[dict[str, Any]]]:
+    # def _get_project_operators_and_signatures_from_project2(
+    #     cls,
+    #     model: Model,
+    # ) -> tuple[set[str], list[dict[str, Any]]]:
     #     """
-    #     Extract and validate project operator names and predicate signatures of projected atoms from atoms of _project/2 in model.
+    #     Extract and validate project operator names and predicate signatures
+    #     of projected atoms from atoms of _project/2 in model.
 
     #     :param model: Model object.
     #     :type model: Model
@@ -59,10 +65,12 @@ class ConfigParser:
     @classmethod
     def _parse_project_operator(cls, solver: Solver, declarative: bool) -> dict[str, set[tuple[str, int]]]:
         """
-        Extract project operator names and predicate signatures of projected atoms from model.
+        Extract and validate project operators from atoms of _project_op/2 in model.
 
         :param solver: Solver interface object.
         :type solver: SolverInterface
+        :param declarative: Whether to parse declarative configuration or not.
+        :type declarative: bool
         :return: Dictionary of project operator names and their corresponding signatures.
         :rtype: dict[str, set[tuple[str, int]]]]
         """
@@ -78,14 +86,13 @@ class ConfigParser:
                 project_operators.setdefault(operator, set())
                 if args[1].type == SymbolType.Function and len(args[1].arguments) == 2:
                     signature = args[1].arguments
-                    # TODO catch bad args
+                    # !todo catch bad args
                     # project_operators[operator].add({"name": signature[0].name, "arity": signature[1].number})
                     project_operators[operator].add((signature[0].name, signature[1].number))
                 else:
                     # logger.warning(f"_project/2: Second argument {args[1]} is not a valid signature.")
                     continue
 
-            # TODO
             # from specifications
             # for atom in solver.control.symbolic_atoms.by_signature("_project", 2):
             #     args = atom.symbol.arguments
@@ -122,13 +129,16 @@ class ConfigParser:
         """
         return (term.match("p", 1) or term.match("n", 1)) and term.arguments[0].type == SymbolType.Number
 
+    # pylint: disable=too-many-nested-blocks, too-many-branches
     @classmethod
     def _parse_destroy_operators(cls, solver: Solver, declarative: bool) -> dict[str, list[dict[str, Any]]]:
         """
-        Extract and validate destroy operators from atoms of _destroy/2 in model.
+        Extract and validate destroy operators from atoms of _destroy_op/2 in model.
 
         :param solver: Solver interface object.
         :type solver: SolverInterface
+        :param declarative: Whether to parse declarative configuration or not.
+        :type declarative: bool
         :return: Dictionary mapping destroy operator names to lists of percentages or numbers.
         :rtype: dict[str, list[dict[str, Any]]]
         """
@@ -142,7 +152,8 @@ class ConfigParser:
                 else:
                     operator = args[0].string
                 if operator in destroy_operators:
-                    # logger.warning(f"_destroy/2: Multiple definitions of destroy operator {operator}. Ignoring {atom}.")
+                    # logger.warning(f"_destroy/2: Multiple definitions of destroy operator
+                    # {operator}. Ignoring {atom}.")
                     continue
                 destroy_operators.setdefault(operator, [{"type": "auto", "value": None}])
                 parameter = args[1]
@@ -153,7 +164,7 @@ class ConfigParser:
                             # default
                             # percents_or_numbers = [{"type": "auto", "value": None}]
                             continue
-                        elif cls._is_percent_or_number(parameter):
+                        if cls._is_percent_or_number(parameter):
                             percents_or_numbers = [{"type": parameter.name, "value": parameter.arguments[0].number}]
                         else:
                             # logger.warning(f"_destroy/2: Second argument {second_arg} is invalid. (atom: {atom})")
@@ -184,7 +195,6 @@ class ConfigParser:
 
         return destroy_operators
 
-    # TODO
     # destroy op can not be created through _destroy/3
     # @classmethod
     # def _get_destroy_operators_from_destroy3(cls, model: Model) -> dict[str, list[list[dict[str, Any]]]]:
@@ -232,10 +242,12 @@ class ConfigParser:
     @classmethod
     def _parse_prioritize_operators(cls, solver: Solver, declarative: bool) -> dict[str, dict[str, Any]]:
         """
-        Extract and validate prioritize operators from atoms of _prioritize/3 in model.
+        Extract and validate prioritize operators from atoms of _prioritize_op/3 in model.
 
         :param solver: SolverInterface object.
         :type solver: SolverInterface
+        :param declarative: Whether to parse declarative configuration or not.
+        :type declarative: bool
         :return: Dictionary mapping prioritize operator names to dictionaries of heuristic modifiers and their values.
         :rtype: dict[str, dict[str, Any]]
         """
@@ -249,7 +261,8 @@ class ConfigParser:
                 else:
                     operator = args[0].string
                 if operator in prioritize_operators:
-                    # logger.warning(f"_prioritize/3: Multiple definitions of prioritize operator {operator}. Ignoring {atom}.")
+                    # logger.warning(f"_prioritize/3: Multiple definitions of prioritize
+                    # operator {operator}. Ignoring {atom}.")
                     continue
                 prioritize_operators.setdefault(operator, {"value": 1, "modifier": "true"})
 
@@ -259,14 +272,16 @@ class ConfigParser:
                 elif value_param.type == SymbolType.Number:
                     value = value_param.number
                 else:
-                    # logger.warning(f"_prioritize/3: Second argument {value_param} is neither an integer nor inf. (atom: {atom})")
+                    # logger.warning(f"_prioritize/3: Second argument {value_param} is
+                    # neither an integer nor inf. (atom: {atom})")
                     continue
 
                 modifier_param = args[2]
                 if cls._is_heuristic_modifier(modifier_param):
                     prioritize_operators[operator] = {"value": value, "modifier": modifier_param.name}
                 else:
-                    # logger.warning(f"_prioritize/3: Third argument {modifier_param} is not one of: sign, level, true, false, init, factor. (atom: {atom})")
+                    # logger.warning(f"_prioritize/3: Third argument {modifier_param} is not one
+                    # of: sign, level, true, false, init, factor. (atom: {atom})")
                     continue
 
         if not prioritize_operators:
@@ -274,7 +289,6 @@ class ConfigParser:
 
         return prioritize_operators
 
-    # TODO
     # prioritize op can not be created through _prioritize/2
     # @classmethod
     # def _get_prioritize_operators_from_prioritize2(cls, model: Model) -> dict[str, list[dict[str, Any]]]:
@@ -313,14 +327,16 @@ class ConfigParser:
         """
         Extract and validate configurations from atoms of _config/4.
 
-        :param solver: SolverInterface object.
-        :type solver: SolverInterface
+        :param solver: Solver object.
+        :type solver: Solver
         :param defined_project_operators: List of available project operator names.
         :type defined_project_operators: list[str]
         :param defined_destroy_operators: List of available destroy operator names.
         :type defined_destroy_operators: list[str]
         :param defined_prioritize_operators: List of available prioritize operator names.
         :type defined_prioritize_operators: list[str]
+        :param declarative: Whether to parse declarative configuration or not.
+        :type declarative: bool
         :return: Dictionary mapping configuration names to lists of operator names.
         :rtype: dict[str, dict[str, list[str]]]
         """
@@ -347,7 +363,8 @@ class ConfigParser:
                     config_name, {"project_operators": set(), "destroy_operators": set(), "prioritize_operators": set()}
                 )
 
-                # TODO support for multi ops required? _config("Random", "plays_3", ("random_n";"random_40"), "1_true").
+                # !todo support for multi ops required? _config("Random", "plays_3",
+                # ("random_n";"random_40"), "1_true").
                 for info in operator_args_info:
                     key = info["key"]
                     operator_atom = args[info["index"]]
@@ -365,7 +382,7 @@ class ConfigParser:
         if not configs:
             configs["default"] = defined_operators
 
-        # TODO why sort?
+        # !todo why sort?
         sorted_configs = {
             config_name: {key: sorted(operator_names) for key, operator_names in operators.items()}
             for config_name, operators in configs.items()
@@ -385,15 +402,18 @@ class ConfigParser:
         """
         Extract and validate strategy and configurations subject to selection from atoms of _strategy/2.
 
-        :param solver: SolverInterface object.
-        :type solver: SolverInterface
+        :param solver: Solver object.
+        :type solver: Solver
         :param defined_configs: Dictionary mapping names of available configurations to lists of operator names.
         :type defined_configs: dict[str, dict[str, list[str]]]
         :param supported_strategies: List of available strategy names.
         :type supported_strategies: list[str]
         :param default_strategy: Name of strategy to use when not specified.
         :type default_strategy: str
-        :return: Strategy name and Dictionary mapping names of configurations subject to selection to lists of operator names.
+        :param declarative: Whether to parse declarative configuration or not.
+        :type declarative: bool
+        :return: Strategy name and Dictionary mapping names of configurations subject to selection to
+            lists of operator names.
         :rtype: tuple[str, dict[str, dict[str, list[str]]]]
         """
         strategy: Optional[str] = None
@@ -411,7 +431,8 @@ class ConfigParser:
                     continue
 
                 if strategy is not None:
-                    # logger.warning(f"_strategy/2: Multiple strategies specified. Using {strategy} and ignoring {strategy_name}. (atom: {atom})")
+                    # logger.warning(f"_strategy/2: Multiple strategies specified.
+                    # Using {strategy} and ignoring {strategy_name}. (atom: {atom})")
                     break
                 strategy = strategy_name
 
@@ -423,55 +444,47 @@ class ConfigParser:
                     continue
 
         if not candidate_configs:
-            # TODO maybe deep copy needed
+            # !!!todo maybe deep copy needed
             candidate_configs = defined_configs.copy()
         if strategy is None:
             strategy = default_strategy
 
         return strategy, candidate_configs
 
-    # TODO update docstrings
+    # TODO switch to Typed dicts for config_catalog and active config
     @classmethod
     def parse_lns_config(cls, lns_object: "LNS") -> dict[str, Any]:
         """
         Extract and validate LNS configuration from model.
+        If in non-declarative mode, the configuration is constructed from options
+        and default behavior of operators.
 
-        LNS configuration includes project operator names, predicate signatures of projected atoms,
-        destroy operator definitions, prioritize operator definitions,
-        configuration definitions and strategy name.
+        :param lns_object: LNS instance that provides solver and runtime options.
+        :type lns_object: LNS
+        :return: Configuration catalog used by the LNS loop.
 
-        :param solver: Solver interface object.
-        :type solver: SolverInterface
-        :param supported_strategies: List of available strategy names.
-        :type supported_strategies: list[str]
-        :param default_strategy: Name of strategy to use when not specified.
-        :type default_strategy: str
-        :return: LNS configuration dictionary with the following keys:
-            - "project_operators" (set[str]): Set of project operator names.
-            - "projected_signatures" (list[dict[str, Any]]): List of dictionaries with the following keys:
-                - "name" (str): Predicate name of projected atom.
-                - "arity" (int): Arity of projected atom.
-            - "destroy_operators" (dict[str, list[list[dict[str, Any]]]]): Dictionary mapping destroy operator names to nested lists of dictionaries with the following keys:a
-                - "type" (str): Type of percentage or number ("p", "n", or "auto").
-                - "value" (int | None): Value of percentage or number.
-            - "prioritize_operators" (dict[str, list[dict[str, Any]]]): Dictionary mapping prioritize operator names to lists of dictionaries with the following keys:
-                - "value" (int | str): Value of heuristic modifier (integer or "inf").
-                - "modifier" (str): Heuristic modifier ("sign", "level", "true", "false", "init", or "factor").
-            - "configs" (dict[str, dict[str, list[str]]]): Dictionary mapping configuration names to dictionaries with the following keys:
-                - "project_operators" (list[str]): List of project operator names.
-                - "destroy_operators" (list[str]): List of destroy operator names.
-                - "prioritize_operators" (list[str]): List of prioritize operator names.
-            - "strategy" (str): Strategy name
+            The returned dictionary contains these keys:
+            - "project_operators" (dict[str, set[tuple[str, int]]]):
+                Project operator names mapped to projected predicate signatures.
+            - "destroy_operators" (dict[str, list[dict[str, Any]]]):
+                Destroy operator names mapped to destruction parameters
+                (for example p(10), n(3), auto).
+            - "prioritize_operators" (dict[str, dict[str, Any]]):
+                Prioritize operator names mapped to heuristic value/modifier pairs.
+            - "configs" (dict[str, dict[str, list[str]]]):
+                Config names mapped to selected project/destroy/prioritize operators.
+            - "strategy" (str):
+                Name of the adaptive strategy selected for configuration updates.
         :rtype: dict[str, Any]
         """
         solver = lns_object.solver
-        config = lns_object.options
-        declarative = config.declarative
+        options = lns_object.options
+        declarative = options.declarative
         project_operators = cls._parse_project_operator(solver, declarative)
         destroy_operators = cls._parse_destroy_operators(solver, declarative)
         if not declarative:
-            if config.relax_rate > 0:
-                dest_op = [{"type": "p", "value": config.relax_rate}]
+            if options.relax_rate > 0:
+                dest_op = [{"type": "p", "value": options.relax_rate}]
             else:
                 dest_op = [{"type": "auto", "value": None}]
             destroy_operators = {"default": dest_op}
@@ -493,23 +506,23 @@ class ConfigParser:
         strategy, candidate_configs = cls._parse_strategy(
             solver,
             defined_configs,
-            config.get_supported_adaptive_strategy_names(),
-            config.default_adaptive_strategy_name,
+            options.get_supported_adaptive_strategy_names(),
+            options.default_adaptive_strategy_name,
             declarative,
         )
         config_catalog["configs"] = candidate_configs
         config_catalog["strategy"] = strategy
-        lns_object.logger.debug("LNS configuration: %s", cls._format_lns_config(config_catalog))
+        lns_object.logger.debug("LNS configuration catalog: %s", cls._format_lns_config(config_catalog))
         return config_catalog
 
     @classmethod
     def _format_lns_config(cls, config_catalog: dict[str, Any]) -> str:
         """
-        Convert LNS configuration into string.
+        Convert LNS configuration catalog into string.
 
-        :param config_catalog: LNS configuration.
+        :param config_catalog: LNS configuration catalog.
         :type config_catalog: dict[str, Any]
-        :return: String representing LNS configuration.
+        :return: String representing LNS configuration catalog.
         :rtype: str
         """
         project_operators = ",".join(
@@ -533,8 +546,11 @@ class ConfigParser:
             for name, modifiers_and_values in config_catalog["prioritize_operators"].items()
         )
 
-        out = f"project_operators={{{project_operators}}}, destroy_operators={{{destroy_operators}}}, prioritize_operators={{{prioritize_operators}}}"
-
+        out = (
+            f"project_operators={{{project_operators}}}, "
+            f"destroy_operators={{{destroy_operators}}}, "
+            f"prioritize_operators={{{prioritize_operators}}}"
+        )
         if "configs" in config_catalog:
             configs = ",".join(
                 config

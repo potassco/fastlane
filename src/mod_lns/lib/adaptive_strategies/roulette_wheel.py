@@ -2,8 +2,8 @@
 Roulette-wheel strategy for adaptive LNS configuration selection.
 """
 
-import logging
 import random
+from logging import Logger
 from typing import TYPE_CHECKING, Any
 
 from mod_lns import Model
@@ -18,6 +18,8 @@ class RouletteWheelStrategy(AdaptiveStrategy):
     """
     Roulette-wheel strategy.
 
+    :param logger: Logger for logging messages.
+    :type logger: Logger
     :param learning_rate: Learning rate used to update weights.
     :type learning_rate: float
     :param lex_weight: Weight used to convert lexicographic cost into integer cost.
@@ -26,20 +28,23 @@ class RouletteWheelStrategy(AdaptiveStrategy):
     :type converter: AutoDestructionConverter
     :param min_weight: Minimum value of weight. Defaults to 0.001.
     :type min_weight: float, optional
+    :default min_weight: 0.001
     """
 
     def __init__(
         self,
+        logger: Logger,
         learning_rate: float,
         lex_weight: int,
         converter: AutoDestructionConverter,
         min_weight: float = 0.001,
     ):
+        self.logger = logger
         self._learning_rate = learning_rate
         self._lex_weight = lex_weight
         self._converter = converter
         self._min_weight = min_weight
-        self._weights = {}
+        self._weights: dict[str, float] = {}
 
     def _compute_lex_weighted_sum(self, lex_costs: list[int]) -> int:
         """
@@ -71,13 +76,14 @@ class RouletteWheelStrategy(AdaptiveStrategy):
         else:
             initial_weight = abs(initial_model.cost[0])
 
-        configs = config_catalog["configs"].keys()  # self._generate_keys(declarative_spec)
+        catalog: dict[str, Any] = config_catalog["configs"]
+        if not isinstance(catalog, dict) or catalog == {}:
+            raise RuntimeError("Received invalid config catalog. Expected non-empty dictionary under 'configs' key.")
+        configs = catalog.keys()
         for config in configs:
-            # TODO check typing
             self._weights[config] = initial_weight
 
-        # if logger.isEnabledFor(logging.DEBUG):
-        #     logger.debug("Initial weight:", initial_weight)
+        self.logger.debug("Initial weight: %s", initial_weight)
 
     def _select_config(self, config_catalog: dict[str, Any]) -> dict[str, Any]:
         """
@@ -91,9 +97,8 @@ class RouletteWheelStrategy(AdaptiveStrategy):
         weights = self._weights.values()
         normalized_weights = [w / max(weights) for w in weights]
         selected_config = random.choices(list(self._weights.keys()), weights=normalized_weights, k=1)[0]
-        # print("weights:", self._weights)
-        # logger.info("Selected LNPS configuration:", active_config["config_repr"])
         active_config = self._get_config(selected_config, config_catalog)
+        self.logger.debug("Selected LNPS configuration: %s", active_config["config_repr"])
         return active_config
 
     def get_initial_config(self, config_catalog: dict[str, Any], initial_model: Model) -> dict[str, Any]:
@@ -104,13 +109,18 @@ class RouletteWheelStrategy(AdaptiveStrategy):
         :type config_catalog: dict[str, Any]
         :param initial_model: Initial model.
         :type initial_model: Model
-        :return: LNS configuration dictionary with the following keys:
+        :return: LNS configuration dictionary.
+
+            The returned dictionary contains these keys:
             - "name" (str): Name of LNS configuration.
-            - "project_operators" (list[str]): List of project operator names.
-            - "destroy_operators" (list[dict[str, Any]]): List of names and percentages or numbers of destroy operators.
-            - "prioritize_operators" (list[dict[str, Any]]): List of names, heuristic modifiers, and their values of prioritize operators.
-            - "key" (tuple[Any, ...]): Key of LNS configuration.
-            - "config_repr" (str): String representation of LNS configuration.
+            - "project_operators" (list[str]):
+                List of project operator names.
+            - "destroy_operators" (list[dict[str, Any]]):
+                List of names and percentages or numbers of destroy operators.
+            - "prioritize_operators" (list[dict[str, Any]]):
+                List of names, heuristic modifiers, and their values of prioritize operators.
+            - "config_repr" (str):
+                String representation of LNS configuration.
         :rtype: dict[str, Any]
         """
         self._initialize_weights(config_catalog, initial_model)
@@ -143,7 +153,7 @@ class RouletteWheelStrategy(AdaptiveStrategy):
 
         # Guard against zero/negative elapsed time
         if time_to_last_model <= 0:
-            logging.warning("time_to_last_model <= 0; treated as 0.001")
+            self.logger.warning("time_to_last_model <= 0; treated as 0.001")
             time_to_last_model = 0.001
 
         return (current_cost - new_cost) / time_to_last_model
@@ -159,9 +169,7 @@ class RouletteWheelStrategy(AdaptiveStrategy):
         """
         weight = self._weights[spec_name]
         new_weight = (1 - self._learning_rate) * weight + self._learning_rate * effectiveness_score
-        if new_weight < self._min_weight:
-            new_weight = self._min_weight
-        self._weights[spec_name] = new_weight
+        self._weights[spec_name] = max(new_weight, self._min_weight)
 
     def update_config(
         self,
@@ -186,9 +194,8 @@ class RouletteWheelStrategy(AdaptiveStrategy):
             lns_object.current_model, lns_object.new_model, stats[-1]["time_to_last_model"]
         )
         config_name = active_config["name"]
-        self._weights[config_name]
+        weight = self._weights[config_name]
         self._update_weights(config_name, effectiveness_score)
-        self._weights[config_name]
-        # if logger.isEnabledFor(logging.DEBUG):
-        #     logger.debug(active_config["config_repr"], "weight:", weight, "->", new_weight)
+        new_weight = self._weights[config_name]
+        self.logger.debug("%s weight: %s -> %s", active_config["config_repr"], weight, new_weight)
         return self._converter.convert_auto_in_config(self._select_config(config_catalog), lns_object)

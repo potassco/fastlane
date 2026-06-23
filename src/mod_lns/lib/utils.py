@@ -94,6 +94,8 @@ def update_time_limit(lns_object: "LNS", solver_config: "SolverConfig") -> None:
     """
     Update solve time-limit.
 
+    :param lns_object: LNS object.
+    :type lns_object: LNS
     :param solver_config: Solver configuration to update.
     :type solver_config: SolverConfig
     """
@@ -102,7 +104,7 @@ def update_time_limit(lns_object: "LNS", solver_config: "SolverConfig") -> None:
         remaining_time = lns_object.timer.remaining_time()  # return float, cast to int (maybe in solver)
         if solver_tl is None:
             solver_config.time_limit = remaining_time
-        elif remaining_time > 0 and remaining_time < solver_tl:
+        elif 0 < remaining_time < solver_tl:
             solver_config.time_limit = remaining_time
             lns_object.logger.debug("elapsed time: %d seconds", lns_object.timer.get_elapsed_time())
             lns_object.logger.debug(
@@ -154,8 +156,12 @@ def increase_time_limit(timer: Timer, time_limit: Optional[int], solver_time_lim
     """
     Increase time limit by a percentage.
 
-    :param current_time_limit: Current time limit in seconds (or None for unlimited).
-    :type current_time_limit: int | None
+    :param timer: Timer object.
+    :type timer: Timer
+    :param time_limit: Overall time limit in seconds (or None for unlimited).
+    :type time_limit: Optional[int]
+    :param solver_time_limit: Current solver time limit in seconds.
+    :type solver_time_limit: int
     :param increase_rate: Percentage to increase the time limit (e.g., 20 for 20%).
     :type increase_rate: float
     :return: New time limit in seconds (or None for unlimited).
@@ -172,6 +178,7 @@ def increase_time_limit(timer: Timer, time_limit: Optional[int], solver_time_lim
 
 
 def increase_cutoff(
+    *,
     current_cutoff: int,
     cutoff_threshold: int,
     increase_rate: int,
@@ -182,9 +189,20 @@ def increase_cutoff(
     """
     Update the solver's cutoff for the next iteration.
 
-    :param solver_config: Solver configuration
-    :type solver_config: SolverConfig
-    :return: int
+    :param current_cutoff: Current cutoff value.
+    :type current_cutoff: int
+    :param cutoff_threshold: Threshold for increasing the cutoff.
+    :type cutoff_threshold: int
+    :param increase_rate: Percentage to increase the cutoff (e.g., 20 for 20%).
+    :type increase_rate: int
+    :param timer: Timer object.
+    :type timer: Timer
+    :param time_limit: Overall time limit in seconds (or None for unlimited).
+    :type time_limit: Optional[int]
+    :param latest_stats: Latest statistics dictionary containing "no_improvement_cutoff_count".
+    :type latest_stats: dict[str, Any]
+    :return: New cutoff value.
+    :rtype: int
     """
     if increase_rate == 0:
         return current_cutoff
@@ -197,3 +215,4 @@ def increase_cutoff(
         and latest_stats.get("no_improvement_cutoff_count", 0) % cutoff_threshold == 0
     ):
         return math.ceil(current_cutoff * increase_rate / 100 + current_cutoff)
+    return current_cutoff

@@ -182,7 +182,7 @@ class ClingoDLSolver(ClingoSolver):
         restarts: int = 0
         bound = prev_bound
 
-        while not self.finished and not self._exhausted and not self._timer.is_ringing:
+        while not self.finished and not self._exhausted and not self._solve_timer.is_ringing:
             new_solve_limit = ["umax", "umax"]
             if solve_limit[0] != "umax":
                 conflicts += self.control.statistics["solving"]["solvers"]["conflicts"]
@@ -212,7 +212,7 @@ class ClingoDLSolver(ClingoSolver):
                 async_=True,
             ) as handle:
                 while not handle.wait(0):
-                    if self._timer.is_ringing and not self._interrupted and not self.finished:
+                    if self._solve_timer.is_ringing and not self._interrupted and not self.finished:
                         self._interrupted = True
                         self.logger.debug("interrupted by timer")
                         handle.cancel()
@@ -226,6 +226,34 @@ class ClingoDLSolver(ClingoSolver):
             if self.result == "UNSATISFIABLE":
                 self.result = "OPTIMUM FOUND"
                 self.optimum = "yes"
+
+    def _apply_config_to_control(self, config: SolverConfig) -> None:
+        """
+        Apply solver configuration to the clingo control object.
+
+        :param config: Solver configuration.
+        :type config: SolverConfig
+        """
+        if config.configuration is not None:
+            self.control.configuration.configuration = config.configuration
+        if config.opt_strategy is not None:
+            self.control.configuration.solver.opt_strategy = config.opt_strategy
+        if config.opt_heuristic is not None:
+            self.control.configuration.solver.opt_heuristic = config.opt_heuristic
+        if config.restart_on_model is not None:
+            self.control.configuration.solver.restart_on_model = config.restart_on_model
+        if config.heuristic is not None:
+            self.control.configuration.solver.heuristic = config.heuristic
+        if config.opt_mode is not None:
+            if self.minimize_variable is not None:
+                split_opt_mode = config.opt_mode.split(",")
+                if len(split_opt_mode) == 2:
+                    bound = int(split_opt_mode[1])
+                    self._add_bound(bound)
+            else:
+                self.control.configuration.solve.opt_mode = config.opt_mode
+        if config.solve_limit is not None:
+            self.control.configuration.solve.solve_limit = config.solve_limit
 
     # pylint: disable=too-many-branches, too-many-statements
     def solve(
@@ -245,8 +273,8 @@ class ClingoDLSolver(ClingoSolver):
         """
         assert isinstance(self.control, clingo.control.Control)
         assert isinstance(self.theory, ClingoDLTheory)
-        assert isinstance(self.control.configuration.solve, clingo.Configuration)
-        assert isinstance(self.control.configuration.solver, clingo.Configuration)
+        # assert isinstance(self.control.configuration.solve, clingo.Configuration)
+        # assert isinstance(self.control.configuration.solver, clingo.Configuration)
 
         # remember assumptions were are being used
         if assumptions:
@@ -262,35 +290,9 @@ class ClingoDLSolver(ClingoSolver):
             self._variability = config.variability
             time_limit = config.time_limit
             cutoff = config.cutoff
-            if config.configuration is not None:
-                self.control.configuration.configuration = config.configuration
-            if config.opt_strategy is not None:
-                self.control.configuration.solver.opt_strategy = config.opt_strategy
-            if config.opt_heuristic is not None:
-                self.control.configuration.solver.opt_heuristic = config.opt_heuristic
-            if config.restart_on_model is not None:
-                self.control.configuration.solver.restart_on_model = config.restart_on_model
-            if config.heuristic is not None:
-                self.control.configuration.solver.heuristic = config.heuristic
-            if config.opt_mode is not None:
-                if self.minimize_variable is not None:
-                    split_opt_mode = config.opt_mode.split(",")
-                    if len(split_opt_mode) == 2:
-                        bound = int(split_opt_mode[1])
-                        self._add_bound(bound)
-                else:
-                    self.control.configuration.solve.opt_mode = config.opt_mode
-            if config.solve_limit is not None:
-                self.control.configuration.solve.solve_limit = config.solve_limit
+            self._apply_config_to_control(config)
 
-        self.logger.debug("configuration: %s", self.control.configuration.configuration)
-        self.logger.debug("opt-strategy: %s", self.control.configuration.solver.opt_strategy)
-        self.logger.debug("parallel-mode: %s", self.control.configuration.solve.parallel_mode)
-        self.logger.debug("opt-heuristic: %s", self.control.configuration.solver.opt_heuristic)
-        self.logger.debug("restart-on-model: %s", self.control.configuration.solver.restart_on_model)
-        self.logger.debug("heuristic: %s", self.control.configuration.solver.heuristic)
-        self.logger.debug("opt-mode: %s", self.control.configuration.solve.opt_mode)
-        self.logger.debug("solve-limit: %s", self.control.configuration.solve.solve_limit)
+        self._control_config_debug()
         self.logger.debug("time-limit: %s", time_limit)
         self.logger.debug("cutoff: %s", cutoff)
 
@@ -323,6 +325,7 @@ class ClingoDLSolver(ClingoSolver):
 
         if self.minimize_variable is not None:
             # use remaining time to minimize variable
+            # cutoff timer ignored
             self._minimize_variable(bound)
 
         # if self.last_model is None and not self.finished:

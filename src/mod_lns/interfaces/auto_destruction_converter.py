@@ -18,8 +18,8 @@ class AutoDestructionConverter(ABC):
     @classmethod
     def __subclasshook__(cls, subclass: type) -> bool:  # nocoverage
         return (
-            hasattr(subclass, "_compute_auto_destruction_percent")
-            and callable(subclass._compute_auto_destruction_percent)
+            hasattr(subclass, "compute_auto_destruction_percent")
+            and callable(subclass.compute_auto_destruction_percent)
             or NotImplemented
         )
 
@@ -40,18 +40,19 @@ class AutoDestructionConverter(ABC):
             for percent_or_number in destroy_operator["percents_or_numbers"]:
                 if percent_or_number["type"] == "auto":
                     percent_or_number["type"] = "p"
-                    destruction_percent = self._compute_auto_destruction_percent(
+                    destruction_percent = self.compute_auto_destruction_percent(
                         config["name"], config["project_operators"], destroy_operator_name
                     )
                     if lns_object is not None:
                         lns_object.logger.debug(
-                            f"Auto destruction percent: {destruction_percent} (destroy operator: {destroy_operator_name})"
+                            f"Auto destruction percent: {destruction_percent} "
+                            f"(destroy operator: {destroy_operator_name})"
                         )
                     percent_or_number["value"] = destruction_percent
         return resolved_config
 
     @abstractmethod
-    def _compute_auto_destruction_percent(
+    def compute_auto_destruction_percent(
         self, config_name: str, project_operators: list[dict[str, Any]], destroy_operator_name: str
     ) -> float:
         """

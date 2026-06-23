@@ -157,4 +157,10 @@ class AdaptiveStrategy(ABC):
             for prioritize_operator in config["prioritize_operators"]
         )
 
-        return f"{config['name']}[project_operators={{{project_operators}}},destroy_operators={{{destroy_operators}}},prioritize_operators={{{prioritize_operators}}}]"
+        s = (
+            f"{config['name']}["
+            f"project_operators={{{project_operators}}},"
+            f"destroy_operators={{{destroy_operators}}},"
+            f"prioritize_operators={{{prioritize_operators}}}]"
+        )
+        return s

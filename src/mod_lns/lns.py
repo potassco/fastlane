@@ -6,7 +6,7 @@ import math
 import random
 from typing import Any, Optional
 
-from clingo import Function, Number, Symbol
+from clingo import Symbol
 
 from mod_lns import UNSET, Model, Timer
 from mod_lns.interfaces.adaptive_strategy import AdaptiveStrategy
@@ -34,7 +34,7 @@ LINE = "------------------------------------------------------------------------
 # pylint: disable=too-many-instance-attributes
 class LNS:
     """
-    Class handling and  performing LNS.
+    Class handling and performing LNS.
 
     :param files: Problem encodings.
     :type files: list[str]
@@ -58,6 +58,7 @@ class LNS:
 
         self.files: list[str] = files
 
+        # step/iteration counter
         self.step_c: int = 0
 
         self.new_model: Optional[Model] = None
@@ -65,18 +66,23 @@ class LNS:
         self.best_model: Model = Model()
 
         self.stats: list[dict[str, Any]] = []
-        # self.context: str
 
+        # !todo: consider using TypedDict
         # parsed config catalog, includes all available configs and operators
         self._config_catalog: dict[str, Any] = {}
         # selected config specification for current iteration
         self._active_config: dict[str, Any] = {}
+        # operator specifications of current model
+        self._op_specs: dict[str, set[Symbol]] = {}
+
         self.prev_fixed_atoms: set[Symbol] = set()
+
         self._is_variable: bool = False
         self._adaptive_strategy: AdaptiveStrategy = StaticStrategy()
-        # remove?
-        self._falsified: bool = False
-        self._false_weight: Function = Function("inf")
+
+        # currently not supported
+        # self._falsified: bool = False
+        # self._false_weight: Function = Function("inf")
 
         self.init_solver_config: SolverConfig = SolverConfig()
         self.lns_solver_config: SolverConfig = SolverConfig()
@@ -132,7 +138,7 @@ class LNS:
 
     def pre_setup(self) -> None:
         """
-        Perform actions before solver setup.
+        Get solver configurations, prepare time limits and set random seed.
         """
         self.timer.start(self.options.time_limit)  # None for no time limit
 
@@ -148,7 +154,9 @@ class LNS:
             elif tl < init_tl:
                 self.init_solver_config.time_limit = tl
 
-        # TODO add warning that opt cant be proven when using assumptions
+        # warn about optimality if heuristics are disabled or strict lns-opt-mode
+        if not self.options.fix:
+            self.logger.warning("Optimality cannot be proven when using assumptions (i.e. heuristics disabled)")
         lns_opt_mode = self.options.lns_opt_mode
         if lns_opt_mode["modifier"] is not None and lns_opt_mode["nf"] is not None:
             if lns_opt_mode["modifier"] == "dynamic":
@@ -184,9 +192,9 @@ class LNS:
 
     def post_setup(self) -> None:
         """
-        Perform actions after solver setup.
+        Ground the base ASP program.
         """
-        self.solver.ground()
+        self.solver.ground([("base", [])], self.options.context)
 
     def get_first_solution(self) -> bool:
         """
@@ -205,16 +213,18 @@ class LNS:
 
     def post_first_solution(self) -> None:
         """
-        Actions to perform after finding the first solution.
+        Get LNS configuration catalog and prepare heuristics if needed.
         """
         if not self.solver.finished:
             self._config_catalog = ConfigParser.parse_lns_config(self)
 
-            self._adaptive_strategy = self.options.build_adaptive_strategy(self._config_catalog["strategy"])
+            self._adaptive_strategy = self.options.build_adaptive_strategy(
+                self._config_catalog["strategy"], self.logger
+            )
             self._active_config = self._adaptive_strategy.get_initial_config(self._config_catalog, self.current_model)
 
             # heuristics
-            if self.options.use_heuristics:
+            if self.options.fix:
                 heuristics = generate_heuristic_subprogram(self._config_catalog)
                 self.logger.debug("Adding heuristics:\n%s", heuristics)
                 self.solver.add("heuristic", ["t"], heuristics)
@@ -240,6 +250,7 @@ class LNS:
         Stop if:
         max # of steps exceeded,
         overall time limit exceeded
+        or solver finished or stopped.
 
         :return: Whether to stop LNS or not.
         :rtype: bool
@@ -261,7 +272,8 @@ class LNS:
     def _check_variability(self) -> bool:
         """
         Check whether the LNPS configuration is variable.
-        :return: True if variability is present, False otherwise
+
+        :return: True if configuration is variable, False otherwise
         :rtype: bool
         """
         for prioritize_operator in self._active_config["prioritize_operators"]:
@@ -271,28 +283,27 @@ class LNS:
 
     def pre_relax(self) -> None:
         """
-        Actions to perform before relaxing the solution,
-        at the start of a new iteration.
+        Load operator specifications and check variability of the configuration before relaxation.
         """
         self._printout = False
 
         self._is_variable = self._check_variability()
 
-        # TODO self._op_specs =
-        self._active_config["op_specs"] = ConfigParser.get_op_specs(self.current_model)
+        self._op_specs = ConfigParser.get_op_specs(self.current_model)
 
     def relax(self) -> set[Symbol]:
         """
-        Relax portion of atoms given by the configuration.
+        Relax portion of atoms.
 
         :return: Fixed (not relaxed) atoms.
         :rtype: set[Symbol]
         """
-        return relax_config(self.current_model, self._active_config, self.logger)
+        active_runtime = {**self._active_config, "op_specs": self._op_specs}
+        return relax_config(self.current_model, active_runtime, self.logger)
 
     def repair(self, fixed_atoms: set[Symbol]) -> Optional[Model]:
         """
-        Repair solution.
+        Repair solution and collect some statistics.
 
         :param fixed_atoms: Fixed atoms.
         :type fixed_atoms: set[Symbol]
@@ -308,23 +319,26 @@ class LNS:
         self.lns_solver_config.variability = self._is_variable
 
         # heuristics
-        if self.options.use_heuristics:
+        if self.options.fix == "heuristics":
             self.logger.debug("repair using heuristics")
-            fixed_atoms_heuristics = get_fixed_atoms_heuristics(self._active_config, fixed_atoms, self.step_c)
+            fixed_atoms_heuristics = get_fixed_atoms_heuristics(
+                self._active_config, self._op_specs, fixed_atoms, self.step_c
+            )
             self.prev_fixed_atoms = fixed_atoms_heuristics.copy()
             new_model = repair_heuristics(
-                self.solver,
-                self.lns_solver_config,
-                fixed_atoms_heuristics,
-                self.prev_fixed_atoms,
-                self.step_c,
-                self.logger,
+                solver=self.solver,
+                solver_config=self.lns_solver_config,
+                fixed_atoms_heuristics=fixed_atoms_heuristics,
+                prev_fixed_atoms_heuristics=self.prev_fixed_atoms,
+                step=self.step_c,
+                logger=self.logger,
             )
         # assumptions
-        else:
+        elif self.options.fix == "assumptions":
             self.logger.debug("repair using assumptions")
             new_model = repair_assumptions(self.solver, self.lns_solver_config, fixed_atoms)
-
+        else:
+            raise RuntimeError(f"Unknown fix method: {self.options.fix}")
         self.logger.debug("objective value of new solution: %s", new_model.cost)
         self.logger.debug(
             "objective value of current incumbent solution: %s",
@@ -333,7 +347,7 @@ class LNS:
         self.logger.debug("objective value of current best solution: %s", self.best_model.cost)
         self.logger.debug(LINE)
 
-        # TODO stats?
+        # !todo: add more stats
         if self.stats:
             if self.solver.result in {"UNSATISFIABLE", "OPTIMUM FOUND"}:
                 new_ic = self.stats[-1].get("no_improvement_cutoff_count", 0)
@@ -358,7 +372,7 @@ class LNS:
 
     def post_repair(self) -> None:
         """
-        Actions to perform after repairing the solution.
+        Get new configuration from adaptive strategy.
         """
         self._active_config = self._adaptive_strategy.update_config(
             self._active_config, self._config_catalog, self.stats, self
@@ -398,7 +412,7 @@ class LNS:
 
     def accepted(self) -> None:
         """
-        Do something after new model is accepted.
+        New model is accepted.
         """
         self.logger.debug("new model accepted")
 
@@ -416,14 +430,15 @@ class LNS:
 
     def better(self) -> None:
         """
-        Do something after new model is better than the best model.
+        New model is better than the best model.
         """
         self.logger.debug("new best model")
         self._printout = True
 
     def pre_next_iteration(self) -> None:
         """
-        Do something before next iteration.
+        Prepare for the next iteration.
+        Update time and solve limits.
         """
         if self.lns_solver_config.solve_limit is not None:
             self.lns_solver_config.solve_limit = increase_solve_limit(
@@ -439,12 +454,12 @@ class LNS:
             )
         if self.lns_solver_config.cutoff is not None:
             self.lns_solver_config.cutoff = increase_cutoff(
-                self.lns_solver_config.cutoff,
-                self.options.lns_cutoff_threshold,
-                self.options.lns_cutoff_increase_rate,
-                self.timer,
-                self.options.time_limit,
-                self.stats[-1],
+                current_cutoff=self.lns_solver_config.cutoff,
+                cutoff_threshold=self.options.lns_cutoff_threshold,
+                increase_rate=self.options.lns_cutoff_increase_rate,
+                timer=self.timer,
+                time_limit=self.options.time_limit,
+                latest_stats=self.stats[-1],
             )
 
         if self._iter_format == "":
@@ -479,6 +494,7 @@ class LNS:
         print(f"Overall time: {self.timer.get_elapsed_time():.3f}s")
         print(LINE)
 
+    # pylint: disable=too-many-statements
     def main(self) -> None:
         """
         Run Large-Neighbourhood Search according to set parameters.
@@ -521,8 +537,6 @@ class LNS:
 
         self.step_c = 0
 
-        # get first solution - to be reworked
-        # TODO exit if optimum
         self.logger.debug(LINE)
         self.logger.debug("get first solution")
         if not self.get_first_solution():
@@ -539,7 +553,7 @@ class LNS:
             self.step_c += 1
 
             self.logger.debug(LINE)
-            self.logger.debug(f"iteration {self.step_c}")
+            self.logger.debug("iteration: %s", self.step_c)
             self.logger.debug("pre_relax")
             self.pre_relax()
 
@@ -550,7 +564,9 @@ class LNS:
 
             self.logger.debug(LINE)
             self.logger.debug(
-                f"repair with {len(fixed_atoms)} fixed atoms ({(len(self.current_model.shown) - len(fixed_atoms))/len(self.current_model.shown)*100:.2f}% relaxed)"
+                "repair with %s fixed atoms (%.2f%% relaxed)",
+                len(fixed_atoms),
+                (len(self.current_model.shown) - len(fixed_atoms)) / len(self.current_model.shown) * 100,
             )
             self.new_model = self.repair(fixed_atoms)
 

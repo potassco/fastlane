@@ -1,5 +1,5 @@
 """
-Parser for default strategy in LNS.
+Parser for LNS options.
 """
 
 import importlib
@@ -9,7 +9,7 @@ import os
 import pkgutil
 import sys
 import uuid
-from argparse import ArgumentParser, BooleanOptionalAction, RawTextHelpFormatter
+from argparse import ArgumentParser, ArgumentTypeError, BooleanOptionalAction, RawTextHelpFormatter
 from textwrap import dedent
 from typing import Any, Optional, no_type_check
 
@@ -31,6 +31,8 @@ else:
     from importlib import metadata  # nocoverage
 
 VERSION = metadata.version("mod_lns")
+
+# pylint: disable=line-too-long
 
 
 class OptionsParser:
@@ -70,12 +72,21 @@ class OptionsParser:
 
     @staticmethod
     def formatter(prog: str) -> RawTextHelpFormatter:
+        """
+        Get custom formatter for command line options.
+
+        :param prog: Program name.
+        :type prog: str
+        :return: Custom formatter.
+        :rtype: RawTextHelpFormatter
+        """
         return RawTextHelpFormatter(
             prog,
             max_help_position=10,
             width=100,
         )
 
+    # pylint: disable=too-many-statements
     @classmethod
     def get_parser(cls) -> ArgumentParser:
         """
@@ -103,7 +114,7 @@ class OptionsParser:
             "debug": logging.DEBUG,
         }
 
-        parser.register("type", "logging_level", lambda name: logging_levels.get(name))
+        parser.register("type", "logging_level", logging_levels.get)
 
         solvers = {
             solver_cls.get_name(): solver_cls()
@@ -116,7 +127,7 @@ class OptionsParser:
             """
             solver = solvers.get(string)
             if solver is None:
-                parser.error(f"'{string}': Invalid solver. Choose from {','.join(solvers.keys())}")
+                raise ArgumentTypeError(f"'{string}': Invalid solver. Choose from {','.join(solvers.keys())}")
             return solver
 
         parser.register("type", "solver", lambda string: parse_solver(solvers, string))
@@ -127,10 +138,10 @@ class OptionsParser:
             """
             try:
                 value = int(string)
-            except ValueError:
-                parser.error(f"'{string}': Invalid positive integer.")
+            except ValueError as e:
+                raise ArgumentTypeError(f"'{string}': Invalid positive integer.") from e
             if value < 0:
-                parser.error(f"'{string}': Value must be non-negative.")
+                raise ArgumentTypeError(f"'{string}': Value must be non-negative.")
             return value
 
         parser.register("type", "pos_int", parse_pos_int)
@@ -155,8 +166,8 @@ class OptionsParser:
                 return None
             try:
                 ctl.configuration.solve.solve_limit = string
-            except RuntimeError:
-                parser.error(f"'{string}': Invalid solve limit.")
+            except RuntimeError as e:
+                raise ArgumentTypeError(f"'{string}': Invalid solve limit.") from e
             return string
 
         parser.register("type", "solve_limit", parse_solve_limit)
@@ -167,10 +178,10 @@ class OptionsParser:
             """
             try:
                 value = float(string)
-            except ValueError:
-                parser.error(f"'{string}': Invalid float value.")
-            if not (0 < value < 1):
-                parser.error(f"'{string}': Value must be between 0 and 1.")
+            except ValueError as e:
+                raise ArgumentTypeError(f"'{string}': Invalid float value.") from e
+            if not 0 < value < 1:
+                raise ArgumentTypeError(f"'{string}': Value must be between 0 and 1.")
             return value
 
         parser.register("type", "0_1_float", parse_0_1_float)
@@ -181,10 +192,10 @@ class OptionsParser:
             """
             try:
                 value = int(string)
-            except ValueError:
-                parser.error(f"'{string}': {msg}")
-            if not (0 <= value <= 100):
-                parser.error(f"'{string}': {msg}")
+            except ValueError as e:
+                raise ArgumentTypeError(f"'{string}': {msg}") from e
+            if not 0 <= value <= 100:
+                raise ArgumentTypeError(f"'{string}': {msg}")
             return value
 
         parser.register("type", "percent", parse_percent)
@@ -201,8 +212,7 @@ class OptionsParser:
                     return "simple", -1
                 rate = parse_percent(rate, msg="Invalid relax rate, rate must be between 0 and 100 or 'auto'.")
                 return "simple", rate
-            else:
-                parser.error(f"'{string}': Invalid relaxation. Choose from {{simple,<rate>|declarative}}")
+            raise ArgumentTypeError(f"'{string}': Invalid relaxation. Choose from {{simple,<rate>|declarative}}")
 
         parser.register("type", "relaxation", parse_relaxation)
 
@@ -214,17 +224,17 @@ class OptionsParser:
             if len(values) == 1:
                 try:
                     x = int(values[0])
-                except ValueError:
-                    parser.error(f"'{string}': Invalid number of threads. Integer expected.")
+                except ValueError as e:
+                    raise ArgumentTypeError(f"'{string}': Invalid number of threads. Integer expected.") from e
                 try:
                     assert 1 <= x <= 64
-                except AssertionError:
-                    parser.error(f"'{string}': Invalid number of threads. 1 <= x <= 64 expected.")
+                except AssertionError as e:
+                    raise ArgumentTypeError(f"'{string}': Invalid number of threads. 1 <= x <= 64 expected.") from e
             elif len(values) == 2:
                 if values[1] not in ("compete", "split"):
-                    parser.error(f"'{string}': Invalid mode. {{compete|split}} expected.")
+                    raise ArgumentTypeError(f"'{string}': Invalid mode. {{compete|split}} expected.")
             else:
-                parser.error(f"'{string}': Invalid argument.")
+                raise ArgumentTypeError(f"'{string}': Invalid argument.")
             return string
 
         parser.register("type", "parallel_mode", parse_parallel_mode)
@@ -235,25 +245,25 @@ class OptionsParser:
             """
             try:
                 term = parse_term(string)
-            except RuntimeError:
-                parser.error(f"'{string}': Invalid minimize variable.")
+            except RuntimeError as e:
+                raise ArgumentTypeError(f"'{string}': Invalid minimize variable.") from e
             return term
 
         parser.register("type", "minimize_variable", parse_minimize_variable)
 
-        def parse_falsify(string: str) -> str:
-            """
-            Parse the falsify string.
-            """
-            if string == "inf":
-                return string
-            try:
-                int(string)
-            except ValueError:
-                parser.error(f"'{string}': Invalid falsify variable. {{<n>, inf}} expected.")
-            return string
+        # def parse_falsify(string: str) -> str:
+        #     """
+        #     Parse the falsify string.
+        #     """
+        #     if string == "inf":
+        #         return string
+        #     try:
+        #         int(string)
+        #     except ValueError as e:
+        #         raise ArgumentTypeError(f"'{string}': Invalid falsify variable. {{<n>, inf}} expected.") from e
+        #     return string
 
-        parser.register("type", "falsify", parse_falsify)
+        # parser.register("type", "falsify", parse_falsify)
 
         def _can_instantiate_without_args(cls: type) -> bool:
             """
@@ -277,17 +287,17 @@ class OptionsParser:
             """
             path = os.path.abspath(os.path.expanduser(string))
             if not os.path.isfile(path):
-                parser.error(f"'{string}': File does not exist.")
+                raise ArgumentTypeError(f"'{string}': File does not exist.")
 
             spec = importlib.util.spec_from_file_location(f"context_{uuid.uuid4().hex}", path)
             if spec is None or spec.loader is None:
-                parser.error(f"'{string}': Failed to load context module.")
+                raise ArgumentTypeError(f"'{string}': Failed to load context module.")
 
             module = importlib.util.module_from_spec(spec)
             try:
                 spec.loader.exec_module(module)
             except Exception as exc:  # pylint: disable=broad-exception-caught
-                parser.error(f"'{string}': Error while importing context module: {exc}")
+                raise ArgumentTypeError(f"'{string}': Error while importing context module: {exc}") from exc
 
             classes = [
                 cls
@@ -298,8 +308,8 @@ class OptionsParser:
             if len(classes) == 1:
                 return classes[0]()
             if len(classes) == 0:
-                parser.error(f"'{string}': No valid context class found in provided module.")
-            parser.error(
+                raise ArgumentTypeError(f"'{string}': No valid context class found in provided module.")
+            raise ArgumentTypeError(
                 f"'{string}': Multiple valid context classes found "
                 f"({','.join(class_.__name__ for class_ in classes)}). Provide only one."
             )
@@ -313,7 +323,9 @@ class OptionsParser:
             Parse the adaptive strategy string.
             """
             if string not in adaptive_strategies:
-                parser.error(f"'{string}': Invalid adaptive strategy. Choose from {{{','.join(adaptive_strategies)}}}")
+                raise ArgumentTypeError(
+                    f"'{string}': Invalid adaptive strategy. Choose from {{{','.join(adaptive_strategies)}}}"
+                )
             return string
 
         parser.register("type", "adaptive_strategy", parse_adaptive_strategy)
@@ -331,7 +343,9 @@ class OptionsParser:
             """
             converter = converters.get(string)
             if converter is None:
-                parser.error(f"'{string}': Invalid auto converter. Choose from {','.join(converters.keys())}")
+                raise ArgumentTypeError(
+                    f"'{string}': Invalid auto converter. Choose from {','.join(converters.keys())}"
+                )
             return converter
 
         parser.register("type", "auto_converter", lambda string: parse_auto_converter(converters, string))
@@ -343,8 +357,8 @@ class OptionsParser:
             ctl = Control()
             try:
                 ctl.configuration.solve.opt_mode = string  # type: ignore
-            except RuntimeError:
-                parser.error(f"'{string}': Invalid opt mode.")
+            except RuntimeError as e:
+                raise ArgumentTypeError(f"'{string}': Invalid opt mode.") from e
             return string
 
         parser.register("type", "init_opt_mode", parse_init_opt_mode)
@@ -357,7 +371,7 @@ class OptionsParser:
             opt_mode: dict[str, Any] = {}
             values = string.split(",")
             if values[0] not in ("opt", "enum", "optN", "ignore"):
-                parser.error(f"'{string}': Invalid optimization mode. {{opt|enum|optN|ignore}} expected.")
+                raise ArgumentTypeError(f"'{string}': Invalid optimization mode. {{opt|enum|optN|ignore}} expected.")
             opt_mode["mode"] = values[0]
             if len(values) == 1:
                 opt_mode["nf"] = None
@@ -365,8 +379,8 @@ class OptionsParser:
             elif len(values) == 2:
                 try:
                     float(values[1])
-                except ValueError:
-                    parser.error(f"'{string}': Invalid bound. float expected.")
+                except ValueError as e:
+                    raise ArgumentTypeError(f"'{string}': Invalid bound. float expected.") from e
                 opt_mode["nf"] = values[1]
                 opt_mode["modifier"] = "dynamic"
             elif len(values) >= 3:
@@ -374,21 +388,21 @@ class OptionsParser:
                     try:
                         for v in values[1:-1]:
                             int(v)
-                    except ValueError:
-                        parser.error(f"'{string}': Invalid bounds. integers expected.")
+                    except ValueError as e:
+                        raise ArgumentTypeError(f"'{string}': Invalid bounds. integers expected.") from e
                     opt_mode["nf"] = ",".join(values[1:-1])
                     opt_mode["modifier"] = "static"
                 elif values[-1] == "dynamic":
                     if len(values) >= 4:
-                        parser.error(f"'{string}': Invalid number of bounds. Only one boundary expected.")
+                        raise ArgumentTypeError(f"'{string}': Invalid number of bounds. Only one boundary expected.")
                     try:
                         float(values[1])
-                    except ValueError:
-                        parser.error(f"'{string}': Invalid bound. float expected.")
+                    except ValueError as e:
+                        raise ArgumentTypeError(f"'{string}': Invalid bound. float expected.") from e
                     opt_mode["nf"] = values[1]
                     opt_mode["modifier"] = "dynamic"
                 else:
-                    parser.error(f"'{string}': Invalid boundary mode. {{static|dynamic}} expected.")
+                    raise ArgumentTypeError(f"'{string}': Invalid boundary mode. {{static|dynamic}} expected.")
             return opt_mode
 
         parser.register("type", "lns_opt_mode", parse_lns_opt_mode)
@@ -400,8 +414,8 @@ class OptionsParser:
             ctl = Control()
             try:
                 ctl.configuration.solver.opt_strategy = string  # type: ignore
-            except RuntimeError:
-                parser.error(f"'{string}': Invalid opt strategy.")
+            except RuntimeError as e:
+                raise ArgumentTypeError(f"'{string}': Invalid opt strategy.") from e
             return string
 
         parser.register("type", "opt_strategy", parse_opt_strategy)
@@ -413,8 +427,8 @@ class OptionsParser:
             ctl = Control()
             try:
                 ctl.configuration.configuration = string
-            except RuntimeError:
-                parser.error(f"'{string}': Invalid configuration.")
+            except RuntimeError as e:
+                raise ArgumentTypeError(f"'{string}': Invalid configuration.") from e
             return string
 
         parser.register("type", "configuration", parse_configuration)
@@ -426,8 +440,8 @@ class OptionsParser:
             ctl = Control()
             try:
                 ctl.configuration.solver.heuristic = string  # type: ignore
-            except RuntimeError:
-                parser.error(f"'{string}': Invalid heuristic.")
+            except RuntimeError as e:
+                raise ArgumentTypeError(f"'{string}': Invalid heuristic.") from e
             return string
 
         parser.register("type", "heuristic", parse_heuristic)
@@ -465,38 +479,38 @@ class OptionsParser:
                 f"Set LNS configuration preset [{LNSOptions.preset}]\n"
                 "Manually set parameters take precedence over presets.\n"
                 "Presets can be used as a base configuration and then manually adjust individual parameters as needed.\n"
-                "<arg>: {basic_assumptions|auto_heuristics|adaptive_heulingo}\n"
-                "basic_assumptions:  Basic configuration using assumptions and a fixed relax rate.\n"
-                "auto_heuristics:  Configuration using heuristics and an automatically calculated relax rate.\n"
-                "adaptive_heulingo:  Configuration corresponding to default adaptive heulingo. Config encoding is required!\n"
+                "<arg>: {basic-assumptions|auto-heuristics|adaptive-heulingo}\n"
+                "basic-assumptions:  Basic configuration using assumptions and a fixed relax rate.\n"
+                "auto-heuristics:  Configuration using heuristics and an automatically calculated relax rate.\n"
+                "adaptive-heulingo:  Configuration corresponding to default adaptive heulingo. Config encoding is required!\n"
                 "Presets:\n"
-                "[basic_assumptions]:\n"
-                f" --relaxation={LNSOptions.preset_values['basic_assumptions']['relaxation'][0]},{LNSOptions.preset_values['basic_assumptions']['relaxation'][1]}"
-                f" --init-time-limit={LNSOptions.preset_values['basic_assumptions']['init_time_limit']}"
-                f" --lns-time-limit={LNSOptions.preset_values['basic_assumptions']['lns_time_limit']}\n"
-                f" --use-heuristics={LNSOptions.preset_values['basic_assumptions']['use_heuristics']}\n"
-                "[auto_heuristics]:\n"
-                f" --relaxation={LNSOptions.preset_values['auto_heuristics']['relaxation'][0]},{LNSOptions.preset_values['auto_heuristics']['relaxation'][1]}"
-                f" --init-time-limit={LNSOptions.preset_values['auto_heuristics']['init_time_limit']}"
-                f" --init-solve-limit={LNSOptions.preset_values['auto_heuristics']['init_solve_limit']}\n"
-                f" --lns-time-limit={LNSOptions.preset_values['auto_heuristics']['lns_time_limit']}"
-                f" --lns-solve-limit={LNSOptions.preset_values['auto_heuristics']['lns_solve_limit']}"
-                f" --use-heuristics={LNSOptions.preset_values['auto_heuristics']['use_heuristics']}\n"
-                "[adaptive_heulingo]:\n"
-                f" --relaxation={LNSOptions.preset_values['adaptive_heulingo']['relaxation'][0]},{LNSOptions.preset_values['adaptive_heulingo']['relaxation'][1]}"
-                f" --use-heuristics={LNSOptions.preset_values['adaptive_heulingo']['use_heuristics']}"
-                f" --default-adaptive-strategy={LNSOptions.preset_values['adaptive_heulingo']['default_adaptive_strategy_name']}\n"
-                f" --learning-rate={LNSOptions.preset_values['adaptive_heulingo']['learning_rate']}"
-                f" --lex-weight={LNSOptions.preset_values['adaptive_heulingo']['lex_weight']}"
+                "[basic-assumptions]:\n"
+                f" --relaxation={LNSOptions.preset_values['basic-assumptions']['relaxation'][0]},{LNSOptions.preset_values['basic-assumptions']['relaxation'][1]}"
+                f" --init-time-limit={LNSOptions.preset_values['basic-assumptions']['init_time_limit']}"
+                f" --lns-time-limit={LNSOptions.preset_values['basic-assumptions']['lns_time_limit']}\n"
+                f" --fix={LNSOptions.preset_values['basic-assumptions']['fix']}\n"
+                "[auto-heuristics]:\n"
+                f" --relaxation={LNSOptions.preset_values['auto-heuristics']['relaxation'][0]},{LNSOptions.preset_values['auto-heuristics']['relaxation'][1]}"
+                f" --init-time-limit={LNSOptions.preset_values['auto-heuristics']['init_time_limit']}"
+                f" --init-solve-limit={LNSOptions.preset_values['auto-heuristics']['init_solve_limit']}\n"
+                f" --lns-time-limit={LNSOptions.preset_values['auto-heuristics']['lns_time_limit']}"
+                f" --lns-solve-limit={LNSOptions.preset_values['auto-heuristics']['lns_solve_limit']}"
+                f" --fix={LNSOptions.preset_values['auto-heuristics']['fix']}\n"
+                "[adaptive-heulingo]:\n"
+                f" --relaxation={LNSOptions.preset_values['adaptive-heulingo']['relaxation'][0]},{LNSOptions.preset_values['adaptive-heulingo']['relaxation'][1]}"
+                f" --fix={LNSOptions.preset_values['adaptive-heulingo']['fix']}"
+                f" --default-adaptive-strategy={LNSOptions.preset_values['adaptive-heulingo']['default_adaptive_strategy_name']}\n"
+                f" --learning-rate={LNSOptions.preset_values['adaptive-heulingo']['learning_rate']}"
+                f" --lex-weight={LNSOptions.preset_values['adaptive-heulingo']['lex_weight']}"
                 f' --auto-converter="last-improv"\n'
-                f" --lns-restart-on-model={LNSOptions.preset_values['adaptive_heulingo']['lns_restart_on_model']}"
-                f" --init-cutoff={LNSOptions.preset_values['adaptive_heulingo']['init_cutoff']}"
-                f" --lns-cutoff={LNSOptions.preset_values['adaptive_heulingo']['lns_cutoff']}\n"
-                f" --lns-cutoff-threshold={LNSOptions.preset_values['adaptive_heulingo']['lns_cutoff_threshold']}"
-                f" --lns-cutoff-increase-rate={LNSOptions.preset_values['adaptive_heulingo']['lns_cutoff_increase_rate']}"
-                f" --lns-heuristic={LNSOptions.preset_values['adaptive_heulingo']['lns_heuristic']}\n"
+                f" --lns-restart-on-model={LNSOptions.preset_values['adaptive-heulingo']['lns_restart_on_model']}"
+                f" --init-cutoff={LNSOptions.preset_values['adaptive-heulingo']['init_cutoff']}"
+                f" --lns-cutoff={LNSOptions.preset_values['adaptive-heulingo']['lns_cutoff']}\n"
+                f" --lns-cutoff-threshold={LNSOptions.preset_values['adaptive-heulingo']['lns_cutoff_threshold']}"
+                f" --lns-cutoff-increase-rate={LNSOptions.preset_values['adaptive-heulingo']['lns_cutoff_increase_rate']}"
+                f" --lns-heuristic={LNSOptions.preset_values['adaptive-heulingo']['lns_heuristic']}\n"
             ),
-            choices=["basic_assumptions", "auto_heuristics", "adaptive_heulingo"],
+            choices=["basic-assumptions", "auto-heuristics", "adaptive-heulingo"],
             default=UNSET,
             type=str,
             dest="preset",
@@ -579,20 +593,20 @@ class OptionsParser:
             metavar="<arg>",
         )
 
-        parser.add_argument(
-            "--falsify",
-            help=replace_default("Falsify not projected atoms with the priority [%(default)s]", LNSOptions.falsify),
-            default=UNSET,
-            type="falsify",
-            dest="falsify",
-            metavar="{<n>|inf}",
-        )
+        # parser.add_argument(
+        #     "--falsify",
+        #     help=replace_default("Falsify not projected atoms with the priority [%(default)s]", LNSOptions.falsify),
+        #     default=UNSET,
+        #     type="falsify",
+        #     dest="falsify",
+        #     metavar="{<n>|inf}",
+        # )
 
         ##########
         # init solver options
         init_solver_group = parser.add_argument_group(
             "Initial Solver Configuration",
-            "Configuration options for the initial solver\n" "used to find the first solution.",
+            "Configuration options for the initial solver\nused to find the first solution.",
         )
 
         init_solver_group.add_argument(
@@ -760,16 +774,16 @@ class OptionsParser:
             metavar="{simple,<rate>|declarative}",
         )
 
-        # TODO -> --fix={assumptions,heuristics}
         lns_group.add_argument(
-            "--use-heuristics",
+            "--fix",
             help=replace_default(
-                "Use heuristics instead of assumptions to fix non-relaxed atoms [%(default)s]",
-                LNSOptions.use_heuristics,
+                "Set method to fix non-relaxed atoms during repair [%(default)s]",
+                LNSOptions.fix,
             ),
             default=UNSET,
-            type=bool,
-            dest="use_heuristics",
+            type=str,
+            dest="fix",
+            choices=["assumptions", "heuristics"],
         )
 
         lns_group.add_argument(
@@ -885,7 +899,7 @@ class OptionsParser:
             default=UNSET,
             dest="lns_restart_on_model",
         )
-        # TODO "lt" vs "leq"
+        # !todo "lt" vs "leq"
         lns_solver_group.add_argument(
             "--lns-opt-mode",
             help=(
@@ -897,10 +911,9 @@ class OptionsParser:
                 "    optN  : Find optimum, then enumerate optimal models\n"
                 "    ignore: Ignore optimize statements\n"
                 "  <bound>: {<n>...,static|<f>[,dynamic]}\n"
-                "    <n>...,static: In every iteration, set <n>... as initial bound for objective function(s)\n"
-                "    <f>[,dynamic]: Set initial bound for objective function(s) in each iteration such that\n"
-                "                   solutions whose objective value is at least <f>%% worse than\n"
-                "                   current incumbent solution are not obtained"
+                "    <n>...,static: In every iteration, set initial bound for objective function(s) to <n>...\n"
+                "    <f>[,dynamic]: In every iteration, set initial bound for objective function(s) to\n"
+                "                   ((100 + <f>)%% of the current solution cost) - 1"
             ),
             default=UNSET,
             type="lns_opt_mode",

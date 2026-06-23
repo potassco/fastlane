@@ -97,7 +97,7 @@ class LastImprovementDestructionConverter(AutoDestructionConverter):
             self._update_last_improvement_stats(lns_object.new_model, lns_object.current_model)
         return super().convert_auto_in_config(config, lns_object)
 
-    def _compute_auto_destruction_percent(
+    def compute_auto_destruction_percent(
         self, config_name: str, project_operators: list[dict[str, Any]], destroy_operator_name: str
     ) -> float:
         """

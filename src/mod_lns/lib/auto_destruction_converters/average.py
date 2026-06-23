@@ -18,16 +18,37 @@ if TYPE_CHECKING:
 
 @dataclass
 class _RunningAverage:
-    """State container for incremental average computation."""
+    """
+    State container for incremental average computation.
+
+    :param total: Running total of values.
+    :type total: float
+    :param count: Count of values added.
+    :type count: int
+    """
 
     total: float = 0.0
     count: int = 0
 
     def add(self, value: float) -> None:
+        """
+        Add a value to the running total and increment the count.
+
+        :param value: Value to add.
+        :type value: float
+        """
         self.total += value
         self.count += 1
 
     def mean(self, default: float) -> float:
+        """
+        Compute the mean of the values added.
+
+        :param default: Default value to return if no values have been added.
+        :type default: float
+        :return: Mean of the values added or the default value.
+        :rtype: float
+        """
         if self.count == 0:
             return default
         return self.total / self.count
@@ -36,10 +57,6 @@ class _RunningAverage:
 class AverageDestructionConverter(AutoDestructionConverter):
     """
     Converter using the average of observed destruction percentages.
-
-    Compared to the original implementation, this version keeps compact running
-    aggregates (sum/count) per (config, destroy-operator) key and avoids storing
-    full per-key histories.
 
     :param auto_init_percent: Initial destruction percentage. Defaults to 0.
     :type auto_init_percent: int, optional
@@ -153,10 +170,10 @@ class AverageDestructionConverter(AutoDestructionConverter):
             self._update_running_averages(lns_object.current_model, lns_object.new_model)
         return super().convert_auto_in_config(config, lns_object)
 
-    def _compute_auto_destruction_percent(
+    def compute_auto_destruction_percent(
         self,
         config_name: str,
-        project_operator_names: list[dict[str, Any]],
+        project_operators: list[dict[str, Any]],
         destroy_operator_name: str,
     ) -> float:
         """
@@ -164,14 +181,14 @@ class AverageDestructionConverter(AutoDestructionConverter):
 
         :param config_name: Config name.
         :type config_name: str
-        :param project_operator_names: Project operators.
-        :type project_operator_names: list[dict[str, Any]]
+        :param project_operators: Project operators.
+        :type project_operators: list[dict[str, Any]]
         :param destroy_operator_name: Destroy operator name.
         :type destroy_operator_name: str
         :return: Destruction percentage of auto-mode destroy operator.
         :rtype: float
         """
-        operator_names = [operator["name"] for operator in project_operator_names]
+        operator_names = [operator["name"] for operator in project_operators]
         key = (config_name, destroy_operator_name)
         if key not in self._running_averages:
             self._register_key(key, operator_names)

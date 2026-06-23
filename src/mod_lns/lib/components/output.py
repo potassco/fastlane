@@ -10,12 +10,14 @@ def get_output_format(cost_str: str, time_limit: Optional[int], max_steps: Optio
     """
     Get output format string for logging.
 
-    :param time_digits: Number of digits for time.
-    :type time_digits: int
-    :param cost_digits: Number of digits for cost.
-    :type cost_digits: int
-    :return: Output format string.
-    :rtype: str
+    :param cost_str: String representation of the cost.
+    :type cost_str: str
+    :param time_limit: Time limit in seconds (or None for unlimited).
+    :type time_limit: Optional[int]
+    :param max_steps: Maximum number of steps (or None for unlimited).
+    :type max_steps: Optional[int]
+    :return: Tuple containing header format and iteration format strings.
+    :rtype: tuple[str, str]
     """
     time_digits = 5 + 1 + 3  # 5 digits + dot + 3 digits
     step_digits = 7

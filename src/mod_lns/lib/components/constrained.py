@@ -11,12 +11,18 @@ def get_opt_bound(cost: list[int], opt_mode: str, opt_modifier: str, opt_nf: int
 
     :param cost: Current cost list
     :type cost: list[int]
+    :param opt_mode: Optimization mode
+    :type opt_mode: str
+    :param opt_modifier: Optimization modifier
+    :type opt_modifier: str
+    :param opt_nf: Optimization factor
+    :type opt_nf: int | float
     :return: String representing the bound for the next step.
     :rtype: str
     """
     if opt_modifier == "static":
         return opt_mode + "," + str(opt_nf)
-    elif opt_modifier == "dynamic":
+    if opt_modifier == "dynamic":
         bound = cost[:-1]
         bound.append(math.ceil(cost[-1] + abs(cost[-1]) * float(opt_nf) / 100) - 1)
         return opt_mode + "," + (",".join([str(i) for i in bound]))
