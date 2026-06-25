@@ -27,6 +27,7 @@ from mod_lns.lib.utils import (
 from mod_lns.lns_options import LNSOptions
 from mod_lns.parser.config_parser import ConfigParser
 from mod_lns.utils.logger import setup_logger
+from mod_lns.utils.types import ActiveConfig, ConfigCatalog
 
 LINE = "--------------------------------------------------------------------------------------"
 
@@ -69,9 +70,9 @@ class LNS:
 
         # !todo: consider using TypedDict
         # parsed config catalog, includes all available configs and operators
-        self._config_catalog: dict[str, Any] = {}
+        self._config_catalog: ConfigCatalog = {}
         # selected config specification for current iteration
-        self._active_config: dict[str, Any] = {}
+        self._active_config: ActiveConfig = {}
         # operator specifications of current model
         self._op_specs: dict[str, set[Symbol]] = {}
 
@@ -298,8 +299,7 @@ class LNS:
         :return: Fixed (not relaxed) atoms.
         :rtype: set[Symbol]
         """
-        active_runtime = {**self._active_config, "op_specs": self._op_specs}
-        return relax_config(self.current_model, active_runtime, self.logger)
+        return relax_config(self.current_model, self._active_config, self._op_specs, self.logger)
 
     def repair(self, fixed_atoms: set[Symbol]) -> Optional[Model]:
         """
@@ -339,7 +339,10 @@ class LNS:
             new_model = repair_assumptions(self.solver, self.lns_solver_config, fixed_atoms)
         else:
             raise RuntimeError(f"Unknown fix method: {self.options.fix}")
-        self.logger.debug("objective value of new solution: %s", new_model.cost)
+        if new_model is None:
+            self.logger.debug("no new model found")
+        else:
+            self.logger.debug("objective value of new solution: %s", new_model.cost)
         self.logger.debug(
             "objective value of current incumbent solution: %s",
             self.current_model.cost,
@@ -351,7 +354,9 @@ class LNS:
         if self.stats:
             if self.solver.result in {"UNSATISFIABLE", "OPTIMUM FOUND"}:
                 new_ic = self.stats[-1].get("no_improvement_cutoff_count", 0)
-            elif self.solver.result == "SATISFIABLE" and new_model.cost < self.best_model.cost:
+            elif (
+                new_model is not None and self.solver.result == "SATISFIABLE" and new_model.cost < self.best_model.cost
+            ):
                 new_ic = 0
             else:
                 new_ic = self.stats[-1].get("no_improvement_cutoff_count", 0) + 1
@@ -559,7 +564,6 @@ class LNS:
 
             self.logger.debug(LINE)
             self.logger.debug("relax")
-            fixed_atoms = []
             fixed_atoms = self.relax()
 
             self.logger.debug(LINE)

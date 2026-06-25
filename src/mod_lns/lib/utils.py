@@ -19,26 +19,26 @@ if TYPE_CHECKING:
 UINT_MAX = 4294967295
 
 
-def calculate_variability(list1: Sequence[Any], list2: Sequence[Any]) -> float:
+def calculate_variability(list1: set[Any], list2: set[Any]) -> float:
     """
-    Calculate variability of two lists in percent.
+    Calculate variability of two sets in percent.
 
-    0 - no variability (same lists or bigger one contains smaller one)
+    0 - no variability (same sets or bigger one contains smaller one)
 
     100 - completely different
 
-    :param list1: First list.
-    :type list1: Sequence[Any]
-    :param list2: Second list.
-    :type list2: Sequence[Any]
-    :return: Variability of both lists.
+    :param list1: First set.
+    :type list1: set[Any]
+    :param list2: Second set.
+    :type list2: set[Any]
+    :return: Variability of both sets.
     :rtype: float
     """
     len1 = len(list1)
     len2 = len(list2)
     if len1 < len2:
-        return (1 - len(set(list1).intersection(list2)) / len1) * 100
-    return (1 - len(set(list2).intersection(list1)) / len2) * 100
+        return (1 - len(list1.intersection(list2)) / len1) * 100
+    return (1 - len(list2.intersection(list1)) / len2) * 100
 
 
 def fix_symbols(
@@ -180,7 +180,7 @@ def increase_time_limit(timer: Timer, time_limit: Optional[int], solver_time_lim
 def increase_cutoff(
     *,
     current_cutoff: int,
-    cutoff_threshold: int,
+    cutoff_threshold: Optional[int],
     increase_rate: int,
     timer: Timer,
     time_limit: Optional[int],
@@ -192,7 +192,7 @@ def increase_cutoff(
     :param current_cutoff: Current cutoff value.
     :type current_cutoff: int
     :param cutoff_threshold: Threshold for increasing the cutoff.
-    :type cutoff_threshold: int
+    :type cutoff_threshold: Optional[int]
     :param increase_rate: Percentage to increase the cutoff (e.g., 20 for 20%).
     :type increase_rate: int
     :param timer: Timer object.
@@ -211,7 +211,8 @@ def increase_cutoff(
         if timer.remaining_time() < current_cutoff:
             return current_cutoff
     if (
-        latest_stats.get("no_improvement_cutoff_count", 0) != 0
+        cutoff_threshold is not None
+        and latest_stats.get("no_improvement_cutoff_count", 0) != 0
         and latest_stats.get("no_improvement_cutoff_count", 0) % cutoff_threshold == 0
     ):
         return math.ceil(current_cutoff * increase_rate / 100 + current_cutoff)

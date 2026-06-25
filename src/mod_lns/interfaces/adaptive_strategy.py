@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
 from mod_lns import Model
+from mod_lns.utils.types import ActiveConfig, ConfigCatalog
 
 if TYPE_CHECKING:
     from mod_lns.lns import LNS  # nocoverage
@@ -27,67 +28,55 @@ class AdaptiveStrategy(ABC):
         )
 
     @abstractmethod
-    def get_initial_config(self, config_catalog: dict[str, Any], initial_model: Model) -> dict[str, Any]:
+    def get_initial_config(self, config_catalog: ConfigCatalog, initial_model: Model) -> ActiveConfig:
         """
         Abstract method to get initial LNS configuration.
 
         :param config_catalog: Full declarative LNS catalog.
-        :type config_catalog: dict[str, Any]
+        :type config_catalog: ConfigCatalog
         :param initial_model: Initial model.
         :type initial_model: Model
-        :return: LNS configuration dictionary with the following keys:
-            - "name" (str): Name of LNS configuration.
-            - "project_operators" (list[str]): List of project operator names.
-            - "destroy_operators" (list[dict[str, Any]]): List of dictionaries with the following keys:
-                - "name" (str): Name of destroy operator.
-                - "percents_or_numbers" (list[dict[str, Any]]): List of dictionaries with the following keys:
-                    - "type" (str): Type of percentage or number ("p" or "n").
-                    - "value" (int | float): Value of percentage or number.
-            - "prioritize_operators" (list[dict[str, Any]]): List of dictionaries with the following keys:
-                - "name" (str): Name of prioritize operator.
-                - "value" (int | str): Value of heuristic modifier (integer or "inf").
-                - "modifier" (str): Heuristic modifier ("sign", "level", "true", "false", "init", or "factor").
-            - "key" (tuple[Any, ...]): Key of LNS configuration.
-        :rtype: dict[str, Any]
+        :return: LNS configuration
+        :rtype: ActiveConfig
         """
         raise NotImplementedError
 
     @abstractmethod
     def update_config(
         self,
-        active_config: dict[str, Any],
-        config_catalog: dict[str, Any],
+        active_config: ActiveConfig,
+        config_catalog: ConfigCatalog,
         stats: list[dict[str, Any]],
         lns_object: "LNS",
-    ) -> dict[str, Any]:
+    ) -> ActiveConfig:
         """
         Abstract method to update LNS configuration.
 
         :param active_config: Active LNS configuration.
-        :type active_config: dict[str, Any]
+        :type active_config: ActiveConfig
         :param config_catalog: Full LNS configuration catalog.
-        :type config_catalog: dict[str, Any]
+        :type config_catalog: ConfigCatalog
         :param stats: Statistics.
         :type stats: list[dict[str, Any]]
         :param lns_object: LNS object.
         :type lns_object: mod_lns.LNS
         :return: New LNS configuration.
-        :rtype: dict[str, Any]
+        :rtype: ActiveConfig
         """
         raise NotImplementedError
 
-    def _get_config(self, config_name: str, config_catalog: dict[str, Any]) -> dict[str, Any]:
+    def _get_config(self, config_name: str, config_catalog: ConfigCatalog) -> ActiveConfig:
         """
         Convert key into corresponding configuration.
 
         :param config_name: Name of LNS configuration.
         :type config_name: str
         :param config_catalog: Full LNS configuration catalog.
-        :type config_catalog: dict[str, Any]
+        :type config_catalog: ConfigCatalog
         :return: LNS configuration corresponding to key.
-        :rtype: dict[str, Any]
+        :rtype: ActiveConfig
         """
-        config = {
+        config: ActiveConfig = {
             "name": config_name,
             "project_operators": [],
             "destroy_operators": [],
@@ -120,13 +109,13 @@ class AdaptiveStrategy(ABC):
 
         return config
 
-    def _format_config(self, config: dict[str, Any]) -> str:
+    def _format_config(self, config: ActiveConfig) -> str:
         """
-        Convert LNS configuration into string.
+        Convert active LNS configuration into string.
 
-        :param config: LNS configuration.
-        :type config: dict[str, Any]
-        :return: String representing LNS configuration.
+        :param config: Active LNS configuration.
+        :type config: ActiveConfig
+        :return: String representing active LNS configuration.
         :rtype: str
         """
         project_operators = ",".join(

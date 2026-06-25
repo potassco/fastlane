@@ -177,7 +177,7 @@ class LNSOptions:
     status_interval: int = 50
 
     parallel_mode: Optional[str] = None
-    clingo_args: Optional[list[str]] = None
+    clingo_args: Optional[str] = None
     context: Any = None
 
     # remove?
@@ -228,7 +228,7 @@ class LNSOptions:
     lns_time_limit_increase_rate: int = 0
     lns_solve_limit_increase_rate: int = 0
     lns_cutoff_threshold: Optional[int] = None
-    lns_cutoff_increase_rate: Optional[int] = 0
+    lns_cutoff_increase_rate: int = 0
 
     lns_configuration: Optional[str] = None
     lns_opt_strategy: Optional[str] = None

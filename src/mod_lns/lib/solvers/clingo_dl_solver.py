@@ -144,7 +144,6 @@ class ClingoDLSolver(ClingoSolver):
         """
         Release a bound from the solver for the current iteration.
         """
-        assert isinstance(self.control, clingo.control.Control)
         bound_atom = Function("__b", [Number(bound), Number(self._search_num)])
         self.control.release_external(bound_atom)
         self.logger.debug("release external %s.", bound_atom)
@@ -156,7 +155,6 @@ class ClingoDLSolver(ClingoSolver):
         :param bound: The bound to add.
         :type bound: int
         """
-        assert isinstance(self.control, clingo.control.Control)
         bound_atom = Function("__b", [Number(bound), Number(self._search_num)])
         ext_statement = f"#external {bound_atom}."
         self.control.add("bound", ["t"], ext_statement)
@@ -173,7 +171,6 @@ class ClingoDLSolver(ClingoSolver):
         :param prev_bound: Bound of the previous iteration.
         :type prev_bound: Optional[int]
         """
-        assert isinstance(self.control, clingo.control.Control)
         assert isinstance(self.theory, ClingoDLTheory)
         assert isinstance(self.control.configuration.solve, clingo.Configuration)
         assert isinstance(self.control.configuration.solve.solve_limit, str)
@@ -236,24 +233,26 @@ class ClingoDLSolver(ClingoSolver):
         """
         if config.configuration is not None:
             self.control.configuration.configuration = config.configuration
-        if config.opt_strategy is not None:
-            self.control.configuration.solver.opt_strategy = config.opt_strategy
-        if config.opt_heuristic is not None:
-            self.control.configuration.solver.opt_heuristic = config.opt_heuristic
-        if config.restart_on_model is not None:
-            self.control.configuration.solver.restart_on_model = config.restart_on_model
-        if config.heuristic is not None:
-            self.control.configuration.solver.heuristic = config.heuristic
-        if config.opt_mode is not None:
-            if self.minimize_variable is not None:
-                split_opt_mode = config.opt_mode.split(",")
-                if len(split_opt_mode) == 2:
-                    bound = int(split_opt_mode[1])
-                    self._add_bound(bound)
-            else:
-                self.control.configuration.solve.opt_mode = config.opt_mode
-        if config.solve_limit is not None:
-            self.control.configuration.solve.solve_limit = config.solve_limit
+        if isinstance(self.control.configuration.solver, clingo.Configuration):
+            if config.opt_strategy is not None:
+                self.control.configuration.solver.opt_strategy = config.opt_strategy
+            if config.opt_heuristic is not None:
+                self.control.configuration.solver.opt_heuristic = config.opt_heuristic
+            if config.restart_on_model is not None:
+                self.control.configuration.solver.restart_on_model = config.restart_on_model
+            if config.heuristic is not None:
+                self.control.configuration.solver.heuristic = config.heuristic
+        if isinstance(self.control.configuration.solve, clingo.Configuration):
+            if config.opt_mode is not None:
+                if self.minimize_variable is not None:
+                    split_opt_mode = config.opt_mode.split(",")
+                    if len(split_opt_mode) == 2:
+                        bound = int(split_opt_mode[1])
+                        self._add_bound(bound)
+                else:
+                    self.control.configuration.solve.opt_mode = config.opt_mode
+            if config.solve_limit is not None:
+                self.control.configuration.solve.solve_limit = config.solve_limit
 
     # pylint: disable=too-many-branches, too-many-statements
     def solve(
@@ -271,10 +270,7 @@ class ClingoDLSolver(ClingoSolver):
         :return: Last obtained model.
         :rtype: Model
         """
-        assert isinstance(self.control, clingo.control.Control)
         assert isinstance(self.theory, ClingoDLTheory)
-        # assert isinstance(self.control.configuration.solve, clingo.Configuration)
-        # assert isinstance(self.control.configuration.solver, clingo.Configuration)
 
         # remember assumptions were are being used
         if assumptions:

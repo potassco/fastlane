@@ -6,6 +6,8 @@ import copy
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Optional
 
+from mod_lns.utils.types import ActiveConfig
+
 if TYPE_CHECKING:
     from mod_lns.lns import LNS  # nocoverage
 
@@ -23,18 +25,18 @@ class AutoDestructionConverter(ABC):
             or NotImplemented
         )
 
-    def convert_auto_in_config(self, config: dict[str, Any], lns_object: Optional["LNS"] = None) -> dict[str, Any]:
+    def convert_auto_in_config(self, config: ActiveConfig, lns_object: Optional["LNS"] = None) -> ActiveConfig:
         """
         Convert automatic values in LNS configuration into concrete percentages.
 
-        :param config: LNS configuration containing automatic values.
-        :type config: dict[str, Any]
+        :param config: Active LNS configuration containing automatic values.
+        :type config: ActiveConfig
         :param lns_object: LNS object.
         :type lns_object: Optional["LNS"]
         :return: LNS configuration with all automatic values replaced by concrete percentages.
-        :rtype: dict[str, Any]
+        :rtype: ActiveConfig
         """
-        resolved_config = copy.deepcopy(config)
+        resolved_config: ActiveConfig = copy.deepcopy(config)
         for destroy_operator in resolved_config["destroy_operators"]:
             destroy_operator_name = destroy_operator["name"]
             for percent_or_number in destroy_operator["percents_or_numbers"]:

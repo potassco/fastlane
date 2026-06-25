@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 from mod_lns import Model
 from mod_lns.interfaces.adaptive_strategy import AdaptiveStrategy
 from mod_lns.interfaces.auto_destruction_converter import AutoDestructionConverter
+from mod_lns.utils.types import ActiveConfig, ConfigCatalog
 
 if TYPE_CHECKING:
     from mod_lns.lns import LNS  # nocoverage
@@ -62,12 +63,12 @@ class RouletteWheelStrategy(AdaptiveStrategy):
             cost += lex_costs[i] * (self._lex_weight ** (last_lex_cost_idx - i))
         return cost
 
-    def _initialize_weights(self, config_catalog: dict[str, Any], initial_model: Model) -> None:
+    def _initialize_weights(self, config_catalog: ConfigCatalog, initial_model: Model) -> None:
         """
         Initialize weights for all possible LNS configurations using initial model's cost.
 
         :param config_catalog: Config catalog.
-        :type config_catalog: dict[str, Any]
+        :type config_catalog: ConfigCatalog
         :param initial_model: Initial model.
         :type initial_model: Model
         """
@@ -76,16 +77,16 @@ class RouletteWheelStrategy(AdaptiveStrategy):
         else:
             initial_weight = abs(initial_model.cost[0])
 
-        catalog: dict[str, Any] = config_catalog["configs"]
-        if not isinstance(catalog, dict) or catalog == {}:
+        configs = config_catalog["configs"]
+        if not isinstance(configs, dict) or configs == {}:
             raise RuntimeError("Received invalid config catalog. Expected non-empty dictionary under 'configs' key.")
-        configs = catalog.keys()
-        for config in configs:
+        config_names = configs.keys()
+        for config in config_names:
             self._weights[config] = initial_weight
 
         self.logger.debug("Initial weight: %s", initial_weight)
 
-    def _select_config(self, config_catalog: dict[str, Any]) -> dict[str, Any]:
+    def _select_config(self, config_catalog: ConfigCatalog) -> ActiveConfig:
         """
         Select LNS configuration using roulette wheel selection based on normalized weights.
 
@@ -101,27 +102,16 @@ class RouletteWheelStrategy(AdaptiveStrategy):
         self.logger.debug("Selected LNPS configuration: %s", active_config["config_repr"])
         return active_config
 
-    def get_initial_config(self, config_catalog: dict[str, Any], initial_model: Model) -> dict[str, Any]:
+    def get_initial_config(self, config_catalog: ConfigCatalog, initial_model: Model) -> ActiveConfig:
         """
         Get initial LNS configuration using roulette wheel selection after initializing weights.
 
         :param config_catalog: Config catalog.
-        :type config_catalog: dict[str, Any]
+        :type config_catalog: ConfigCatalog
         :param initial_model: Initial model.
         :type initial_model: Model
-        :return: LNS configuration dictionary.
-
-            The returned dictionary contains these keys:
-            - "name" (str): Name of LNS configuration.
-            - "project_operators" (list[str]):
-                List of project operator names.
-            - "destroy_operators" (list[dict[str, Any]]):
-                List of names and percentages or numbers of destroy operators.
-            - "prioritize_operators" (list[dict[str, Any]]):
-                List of names, heuristic modifiers, and their values of prioritize operators.
-            - "config_repr" (str):
-                String representation of LNS configuration.
-        :rtype: dict[str, Any]
+        :return: Active LNS configuration.
+        :rtype: ActiveConfig
         """
         self._initialize_weights(config_catalog, initial_model)
         return self._converter.convert_auto_in_config(self._select_config(config_catalog))
@@ -173,22 +163,22 @@ class RouletteWheelStrategy(AdaptiveStrategy):
 
     def update_config(
         self,
-        active_config: dict[str, Any],
-        config_catalog: dict[str, Any],
+        active_config: ActiveConfig,
+        config_catalog: ConfigCatalog,
         stats: list[dict[str, Any]],
         lns_object: "LNS",
-    ) -> dict[str, Any]:
+    ) -> ActiveConfig:
         """
         Update weight of current LNS configuration and select new LNS configuration using roulette wheel selection.
 
         :param active_config: Current active LNS configuration.
-        :type active_config: dict[str, Any]
+        :type active_config: ActiveConfig
         :param config_catalog: Full LNS configuration catalog.
-        :type config_catalog: dict[str, Any]
+        :type config_catalog: ConfigCatalog
         :param stats: Statistics.
         :type stats: list[dict[str, Any]]
         :return: New LNS configuration.
-        :rtype: dict[str, Any]
+        :rtype: ActiveConfig
         """
         effectiveness_score = self._compute_effectiveness_score(
             lns_object.current_model, lns_object.new_model, stats[-1]["time_to_last_model"]

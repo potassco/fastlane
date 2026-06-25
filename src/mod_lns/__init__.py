@@ -3,7 +3,7 @@ Helper classes.
 """
 
 import time
-from typing import Any, Optional
+from typing import Any, ClassVar, Optional
 
 from clingo import Symbol
 
@@ -13,9 +13,11 @@ class UnsetMarker:
     Singleton helper class to distinguish between unset and None.
     """
 
+    instance: ClassVar[Optional["UnsetMarker"]] = None
+
     def __new__(cls) -> "UnsetMarker":
-        if not hasattr(cls, "instance"):
-            cls.instance = super(UnsetMarker, cls).__new__(cls)
+        if cls.instance is None:
+            cls.instance = super().__new__(cls)
         return cls.instance
 
     def __bool__(self) -> bool:
@@ -97,9 +99,9 @@ class Timer:
         """
         Reset the timer.
         """
-        self._started: bool = False
-        self._ringing: bool = False
-        self._start_time: float = 0.0
+        self._started = False
+        self._ringing = False
+        self._start_time = 0.0
 
     def restart(self) -> None:
         """

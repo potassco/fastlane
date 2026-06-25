@@ -6,7 +6,7 @@ from math import log10
 from typing import Optional
 
 
-def get_output_format(cost_str: str, time_limit: Optional[int], max_steps: Optional[int]) -> str:
+def get_output_format(cost_str: str, time_limit: Optional[int], max_steps: Optional[int]) -> tuple[str, str]:
     """
     Get output format string for logging.
 

@@ -10,6 +10,7 @@ from mod_lns import Model
 from mod_lns.interfaces.auto_destruction_converter import AutoDestructionConverter
 from mod_lns.lib.auto_destruction_converters.utils import calculate_actual_destruction_percent, is_new_model_better
 from mod_lns.parser.config_parser import ConfigParser
+from mod_lns.utils.types import ActiveConfig
 
 if TYPE_CHECKING:
     from mod_lns.lns import LNS  # nocoverage
@@ -81,19 +82,19 @@ class LastImprovementDestructionConverter(AutoDestructionConverter):
             self._last_improvement_specs = ConfigParser.get_op_specs(current_model)
             self._reset_caches()
 
-    def convert_auto_in_config(self, config: dict[str, Any], lns_object: Optional["LNS"] = None) -> dict[str, Any]:
+    def convert_auto_in_config(self, config: ActiveConfig, lns_object: Optional["LNS"] = None) -> ActiveConfig:
         """
         Convert automatic values in LNPS configuration into concrete percentages
         based on last iteration’s statistics where new model was better than current model.
 
         :param config: LNPS configuration containing automatic values.
-        :type config: dict[str, Any]
+        :type config: ActiveConfig
         :param lns_object: LNS object.
         :type lns_object: Optional["LNS"]
         :return: LNPS configuration with all automatic values replaced by concrete percentages.
-        :rtype: dict[str, Any]
+        :rtype: ActiveConfig
         """
-        if lns_object is not None:
+        if lns_object is not None and lns_object.new_model is not None:
             self._update_last_improvement_stats(lns_object.new_model, lns_object.current_model)
         return super().convert_auto_in_config(config, lns_object)
 

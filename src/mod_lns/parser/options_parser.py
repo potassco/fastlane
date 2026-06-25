@@ -3,6 +3,7 @@ Parser for LNS options.
 """
 
 import importlib
+import importlib.util
 import inspect
 import logging
 import os
@@ -207,10 +208,10 @@ class OptionsParser:
             if string == "declarative":
                 return "declarative", 0
             if string.startswith("simple,"):
-                rate = string.split(",", 1)[1]
-                if rate.lower() == "auto":
+                rate_str = string.split(",", 1)[1]
+                if rate_str.lower() == "auto":
                     return "simple", -1
-                rate = parse_percent(rate, msg="Invalid relax rate, rate must be between 0 and 100 or 'auto'.")
+                rate = parse_percent(rate_str, msg="Invalid relax rate, rate must be between 0 and 100 or 'auto'.")
                 return "simple", rate
             raise ArgumentTypeError(f"'{string}': Invalid relaxation. Choose from {{simple,<rate>|declarative}}")
 

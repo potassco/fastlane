@@ -79,8 +79,10 @@ class Solver(ABC):
     def __init__(self) -> None:
         """
         Initialization of the solver object.
+
+        Before solving, setup() method must be called to correctly initialize the solver.
         """
-        self.control: Optional[clingo.control.Control] = None
+        self.control: clingo.control.Control = clingo.control.Control()
         self.theory: Any = None
         self.finished: bool = False
         self.result = "UNKNOWN"
@@ -173,8 +175,7 @@ class Solver(ABC):
         :type context: Any
         :default context: None
         """
-        if isinstance(self.control, clingo.control.Control):
-            self.control.ground(parts, context)
+        self.control.ground(parts, context)
 
     def add(self, name: str, parameters: list[str], program: str) -> None:
         """
@@ -187,8 +188,7 @@ class Solver(ABC):
         :param program: Program to be added.
         :type program: str
         """
-        if isinstance(self.control, clingo.control.Control):
-            self.control.add(name, parameters, program)
+        self.control.add(name, parameters, program)
 
     def assign_external(self, external: Union[Symbol, int], truth: bool) -> None:
         """
@@ -199,8 +199,7 @@ class Solver(ABC):
         :param truth: Truth value.
         :type truth: bool
         """
-        if isinstance(self.control, clingo.control.Control):
-            self.control.assign_external(external, truth)
+        self.control.assign_external(external, truth)
 
     def release_external(self, external: Union[Symbol, int]) -> None:
         """
@@ -209,8 +208,7 @@ class Solver(ABC):
         :param external: External atom.
         :type external: Union[clingo.symbol.Symbol,int]
         """
-        if isinstance(self.control, clingo.control.Control):
-            self.control.release_external(external)
+        self.control.release_external(external)
 
     def get_stats(self) -> dict[str, Any]:
         """
@@ -219,6 +217,4 @@ class Solver(ABC):
         :return: Statistics dictionary.
         :rtype: dict[str, Any]
         """
-        if isinstance(self.control, clingo.control.Control):
-            return self.control.statistics
-        return {}
+        return self.control.statistics

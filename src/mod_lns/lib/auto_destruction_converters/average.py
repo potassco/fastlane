@@ -11,6 +11,7 @@ from mod_lns import Model
 from mod_lns.interfaces.auto_destruction_converter import AutoDestructionConverter
 from mod_lns.lib.auto_destruction_converters.utils import calculate_actual_destruction_percent, is_new_model_better
 from mod_lns.parser.config_parser import ConfigParser
+from mod_lns.utils.types import ActiveConfig
 
 if TYPE_CHECKING:
     from mod_lns.lns import LNS  # nocoverage
@@ -151,21 +152,25 @@ class AverageDestructionConverter(AutoDestructionConverter):
 
     def convert_auto_in_config(
         self,
-        config: dict[str, Any],
+        config: ActiveConfig,
         lns_object: Optional["LNS"] = None,
-    ) -> dict[str, Any]:
+    ) -> ActiveConfig:
         """
         Convert auto values and update running averages on improving iterations.
 
         :param config: LNPS configuration containing automatic values.
-        :type config: dict[str, Any]
+        :type config: ActiveConfig
         :param lns_object: LNS object.
         :type lns_object: Optional["LNS"]
         :return: LNPS configuration with all automatic values replaced.
-        :rtype: dict[str, Any]
+        :rtype: ActiveConfig
         """
 
-        if lns_object is not None and is_new_model_better(lns_object.new_model, lns_object.current_model):
+        if (
+            lns_object is not None
+            and lns_object.new_model is not None
+            and is_new_model_better(lns_object.new_model, lns_object.current_model)
+        ):
             self._improvement_models.append((lns_object.current_model, lns_object.new_model))
             self._update_running_averages(lns_object.current_model, lns_object.new_model)
         return super().convert_auto_in_config(config, lns_object)

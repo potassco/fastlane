@@ -8,6 +8,7 @@ from clingo.symbol import Symbol, SymbolType, Tuple_
 
 from mod_lns import Model
 from mod_lns.interfaces.solver import Solver
+from mod_lns.utils.types import ConfigCatalog
 
 if TYPE_CHECKING:
     from mod_lns.lns import LNS  # nocoverage
@@ -28,7 +29,7 @@ class ConfigParser:
         :return: True if given term is atom, False otherwise.
         :rtype: bool
         """
-        return term.type == SymbolType.Function and term.name
+        return term.type == SymbolType.Function and term.name != ""
 
     # project operator can not be created through _project/2
     # @classmethod
@@ -108,12 +109,13 @@ class ConfigParser:
         # no operators defined -> default to all shown
         if not project_operators:
             project_operators.setdefault("default", set())
-            for atom in solver.last_model.shown:
-                if cls._is_atom(atom):
-                    project_operators["default"].add((atom.name, len(atom.arguments)))
-                else:
-                    continue
-            # default empty -> exception
+            if solver.last_model is not None:
+                for model_atom in solver.last_model.shown:
+                    if cls._is_atom(model_atom):
+                        project_operators["default"].add((model_atom.name, len(model_atom.arguments)))
+                    else:
+                        continue
+                # default empty -> exception
 
         return project_operators
 
@@ -267,6 +269,7 @@ class ConfigParser:
                 prioritize_operators.setdefault(operator, {"value": 1, "modifier": "true"})
 
                 value_param = args[1]
+                value: int | str
                 if value_param.match("inf", 0):
                     value = "inf"
                 elif value_param.type == SymbolType.Number:
@@ -346,10 +349,10 @@ class ConfigParser:
             "destroy_operators": set(defined_destroy_operators),
             "prioritize_operators": set(defined_prioritize_operators),
         }
-        operator_args_info = [
-            {"index": 1, "key": "project_operators", "type": "Project"},
-            {"index": 2, "key": "destroy_operators", "type": "Destroy"},
-            {"index": 3, "key": "prioritize_operators", "type": "Prioritize"},
+        operator_args_info: list[tuple[int, dict[str, str]]] = [
+            (1, {"key": "project_operators", "type": "Project"}),
+            (2, {"key": "destroy_operators", "type": "Destroy"}),
+            (3, {"key": "prioritize_operators", "type": "Prioritize"}),
         ]
 
         if declarative:
@@ -363,11 +366,11 @@ class ConfigParser:
                     config_name, {"project_operators": set(), "destroy_operators": set(), "prioritize_operators": set()}
                 )
 
-                # !todo support for multi ops required? _config("Random", "plays_3",
-                # ("random_n";"random_40"), "1_true").
-                for info in operator_args_info:
+                # !todo support for multi ops required?
+                # _config("Random", "plays_3",("random_n";"random_40"), "1_true").
+                for index, info in operator_args_info:
                     key = info["key"]
-                    operator_atom = args[info["index"]]
+                    operator_atom = args[index]
                     if operator_atom.type != SymbolType.String:
                         operator_name = str(operator_atom)
                     else:
@@ -451,9 +454,8 @@ class ConfigParser:
 
         return strategy, candidate_configs
 
-    # TODO switch to Typed dicts for config_catalog and active config
     @classmethod
-    def parse_lns_config(cls, lns_object: "LNS") -> dict[str, Any]:
+    def parse_lns_config(cls, lns_object: "LNS") -> ConfigCatalog:
         """
         Extract and validate LNS configuration from model.
         If in non-declarative mode, the configuration is constructed from options
@@ -462,20 +464,7 @@ class ConfigParser:
         :param lns_object: LNS instance that provides solver and runtime options.
         :type lns_object: LNS
         :return: Configuration catalog used by the LNS loop.
-
-            The returned dictionary contains these keys:
-            - "project_operators" (dict[str, set[tuple[str, int]]]):
-                Project operator names mapped to projected predicate signatures.
-            - "destroy_operators" (dict[str, list[dict[str, Any]]]):
-                Destroy operator names mapped to destruction parameters
-                (for example p(10), n(3), auto).
-            - "prioritize_operators" (dict[str, dict[str, Any]]):
-                Prioritize operator names mapped to heuristic value/modifier pairs.
-            - "configs" (dict[str, dict[str, list[str]]]):
-                Config names mapped to selected project/destroy/prioritize operators.
-            - "strategy" (str):
-                Name of the adaptive strategy selected for configuration updates.
-        :rtype: dict[str, Any]
+        :rtype: ConfigCatalog
         """
         solver = lns_object.solver
         options = lns_object.options
@@ -490,12 +479,6 @@ class ConfigParser:
             destroy_operators = {"default": dest_op}
 
         prioritize_operators = cls._parse_prioritize_operators(solver, declarative)
-        config_catalog = {
-            "project_operators": project_operators,
-            "destroy_operators": destroy_operators,
-            "prioritize_operators": prioritize_operators,
-        }
-
         defined_configs = cls._parse_configs(
             solver,
             list(project_operators.keys()),
@@ -510,18 +493,24 @@ class ConfigParser:
             options.default_adaptive_strategy_name,
             declarative,
         )
-        config_catalog["configs"] = candidate_configs
-        config_catalog["strategy"] = strategy
-        lns_object.logger.debug("LNS configuration catalog: %s", cls._format_lns_config(config_catalog))
+
+        config_catalog: ConfigCatalog = {
+            "project_operators": project_operators,
+            "destroy_operators": destroy_operators,
+            "prioritize_operators": prioritize_operators,
+            "configs": candidate_configs,
+            "strategy": strategy,
+        }
+        lns_object.logger.debug("LNS configuration catalog: %s", cls._format_config_catalog(config_catalog))
         return config_catalog
 
     @classmethod
-    def _format_lns_config(cls, config_catalog: dict[str, Any]) -> str:
+    def _format_config_catalog(cls, config_catalog: ConfigCatalog) -> str:
         """
         Convert LNS configuration catalog into string.
 
         :param config_catalog: LNS configuration catalog.
-        :type config_catalog: dict[str, Any]
+        :type config_catalog: ConfigCatalog
         :return: String representing LNS configuration catalog.
         :rtype: str
         """

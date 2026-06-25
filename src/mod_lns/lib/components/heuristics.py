@@ -2,20 +2,19 @@
 Components for implementing fixation via heuristics in the context of LNS.
 """
 
-from typing import Any
-
 from clingo.symbol import Function, Number, Symbol
 
 from mod_lns.parser.config_parser import ConfigParser
+from mod_lns.utils.types import ActiveConfig, ConfigCatalog
 
 
-def generate_heuristic_subprogram(config_catalog: dict[str, Any]) -> str:
+def generate_heuristic_subprogram(config_catalog: ConfigCatalog) -> str:
     """
     Generate #heuristic statements for LNPS and integrity constraints for LNS
     from predicate signatures of projected atoms.
 
     :param config_catalog: LNS configuration catalog.
-    :type config_catalog: dict[str, Any]
+    :type config_catalog: ConfigCatalog
     :return: #heuristic statements and integrity constraints.
     :rtype: str
     """
@@ -33,13 +32,13 @@ def generate_heuristic_subprogram(config_catalog: dict[str, Any]) -> str:
 
 
 def get_fixed_atoms_heuristics(
-    active_config: dict, spec_ops: dict[str, set[Symbol]], fixed_atoms: set[Symbol], step: int
+    active_config: ActiveConfig, spec_ops: dict[str, set[Symbol]], fixed_atoms: set[Symbol], step: int
 ) -> set[Symbol]:
     """
     Get fixed atoms according to heuristics.
 
     :param active_config: LNS configuration dictionary.
-    :type active_config: dict
+    :type active_config: ActiveConfig
     :param spec_ops: Dictionary of operator specifications.
     :type spec_ops: dict[str, set[Symbol]]
     :param fixed_atoms: Set of fixed atoms from previous iteration.
