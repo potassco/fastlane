@@ -34,6 +34,7 @@ class ClingoDLSolver(ClingoSolver):
         super().__init__()
         self._search_num: int = 0
         self._exhausted: bool = False
+        self.bound: Optional[int] = None
 
     @classmethod
     def get_name(cls) -> str:
@@ -247,8 +248,8 @@ class ClingoDLSolver(ClingoSolver):
                 if self.minimize_variable is not None:
                     split_opt_mode = config.opt_mode.split(",")
                     if len(split_opt_mode) == 2:
-                        bound = int(split_opt_mode[1])
-                        self._add_bound(bound)
+                        self.bound = int(split_opt_mode[1])
+                        self._add_bound(self.bound)
                 else:
                     self.control.configuration.solve.opt_mode = config.opt_mode
             if config.solve_limit is not None:
@@ -281,7 +282,7 @@ class ClingoDLSolver(ClingoSolver):
         time_limit: Optional[int] = None
         cutoff: Optional[int] = None
         self._search_num += 1
-        bound = None
+        self.bound = None
         if config is not None:
             self._variability = config.variability
             time_limit = config.time_limit
@@ -322,8 +323,7 @@ class ClingoDLSolver(ClingoSolver):
         if self.minimize_variable is not None:
             # use remaining time to minimize variable
             # cutoff timer ignored
-            self._minimize_variable(bound)
-
+            self._minimize_variable(self.bound)
         # if self.last_model is None and not self.finished:
         #     self.logger.warning(
         #         "The solve-limit or time-limit is not enough to find a solution."

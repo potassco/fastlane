@@ -88,7 +88,7 @@ class Solver(ABC):
         self.result = "UNKNOWN"
         self.optimum = "unknown"
         self.minimize_variable: Optional[Symbol] = None
-        self.logger: Logger
+        self.logger: Logger = Logger("temporary_solver_logger")
         self.stop: bool = False
         self._assumptions_used = False
         self.last_model: Optional[Model] = None
