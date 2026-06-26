@@ -27,12 +27,6 @@ You can check a successful installation by running
 mod_lns -h
 ```
 
-You can access the sub command help for individual strategies using
-
-```bash
-mod_lns <strategy> -h
-```
-
 ## Documentation
 
 A detailed documentation can be build in `./doc` as described in
