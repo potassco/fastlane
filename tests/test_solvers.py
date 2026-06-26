@@ -3,6 +3,7 @@ Test cases for solver classes.
 """
 
 import signal
+from logging import Logger
 from unittest import TestCase, mock
 
 import clingcon
@@ -15,7 +16,6 @@ from mod_lns.interfaces.solver import SolverConfig
 from mod_lns.lib.solvers.clingcon_solver import ClingconSolver
 from mod_lns.lib.solvers.clingo_dl_solver import ClingoDLSolver
 from mod_lns.lib.solvers.clingo_solver import ClingoSolver
-from mod_lns.lib.strategies.default_strategy import DefaultStrategy
 from mod_lns.lns import LNS
 
 # pylint: disable=protected-access
@@ -39,6 +39,7 @@ class TestSolverConfig(TestCase):
         self.assertIsNone(config.opt_mode)
         self.assertIsNone(config.solve_limit)
         self.assertIsNone(config.time_limit)
+        self.assertIsNone(config.cutoff)
         self.assertIsNone(config.seed)
         self.assertTrue(config.variability)
 
@@ -52,29 +53,26 @@ class TestSolverClingo(TestCase):
         self.solver = ClingoSolver()
         self.stype = ClingoSolver
         self.name = "clingo"
-        self.strategy = DefaultStrategy()
-        self.strategy.config.log_level = 50
-        self.lns = LNS(["./tests/ref/golf.lp"], self.strategy)
-
-        # for solve tests
-        self.ref_opt_mode = "opt,10"
+        self.lns = LNS(["./tests/ref/golf.lp"], {"log_level": 50})
 
     def test_init(self):
         """
         Test initialization of ClingoSolver.
         """
         self.assertIsInstance(self.solver, self.stype)
-        self.assertIsNone(self.solver.control)
+        self.assertIsInstance(self.solver.control, clingo.Control)
         self.assertIsNone(self.solver.theory)
         self.assertFalse(self.solver.finished)
         self.assertEqual(self.solver.result, "UNKNOWN")
         self.assertEqual(self.solver.optimum, "unknown")
         self.assertIsNone(self.solver.minimize_variable)
+        self.assertIsInstance(self.solver.logger, Logger)
         self.assertFalse(self.solver.stop)
         self.assertFalse(self.solver._assumptions_used)
-        self.assertIsInstance(self.solver._timer, Timer)
-        self.assertFalse(self.solver._interrupted)
         self.assertIsNone(self.solver.last_model)
+        self.assertIsInstance(self.solver._solve_timer, Timer)
+        self.assertIsInstance(self.solver._cutoff_timer, Timer)
+        self.assertFalse(self.solver._interrupted)
         self.assertFalse(self.solver._variability)
 
     def test_ground(self):
@@ -127,9 +125,6 @@ class TestSolverClingo(TestCase):
         self.assertIsNotNone(stats)
         self.assertIsInstance(stats["solving"]["solvers"]["choices"], float)
 
-        self.solver.control = None
-        self.assertDictEqual(self.solver.get_stats(), {})
-
     def test_get_name(self):
         """
         Test get_name method.
@@ -143,7 +138,7 @@ class TestSolverClingo(TestCase):
         self.solver.setup_interrupt_handling(self.lns)
         self.assertFalse(self.solver.finished)
         self.assertFalse(self.solver.stop)
-        with self.assertRaises(SystemExit), mock.patch.object(self.lns.strategy, "print_result") as print_result_mock:
+        with self.assertRaises(SystemExit), mock.patch.object(self.lns, "print_result") as print_result_mock:
             signal.raise_signal(signal.SIGINT)
             print_result_mock.assert_called_once_with(self.lns)
         self.assertTrue(self.solver.finished)
@@ -153,7 +148,7 @@ class TestSolverClingo(TestCase):
         with (
             self.assertRaises(SystemExit),
             mock.patch.object(self.solver.control, "interrupt") as mock_interrupt,
-            mock.patch.object(self.lns.strategy, "print_result") as print_result_mock,
+            mock.patch.object(self.lns, "print_result") as print_result_mock,
         ):
             self.solver.finished = False
             self.solver.stop = False
@@ -182,20 +177,50 @@ class TestSolverClingo(TestCase):
         """
         self.solver.setup(self.lns)
         self.solver.ground()
-        self.solver.control.configuration.solve.models = 2
+        self.solver.control.configuration.solve.models = 1
         self.assertIsNone(self.solver.last_model)
-        self.solver.control.solve(on_model=self.solver._on_model)
+        with (
+            mock.patch.object(self.solver._cutoff_timer, "get_elapsed_time", return_value=1) as mock_elapsed_time,
+            mock.patch.object(self.solver._cutoff_timer, "restart") as mock_restart,
+        ):
+            self.solver.control.solve(on_model=self.solver._on_model)
+            mock_elapsed_time.assert_called_once()
+            mock_restart.assert_called_once()
+        self.assertEqual(self.solver.stats["time_to_last_model"], 1)
         self.assertIsInstance(self.solver.last_model, Model)
 
-    def test_find_first_solution(self):
+    def test_apply_config_to_control(self):
         """
-        Test _find_first_solution method.
+        Test _apply_config_to_control method.
         """
         self.solver.setup(self.lns)
-        self.solver.ground()
-        self.assertIsNone(self.solver.last_model)
-        self.solver._find_first_solution()
-        self.assertIsInstance(self.solver.last_model, Model)
+        config = SolverConfig(
+            configuration="tweety",
+            opt_strategy="bb,0",
+            opt_heuristic="3",
+            restart_on_model="1",
+            heuristic="Domain",
+            opt_mode="opt,10",
+            solve_limit="1000",
+        )
+        self.solver._apply_config_to_control(config)
+        self.assertEqual(self.solver.control.configuration.configuration, config.configuration)
+        self.assertEqual(self.solver.control.configuration.solver.opt_strategy, "bb,lin")
+        self.assertEqual(self.solver.control.configuration.solver.opt_heuristic, "sign,model")
+        self.assertEqual(self.solver.control.configuration.solver.restart_on_model, config.restart_on_model)
+        self.assertEqual(self.solver.control.configuration.solver.heuristic, "domain,0")
+        self.assertEqual(self.solver.control.configuration.solve.opt_mode, config.opt_mode)
+        self.assertEqual(self.solver.control.configuration.solve.solve_limit, "1000,umax")
+
+    def test_control_config_debug(self):
+        """
+        Test control configuration debug output.
+        """
+        self.solver.setup(self.lns)
+        self.test_apply_config_to_control()
+        with mock.patch.object(self.solver.logger, "debug") as mock_debug:
+            self.solver._control_config_debug()
+            self.assertEqual(mock_debug.call_count, 8)
 
     def test_solve(self):
         """
@@ -208,35 +233,6 @@ class TestSolverClingo(TestCase):
         model = self.solver.solve()
         self.assertIsInstance(model, Model)
         self.assertIn(self.solver.result, ["SATISFIABLE", "OPTIMUM"])
-
-        # test setting of parameters
-        self.solver.setup(self.lns)
-        self.solver.ground()
-        config = SolverConfig(
-            configuration="tweety",
-            opt_strategy="bb,0",
-            opt_heuristic="3",
-            restart_on_model="1",
-            heuristic="Domain",
-            opt_mode="opt,10",
-            solve_limit="1000",
-            time_limit=2,
-            seed=42,
-            variability=True,
-        )
-        model = self.solver.solve(config)
-        self.assertIsInstance(model, Model)
-        self.assertEqual(self.solver._variability, config.variability)
-        self.assertEqual(self.solver.control.configuration.configuration, config.configuration)
-        self.assertEqual(self.solver.control.configuration.solver.opt_strategy, "bb,lin")
-        self.assertEqual(self.solver.control.configuration.solver.opt_heuristic, "sign,model")
-        self.assertEqual(
-            self.solver.control.configuration.solver.restart_on_model,
-            config.restart_on_model,
-        )
-        self.assertEqual(self.solver.control.configuration.solver.heuristic, "domain,0")
-        self.assertEqual(self.solver.control.configuration.solve.opt_mode, self.ref_opt_mode)
-        self.assertEqual(self.solver.control.configuration.solve.solve_limit, "1000,umax")
 
         def spy_decorator(method_to_decorate):
             mock_obj = mock.MagicMock()
@@ -256,12 +252,10 @@ class TestSolverClingo(TestCase):
         with (
             mock.patch("mod_lns.Timer.is_ringing", mock.PropertyMock(return_value=True)),
             mock.patch.object(clingo.SolveHandle, "cancel", mock_cancel),
-            mock.patch.object(self.solver, "_find_first_solution") as mock_find_first,
         ):
             self.solver.finished = False
-            self.solver.solve()
+            self.solver.solve(SolverConfig())
             mock_cancel.mock_obj.assert_called_once()
-            mock_find_first.assert_called_once()
 
         # test assumptions being used
         self.solver.setup(self.lns)
@@ -283,11 +277,16 @@ class TestClingoDLSolver(TestSolverClingo):
         self.solver = ClingoDLSolver()
         self.stype = ClingoDLSolver
         self.name = "clingo-dl"
-        self.strategy = DefaultStrategy()
-        self.strategy.config.log_level = 50
-        self.lns = LNS(["./tests/ref/golf.lp"], self.strategy)
-        # for solve tests, default
-        self.ref_opt_mode = "opt,10"
+        self.lns = LNS(["./tests/ref/golf.lp"], {"log_level": 50})
+
+    def test_init(self):
+        """
+        Test initialization of ClingoDLSolver.
+        """
+        super().test_init()
+        self.assertEqual(self.solver._search_num, 0)
+        self.assertFalse(self.solver._exhausted)
+        self.assertIsNone(self.solver.bound)
 
     def test_setup(self):
         """
@@ -351,8 +350,8 @@ class TestClingoDLSolver(TestSolverClingo):
         # optimization finishes and timer rings
         # pylint: disable=unused-argument
         def mock_solve(on_model, on_statistics, on_finish, async_):
-            setattr(self.solver._timer, "_time_limit", 5)
-            setattr(self.solver._timer, "_ringing", True)
+            setattr(self.solver._solve_timer, "_time_limit", 5)
+            setattr(self.solver._solve_timer, "_ringing", True)
             setattr(self.solver, "result", "UNSATISFIABLE")
             handle = mock.MagicMock(name="handle", spec=clingo.SolveHandle)
             handle.__enter__.return_value.wait = lambda timeout: False
@@ -376,7 +375,7 @@ class TestClingoDLSolver(TestSolverClingo):
 
         # optimization does not finish, timer rings
         self.solver.control.configuration.solve.solve_limit = "1000,1000"
-        self.solver._timer._ringing = False
+        self.solver._solve_timer._ringing = False
         self.solver.finished = False
 
         with (
@@ -385,7 +384,7 @@ class TestClingoDLSolver(TestSolverClingo):
             mock.patch.object(
                 self.solver,
                 "_add_bound",
-                side_effect=lambda prev_bound: setattr(self.solver._timer, "_ringing", True),
+                side_effect=lambda prev_bound: setattr(self.solver._solve_timer, "_ringing", True),
             ) as mock_add,
         ):
             self.solver._minimize_variable(prev_bound=43)
@@ -394,7 +393,7 @@ class TestClingoDLSolver(TestSolverClingo):
             self.assertEqual(self.solver.control.configuration.solve.solve_limit, "1000,1000")
 
         # conflict and restart limit reached
-        self.solver._timer._ringing = False
+        self.solver._solve_timer._ringing = False
         self.solver.finished = False
 
         with mock.patch.object(self.solver, "_add_bound") as mock_add:
@@ -405,6 +404,17 @@ class TestClingoDLSolver(TestSolverClingo):
             self.solver._minimize_variable(prev_bound=43)
             mock_add.assert_not_called()
 
+    def test_apply_config_to_control(self):
+        super().test_apply_config_to_control()
+        self.solver.minimize_variable = Function("x")
+        config = SolverConfig(
+            opt_mode="opt,10",
+        )
+        with mock.patch.object(self.solver, "_add_bound") as mock_add:
+            self.solver._apply_config_to_control(config)
+            mock_add.assert_called_once_with(10)
+        self.assertEqual(self.solver.bound, 10)
+
     def test_solve(self):
         """
         Test solve method.
@@ -413,17 +423,17 @@ class TestClingoDLSolver(TestSolverClingo):
         super().test_solve()
 
         self.setUp()
+        self.solver.setup(self.lns)
+        self.solver.ground()
+        self.solver.control.configuration.solve.models = 2
         # minimize variable set
         self.solver.minimize_variable = Function("x")
-        self.ref_opt_mode = "opt"
         with (
+            mock.patch("mod_lns.Timer.is_ringing", mock.PropertyMock(return_value=True)),
             mock.patch.object(self.solver, "_minimize_variable") as mock_minimize,
-            mock.patch.object(self.solver, "_add_bound") as mock_add,
         ):
-            super().test_solve()
-            mock_add.assert_called_once_with(10)
-            # default run, setting of parameters, interruption by timer
-            mock_minimize.assert_has_calls([mock.call(None), mock.call(10), mock.call(None)])
+            self.solver.solve(SolverConfig(opt_mode="opt,10"))
+            mock_minimize.assert_has_calls([mock.call(10)])
 
 
 class TestClingconSolver(TestSolverClingo):
@@ -435,11 +445,7 @@ class TestClingconSolver(TestSolverClingo):
         self.solver = ClingconSolver()
         self.stype = ClingconSolver
         self.name = "clingcon"
-        self.strategy = DefaultStrategy()
-        self.strategy.config.log_level = 50
-        self.lns = LNS(["./tests/ref/golf.lp"], self.strategy)
-        # for solve tests
-        self.ref_opt_mode = "opt,10"
+        self.lns = LNS(["./tests/ref/golf.lp"], {"log_level": 50})
 
     def test_setup(self):
         """
