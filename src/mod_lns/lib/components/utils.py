@@ -5,10 +5,7 @@ Collection of utility functions used for LNS.
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Any, Optional, Sequence, TypeVar
-
-import clingo
-from clingo import Symbol
+from typing import TYPE_CHECKING, Any, Optional, Sequence
 
 from mod_lns import Timer
 
@@ -41,23 +38,6 @@ def calculate_variability(list1: set[Any], list2: set[Any]) -> float:
     return (1 - len(list2.intersection(list1)) / len2) * 100
 
 
-def fix_symbols(
-    symbols: list[clingo.symbol.Symbol],
-) -> list[tuple[clingo.symbol.Symbol, bool]]:
-    """
-    Prepare symbols to be used as assumptions (being fixed).
-
-    :param symbols: Symbols to be used.
-    :type symbols: list[clingo.symbol.Symbol]
-    :return: Fixed symbols/atoms.
-    :rtype:  list[tuple[clingo.symbol.Symbol, bool]]
-    """
-    fixed = []
-    for symbol in symbols:
-        fixed.append((symbol, True))
-    return fixed
-
-
 def get_unique_list(seq: Sequence[Any]) -> list[Any]:
     """
     Get unique elements from a list while preserving the order.
@@ -69,25 +49,6 @@ def get_unique_list(seq: Sequence[Any]) -> list[Any]:
     """
     seen = []
     return [x for x in seq if x not in seen and not seen.append(x)]  # type: ignore
-
-
-T = TypeVar("T", float, int)
-
-
-def clamp(value: T, min_value: int, max_value: int) -> T:
-    """
-    Clamp a value between a minimum and maximum value.
-
-    :param value: Value to clamp.
-    :type value: T
-    :param min_value: Minimum value.
-    :type min_value: int
-    :param max_value: Maximum value.
-    :type max_value: int
-    :return: Clamped value.
-    :rtype: T
-    """
-    return max(min_value, min(max_value, value))
 
 
 def update_time_limit(lns_object: "LNS", solver_config: "SolverConfig") -> None:
@@ -111,18 +72,6 @@ def update_time_limit(lns_object: "LNS", solver_config: "SolverConfig") -> None:
                 "Time limit for solver reduced to %d seconds to fit into overall time limit.",
                 solver_config.time_limit,
             )
-
-
-def format_atoms(atoms: set[Symbol]) -> str:
-    """
-    Format set of atoms into sorted space-separated string.
-
-    :param atoms: Set of atoms.
-    :type atoms: set[Symbol]
-    :return: Formatted atom string.
-    :rtype: str
-    """
-    return " ".join([str(atom) for atom in sorted(atoms)])
 
 
 def increase_solve_limit(current_solve_limit: str, increase_rate: float) -> str:

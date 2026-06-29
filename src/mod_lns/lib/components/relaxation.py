@@ -9,7 +9,6 @@ from typing import Any
 from clingo.symbol import Symbol, SymbolType
 
 from mod_lns import Model
-from mod_lns.lib.utils import format_atoms
 from mod_lns.parser.config_parser import ConfigParser
 from mod_lns.utils.types import ActiveConfig
 
@@ -77,6 +76,18 @@ def relax_random(
     """
     fixed_atoms = random.sample(sorted(model.shown), round(len(model.shown) * (1 - relax_rate / 100)))
     return set(fixed_atoms)
+
+
+def format_atoms(atoms: set[Symbol]) -> str:
+    """
+    Format set of atoms into sorted space-separated string.
+
+    :param atoms: Set of atoms.
+    :type atoms: set[Symbol]
+    :return: Formatted atom string.
+    :rtype: str
+    """
+    return " ".join([str(atom) for atom in sorted(atoms)])
 
 
 def _project(

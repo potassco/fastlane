@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, fields
 from logging import Logger
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar, Optional, TypeVar
 
 from clingo import Symbol
 
@@ -18,9 +18,26 @@ from mod_lns.lib.adaptive_strategies.roulette_wheel import RouletteWheelStrategy
 from mod_lns.lib.adaptive_strategies.static import StaticStrategy
 from mod_lns.lib.auto_destruction_converters.last_improv import LastImprovementDestructionConverter
 from mod_lns.lib.solvers.clingo_solver import ClingoSolver
-from mod_lns.lib.utils import clamp
 
 LINE = "--------------------------------------------------------------------------------------"
+
+T = TypeVar("T", float, int)
+
+
+def clamp(value: T, min_value: int, max_value: int) -> T:
+    """
+    Clamp a value between a minimum and maximum value.
+
+    :param value: Value to clamp.
+    :type value: T
+    :param min_value: Minimum value.
+    :type min_value: int
+    :param max_value: Maximum value.
+    :type max_value: int
+    :return: Clamped value.
+    :rtype: T
+    """
+    return max(min_value, min(max_value, value))
 
 
 # pylint: disable=too-many-instance-attributes

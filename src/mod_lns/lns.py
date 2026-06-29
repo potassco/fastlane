@@ -17,7 +17,7 @@ from mod_lns.lib.components.heuristics import generate_heuristic_subprogram, get
 from mod_lns.lib.components.output import get_output_format
 from mod_lns.lib.components.relaxation import relax_config
 from mod_lns.lib.components.repair import repair_assumptions, repair_heuristics
-from mod_lns.lib.utils import (
+from mod_lns.lib.components.utils import (
     calculate_variability,
     increase_cutoff,
     increase_solve_limit,
