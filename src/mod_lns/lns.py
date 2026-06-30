@@ -324,7 +324,6 @@ class LNS:
             fixed_atoms_heuristics = get_fixed_atoms_heuristics(
                 self._active_config, self._op_specs, fixed_atoms, self.step_c
             )
-            self.prev_fixed_atoms = fixed_atoms_heuristics.copy()
             new_model = repair_heuristics(
                 solver=self.solver,
                 solver_config=self.lns_solver_config,
@@ -333,6 +332,7 @@ class LNS:
                 step=self.step_c,
                 logger=self.logger,
             )
+            self.prev_fixed_atoms = fixed_atoms_heuristics.copy()
         # assumptions
         elif self.options.fix == "assumptions":
             self.logger.debug("repair using assumptions")

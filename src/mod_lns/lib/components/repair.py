@@ -84,5 +84,8 @@ def repair_heuristics(
     logger.debug(LINE)
 
     new_model = solver.solve(solver_config)
+    # release externals after solving instead of before solving of next iteration
+    # for a in fixed_atoms_heuristics:
+    #     solver.release_external(a)
 
     return new_model
