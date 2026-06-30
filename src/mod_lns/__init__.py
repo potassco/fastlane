@@ -32,14 +32,21 @@ UNSET: Any = UnsetMarker()
 
 
 class Model:
-    "Simplified Model class"
+    """
+    Simplified Model class
+
+    Attributes:
+        shown (set[Symbol]): Set of shown atoms.
+        true (set[Symbol]): Set of true atoms.
+        cost (list[int]): List of costs.
+        assignments (list[str]): List of assignments.
+    """
 
     def __init__(self) -> None:
         self.shown: set[Symbol] = set()
         self.true: set[Symbol] = set()
         self.cost: list[int] = []
         self.assignments: list[str] = []
-        self.opt: bool = False
 
     def get_cost_str(self) -> str:
         """

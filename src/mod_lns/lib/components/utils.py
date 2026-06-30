@@ -78,7 +78,7 @@ def increase_solve_limit(current_solve_limit: str, increase_rate: float) -> str:
     """
     Increase solve limit by a percentage.
 
-    :param current_solve_limit: Current solve limit as string (e.g., "1000ms", "10s").
+    :param current_solve_limit: Current solve limit as string (e.g., "1000,1000", "1000,umax").
     :type current_solve_limit: str
     :param increase_rate: Percentage to increase the solve limit (e.g., 20 for 20%).
     :type increase_rate: float

@@ -15,51 +15,7 @@ from mod_lns.utils.types import ActiveConfig
 LINE = "-" * 50
 
 
-def relax_declarative(
-    model: Model,
-    relax_rate: int,
-) -> set[Symbol]:
-    """
-    Relax portion of selected atoms given by the relax_rate.
-    ASP encoding has to contain `_lns_select/1` and `_lns_fix/2` predicates.
-
-    :param model: model.
-    :type model: Model
-    :param relax_rate: Percentage of atoms to relax.
-    :type relax_rate: int
-    :return: Fixed (not relaxed) atoms.
-    :rtype: set[Symbol]
-    """
-    fixed_atoms: set[Symbol] = set()
-    selected_atoms: set[Symbol] = set()
-    declared_fixed_atoms: dict[Symbol, set[Symbol]] = {}
-    # !inefficient
-    for atom in model.true:
-        # get possible selection
-        if atom.match("_lns_select", 1):
-            if atom.arguments[0] not in selected_atoms:
-                selected_atoms.add(atom.arguments[0])
-                declared_fixed_atoms[atom.arguments[0]] = set()
-        # associate selecttion with fixed atoms
-        elif atom.match("_lns_fix", 2):
-            if atom.arguments[1] in declared_fixed_atoms:
-                declared_fixed_atoms[atom.arguments[1]].add(atom.arguments[0])
-    # sample selection atoms
-    if len(selected_atoms) == 1:
-        symbols = selected_atoms.copy()
-    else:
-        symbols = set(
-            random.sample(
-                sorted(selected_atoms),
-                round(len(selected_atoms) * (1 - relax_rate / 100)),
-            )
-        )
-    # fix corresponding atoms
-    for s in symbols:
-        fixed_atoms.update(declared_fixed_atoms[s])
-    return fixed_atoms
-
-
+# unused default relaxation method, can be used for testing
 def relax_random(
     model: Model,
     relax_rate: int,
@@ -107,7 +63,7 @@ def _project(
     :return: Set of projected atoms
     :rtype: set[Symbol]
     """
-    projected_atoms = set()
+    projected_atoms: set[Symbol] = set()
 
     for project_operator in project_operators:
         projected_atoms.update(ConfigParser.get_projected_atoms(model, op_specs, project_operator["name"]))
