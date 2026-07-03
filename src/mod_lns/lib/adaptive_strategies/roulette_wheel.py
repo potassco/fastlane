@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 from mod_lns import Model
 from mod_lns.interfaces.adaptive_strategy import AdaptiveStrategy
 from mod_lns.interfaces.auto_destruction_converter import AutoDestructionConverter
+from mod_lns.lib.auto_destruction_converters.last_improv import LastImprovementDestructionConverter
 from mod_lns.utils.types import ActiveConfig, ConfigCatalog
 
 if TYPE_CHECKING:
@@ -21,12 +22,15 @@ class RouletteWheelStrategy(AdaptiveStrategy):
 
     :param logger: Logger for logging messages.
     :type logger: Logger
-    :param learning_rate: Learning rate used to update weights.
+    :param learning_rate: Learning rate used to update weights, 0 < learning_rate < 1.
     :type learning_rate: float
+    :default learning_rate: 0.5
     :param lex_weight: Weight used to convert lexicographic cost into integer cost.
     :type lex_weight: int
+    :default lex_weight: 1000
     :param converter: Converter for computing destruction percentages of auto-mode destroy operators.
     :type converter: AutoDestructionConverter
+    :default converter: LastImprovementDestructionConverter
     :param min_weight: Minimum value of weight. Defaults to 0.001.
     :type min_weight: float, optional
     :default min_weight: 0.001
@@ -35,9 +39,9 @@ class RouletteWheelStrategy(AdaptiveStrategy):
     def __init__(
         self,
         logger: Logger,
-        learning_rate: float,
-        lex_weight: int,
-        converter: AutoDestructionConverter,
+        learning_rate: float = 0.5,
+        lex_weight: int = 1000,
+        converter: AutoDestructionConverter = LastImprovementDestructionConverter(),
         min_weight: float = 0.001,
     ):
         self.logger = logger
@@ -117,13 +121,13 @@ class RouletteWheelStrategy(AdaptiveStrategy):
         return self._converter.convert_auto_in_config(self._select_config(config_catalog))
 
     def _compute_effectiveness_score(
-        self, current_soluion: Model, new_model: Model | None, time_to_last_model: float
+        self, current_model: Model, new_model: Model | None, time_to_last_model: float
     ) -> float:
         """
         Compute effectiveness score of current LNPS configuration.
 
-        :param current_soluion: Current model.
-        :type current_soluion: Model
+        :param current_model: Current model.
+        :type current_model: Model
         :param new_model: New model found by using current LNPS configuration.
         :type new_model: Model | None
         :param time_to_last_model: Elapsed time to new model found.
@@ -134,11 +138,11 @@ class RouletteWheelStrategy(AdaptiveStrategy):
         if new_model is None:
             return 0.0
 
-        if len(current_soluion.cost) > 1:
-            current_cost = self._compute_lex_weighted_sum(current_soluion.cost)
+        if len(current_model.cost) > 1:
+            current_cost = self._compute_lex_weighted_sum(current_model.cost)
             new_cost = self._compute_lex_weighted_sum(new_model.cost)
         else:
-            current_cost = current_soluion.cost[0]
+            current_cost = current_model.cost[0]
             new_cost = new_model.cost[0]
 
         # Guard against zero/negative elapsed time
