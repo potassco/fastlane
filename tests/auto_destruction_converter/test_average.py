@@ -9,6 +9,8 @@ from clingo.symbol import Function
 from mod_lns import Model
 from mod_lns.lib.auto_destruction_converters.average import AverageDestructionConverter, _RunningAverage
 
+# pylint: disable=protected-access
+
 
 class TestRunningAverage(TestCase):
     """

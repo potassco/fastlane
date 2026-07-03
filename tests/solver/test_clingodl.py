@@ -14,6 +14,8 @@ from mod_lns.lib.solvers.clingo_dl_solver import ClingoDLSolver
 from mod_lns.lns import LNS
 from tests.solver.test_clingo import TestSolverClingo
 
+# pylint: disable=protected-access
+
 
 class TestClingoDLSolver(TestSolverClingo):
     """

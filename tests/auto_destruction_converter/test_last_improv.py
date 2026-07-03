@@ -4,10 +4,12 @@ Test cases for the last improvement auto-destruction converter.
 
 from unittest import TestCase, mock
 
-from clingo.symbol import Function, Number, String, Symbol
+from clingo.symbol import Function, Number, String
 
 from mod_lns import Model
 from mod_lns.lib.auto_destruction_converters.last_improv import LastImprovementDestructionConverter
+
+# pylint: disable=protected-access
 
 
 class TestLastImprovementDestructionConverter(TestCase):

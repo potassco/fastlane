@@ -4,7 +4,7 @@ Test cases for repair components of the LNS framework.
 
 from unittest import TestCase, mock
 
-from clingo.symbol import Function, Number, Symbol
+from clingo.symbol import Function, Number
 
 from mod_lns.interfaces.solver import Solver, SolverConfig
 from mod_lns.lib.components.repair import repair_assumptions, repair_heuristics
@@ -71,7 +71,7 @@ class TestRepairComponents(TestCase):
             )
         }
 
-        result = repair_heuristics(
+        repair_heuristics(
             solver=mock_solver,
             solver_config=mock_solver_config,
             fixed_atoms_heuristics=fixed_atoms_heuristics,

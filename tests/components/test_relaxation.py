@@ -47,9 +47,7 @@ class TestRelaxationComponents(TestCase):
         """
         Test _project function.
         """
-        model = Model()
-        model.shown = {Function("a", [Number(1)]), Function("b", [Number(2), Number(3)])}
-        model.true = {Function("a", [Number(1)]), Function("b", [Number(2), Number(3)]), Function("c")}
+        model = mock.Mock(spec=Model)
         op_specs = {
             "_project": {
                 Function(
@@ -64,8 +62,8 @@ class TestRelaxationComponents(TestCase):
             }
         }
         projected_atoms = {
-            Function("plays", [Number(1), Number(2), Number(3)]),
-            Function("plays", [Number(4), Number(5), Number(6)]),
+            Function("plays", [Number(1), Number(2), Number(3)], True),
+            Function("plays", [Number(4), Number(5), Number(6)], True),
         }
 
         with mock.patch(
@@ -138,14 +136,14 @@ class TestRelaxationComponents(TestCase):
             }
         }
         projected_atoms = {
-            Function("plays", [Number(1), Number(2), Number(3)]),
-            Function("plays", [Number(4), Number(5), Number(6)]),
-            Function("plays", [Number(7), Number(8), Number(9)]),
+            Function("plays", [Number(1), Number(2), Number(3)], True),
+            Function("plays", [Number(4), Number(5), Number(6)], True),
+            Function("plays", [Number(7), Number(8), Number(9)], True),
         }
         destroy_operators = [{"name": "random_n", "percents_or_numbers": [{"type": "p", "value": 50}]}]
         atom_term_pairs = [
-            {"atom": Function("plays", [Number(1), Number(2), Number(3)]), "term": Number(1)},
-            {"atom": Function("plays", [Number(4), Number(5), Number(6)]), "term": Number(4)},
+            {"atom": Function("plays", [Number(1), Number(2), Number(3)], True), "term": Number(1)},
+            {"atom": Function("plays", [Number(4), Number(5), Number(6)], True), "term": Number(4)},
         ]
         with mock.patch(
             "mod_lns.lib.components.relaxation.ConfigParser.get_atom_term_pairs", return_value=atom_term_pairs
@@ -199,16 +197,22 @@ class TestRelaxationComponents(TestCase):
             }
         }
         projected_atoms = {
-            Function("plays", [Number(1), Number(2), Number(3)]),
-            Function("plays", [Number(4), Number(5), Number(6)]),
-            Function("plays", [Number(7), Number(8), Number(9)]),
+            Function("plays", [Number(1), Number(2), Number(3)], True),
+            Function("plays", [Number(4), Number(5), Number(6)], True),
+            Function("plays", [Number(7), Number(8), Number(9)], True),
         }
         destroy_operators = [
             {"name": "random_n", "percents_or_numbers": [{"type": "p", "value": 50}, {"type": "n", "value": 1}]}
         ]
         atom_term_pairs = [
-            {"atom": Function("plays", [Number(1), Number(2), Number(3)]), "term": Tuple_([Number(1), Number(2)])},
-            {"atom": Function("plays", [Number(4), Number(5), Number(6)]), "term": Tuple_([Number(4), Number(2)])},
+            {
+                "atom": Function("plays", [Number(1), Number(2), Number(3)], True),
+                "term": Tuple_([Number(1), Number(2)]),
+            },
+            {
+                "atom": Function("plays", [Number(4), Number(5), Number(6)], True),
+                "term": Tuple_([Number(4), Number(2)]),
+            },
         ]
         with mock.patch(
             "mod_lns.lib.components.relaxation.ConfigParser.get_atom_term_pairs", return_value=atom_term_pairs
@@ -221,7 +225,7 @@ class TestRelaxationComponents(TestCase):
         """
         Test relax_config function.
         """
-        model = Model()
+        model = mock.Mock(spec=Model)
         op_specs = {"test_op": "test_spec"}
         config: ActiveConfig = {
             "prioritize_operators": [{"name": "test_op", "value": 1, "modifier": "true"}],
