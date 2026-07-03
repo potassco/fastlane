@@ -13,8 +13,8 @@ class ConfigCatalog(TypedDict, total=False):
     :type project_operators: dict[str, set[tuple[str, int]]]
     :param destroy_operators: Destroy operator names mapped to destruction parameters.
     :type destroy_operators: dict[str, list[dict[str, Any]]]
-    :param prioritized_operators: Prioritize operator names mapped to heuristic value/modifier pairs.
-    :type prioritized_operators: dict[str, dict[str, Any]]
+    :param prioritize_operators: Prioritize operator names mapped to heuristic value/modifier pairs.
+    :type prioritize_operators: dict[str, dict[str, Any]]
     :param configs: Config names mapped to selected project/destroy/prioritize operators.
     :type configs: dict[str, dict[str, list[str]]]
     :param strategy: Name of the adaptive strategy selected for configuration updates.
