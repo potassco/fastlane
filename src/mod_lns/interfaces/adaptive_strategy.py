@@ -28,7 +28,7 @@ class AdaptiveStrategy(ABC):
         )
 
     @abstractmethod
-    def get_initial_config(self, config_catalog: ConfigCatalog, initial_model: Model) -> ActiveConfig:
+    def get_initial_config(self, config_catalog: ConfigCatalog, initial_model: Model) -> ActiveConfig:  # nocoverage
         """
         Abstract method to get initial LNS configuration.
 
@@ -48,7 +48,7 @@ class AdaptiveStrategy(ABC):
         config_catalog: ConfigCatalog,
         stats: list[dict[str, Any]],
         lns_object: "LNS",
-    ) -> ActiveConfig:
+    ) -> ActiveConfig:  # nocoverage
         """
         Abstract method to update LNS configuration.
 

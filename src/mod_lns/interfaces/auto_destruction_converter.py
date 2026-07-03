@@ -56,7 +56,7 @@ class AutoDestructionConverter(ABC):
     @abstractmethod
     def compute_auto_destruction_percent(
         self, config_name: str, project_operators: list[dict[str, Any]], destroy_operator_name: str
-    ) -> float:
+    ) -> float:  # nocoverage
         """
         Compute destruction percentage of auto-mode destroy operator.
 
