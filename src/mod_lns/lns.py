@@ -25,7 +25,7 @@ from mod_lns.lib.components.utils import (
     update_time_limit,
 )
 from mod_lns.lns_options import LNSOptions
-from mod_lns.parser.config_parser import ConfigParser
+from mod_lns.parsers.config_parser import ConfigParser
 from mod_lns.utils.logger import setup_logger
 from mod_lns.utils.types import ActiveConfig, ConfigCatalog
 

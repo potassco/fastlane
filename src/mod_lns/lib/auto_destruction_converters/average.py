@@ -10,7 +10,7 @@ from clingo import Symbol
 from mod_lns import Model
 from mod_lns.interfaces.auto_destruction_converter import AutoDestructionConverter
 from mod_lns.lib.auto_destruction_converters.utils import calculate_actual_destruction_percent, is_new_model_better
-from mod_lns.parser.config_parser import ConfigParser
+from mod_lns.parsers.config_parser import ConfigParser
 from mod_lns.utils.types import ActiveConfig
 
 if TYPE_CHECKING:

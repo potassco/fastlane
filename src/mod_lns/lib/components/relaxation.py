@@ -9,7 +9,7 @@ from typing import Any
 from clingo.symbol import Symbol, SymbolType
 
 from mod_lns import Model
-from mod_lns.parser.config_parser import ConfigParser
+from mod_lns.parsers.config_parser import ConfigParser
 from mod_lns.utils.types import ActiveConfig
 
 LINE = "-" * 50

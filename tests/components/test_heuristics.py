@@ -10,7 +10,7 @@ from mod_lns.lib.components.heuristics import (
     generate_heuristic_subprogram,
     get_fixed_atoms_heuristics,
 )
-from mod_lns.parser.config_parser import ConfigParser
+from mod_lns.parsers.config_parser import ConfigParser
 from mod_lns.utils.types import ActiveConfig, ConfigCatalog
 
 

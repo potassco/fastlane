@@ -4,7 +4,7 @@ Components for implementing fixation via heuristics in the context of LNS.
 
 from clingo.symbol import Function, Number, Symbol
 
-from mod_lns.parser.config_parser import ConfigParser
+from mod_lns.parsers.config_parser import ConfigParser
 from mod_lns.utils.types import ActiveConfig, ConfigCatalog
 
 
