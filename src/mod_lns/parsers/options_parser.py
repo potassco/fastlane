@@ -14,7 +14,7 @@ from argparse import ArgumentParser, ArgumentTypeError, BooleanOptionalAction, R
 from textwrap import dedent
 from typing import Any, Optional, no_type_check
 
-from clingo import Configuration, Control, parse_term
+from clingo import Control, parse_term
 from clingo.symbol import Symbol
 
 from mod_lns import UNSET
@@ -33,7 +33,7 @@ else:
 
 VERSION = metadata.version("mod_lns")
 
-# pylint: disable=line-too-long
+# pylint: disable=line-too-long, too-many-lines
 
 
 def _parse_solver(solvers: dict[str, Solver], string: str) -> Solver:
@@ -122,7 +122,9 @@ def _parse_0_1_float(string: str) -> float:
     return value
 
 
-def _parse_percent(string: str, msg: str = "Invalid percentage, percentage must be between 0 and 100 (inclusive).") -> int:
+def _parse_percent(
+    string: str, msg: str = "Invalid percentage, percentage must be between 0 and 100 (inclusive)."
+) -> int:
     """
     Parse percentage between 0 and 100 (inclusive).
 
@@ -204,6 +206,7 @@ def _parse_minimize_variable(string: str) -> Symbol:
         raise ArgumentTypeError(f"'{string}': Invalid minimize variable.") from e
     return term
 
+
 # def _parse_falsify(string: str) -> str:
 #     """
 #     Parse the falsify string.
@@ -215,6 +218,7 @@ def _parse_minimize_variable(string: str) -> Symbol:
 #     except ValueError as e:
 #         raise ArgumentTypeError(f"'{string}': Invalid falsify variable. {{<n>, inf}} expected.") from e
 #     return string
+
 
 def _can_instantiate_without_args(cls: type) -> bool:
     """
@@ -236,6 +240,7 @@ def _can_instantiate_without_args(cls: type) -> bool:
         if parameter.default is inspect.Parameter.empty:
             return False
     return True
+
 
 def _parse_context(string: str) -> Any:
     """
@@ -647,7 +652,7 @@ class OptionsParser:
         )
 
         parser.add_argument(
-            "--parallel_mode",
+            "--parallel-mode",
             "-t",
             help=(
                 "Run parallel search with given number of threads.\n"
