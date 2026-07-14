@@ -225,7 +225,7 @@ class LNS:
             self._active_config = self._adaptive_strategy.get_initial_config(self._config_catalog, self.current_model)
 
             # heuristics
-            if self.options.fix:
+            if self.options.fix == "heuristics":
                 heuristics = generate_heuristic_subprogram(self._config_catalog)
                 self.logger.debug("Adding heuristics:\n%s", heuristics)
                 self.solver.add("heuristic", ["t"], heuristics)

@@ -418,7 +418,7 @@ class LNSOptions:
         config.opt_heuristic = self.lns_opt_heuristic
         if self.lns_restart_on_model is not None:
             config.restart_on_model = str(int(self.lns_restart_on_model))
-        if self.fix:
+        if self.fix == "heuristics":
             config.heuristic = self.lns_heuristic
         # opt_mode set during lns
         return config
