@@ -301,6 +301,22 @@ class LNS:
         """
         return relax_config(self.current_model, self._active_config, self._op_specs, self.logger)
 
+    def _next_no_improvement_cutoff_count(self, new_model: Optional[Model]) -> int:
+        """
+        Calculate the next no_improvement_cutoff_count based on the new model and current stats.
+
+        :param new_model: The new model to compare with the best model.
+        :type new_model: Optional[Model]
+        :return: The next no_improvement_cutoff_count.
+        :rtype: int
+        """
+        prev_ic = self.stats[-1].get("no_improvement_cutoff_count", 0) if self.stats else 0
+        if self.solver.result in {"UNSATISFIABLE", "OPTIMUM FOUND"}:
+            return prev_ic
+        if new_model is not None and self.solver.result == "SATISFIABLE" and new_model.cost < self.best_model.cost:
+            return 0
+        return prev_ic + 1
+
     def repair(self, fixed_atoms: set[Symbol]) -> Optional[Model]:
         """
         Repair solution and collect some statistics.
@@ -359,23 +375,12 @@ class LNS:
         self.logger.debug(LINE)
 
         # !todo: add more stats
-        if self.stats:
-            if self.solver.result in {"UNSATISFIABLE", "OPTIMUM FOUND"}:
-                new_ic = self.stats[-1].get("no_improvement_cutoff_count", 0)
-            elif (
-                new_model is not None and self.solver.result == "SATISFIABLE" and new_model.cost < self.best_model.cost
-            ):
-                new_ic = 0
-            else:
-                new_ic = self.stats[-1].get("no_improvement_cutoff_count", 0) + 1
-        else:
-            new_ic = 0
         self.stats.append(
             {
                 **{
                     "step": self.step_c,
                     "elapsed_time": self.timer.get_elapsed_time(),
-                    "no_improvement_cutoff_count": new_ic,
+                    "no_improvement_cutoff_count": self._next_no_improvement_cutoff_count(new_model),
                 },
                 **self.solver.stats,
             }
