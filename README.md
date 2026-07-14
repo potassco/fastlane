@@ -12,7 +12,7 @@ installation.
 ```bash
 git clone https://github.com/potassco/large_neighbourhood_search
 cd large_neighbourhood_search
-conda create -n <env-name> python=3.11
+conda create -n <env-name> python=3.12
 conda activate <env-name>
 pip install .
 ```

@@ -5,9 +5,9 @@ import nox
 nox.options.sessions = "lint_pylint", "typecheck", "test"
 
 EDITABLE_TESTS = True
-PYTHON_VERSIONS = None
+PYTHON_VERSIONS = ["3.12"]
 if "GITHUB_ACTIONS" in os.environ:
-    PYTHON_VERSIONS = ["3.11"]
+    PYTHON_VERSIONS = ["3.12", "3.14"]
     EDITABLE_TESTS = False
 
 FILES_TO_BE_CHECKED = [
@@ -43,7 +43,7 @@ def format(session):
         isort_args.insert(1, "--diff")
     session.run("isort", *isort_args)
 
-    black_args = ["tests"] + FILES_TO_BE_CHECKED
+    black_args = ["--target-version", "py312", "tests"] + FILES_TO_BE_CHECKED
     if check:
         black_args.insert(0, "--check")
         black_args.insert(1, "--diff")
