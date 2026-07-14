@@ -253,7 +253,7 @@ class LNSOptions:
     lns_restart_on_model: Optional[bool] = None
     lns_heuristic: Optional[str] = "Domain"
     # lns_opt_mode default has to be set manually in parser
-    lns_opt_mode: dict[str, Any] = field(default_factory=lambda: {"mode": None, "nf": None, "modifier": None})
+    lns_opt_mode: dict[str, Optional[str]] = field(default_factory=lambda: {"mode": None, "nf": None, "modifier": None})
 
     # configuration values
     preset_values: ClassVar[dict[str, dict[str, Any]]] = {
@@ -375,7 +375,7 @@ class LNSOptions:
         if self.constrained and self.lns_opt_mode["mode"] is None:
             self.lns_opt_mode["mode"] = "opt"
             self.lns_opt_mode["modifier"] = "dynamic"
-            self.lns_opt_mode["nf"] = 0
+            self.lns_opt_mode["nf"] = "0"
         self.lns_solve_limit_increase_rate = clamp(self.lns_solve_limit_increase_rate, 0, 100)
         self.lns_time_limit_increase_rate = clamp(self.lns_time_limit_increase_rate, 0, 100)
 

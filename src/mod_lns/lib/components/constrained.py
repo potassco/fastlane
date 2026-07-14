@@ -5,7 +5,7 @@ Components related to constrained optimization in the context of LNS.
 import math
 
 
-def get_opt_bound(cost: list[int], opt_mode: str, opt_modifier: str, opt_nf: int | float) -> str:
+def get_opt_bound(cost: list[int], opt_mode: str, opt_modifier: str = "dynamic", opt_nf: str = "0") -> str:
     """
     Calculate bound for next step.
 
@@ -15,13 +15,15 @@ def get_opt_bound(cost: list[int], opt_mode: str, opt_modifier: str, opt_nf: int
     :type opt_mode: str
     :param opt_modifier: Optimization modifier
     :type opt_modifier: str
+    :default opt_modifier: "dynamic"
     :param opt_nf: Optimization factor
-    :type opt_nf: int | float
+    :type opt_nf: str
+    :default opt_nf: "0"
     :return: String representing the bound for the next step.
     :rtype: str
     """
     if opt_modifier == "static":
-        return opt_mode + "," + str(opt_nf)
+        return opt_mode + "," + opt_nf
     if opt_modifier == "dynamic":
         bound = cost[:-1]
         bound.append(math.ceil(cost[-1] + abs(cost[-1]) * float(opt_nf) / 100) - 1)

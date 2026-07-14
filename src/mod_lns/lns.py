@@ -312,8 +312,16 @@ class LNS:
         """
         lns_opt_mode = self.options.lns_opt_mode
         if lns_opt_mode["mode"] is not None:
+            kwargs = {}
+            if lns_opt_mode["modifier"] is not None:
+                kwargs["opt_modifier"] = lns_opt_mode["modifier"]
+            if lns_opt_mode["nf"] is not None:
+                kwargs["opt_nf"] = lns_opt_mode["nf"]
+
             self.lns_solver_config.opt_mode = get_opt_bound(
-                self.current_model.cost, lns_opt_mode["mode"], lns_opt_mode["modifier"], lns_opt_mode["nf"]
+                self.current_model.cost,
+                lns_opt_mode["mode"],
+                **kwargs,
             )
         update_time_limit(self, self.lns_solver_config)
         self.lns_solver_config.variability = self._is_variable
