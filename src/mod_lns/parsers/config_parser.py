@@ -73,7 +73,7 @@ class ConfigParser:
         :param declarative: Whether to parse declarative configuration or not.
         :type declarative: bool
         :return: Dictionary of project operator names and their corresponding signatures.
-        :rtype: dict[str, set[tuple[str, int]]]]
+        :rtype: dict[str, set[tuple[str, int]]]
         """
         project_operators: dict[str, set[tuple[str, int]]] = {}
 
@@ -362,6 +362,10 @@ class ConfigParser:
                     config_name = str(args[0])
                 else:
                     config_name = args[0].string
+                # multiple configs with the same name -> combine operators
+                # if config_name in configs:
+                # logger.warning(f"_config/4: Multiple definitions of configuration {config_name}. Ignoring {atom}.")
+                # continue
                 configs.setdefault(
                     config_name, {"project_operators": set(), "destroy_operators": set(), "prioritize_operators": set()}
                 )
@@ -650,6 +654,7 @@ class ConfigParser:
                 is_destroy3_defined = True
                 candidate_atom = args[1]
                 if candidate_atom in projected_atoms:
+                    # !todo dict to tuple
                     atom_term_pairs.append({"atom": candidate_atom, "term": args[2]})
 
         # default destroy all projected
@@ -657,6 +662,7 @@ class ConfigParser:
             for atom in projected_atoms:
                 atom_term_pairs.append({"atom": atom, "term": Tuple_(atom.arguments)})
 
+        # !todo improve reproducibility of order of atom_term_pairs
         return atom_term_pairs
 
     @classmethod

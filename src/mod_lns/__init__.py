@@ -66,7 +66,6 @@ class Model:
         :return: Printed string.
         :rtype: str
         """
-        # print(self.string)
         answer_string = " ".join([str(atom) for atom in self.shown])
         if len(self.assignments) != 0:
             answer_string += "\nAssignments:\n" + " ".join(self.assignments)
