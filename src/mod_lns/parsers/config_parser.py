@@ -437,13 +437,17 @@ class ConfigParser:
                     # logger.warning(f"_strategy/2: Strategy {strategy_name} is not supported. (atom: {atom})")
                     continue
 
-                if strategy is not None:
+                if strategy is None:
+                    strategy = strategy_name
+                if strategy != strategy_name:
                     # logger.warning(f"_strategy/2: Multiple strategies specified.
                     # Using {strategy} and ignoring {strategy_name}. (atom: {atom})")
-                    break
-                strategy = strategy_name
+                    continue
 
-                config_name = str(args[1])
+                if args[1].type != SymbolType.String:
+                    config_name = str(args[1])
+                else:
+                    config_name = args[1].string
                 if config_name in defined_configs:
                     candidate_configs[config_name] = defined_configs[config_name]
                 else:
