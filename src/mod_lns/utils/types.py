@@ -5,7 +5,7 @@ Additional types used in the LNS framework.
 from typing import Any, TypedDict
 
 
-class ConfigCatalog(TypedDict, total=False):
+class ConfigCatalog(TypedDict, total=False):  # nocoverage
     """
     TypedDict for configuration catalog.
 
@@ -28,7 +28,7 @@ class ConfigCatalog(TypedDict, total=False):
     strategy: str
 
 
-class ActiveConfig(TypedDict, total=False):
+class ActiveConfig(TypedDict, total=False):  # nocoverage
     """
     TypedDict for active configuration.
 
