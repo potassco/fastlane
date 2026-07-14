@@ -18,7 +18,7 @@ class TestConstrainedComponents(TestCase):
         """
         self.cost = [10, 20, 30]
         self.opt_mode = "opt"
-        self.opt_nf = 5
+        self.opt_nf = "5"
 
     def test_get_opt_bound_static(self):
         """
