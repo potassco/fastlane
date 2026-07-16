@@ -2,7 +2,6 @@
 Test helper classes/functions for the LNS framework.
 """
 
-import time
 from io import StringIO
 from unittest import TestCase, mock
 
@@ -154,11 +153,10 @@ class TestTimer(TestCase):
         Test remaining_time method.
         """
         timer = Timer()
-        timer.start(2)
-        self.assertGreaterEqual(timer.remaining_time(), 0)
-        self.assertLessEqual(timer.remaining_time(), 2)
-        time.sleep(3)
-        self.assertEqual(timer.remaining_time(), 0)
+        with mock.patch("mod_lns.time.time", side_effect=[100.0, 100.2, 101.2]):
+            timer.start(1)
+            self.assertEqual(timer.remaining_time(), 1)
+            self.assertEqual(timer.remaining_time(), 0)
 
         timer.reset()
         timer.start(None)
@@ -169,10 +167,9 @@ class TestTimer(TestCase):
         Test get_elapsed_time method.
         """
         timer = Timer()
-        timer.start(10)
-        time.sleep(1)
-        self.assertGreaterEqual(timer.get_elapsed_time(), 1)
-        self.assertLessEqual(timer.get_elapsed_time(), 2)
+        with mock.patch("mod_lns.time.time", side_effect=[200.0, 201.4]):
+            timer.start(10)
+            self.assertAlmostEqual(timer.get_elapsed_time(), 1.4, places=6)
 
         timer.reset()
         self.assertEqual(timer.get_elapsed_time(), 0)
@@ -182,9 +179,7 @@ class TestTimer(TestCase):
         Test is_ringing property.
         """
         timer = Timer()
-        self.assertFalse(timer.is_ringing)
-
-        timer.start(1)
-        self.assertFalse(timer.is_ringing)
-        time.sleep(2)
-        self.assertTrue(timer.is_ringing)
+        with mock.patch("mod_lns.time.time", side_effect=[300.0, 300.4, 301.0]):
+            timer.start(1)
+            self.assertFalse(timer.is_ringing)
+            self.assertTrue(timer.is_ringing)
