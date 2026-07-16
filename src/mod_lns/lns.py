@@ -93,49 +93,25 @@ class LNS:
         self._printout: bool = False
         self._iter_format: str = ""
 
-    def _apply_overrides(self, overrides: dict[str, Any]) -> dict[str, Any]:
-        """
-        Apply overrides to config.
-
-        UNSET values are ignored, all other values (including None) are applied.
-
-        :param overrides: Candidate override values.
-        :type overrides: dict[str, Any]
-        :return: Remaining options that are not config attributes.
-        :rtype: dict[str, Any]
-        """
-        rest = {}
-        for attr, value in overrides.items():
-            if value is UNSET:
-                continue
-            if hasattr(self.options, attr):
-                setattr(self.options, attr, value)
-            else:
-                rest[attr] = value
-        return rest
-
-    def parse_options(self, args: dict[str, Any]) -> dict[str, Any]:
+    def parse_options(self, args: dict[str, Any]) -> None:
         """
         Parse options from args.
 
         :param args: Parsed arguments.
         :type args: dict[str, Any]
-        :return: Remaining unparsed options.
-        :rtype: dict[str, Any]
         """
         # argument priority (from high to low):
         # 1. CLI options (only explicitly provided values)
         # 2. configuration preset
-        # 3. directly set config values
+        # 3. directly set config values (defaults)
         if args.get("preset", UNSET) is not UNSET:
             self.options.preset = args["preset"]
         if self.options.preset is not None:
             self.options.apply_preset()
-        rest = self._apply_overrides(args)
+        self.options.apply_overrides(args)
         self.options.prepare()
         self.solver = self.options.solver
         self._log_level = self.options.log_level
-        return rest
 
     def pre_setup(self) -> None:
         """
@@ -150,16 +126,14 @@ class LNS:
         init_tl = self.init_solver_config.time_limit
         tl = self.options.time_limit
         if tl is not None:
-            if init_tl is None:
-                self.init_solver_config.time_limit = tl
-            elif tl < init_tl:
+            if init_tl is None or init_tl > tl:
                 self.init_solver_config.time_limit = tl
 
         # warn about optimality if heuristics are disabled or strict lns-opt-mode
-        if not self.options.fix:
+        if self.options.fix == "assumptions":  # nocoverage
             self.logger.warning("Optimality cannot be proven when using assumptions (i.e. heuristics disabled)")
         lns_opt_mode = self.options.lns_opt_mode
-        if lns_opt_mode["modifier"] is not None and lns_opt_mode["nf"] is not None:
+        if lns_opt_mode["modifier"] is not None and lns_opt_mode["nf"] is not None:  # nocoverage
             if lns_opt_mode["modifier"] == "dynamic":
                 if float(lns_opt_mode["nf"]) <= 0:
                     self.logger.warning(
@@ -301,30 +275,9 @@ class LNS:
         """
         return relax_config(self.current_model, self._active_config, self._op_specs, self.logger)
 
-    def _next_no_improvement_cutoff_count(self, new_model: Optional[Model]) -> int:
+    def _prepare_lns_solver_config(self) -> None:
         """
-        Calculate the next no_improvement_cutoff_count based on the new model and current stats.
-
-        :param new_model: The new model to compare with the best model.
-        :type new_model: Optional[Model]
-        :return: The next no_improvement_cutoff_count.
-        :rtype: int
-        """
-        prev_ic = self.stats[-1].get("no_improvement_cutoff_count", 0) if self.stats else 0
-        if self.solver.result in {"UNSATISFIABLE", "OPTIMUM FOUND"}:
-            return prev_ic
-        if new_model is not None and self.solver.result == "SATISFIABLE" and new_model.cost < self.best_model.cost:
-            return 0
-        return prev_ic + 1
-
-    def repair(self, fixed_atoms: set[Symbol]) -> Optional[Model]:
-        """
-        Repair solution and collect some statistics.
-
-        :param fixed_atoms: Fixed atoms.
-        :type fixed_atoms: set[Symbol]
-        :return: Repaired model.
-        :rtype: Optional[Model]
+        Prepare LNS solver configuration for the next repair step.
         """
         lns_opt_mode = self.options.lns_opt_mode
         if lns_opt_mode["mode"] is not None:
@@ -341,6 +294,52 @@ class LNS:
             )
         update_time_limit(self, self.lns_solver_config)
         self.lns_solver_config.variability = self._is_variable
+
+    def _next_no_improvement_cutoff_count(self, new_model: Optional[Model]) -> int:
+        """
+        Calculate the next no_improvement_cutoff_count based on the new model and current stats.
+
+        :param new_model: The new model to compare with the best model.
+        :type new_model: Optional[Model]
+        :return: The next no_improvement_cutoff_count.
+        :rtype: int
+        """
+        prev_ic = self.stats[-1].get("no_improvement_cutoff_count", 0) if self.stats else 0
+        if self.solver.result in {"UNSATISFIABLE", "OPTIMUM FOUND"}:
+            return prev_ic
+        if new_model is not None and self.solver.result == "SATISFIABLE" and new_model.cost < self.best_model.cost:
+            return 0
+        return prev_ic + 1
+
+    def update_stats(self, new_model: Optional[Model]) -> None:
+        """
+        Update statistics after each iteration.
+
+        :param new_model: The new model obtained after repair.
+        :type new_model: Optional[Model]
+        """
+        # !todo: add more stats
+        self.stats.append(
+            {
+                **{
+                    "step": self.step_c,
+                    "elapsed_time": self.timer.get_elapsed_time(),
+                    "no_improvement_cutoff_count": self._next_no_improvement_cutoff_count(new_model),
+                },
+                **self.solver.stats,
+            }
+        )
+
+    def repair(self, fixed_atoms: set[Symbol]) -> Optional[Model]:
+        """
+        Repair solution and collect some statistics.
+
+        :param fixed_atoms: Fixed atoms.
+        :type fixed_atoms: set[Symbol]
+        :return: Repaired model.
+        :rtype: Optional[Model]
+        """
+        self._prepare_lns_solver_config()
 
         # heuristics
         if self.options.fix == "heuristics":
@@ -363,9 +362,10 @@ class LNS:
             new_model = repair_assumptions(self.solver, self.lns_solver_config, fixed_atoms)
         else:
             raise RuntimeError(f"Unknown fix method: {self.options.fix}")
-        if new_model is None:
+
+        if new_model is None:  # nocoverage
             self.logger.debug("no new model found")
-        else:
+        else:  # nocoverage
             self.logger.debug("objective value of new solution: %s", new_model.cost)
         self.logger.debug(
             "objective value of current incumbent solution: %s",
@@ -374,17 +374,7 @@ class LNS:
         self.logger.debug("objective value of current best solution: %s", self.best_model.cost)
         self.logger.debug(LINE)
 
-        # !todo: add more stats
-        self.stats.append(
-            {
-                **{
-                    "step": self.step_c,
-                    "elapsed_time": self.timer.get_elapsed_time(),
-                    "no_improvement_cutoff_count": self._next_no_improvement_cutoff_count(new_model),
-                },
-                **self.solver.stats,
-            }
-        )
+        self.update_stats(new_model)
         self.logger.debug("stats: %s", self.stats[-1])
         return new_model
 
@@ -481,7 +471,7 @@ class LNS:
             )
 
         if self._iter_format == "":
-            raise RuntimeError("pre_relax called before post_first_solution")
+            raise RuntimeError("tried to print iteration info but no format string was set")
         if self._printout or self.step_c % self.options.status_interval == 0:
             print(
                 self._iter_format.format(
@@ -500,14 +490,8 @@ class LNS:
         print("Result")
         print(LINE)
         self.best_model.print_model()
-        try:
-            print(self.solver.result)
-        except AttributeError:
-            print("UNKNOWN")
-        try:
-            print("Optimum:", self.solver.optimum)
-        except AttributeError:
-            print("Optimum: unknown")
+        print(self.solver.result)
+        print("Optimum:", self.solver.optimum)
         print(f"Iterations: {self.step_c}")
         print(f"Overall time: {self.timer.get_elapsed_time():.3f}s")
         print(LINE)
