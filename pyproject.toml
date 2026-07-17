@@ -73,8 +73,8 @@ good-names = ["_"]
 disable = ["duplicate-code"]
 
 [tool.coverage.run]
-source = ["mod_lns", "tests"]
-omit = ["*/mod_lns/__main__.py"]
+source = ["mod_lns"]
+omit = ["*/mod_lns/__main__.py", "tests/*", "*/tests/*"]
 
 [tool.coverage.report]
 exclude_also = ["assert", "nocoverage"]

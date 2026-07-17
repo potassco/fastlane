@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import nox
 
@@ -13,6 +14,21 @@ if "GITHUB_ACTIONS" in os.environ:
 FILES_TO_BE_CHECKED = [
     "src",
 ]
+
+
+def _discover_test_modules(*, include_integration: bool) -> list[str]:
+    """
+    Discover unittest modules and optionally include integration tests.
+    """
+    modules = []
+    for path in sorted(Path("tests").rglob("test*.py")):
+        if path.name == "__init__.py":
+            continue
+        is_integration = "integration" in path.stem
+        if include_integration != is_integration:
+            continue
+        modules.append(".".join(path.with_suffix("").parts))
+    return modules
 
 
 @nox.session
@@ -118,7 +134,7 @@ def typecheck(session):
 @nox.session(python=PYTHON_VERSIONS)
 def test(session):
     """
-    Run the tests.
+    Run non-integration tests with coverage.
 
     Accepts an additional arguments which are passed to the unittest module.
     This can for example be used to selectively run test cases.
@@ -131,6 +147,23 @@ def test(session):
     if session.posargs:
         session.run("coverage", "run", "-m", "unittest", session.posargs[0], "-v")
     else:
-        session.run("coverage", "run", "-m", "unittest", "discover", "-v")
-        # session.run("coverage", "run", "-m", "unittest", "tests.test_strategies", "-v")
-        session.run("coverage", "report", "-m", "--fail-under=100")
+        modules = _discover_test_modules(include_integration=False)
+        session.run("coverage", "run", "-m", "unittest", "-v", *modules)
+    session.run("coverage", "report", "-m", "--fail-under=100")
+
+
+@nox.session(python=PYTHON_VERSIONS)
+def test_integration(session):
+    """
+    Run integration tests only.
+    """
+
+    args = [".[test]"]
+    if EDITABLE_TESTS:
+        args.insert(0, "-e")
+    session.install(*args)
+    if session.posargs:
+        session.run("python", "-m", "unittest", session.posargs[0], "-v")
+    else:
+        modules = _discover_test_modules(include_integration=True)
+        session.run("python", "-m", "unittest", "-v", *modules)

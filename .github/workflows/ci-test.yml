@@ -35,4 +35,4 @@ jobs:
       run: python -m pip install nox
 
     - name: run tests
-      run: nox
+      run: nox -s lint_pylint typecheck test
