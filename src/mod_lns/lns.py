@@ -38,9 +38,7 @@ class LNS:
     Class handling and performing LNS.
 
     :param files: Problem encodings.
-    :type files: list[str]
     :param lns_config: LNSConfig object.
-    :type lns_config: mod_lns.LNSConfig
     :default lns_config: LNSConfig()
     """
 
@@ -98,7 +96,6 @@ class LNS:
         Parse options from args.
 
         :param args: Parsed arguments.
-        :type args: dict[str, Any]
         """
         # argument priority (from high to low):
         # 1. CLI options (only explicitly provided values)
@@ -176,7 +173,6 @@ class LNS:
         Find initial solution.
 
         :return: Whether a solution was found or not
-        :rtype: bool
         """
         update_time_limit(self, self.init_solver_config)
         self.new_model = self.solver.solve(self.init_solver_config)
@@ -228,7 +224,6 @@ class LNS:
         or solver finished or stopped.
 
         :return: Whether to stop LNS or not.
-        :rtype: bool
         """
         stop = False
         if self.options.time_limit is not None:
@@ -249,7 +244,6 @@ class LNS:
         Check whether the LNPS configuration is variable.
 
         :return: True if configuration is variable, False otherwise
-        :rtype: bool
         """
         for prioritize_operator in self._active_config["prioritize_operators"]:
             if prioritize_operator["value"] == "inf":
@@ -271,7 +265,6 @@ class LNS:
         Relax portion of atoms.
 
         :return: Fixed (not relaxed) atoms.
-        :rtype: set[Symbol]
         """
         return relax_config(self.current_model, self._active_config, self._op_specs, self.logger)
 
@@ -300,9 +293,7 @@ class LNS:
         Calculate the next no_improvement_cutoff_count based on the new model and current stats.
 
         :param new_model: The new model to compare with the best model.
-        :type new_model: Optional[Model]
         :return: The next no_improvement_cutoff_count.
-        :rtype: int
         """
         prev_ic = self.stats[-1].get("no_improvement_cutoff_count", 0) if self.stats else 0
         if self.solver.result in {"UNSATISFIABLE", "OPTIMUM FOUND"}:
@@ -316,7 +307,6 @@ class LNS:
         Update statistics after each iteration.
 
         :param new_model: The new model obtained after repair.
-        :type new_model: Optional[Model]
         """
         # !todo: add more stats
         self.stats.append(
@@ -335,9 +325,7 @@ class LNS:
         Repair solution and collect some statistics.
 
         :param fixed_atoms: Fixed atoms.
-        :type fixed_atoms: set[Symbol]
         :return: Repaired model.
-        :rtype: Optional[Model]
         """
         self._prepare_lns_solver_config()
 
@@ -392,7 +380,6 @@ class LNS:
         Accept if desired variability is achieved.
 
         :return: Whether new model is accepted or not.
-        :rtype: bool
         """
 
         if self.new_model is None:
@@ -429,7 +416,6 @@ class LNS:
         Check whether new model is better.
 
         :return: Whether new model is better or not.
-        :rtype: bool
         """
         if self.new_model is None:
             self.logger.debug("No new model found, not better.")

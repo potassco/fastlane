@@ -21,7 +21,6 @@ class LastImprovementDestructionConverter(AutoDestructionConverter):
     Simplest algorithm for computing destruction percentages.
 
     :param auto_init_percent: Initial destruction percentage. Defaults to 0.
-    :type auto_init_percent: int, optional
     """
 
     def __init__(self, auto_init_percent: int = 0):
@@ -48,13 +47,9 @@ class LastImprovementDestructionConverter(AutoDestructionConverter):
         Collect projected atoms for all project operators with per-operator caching.
 
         :param current_model: Current model.
-        :type current_model: Model
         :param op_specs: Operator specifications.
-        :type op_specs: dict[str, set[Symbol]]
         :param project_operators: Project operators.
-        :type project_operators: list[dict[str, Any]]
         :return: Set of projected atoms.
-        :rtype: set[Symbol]
         """
         projected_atoms: set[Symbol] = set()
         for project_operator in project_operators:
@@ -73,9 +68,7 @@ class LastImprovementDestructionConverter(AutoDestructionConverter):
         Update statistics of last iteration where new model was better than current model.
 
         :param new_model: New model.
-        :type new_model: Model
         :param current_model: Current model.
-        :type current_model: Model
         """
         if is_new_model_better(new_model, current_model):
             self._last_improvement_models = (current_model, new_model)
@@ -88,11 +81,8 @@ class LastImprovementDestructionConverter(AutoDestructionConverter):
         based on last iteration’s statistics where new model was better than current model.
 
         :param config: LNPS configuration containing automatic values.
-        :type config: ActiveConfig
         :param lns_object: LNS object.
-        :type lns_object: Optional["LNS"]
         :return: LNPS configuration with all automatic values replaced by concrete percentages.
-        :rtype: ActiveConfig
         """
         if lns_object is not None and lns_object.new_model is not None:
             self._update_last_improvement_stats(lns_object.new_model, lns_object.current_model)
@@ -105,13 +95,9 @@ class LastImprovementDestructionConverter(AutoDestructionConverter):
         Compute destruction percentage of auto-mode destroy operator based on actual destruction percentage.
 
         :param config_name: Config name.
-        :type config_name: str
         :param project_operators: Project operators.
-        :type project_operators: list[dict[str, Any]]
         :param destroy_operator_name: Destroy operator name.
-        :type destroy_operator_name: str
         :return: Destruction percentage of auto-mode destroy operator.
-        :rtype: float
         """
         key = (config_name, destroy_operator_name)
         if key in self._actual_destruction_percent_cache:

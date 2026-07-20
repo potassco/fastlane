@@ -19,7 +19,6 @@ class StaticStrategy(AdaptiveStrategy):
     Static strategy that always selects the same LNPS configuration.
 
     :param converter: Converter for computing destruction percentages of auto-mode destroy operators.
-    :type converter: AutoDestructionConverter
     """
 
     def __init__(self, converter: AutoDestructionConverter = LastImprovementDestructionConverter()):
@@ -30,9 +29,7 @@ class StaticStrategy(AdaptiveStrategy):
         Select first LNS configuration.
 
         :param config_catalog: Configuration catalog.
-        :type config_catalog: ConfigCatalog
         :return: Selected LNS configuration.
-        :rtype: ActiveConfig
         """
         selected_config = list(config_catalog["configs"].keys())[0]
         active_config = self._get_config(selected_config, config_catalog)
@@ -43,11 +40,8 @@ class StaticStrategy(AdaptiveStrategy):
         Get initial LNS configuration.
 
         :param config_catalog: Config catalog.
-        :type config_catalog: ConfigCatalog
         :param initial_model: Initial model.
-        :type initial_model: Model
         :return: Selected active LNS configuration.
-        :rtype: ActiveConfig
         """
         return self._converter.convert_auto_in_config(self._select_config(config_catalog))
 
@@ -62,12 +56,8 @@ class StaticStrategy(AdaptiveStrategy):
         Return the same LNS configuration without updating.
 
         :param active_config: Current active LNS configuration.
-        :type active_config: ActiveConfig
         :param config_catalog: Full LNS configuration catalog.
-        :type config_catalog: ConfigCatalog
         :param stats: Statistics.
-        :type stats: list[dict[str, Any]]
         :return: New active LNS configuration.
-        :rtype: ActiveConfig
         """
         return self._converter.convert_auto_in_config(self._select_config(config_catalog), lns_object)

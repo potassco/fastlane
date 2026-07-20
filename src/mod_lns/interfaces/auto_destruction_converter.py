@@ -30,11 +30,8 @@ class AutoDestructionConverter(ABC):
         Convert automatic values in LNS configuration into concrete percentages.
 
         :param config: Active LNS configuration containing automatic values.
-        :type config: ActiveConfig
         :param lns_object: LNS object.
-        :type lns_object: Optional["LNS"]
         :return: LNS configuration with all automatic values replaced by concrete percentages.
-        :rtype: ActiveConfig
         """
         resolved_config: ActiveConfig = copy.deepcopy(config)
         for destroy_operator in resolved_config["destroy_operators"]:
@@ -61,12 +58,8 @@ class AutoDestructionConverter(ABC):
         Compute destruction percentage of auto-mode destroy operator.
 
         :param config_name: Config name.
-        :type config_name: str
         :param project_operators: Project operators.
-        :type project_operators: list[dict[str, Any]]
         :param destroy_operator_name: Destroy operator name.
-        :type destroy_operator_name: str
         :return: Destruction percentage of auto-mode destroy operator.
-        :rtype: float
         """
         raise NotImplementedError

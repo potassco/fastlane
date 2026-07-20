@@ -25,11 +25,8 @@ def calculate_variability(list1: set[Any], list2: set[Any]) -> float:
     100 - completely different
 
     :param list1: First set.
-    :type list1: set[Any]
     :param list2: Second set.
-    :type list2: set[Any]
     :return: Variability of both sets.
-    :rtype: float
     """
     len1 = len(list1)
     len2 = len(list2)
@@ -43,9 +40,7 @@ def get_unique_list(seq: Sequence[Any]) -> list[Any]:
     Get unique elements from a list while preserving the order.
 
     :param seq: Input sequence.
-    :type seq: Sequence[Any]
     :return: List of unique elements.
-    :rtype: list[Any]
     """
     seen = []
     return [x for x in seq if x not in seen and not seen.append(x)]  # type: ignore
@@ -56,9 +51,7 @@ def update_time_limit(lns_object: "LNS", solver_config: "SolverConfig") -> None:
     Update solve time-limit.
 
     :param lns_object: LNS object.
-    :type lns_object: LNS
     :param solver_config: Solver configuration to update.
-    :type solver_config: SolverConfig
     """
     if lns_object.options.time_limit is not None:
         solver_tl = solver_config.time_limit
@@ -79,11 +72,8 @@ def increase_solve_limit(current_solve_limit: str, increase_rate: float) -> str:
     Increase solve limit by a percentage.
 
     :param current_solve_limit: Current solve limit as string (e.g., "1000,1000", "1000,umax").
-    :type current_solve_limit: str
     :param increase_rate: Percentage to increase the solve limit (e.g., 20 for 20%).
-    :type increase_rate: float
     :return: New solve limit as string.
-    :rtype: str
     """
     if increase_rate == 0:
         return current_solve_limit
@@ -106,15 +96,10 @@ def increase_time_limit(timer: Timer, time_limit: Optional[int], solver_time_lim
     Increase time limit by a percentage.
 
     :param timer: Timer object.
-    :type timer: Timer
     :param time_limit: Overall time limit in seconds (or None for unlimited).
-    :type time_limit: Optional[int]
     :param solver_time_limit: Current solver time limit in seconds.
-    :type solver_time_limit: int
     :param increase_rate: Percentage to increase the time limit (e.g., 20 for 20%).
-    :type increase_rate: float
     :return: New time limit in seconds (or None for unlimited).
-    :rtype: int
     """
     if increase_rate == 0:
         return solver_time_limit
@@ -139,19 +124,12 @@ def increase_cutoff(
     Update the solver's cutoff for the next iteration.
 
     :param current_cutoff: Current cutoff value.
-    :type current_cutoff: int
     :param cutoff_threshold: Threshold for increasing the cutoff.
-    :type cutoff_threshold: Optional[int]
     :param increase_rate: Percentage to increase the cutoff (e.g., 20 for 20%).
-    :type increase_rate: int
     :param timer: Timer object.
-    :type timer: Timer
     :param time_limit: Overall time limit in seconds (or None for unlimited).
-    :type time_limit: Optional[int]
     :param latest_stats: Latest statistics dictionary containing "no_improvement_cutoff_count".
-    :type latest_stats: dict[str, Any]
     :return: New cutoff value.
-    :rtype: int
     """
     if increase_rate == 0:
         return current_cutoff

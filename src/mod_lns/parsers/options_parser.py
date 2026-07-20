@@ -41,11 +41,8 @@ def _parse_solver(solvers: dict[str, Solver], string: str) -> Solver:
     Parse the solver string.
 
     :param solvers: Dictionary of available solvers.
-    :type solvers: dict[str, Solver]
     :param string: String to parse.
-    :type string: str
     :return: Solver instance.
-    :rtype: Solver
     """
     solver = solvers.get(string)
     if solver is None:
@@ -58,9 +55,7 @@ def _parse_pos_int(string: str) -> int:
     Parse a positive integer.
 
     :param string: String to parse.
-    :type string: str
     :return: Parsed positive integer.
-    :rtype: int
     """
     try:
         value = int(string)
@@ -76,9 +71,7 @@ def _parse_pos_int_or_none(string: str) -> Optional[int]:
     Parse a positive integer or None.
 
     :param string: String to parse.
-    :type string: str
     :return: Parsed positive integer or None.
-    :rtype: Optional[int]
     """
     if string.lower() == "none":
         return None
@@ -90,9 +83,7 @@ def _parse_solve_limit(string: str) -> Optional[str]:
     Parse the solve limit string.
 
     :param string: String to parse.
-    :type string: str
     :return: Parsed solve limit or None.
-    :rtype: Optional[str]
     """
     ctl = Control()
     if string.lower() == "none":
@@ -109,9 +100,7 @@ def _parse_0_1_float(string: str) -> float:
     Parse a float between 0 and 1 (inclusive).
 
     :param string: String to parse.
-    :type string: str
     :return: Parsed float value.
-    :rtype: float
     """
     try:
         value = float(string)
@@ -129,11 +118,8 @@ def _parse_percent(
     Parse percentage between 0 and 100 (inclusive).
 
     :param string: String to parse.
-    :type string: str
     :param msg: Error message to display if parsing fails.
-    :type msg: str
     :return: Parsed percentage value.
-    :rtype: int
     """
     try:
         value = int(string)
@@ -149,9 +135,7 @@ def _parse_relaxation(string: str) -> tuple[str, int]:
     Parse the relaxation string.
 
     :param string: String to parse.
-    :type string: str
     :return: Parsed relaxation type and rate.
-    :rtype: tuple[str, int]
     """
     if string == "declarative":
         return "declarative", 0
@@ -169,9 +153,7 @@ def _parse_parallel_mode(string: str) -> str:
     Parse the parallel mode string.
 
     :param string: String to parse.
-    :type string: str
     :return: Parsed parallel mode string.
-    :rtype: str
     """
     values = string.split(",")
     if len(values) == 1:
@@ -196,9 +178,7 @@ def _parse_minimize_variable(string: str) -> Symbol:
     Parse the minimize variable string.
 
     :param string: String to parse.
-    :type string: str
     :return: Parsed minimize variable.
-    :rtype: Symbol
     """
     try:
         term = parse_term(string)
@@ -225,9 +205,7 @@ def _can_instantiate_without_args(cls: type) -> bool:
     Check whether class can be instantiated without passing user arguments.
 
     :param cls: Class to check.
-    :type cls: type
     :return: True if class can be instantiated without arguments, False otherwise.
-    :rtype: bool
     """
     try:
         signature = inspect.signature(cls)
@@ -247,9 +225,7 @@ def _parse_context(string: str) -> Any:
     Parse context object whose methods are called during grounding using the @-syntax.
 
     :param string: String to parse.
-    :type string: str
     :return: Parsed context object.
-    :rtype: Any
     """
     path = os.path.abspath(os.path.expanduser(string))
     if not os.path.isfile(path):
@@ -286,11 +262,8 @@ def _parse_adaptive_strategy(adaptive_strategies: list[str], string: str) -> str
     Parse the adaptive strategy string.
 
     :param adaptive_strategies: List of valid adaptive strategies.
-    :type adaptive_strategies: list[str]
     :param string: String to parse.
-    :type string: str
     :return: Adaptive strategy name.
-    :rtype: str
     """
     if string not in adaptive_strategies:
         raise ArgumentTypeError(
@@ -304,11 +277,8 @@ def _parse_auto_converter(converters: dict[str, AutoDestructionConverter], strin
     Parse the auto converter string.
 
     :param converters: Dictionary of available auto converters.
-    :type converters: dict[str, AutoDestructionConverter]
     :param string: String to parse.
-    :type string: str
     :return: Auto converter.
-    :rtype: AutoDestructionConverter
     """
     converter = converters.get(string)
     if converter is None:
@@ -321,9 +291,7 @@ def _parse_init_opt_mode(string: str) -> str:
     Parse the initial optimization mode string.
 
     :param string: String to parse.
-    :type string: str
     :return: Initial optimization mode.
-    :rtype: str
     """
     ctl = Control()
     try:
@@ -339,9 +307,7 @@ def _parse_lns_opt_mode(string: str) -> dict[str, Any]:
     Parse the lns optimization mode string.
 
     :param string: String to parse.
-    :type string: str
     :return: Parsed lns optimization mode.
-    :rtype: dict[str, Any]
     """
     opt_mode: dict[str, Any] = {}
     values = string.split(",")
@@ -386,9 +352,7 @@ def _parse_opt_strategy(string: str) -> str:
     Parse the optimization strategy string.
 
     :param string: String to parse.
-    :type string: str
     :return: Optimization strategy.
-    :rtype: str
     """
     ctl = Control()
     try:
@@ -403,9 +367,7 @@ def _parse_configuration(string: str) -> str:
     Parse the configuration string.
 
     :param string: String to parse.
-    :type string: str
     :return: Configuration.
-    :rtype: str
     """
     ctl = Control()
     try:
@@ -420,9 +382,7 @@ def _parse_heuristic(string: str) -> str:
     Parse the heuristic string.
 
     :param string: String to parse.
-    :type string: str
     :return: Heuristic.
-    :rtype: str
     """
     ctl = Control()
     try:
@@ -437,11 +397,8 @@ def _replace_default(text: str, default_value: Any) -> str:
     Render config defaults in help while argparse default remains UNSET.
 
     :param text: Text to render.
-    :type text: str
     :param default_value: Default value to replace.
-    :type default_value: Any
     :return: Rendered text.
-    :rtype: str
     """
     return text.replace("%(default)s", str(default_value))
 
@@ -458,11 +415,8 @@ class OptionsParser:
         Return all classes inside given package.
 
         :param package: Package string.
-        :type package: str
         :param base: Base class to filter by.
-        :type base: type
         :return: List of classes in package.
-        :rtype: list[type]
         """
         classes_in_package = []
         # Go through the modules in the package
@@ -487,9 +441,7 @@ class OptionsParser:
         Get custom formatter for command line options.
 
         :param prog: Program name.
-        :type prog: str
         :return: Custom formatter.
-        :rtype: RawTextHelpFormatter
         """
         return RawTextHelpFormatter(
             prog,

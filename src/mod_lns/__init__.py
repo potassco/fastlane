@@ -52,7 +52,6 @@ class Model:
         """
         Get cost of model as string.
         :return: Cost as string.
-        :rtype: str
         """
         cost = self.cost
         if len(cost) != 0:
@@ -64,7 +63,6 @@ class Model:
         Print model.
 
         :return: Printed string.
-        :rtype: str
         """
         answer_string = " ".join([str(atom) for atom in self.shown])
         if len(self.assignments) != 0:
@@ -94,7 +92,6 @@ class Timer:
         None for no time limit.
 
         :param time_limit: Time limit in seconds.
-        :type time_limit: Optional[int]
         """
         self._started = True
         self._ringing = False
@@ -121,7 +118,6 @@ class Timer:
         Get the remaining time before the timer rings.
 
         :return: Remaining time in seconds, -1 for infinite.
-        :rtype: int
         """
         if self._time_limit is None:
             return -1
@@ -133,7 +129,6 @@ class Timer:
         Get the elapsed time since the timer started.
 
         :return: Elapsed time in seconds.
-        :rtype: float
         """
         if not self._started:
             return 0.0

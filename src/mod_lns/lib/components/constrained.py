@@ -10,17 +10,12 @@ def get_opt_bound(cost: list[int], opt_mode: str, opt_modifier: str = "dynamic",
     Calculate bound for next step.
 
     :param cost: Current cost list
-    :type cost: list[int]
     :param opt_mode: Optimization mode
-    :type opt_mode: str
     :param opt_modifier: Optimization modifier
-    :type opt_modifier: str
     :default opt_modifier: "dynamic"
     :param opt_nf: Optimization factor
-    :type opt_nf: str
     :default opt_nf: "0"
     :return: String representing the bound for the next step.
-    :rtype: str
     """
     if opt_modifier == "static":
         return opt_mode + "," + opt_nf

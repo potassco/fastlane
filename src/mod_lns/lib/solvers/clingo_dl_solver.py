@@ -42,7 +42,6 @@ class ClingoDLSolver(ClingoSolver):
         Get the name under which the solver will be listed in options.
 
         :return: Name of the solver.
-        :rtype: str
         """
         return "clingo-dl"
 
@@ -57,12 +56,9 @@ class ClingoDLSolver(ClingoSolver):
         Initialize clingo.Control object using clingo.
 
         :param lns_object: LNS object.
-        :type lns_object: mod_lns.LNS
         :param args: clingo arguments, default: lns_object.clingo_options.
-        :type args: list[str]
         :default args: []
         :param files: ASP files to be loaded, default: lns_object.files.
-        :type files: Optional[list[str]]
         :default files: None
         """
         self.setup_interrupt_handling(lns_object)
@@ -98,7 +94,6 @@ class ClingoDLSolver(ClingoSolver):
         Saves model for later use.
 
         :param model: Model found during solving.
-        :type model: clingo.solving.Model
         """
         assert isinstance(self.theory, ClingoDLTheory)
         self.theory.on_model(model=model)
@@ -124,9 +119,7 @@ class ClingoDLSolver(ClingoSolver):
         Update statistics.
 
         :param step: Current step statistics.
-        :type step: StatisticsMap
         :param accu: Accumulated statistics.
-        :type accu: StatisticsMap
         """
         assert isinstance(self.theory, ClingoDLTheory)
         self.theory.on_statistics(step, accu)
@@ -136,7 +129,6 @@ class ClingoDLSolver(ClingoSolver):
         Search finished.
 
         :param res: Result of the solving process.
-        :type res: SolveResult
         """
         self._exhausted = res.exhausted
         super()._on_finish(res)
@@ -154,7 +146,6 @@ class ClingoDLSolver(ClingoSolver):
         Add a bound to the solver for the current iteration.
 
         :param bound: The bound to add.
-        :type bound: int
         """
         bound_atom = Function("__b", [Number(bound), Number(self._search_num)])
         ext_statement = f"#external {bound_atom}."
@@ -170,7 +161,6 @@ class ClingoDLSolver(ClingoSolver):
         Minimize the variable by updating solve limit and bounds.
 
         :param prev_bound: Bound of the previous iteration.
-        :type prev_bound: Optional[int]
         """
         assert isinstance(self.theory, ClingoDLTheory)
         assert isinstance(self.control.configuration.solve, clingo.Configuration)
@@ -230,7 +220,6 @@ class ClingoDLSolver(ClingoSolver):
         Apply solver configuration to the clingo control object.
 
         :param config: Solver configuration.
-        :type config: SolverConfig
         """
         if config.configuration is not None:
             self.control.configuration.configuration = config.configuration
@@ -265,11 +254,8 @@ class ClingoDLSolver(ClingoSolver):
         Solve under assumptions using clingo.
 
         :config: Solver configuration.
-        :type config: SolverConfig
         :param assumptions: Assumptions for solving (fixed atoms).
-        :type assumptions: list[tuple[clingo.symbol.Symbol, bool]]
         :return: Last obtained model.
-        :rtype: Model
         """
         assert isinstance(self.theory, ClingoDLTheory)
 

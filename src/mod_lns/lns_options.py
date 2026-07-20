@@ -29,13 +29,9 @@ def clamp(value: T, min_value: int, max_value: int) -> T:
     Clamp a value between a minimum and maximum value.
 
     :param value: Value to clamp.
-    :type value: T
     :param min_value: Minimum value.
-    :type min_value: int
     :param max_value: Maximum value.
-    :type max_value: int
     :return: Clamped value.
-    :rtype: T
     """
     return max(min_value, min(max_value, value))
 
@@ -47,136 +43,93 @@ class LNSOptions:
     Configuration for LNS.
 
     :param log_level: Logging level.
-    :type log_level: int
     :default log_level: 30
     :param solver: Solver to use.
-    :type solver: Solver
     :default solver: ClingoSolver()
     :param seed: Random seed.
-    :type seed: Optional[int]
     :default seed: None
     :param time_limit: Time limit for entire program.
-    :type time_limit: Optional[int]
     :default time_limit: None
     :param max_steps: Maximum number of steps for LNS.
-    :type max_steps: Optional[int]
     :default max_steps: None
     :param status_interval: Interval for status updates.
-    :type status_interval: int
     :default status_interval: 50
     :param parallel_mode: Parallel mode for solving.
-    :type parallel_mode: Optional[str]
     :default parallel_mode: None
     :param clingo_args: Additional arguments for Clingo solver.
-    :type clingo_args: Optional[list[str]]
     :default clingo_args: None
     :param context: Context for grounding.
-    :type context: Any
     :default context: None
     :param minimize_variable: Variable to minimize, used by clingo-dl.
-    :type minimize_variable: Optional[Symbol]
     :default minimize_variable: None
     :param preset: Options preset to use as base.
-    :type preset: Optional[str]
     :default preset: None
     :param lex_weight: Weight used to convert lexicographic cost into integer cost for adaptive strategies.
-    :type lex_weight: int
     :default lex_weight: 1000
     :param learning_rate: Learning rate used to update weights for adaptive strategies.
-    :type learning_rate: float
     :default learning_rate: 0.5
     :param default_adaptive_strategy_name: Default adaptive strategy name.
-    :type default_adaptive_strategy_name: str
     :default default_adaptive_strategy_name: "static"
     :param auto_converter: Converter for computing destruction percentages of auto-mode destroy operators.
-    :type auto_converter: AutoDestructionConverter
     :default auto_converter: LastImprovementDestructionConverter()
     :param init_time_limit: Time limit for initial solution.
-    :type init_time_limit: Optional[int]
     :default init_time_limit: 20
     :param init_solve_limit: Solve limit for initial solution.
-    :type init_solve_limit: Optional[str]
     :default init_solve_limit: None
     :param init_cutoff: Time limit to find new model during initial solving.
-    :type init_cutoff: Optional[int]
     :default init_cutoff: None
     :param init_configuration: Solver configuration for initial solving.
-    :type init_configuration: Optional[str]
     :default init_configuration: None
     :param init_opt_strategy: Optimization strategy for initial solving.
-    :type init_opt_strategy: Optional[str]
     :default init_opt_strategy: None
     :param init_opt_heuristic: Optimization heuristic for initial solving.
-    :type init_opt_heuristic: Optional[str]
     :default init_opt_heuristic: None
     :param init_restart_on_model: Restart on model for initial solving.
-    :type init_restart_on_model: Optional[bool]
     :default init_restart_on_model: None
     :param init_opt_mode: Optimization mode for initial solving.
-    :type init_opt_mode: Optional[str]
     :default init_opt_mode: None
     :param constrained: Whether to use constrained LNS,
     Short-hand for lns-opt-mode={"mode": "opt", "nf": 0, "modifier": "dynamic"}.
-    :type constrained: bool
     :default constrained: False
     :param relaxation: Relaxation type and rate.
-    :type relaxation: tuple[str, int]
     :default relaxation: ("simple", 20)
     :param declarative: Whether to use declarative relaxation.
     Can cause issue when set directly, use relaxation attribute.
-    :type declarative: bool
     :default declarative: False
     :param relax_rate: Relaxation rate for simple relaxation.
     Can cause issue when set directly, use relaxation attribute.
-    :type relax_rate: int
     :default relax_rate: 20
     :param fix: How to fix atoms during repair.
-    :type fix: str
     :default fix: False
     :param accept_variability: Required variability for accepting new model in percent.
-    :type accept_variability: int
     :default accept_variability: 0
     :param accept_improvement: Required improvement for accepting new model in percent.
-    :type accept_improvement: int
     :default accept_improvement: 0
     :param lns_time_limit: Time limit for solver in each LNS step.
-    :type lns_time_limit: Optional[int]
     :default lns_time_limit: 20
     :param lns_solve_limit: Solve limit for solver in each LNS step.
-    :type lns_solve_limit: Optional[str]
     :default lns_solve_limit: None
     :param lns_cutoff: Time limit to find new model during LNS solving.
-    :type lns_cutoff: Optional[int]
     :default lns_cutoff: None
     :param lns_time_limit_increase_rate: Time limit increase rate in percent.
-    :type lns_time_limit_increase_rate: int
     :default lns_time_limit_increase_rate: 0
     :param lns_solve_limit_increase_rate: Solve limit increase rate in percent.
-    :type lns_solve_limit_increase_rate: int
     :default lns_solve_limit_increase_rate: 0
     :param lns_cutoff_threshold: Cutoff threshold for increasing cutoff.
-    :type lns_cutoff_threshold: Optional[int]
     :default lns_cutoff_threshold: None
     :param lns_cutoff_increase_rate: Cutoff increase rate in percent.
-    :type lns_cutoff_increase_rate: Optional[int]
     :default lns_cutoff_increase_rate: 0
     :param lns_configuration: Solver configuration for LNS solving.
-    :type lns_configuration: Optional[str]
     :default lns_configuration: None
     :param lns_opt_strategy: Optimization strategy for LNS solving.
-    :type lns_opt_strategy: Optional[str]
     :default lns_opt_strategy: None
     :param lns_opt_heuristic: Optimization heuristic for LNS solving.
-    :type lns_opt_heuristic: Optional[str]
     :default lns_opt_heuristic: None
     :param lns_restart_on_model: Restart on model for LNS solving.
-    :type lns_restart_on_model: Optional[bool]
     :default lns_restart_on_model: None
     :param lns_heuristic: Heuristic to use in LNS solving.
-    :type lns_heuristic: Optional[str]
     :default lns_heuristic: "Domain"
     :param lns_opt_mode: Optimization mode for LNS solving.
-    :type lns_opt_mode: dict[str, Any]
     :default lns_opt_mode: {"mode": None, "nf": None, "modifier": None}
     """
 
@@ -292,9 +245,7 @@ class LNSOptions:
         Parse string representation of lns_opt_mode.
 
         :param value: String representation.
-        :type value: str
         :return: Parsed opt mode.
-        :rtype: dict[str, Any]
         """
         opt_mode: dict[str, Any] = {}
         val = value.split(",")
@@ -320,7 +271,6 @@ class LNSOptions:
         UNSET values are ignored, all other values (including None) are applied.
 
         :param overrides: Candidate override values.
-        :type overrides: dict[str, Any]
         """
         for key, value in overrides.items():
             if value is UNSET or not hasattr(self, key):
@@ -384,7 +334,6 @@ class LNSOptions:
         Get the initial solver configuration.
 
         :return: Initial Solver configuration.
-        :rtype: SolverConfig
         """
         config = SolverConfig()
         config.solve_limit = self.init_solve_limit
@@ -406,7 +355,6 @@ class LNSOptions:
         Get the LNS solver configuration.
 
         :return: LNS solver configuration.
-        :rtype: SolverConfig
         """
         config = SolverConfig()
         config.solve_limit = self.lns_solve_limit

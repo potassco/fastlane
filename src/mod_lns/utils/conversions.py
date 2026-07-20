@@ -14,9 +14,7 @@ def str_to_symbols(string: str) -> list[clingo.symbol.Symbol]:
     Convert String to list of clingo.Symbol.
 
     :param string: String to be converted.
-    :type string: str
     :return: list of symbols.
-    :rtype:  list[clingo.symbol.Symbol]
     """
     terms = string.split()
     symbols = []
@@ -30,9 +28,7 @@ def symbol_to_str(symbol: clingo.Symbol) -> str:
     Convert clingo.Symbol to String.
 
     :param symbol: Symbol to be converted.
-    :type symbol: clingo.Symbol
     :return: Symbol as string.
-    :rtype: str
     """
     if symbol.type == SymbolType.Function:
         return symbol.name + "(" + ",".join([symbol_to_str(s) for s in symbol.arguments]) + ")"
@@ -50,9 +46,7 @@ def args_to_dict(args_str: str) -> dict[str, Any]:
     Convert program argument string to dictionary.
 
     :param args_str: String to be converted.
-    :type args_str: str
     :return: Argument dictionary.
-    :rtype: dict[str, Any]
     """
     arg_list = args_str.split()
     d = {}

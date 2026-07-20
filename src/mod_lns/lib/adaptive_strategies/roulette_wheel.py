@@ -21,18 +21,13 @@ class RouletteWheelStrategy(AdaptiveStrategy):
     Roulette-wheel strategy.
 
     :param logger: Logger for logging messages.
-    :type logger: Logger
     :param learning_rate: Learning rate used to update weights, 0 < learning_rate < 1.
-    :type learning_rate: float
     :default learning_rate: 0.5
     :param lex_weight: Weight used to convert lexicographic cost into integer cost.
-    :type lex_weight: int
     :default lex_weight: 1000
     :param converter: Converter for computing destruction percentages of auto-mode destroy operators.
-    :type converter: AutoDestructionConverter
     :default converter: LastImprovementDestructionConverter
     :param min_weight: Minimum value of weight. Defaults to 0.001.
-    :type min_weight: float, optional
     :default min_weight: 0.001
     """
 
@@ -56,9 +51,7 @@ class RouletteWheelStrategy(AdaptiveStrategy):
         Convert lexicographic cost into integer cost by computing weighted sum.
 
         :param lex_costs: Lexicographic cost.
-        :type lex_costs: list[int]
         :return: Integer cost.
-        :rtype: int
         """
         num_lex_costs = len(lex_costs)
         last_lex_cost_idx = num_lex_costs - 1
@@ -72,9 +65,7 @@ class RouletteWheelStrategy(AdaptiveStrategy):
         Initialize weights for all possible LNS configurations using initial model's cost.
 
         :param config_catalog: Config catalog.
-        :type config_catalog: ConfigCatalog
         :param initial_model: Initial model.
-        :type initial_model: Model
         """
         if len(initial_model.cost) > 1:
             initial_weight = abs(self._compute_lex_weighted_sum(initial_model.cost))
@@ -95,9 +86,7 @@ class RouletteWheelStrategy(AdaptiveStrategy):
         Select LNS configuration using roulette wheel selection based on normalized weights.
 
         :param config_catalog: Config catalog.
-        :type config_catalog: dict[str, Any]
         :return: Selected LNS configuration.
-        :rtype: dict[str, Any]
         """
         weights = self._weights.values()
         normalized_weights = [w / max(weights) for w in weights]
@@ -111,11 +100,8 @@ class RouletteWheelStrategy(AdaptiveStrategy):
         Get initial LNS configuration using roulette wheel selection after initializing weights.
 
         :param config_catalog: Config catalog.
-        :type config_catalog: ConfigCatalog
         :param initial_model: Initial model.
-        :type initial_model: Model
         :return: Active LNS configuration.
-        :rtype: ActiveConfig
         """
         self._initialize_weights(config_catalog, initial_model)
         return self._converter.convert_auto_in_config(self._select_config(config_catalog))
@@ -127,13 +113,9 @@ class RouletteWheelStrategy(AdaptiveStrategy):
         Compute effectiveness score of current LNPS configuration.
 
         :param current_model: Current model.
-        :type current_model: Model
         :param new_model: New model found by using current LNPS configuration.
-        :type new_model: Model | None
         :param time_to_last_model: Elapsed time to new model found.
-        :type time_to_last_model: float
         :return: Effectiveness score.
-        :rtype: float
         """
         if new_model is None:
             return 0.0
@@ -157,9 +139,7 @@ class RouletteWheelStrategy(AdaptiveStrategy):
         Update weight of LNS specification based on effectiveness score.
 
         :param spec_name: Name of LNS specification.
-        :type spec_name: str
         :param effectiveness_score: Effectiveness score.
-        :type effectiveness_score: float
         """
         weight = self._weights[spec_name]
         new_weight = (1 - self._learning_rate) * weight + self._learning_rate * effectiveness_score
@@ -176,13 +156,9 @@ class RouletteWheelStrategy(AdaptiveStrategy):
         Update weight of current LNS configuration and select new LNS configuration using roulette wheel selection.
 
         :param active_config: Current active LNS configuration.
-        :type active_config: ActiveConfig
         :param config_catalog: Full LNS configuration catalog.
-        :type config_catalog: ConfigCatalog
         :param stats: Statistics.
-        :type stats: list[dict[str, Any]]
         :return: New LNS configuration.
-        :rtype: ActiveConfig
         """
         effectiveness_score = self._compute_effectiveness_score(
             lns_object.current_model, lns_object.new_model, stats[-1]["time_to_last_model"]

@@ -39,7 +39,6 @@ class ClingoSolver(Solver):
         Get the name under which the solver will be listed in options.
 
         :return: Name of the solver.
-        :rtype: str
         """
         return "clingo"
 
@@ -48,7 +47,6 @@ class ClingoSolver(Solver):
         Setup signal handling for interrupts (SIGINT, SIGTERM).
 
         :param lns_object: LNS object.
-        :type lns_object: mod_lns.LNS
         """
         handler = partial(self.interrupt_handler, lns_object=lns_object)
         signal.signal(signal.SIGINT, handler)
@@ -60,11 +58,8 @@ class ClingoSolver(Solver):
         Signal handler for interrupts (SIGINT, SIGTERM).
 
         :param sig: Signal number.
-        :type sig: int
         :param frame: Current stack frame.
-        :type frame: Union[None, FrameType]
         :param lns_object: LNS object.
-        :type lns_object: mod_lns.LNS
         """
         print("INTERRUPTED")
         self.finished = True
@@ -84,12 +79,9 @@ class ClingoSolver(Solver):
         Initialize clingo.Control object using clingo.
 
         :param lns_object: LNS object.
-        :type lns_object: mod_lns.LNS
         :param args: clingo arguments, default: lns_object.clingo_options.
-        :type args: list[str]
         :default args: []
         :param files: ASP files to be loaded, default: lns_object.files.
-        :type files: Optional[list[str]]
         :default files: None
         """
         self.setup_interrupt_handling(lns_object)
@@ -113,7 +105,6 @@ class ClingoSolver(Solver):
         Saves model for later use.
 
         :param model: Model found during solving.
-        :type model: Model
         """
         self.last_model = Model()
         self.last_model.shown = set(model.symbols(shown=True))
@@ -127,9 +118,7 @@ class ClingoSolver(Solver):
         Update statistics.
 
         :param step: Current step statistics.
-        :type step: StatisticsMap
         :param accu: Accumulated statistics.
-        :type accu: StatisticsMap
         """
         return
 
@@ -138,7 +127,6 @@ class ClingoSolver(Solver):
         Search finished.
 
         :param res: Result of the solving process.
-        :type res: SolveResult
         """
         if res.satisfiable:
             self.result = "SATISFIABLE"
@@ -197,7 +185,6 @@ class ClingoSolver(Solver):
         Apply solver configuration to clingo.Control object.
 
         :param config: Solver configuration.
-        :type config: SolverConfig
         """
         if config.configuration is not None:
             self.control.configuration.configuration = config.configuration
@@ -241,11 +228,8 @@ class ClingoSolver(Solver):
         Solve under assumptions using clingo.
 
         :config: Solver configuration.
-        :type config: SolverConfig
         :param assumptions: Assumptions for solving (fixed atoms).
-        :type assumptions: list[tuple[clingo.symbol.Symbol, bool]]
         :return: Last obtained model.
-        :rtype: Model
         """
         # remember assumptions were are being used
         if assumptions:

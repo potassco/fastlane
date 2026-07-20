@@ -14,9 +14,7 @@ def generate_heuristic_subprogram(config_catalog: ConfigCatalog) -> str:
     from predicate signatures of projected atoms.
 
     :param config_catalog: LNS configuration catalog.
-    :type config_catalog: ConfigCatalog
     :return: #heuristic statements and integrity constraints.
-    :rtype: str
     """
     heuristic_subprogram = ""
     for signature in set().union(*config_catalog["project_operators"].values()):
@@ -38,15 +36,10 @@ def get_fixed_atoms_heuristics(
     Get fixed atoms according to heuristics.
 
     :param active_config: LNS configuration dictionary.
-    :type active_config: ActiveConfig
     :param spec_ops: Dictionary of operator specifications.
-    :type spec_ops: dict[str, set[Symbol]]
     :param fixed_atoms: Set of fixed atoms from previous iteration.
-    :type fixed_atoms: set[Symbol]
     :param step: Current LNS iteration.
-    :type step: int
     :return: Set of fixed atoms for current iteration.
-    :rtype: set[Symbol]
     """
     prioritized_atoms: set[Symbol] = set()
     heu_atoms: set[Symbol] = set()

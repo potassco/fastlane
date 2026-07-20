@@ -22,40 +22,6 @@ if TYPE_CHECKING:  # nocoverage
 class SolverConfig:
     """
     Configuration for a solver.
-
-    :param configuration: Used configuration.
-    :type configuration: Optional[str]
-    :default configuration: None
-    :param opt_strategy: Optimization strategy.
-    :type opt_strategy: Optional[str]
-    :default opt_strategy: None
-    :param opt_heuristic: Optimization in heuristic.
-    :type opt_heuristic: Optional[str]
-    :default opt_heuristic: None
-    :param restart_on_model: Restart on model.
-    :type restart_on_model: Optional[str]
-    :default restart_on_model: None
-    :param heuristic: Heuristic to use.
-    :type heuristic: Optional[str]
-    :default heuristic: None
-    :param opt_mode: Optimization mode.
-    :type opt_mode: Optional[str]
-    :default opt_mode: None
-    :param solve_limit: Solve limit.
-    :type solve_limit: Optional[str]
-    :default solve_limit: None
-    :param time_limit: Time limit for solving.
-    :type time_limit: Optional[int]
-    :default time_limit: None
-    :param cutoff: Cutoff value.
-    :type cutoff: Optional[int]
-    :default cutoff: None
-    :param seed: Random seed.
-    :type seed: Optional[int]
-    :default seed: None
-    :param variability: Variability.
-    :type variability: bool
-    :default variability: True
     """
 
     configuration: Optional[str] = None
@@ -116,7 +82,6 @@ class Solver(ABC):
         Get the name under which the solver will be listed in options.
 
         :return: Name of the solver.
-        :rtype: str
         """
         raise NotImplementedError
 
@@ -132,13 +97,8 @@ class Solver(ABC):
         Initialization of the solver.
 
         :param lns_object: LNS object.
-        :type lns_object: mod_lns.LNS
         :param args: clingo arguments.
-        :type args: list[str]
-        :default args: []
         :param files: ASP files to be loaded.
-        :type files: Optional[list[str]]
-        :default files: None
         """
         raise NotImplementedError
 
@@ -151,13 +111,9 @@ class Solver(ABC):
         """
         Solve with fixed atoms.
 
-        :config: Solver configuration.
-        :type config: SolverConfig
+        :param config: Solver configuration.
         :param assumptions: Assumptions for solving (fixed atoms).
-        :type assumptions: list[tuple[clingo.symbol.Symbol, bool]]
-        :default assumptions: []
         :return: Last obtained model.
-        :rtype: Model
         """
         raise NotImplementedError
 
@@ -170,10 +126,7 @@ class Solver(ABC):
         Ground base encoding.
 
         :param parts: Parts to ground.
-        :type parts: list[tuple[str, list[Symbol]]]
         :param context: Context for grounding.
-        :type context: Any
-        :default context: None
         """
         self.control.ground(parts, context)
 
@@ -182,11 +135,8 @@ class Solver(ABC):
         Add a program to the solver.
 
         :param name: Name of the program.
-        :type name: str
         :param parameters: Parameters for the program.
-        :type parameters: list[str]
         :param program: Program to be added.
-        :type program: str
         """
         self.control.add(name, parameters, program)
 
@@ -195,9 +145,7 @@ class Solver(ABC):
         Assign truth value to external atom.
 
         :param external: External atom.
-        :type external: Union[clingo.symbol.Symbol,int]
         :param truth: Truth value.
-        :type truth: bool
         """
         self.control.assign_external(external, truth)
 
@@ -206,7 +154,6 @@ class Solver(ABC):
         Release external atom.
 
         :param external: External atom.
-        :type external: Union[clingo.symbol.Symbol,int]
         """
         self.control.release_external(external)
 
@@ -215,6 +162,5 @@ class Solver(ABC):
         Get statistics of the last solve call.
 
         :return: Statistics dictionary.
-        :rtype: dict[str, Any]
         """
         return self.control.statistics

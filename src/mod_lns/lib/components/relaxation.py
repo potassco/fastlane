@@ -24,11 +24,8 @@ def relax_random(
     Relax random number of shown atoms given by the relax_rate.
 
     :param model: model.
-    :type model: Model
     :param relax_rate: Percentage of atoms to relax.
-    :type relax_rate: int
     :return: Fixed (not relaxed) atoms.
-    :rtype: set[Symbol]
     """
     fixed_atoms = random.sample(sorted(model.shown), round(len(model.shown) * (1 - relax_rate / 100)))
     return set(fixed_atoms)
@@ -39,9 +36,7 @@ def format_atoms(atoms: set[Symbol]) -> str:
     Format set of atoms into sorted space-separated string.
 
     :param atoms: Set of atoms.
-    :type atoms: set[Symbol]
     :return: Formatted atom string.
-    :rtype: str
     """
     return " ".join([str(atom) for atom in sorted(atoms)])
 
@@ -53,15 +48,10 @@ def _project(
     Project atoms based on the runtime configuration.
 
     :param model: Model containing the atoms.
-    :type model: Model
     :param project_operators: List of project operators.
-    :type project_operators: list[dict[str, Any]]
     :param op_specs: Operator specifications.
-    :type op_specs: dict[str, set[Symbol]]
     :param logger: Logger for debugging.
-    :type logger: Logger
     :return: Set of projected atoms
-    :rtype: set[Symbol]
     """
     projected_atoms: set[Symbol] = set()
 
@@ -82,11 +72,8 @@ def _destroy_atoms_if_term_selected(
     and return all atoms corresponding to selected terms.
 
     :param atom_term_pairs: Atoms subject to destruction and corresponding terms.
-    :type atom_term_pairs: list[dict[str, Symbol]]
     :param percent_or_number: What percentage (or how many) terms are selected.
-    :type percent_or_number: dict[str, Any]
     :return: Destroyed atoms.
-    :rtype: set[Symbol]
     """
     candidate_terms = set()
     for pair in atom_term_pairs:
@@ -117,11 +104,8 @@ def _destroy_atoms_if_all_args_selected(
     and return all atoms whose terms have all their arguments selected.
 
     :param atom_term_pairs: Atoms subject to destruction and corresponding terms.
-    :type atom_term_pairs: list[dict[str, Symbol]]
     :param percents_or_numbers: What percentages (or how many) arguments are selected.
-    :type percents_or_numbers: list[dict[str, Any]]
     :return: Destroyed atoms.
-    :rtype: set[Symbol]
     """
 
     def _is_tuple(term: Symbol) -> bool:
@@ -162,13 +146,9 @@ def _destroy(
     Destroy a subset of atoms according to the runtime configuration.
 
     :param destroy_operators: List of destroy operators.
-    :type destroy_operators: list[dict[str, Any]]
     :param op_specs: Operator specifications.
-    :type op_specs: dict[str, set[Symbol]]
     :param projected_atoms: Set of projected atoms
-    :type projected_atoms: set[Symbol]
     :return: Set of prioritized atoms
-    :rtype: set[Symbol]
     """
     destroyed_atoms: set[Symbol] = set()
     for destroy_operator in destroy_operators:
@@ -198,13 +178,9 @@ def relax_config(model: Model, config: ActiveConfig, op_specs: dict[str, set[Sym
     Relax portion of atoms as defined by LNS configuration.
 
     :param config: Active configuration.
-    :type config: ActiveConfig
     :param op_specs: Operator specifications.
-    :type op_specs: dict[str, set[Symbol]]
     :param logger: Logger instance.
-    :type logger: Logger
     :return: Set of heuristic atoms
-    :rtype: set[Symbol]
     """
     projected = _project(model, config["project_operators"], op_specs, logger)
     return _destroy(config["destroy_operators"], op_specs, projected, logger)

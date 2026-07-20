@@ -23,9 +23,7 @@ class _RunningAverage:
     State container for incremental average computation.
 
     :param total: Running total of values.
-    :type total: float
     :param count: Count of values added.
-    :type count: int
     """
 
     total: float = 0.0
@@ -36,7 +34,6 @@ class _RunningAverage:
         Add a value to the running total and increment the count.
 
         :param value: Value to add.
-        :type value: float
         """
         self.total += value
         self.count += 1
@@ -46,9 +43,7 @@ class _RunningAverage:
         Compute the mean of the values added.
 
         :param default: Default value to return if no values have been added.
-        :type default: float
         :return: Mean of the values added or the default value.
-        :rtype: float
         """
         if self.count == 0:
             return default
@@ -60,7 +55,6 @@ class AverageDestructionConverter(AutoDestructionConverter):
     Converter using the average of observed destruction percentages.
 
     :param auto_init_percent: Initial destruction percentage. Defaults to 0.
-    :type auto_init_percent: int, optional
     """
 
     def __init__(self, auto_init_percent: int = 0):
@@ -85,15 +79,10 @@ class AverageDestructionConverter(AutoDestructionConverter):
         Compute actual destruction percentage for one stats entry.
 
         :param project_operator_names: Project operator names.
-        :type project_operator_names: list[str]
         :param destroy_operator_name: Destroy operator name.
-        :type destroy_operator_name: str
         :param current_model: Current model.
-        :type current_model: Model
         :param new_model: New model.
-        :type new_model: Model
         :return: Actual destruction percentage.
-        :rtype: float
         """
         op_specs = ConfigParser.get_op_specs(current_model)
 
@@ -114,9 +103,7 @@ class AverageDestructionConverter(AutoDestructionConverter):
         Update running average for all registered keys with one new improvement stat.
 
         :param current_model: Current model in last improving iteration.
-        :type current_model: Model
         :param new_model: New model in last improving iteration.
-        :type new_model: Model
         """
         for key, running in self._running_averages.items():
             project_operator_names = self._project_operator_names[key]
@@ -133,9 +120,7 @@ class AverageDestructionConverter(AutoDestructionConverter):
         Register a key and backfill its running average from past improvements.
 
         :param key: Tuple of config name and destroy operator name.
-        :type key: tuple[str, str]
         :param project_operator_names: Project operator names.
-        :type project_operator_names: list[str]
         """
         self._project_operator_names[key] = project_operator_names
         running = _RunningAverage()
@@ -159,11 +144,8 @@ class AverageDestructionConverter(AutoDestructionConverter):
         Convert auto values and update running averages on improving iterations.
 
         :param config: LNPS configuration containing automatic values.
-        :type config: ActiveConfig
         :param lns_object: LNS object.
-        :type lns_object: Optional["LNS"]
         :return: LNPS configuration with all automatic values replaced.
-        :rtype: ActiveConfig
         """
 
         if (
@@ -185,13 +167,9 @@ class AverageDestructionConverter(AutoDestructionConverter):
         Compute auto destruction percentage from running average.
 
         :param config_name: Config name.
-        :type config_name: str
         :param project_operators: Project operators.
-        :type project_operators: list[dict[str, Any]]
         :param destroy_operator_name: Destroy operator name.
-        :type destroy_operator_name: str
         :return: Destruction percentage of auto-mode destroy operator.
-        :rtype: float
         """
         operator_names = [operator["name"] for operator in project_operators]
         key = (config_name, destroy_operator_name)

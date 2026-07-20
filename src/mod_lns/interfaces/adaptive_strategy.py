@@ -33,11 +33,8 @@ class AdaptiveStrategy(ABC):
         Abstract method to get initial LNS configuration.
 
         :param config_catalog: Full declarative LNS catalog.
-        :type config_catalog: ConfigCatalog
         :param initial_model: Initial model.
-        :type initial_model: Model
         :return: LNS configuration
-        :rtype: ActiveConfig
         """
         raise NotImplementedError
 
@@ -53,15 +50,10 @@ class AdaptiveStrategy(ABC):
         Abstract method to update LNS configuration.
 
         :param active_config: Active LNS configuration.
-        :type active_config: ActiveConfig
         :param config_catalog: Full LNS configuration catalog.
-        :type config_catalog: ConfigCatalog
         :param stats: Statistics.
-        :type stats: list[dict[str, Any]]
         :param lns_object: LNS object.
-        :type lns_object: mod_lns.LNS
         :return: New LNS configuration.
-        :rtype: ActiveConfig
         """
         raise NotImplementedError
 
@@ -70,11 +62,8 @@ class AdaptiveStrategy(ABC):
         Convert key into corresponding configuration.
 
         :param config_name: Name of LNS configuration.
-        :type config_name: str
         :param config_catalog: Full LNS configuration catalog.
-        :type config_catalog: ConfigCatalog
         :return: LNS configuration corresponding to key.
-        :rtype: ActiveConfig
         """
         config: ActiveConfig = {
             "name": config_name,
@@ -114,9 +103,7 @@ class AdaptiveStrategy(ABC):
         Convert active LNS configuration into string.
 
         :param config: Active LNS configuration.
-        :type config: ActiveConfig
         :return: String representing active LNS configuration.
-        :rtype: str
         """
         project_operators = ",".join(
             project_operator["name"]

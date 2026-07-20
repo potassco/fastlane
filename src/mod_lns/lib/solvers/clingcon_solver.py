@@ -34,7 +34,6 @@ class ClingconSolver(ClingoSolver):
         Get the name under which the solver will be listed in options.
 
         :return: Name of the solver.
-        :rtype: str
         """
         return "clingcon"
 
@@ -49,12 +48,9 @@ class ClingconSolver(ClingoSolver):
         Initialize clingo.Control object using clingo.
 
         :param lns_object: LNS object.
-        :type lns_object: mod_lns.LNS
         :param args: clingo arguments, default: lns_object.clingo_options.
-        :type args: list[str]
         :default args: []
         :param files: ASP files to be loaded, default: lns_object.files.
-        :type files: Optional[list[str]]
         :default files: None
         """
         self.setup_interrupt_handling(lns_object)
@@ -85,7 +81,6 @@ class ClingconSolver(ClingoSolver):
         Saves model for later use.
 
         :param model: Model found during solving.
-        :type model: clingo.solving.Model
         """
         assert isinstance(self.theory, ClingconTheory)
         self.theory.on_model(model=model)
@@ -111,9 +106,7 @@ class ClingconSolver(ClingoSolver):
         Update statistics.
 
         :param step: Current step statistics.
-        :type step: StatisticsMap
         :param accu: Accumulated statistics.
-        :type accu: StatisticsMap
         """
         assert isinstance(self.theory, ClingconTheory)
         self.theory.on_statistics(step, accu)
@@ -128,11 +121,8 @@ class ClingconSolver(ClingoSolver):
         Solve under assumptions using clingo.
 
         :config: Solver configuration.
-        :type config: SolverConfig
         :param assumptions: Assumptions for solving (fixed atoms).
-        :type assumptions: list[tuple[clingo.symbol.Symbol, bool]]
         :return: Last obtained model.
-        :rtype: Model
         """
         assert isinstance(self.theory, ClingconTheory)
 
