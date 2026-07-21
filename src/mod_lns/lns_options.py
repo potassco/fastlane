@@ -56,7 +56,6 @@ class LNSOptions:
     :param lex_weight: Weight used to convert lexicographic cost into integer cost for adaptive strategies.
     :param learning_rate: Learning rate used to update weights for adaptive strategies.
     :param default_adaptive_strategy_name: Default adaptive strategy name.
-    :param auto_converter: Converter for computing destruction percentages of auto-mode destroy operators.
     :param init_time_limit: Time limit for initial solution.
     :param init_solve_limit: Solve limit for initial solution.
     :param init_cutoff: Time limit to find new model during initial solving.
@@ -66,12 +65,13 @@ class LNSOptions:
     :param init_restart_on_model: Restart on model for initial solving.
     :param init_opt_mode: Optimization mode for initial solving.
     :param constrained: Whether to use constrained LNS,
-    Short-hand for lns-opt-mode={"mode": "opt", "nf": 0, "modifier": "dynamic"}.
+        Short-hand for lns-opt-mode={"mode": "opt", "nf": 0, "modifier": "dynamic"}.
     :param relaxation: Relaxation type and rate.
-    :param declarative: Whether to use declarative relaxation.
-    Can cause issue when set directly, use relaxation attribute.
-    :param relax_rate: Relaxation rate for simple relaxation.
-    Can cause issue when set directly, use relaxation attribute.
+    :param _declarative: Whether to use declarative relaxation.
+        Can cause issue when set directly, use relaxation attribute.
+    :param _relax_rate: Relaxation rate for simple relaxation.
+        Can cause issue when set directly, use relaxation attribute.
+    :param auto_converter: Converter for computing destruction percentages of auto-mode destroy operators.
     :param fix: How to fix atoms during repair.
     :param accept_variability: Required variability for accepting new model in percent.
     :param accept_improvement: Required improvement for accepting new model in percent.
@@ -93,7 +93,7 @@ class LNSOptions:
     # utils
     log_level: int = 30
 
-    # general configuration
+    # general options
     # solver default has to be set manually in parser
     solver: Solver = field(default_factory=ClingoSolver)
     seed: Optional[int] = None
@@ -118,8 +118,6 @@ class LNSOptions:
     lex_weight: int = 1000
     learning_rate: float = 0.5
     default_adaptive_strategy_name: str = "static"
-    # converter default has to be set manually in parser
-    auto_converter: AutoDestructionConverter = field(default_factory=LastImprovementDestructionConverter)
 
     # init solver configuration
     # time limit for initial solution
@@ -139,8 +137,10 @@ class LNSOptions:
     constrained: bool = False  # covered by lns_opt_mode
     # set via --relaxation=[simple,[rate],declarative]
     relaxation: tuple[str, int] = ("simple", 20)
-    declarative: bool = False
-    relax_rate: int = 20
+    _declarative: bool = False  # dont set directly, use relaxation attribute
+    _relax_rate: int = 20  # dont set directly, use relaxation attribute
+    # converter default has to be set manually in parser
+    auto_converter: AutoDestructionConverter = field(default_factory=LastImprovementDestructionConverter)
     fix: str = "assumptions"  # "assumptions", "heuristics"
     accept_variability: int = 0
     accept_improvement: int = 0
@@ -277,8 +277,8 @@ class LNSOptions:
             value = getattr(self, field_obj.name)
             if value is UNSET:
                 setattr(self, field_obj.name, None)
-        self.declarative = self.relaxation[0] == "declarative"
-        self.relax_rate = self.relaxation[1] if isinstance(self.relaxation[1], int) else -1
+        self._declarative = self.relaxation[0] == "declarative"
+        self._relax_rate = self.relaxation[1] if isinstance(self.relaxation[1], int) else -1
         if self.constrained and self.lns_opt_mode["mode"] is None:
             self.lns_opt_mode["mode"] = "opt"
             self.lns_opt_mode["modifier"] = "dynamic"

@@ -375,11 +375,11 @@ class TestConfigParser(TestCase):
             ) as mock_parse_strategy,
         ):
             catalog = ConfigParser.parse_lns_config(lns_object)
-            mock_parse_project_operator.assert_called_once_with(solver, options.declarative)
-            mock_parse_destroy_operators.assert_called_once_with(solver, options.declarative)
-            mock_parse_prioritize_operators.assert_called_once_with(solver, options.declarative)
+            mock_parse_project_operator.assert_called_once_with(solver, options._declarative)
+            mock_parse_destroy_operators.assert_called_once_with(solver, options._declarative)
+            mock_parse_prioritize_operators.assert_called_once_with(solver, options._declarative)
             mock_parse_configs.assert_called_once_with(
-                solver, ["plays_3"], ["random_n"], ["1_true"], options.declarative
+                solver, ["plays_3"], ["random_n"], ["1_true"], options._declarative
             )
             mock_parse_strategy.assert_called_once_with(
                 solver,
@@ -392,7 +392,7 @@ class TestConfigParser(TestCase):
                 },
                 ["default", "roulette"],
                 "default",
-                options.declarative,
+                options._declarative,
             )
             self.assertDictEqual(
                 catalog,
@@ -411,8 +411,8 @@ class TestConfigParser(TestCase):
                 },
             )
         # declarative = False
-        options.declarative = False
-        options.relax_rate = 30
+        options._declarative = False
+        options._relax_rate = 30
         with (
             mock.patch.object(
                 ConfigParser, "_parse_project_operator", return_value={"plays_3": {("plays", 3)}}
@@ -460,14 +460,14 @@ class TestConfigParser(TestCase):
                             "project_operators": ["plays_3"],
                         }
                     },
-                    "destroy_operators": {"default": [{"type": "p", "value": options.relax_rate}]},
+                    "destroy_operators": {"default": [{"type": "p", "value": options._relax_rate}]},
                     "prioritize_operators": {"default": {"value": 1, "modifier": "true"}},
                     "project_operators": {"plays_3": {("plays", 3)}},
                     "strategy": "default",
                 },
             )
         # declarative = False, relax_rate = 0
-        options.relax_rate = 0
+        options._relax_rate = 0
         with (
             mock.patch.object(
                 ConfigParser, "_parse_project_operator", return_value={"plays_3": {("plays", 3)}}

@@ -436,7 +436,7 @@ class ConfigParser:
         return strategy, candidate_configs
 
     @classmethod
-    def parse_lns_config(cls, lns_object: "LNS") -> ConfigCatalog:
+    def parse_lns_config(cls, lns_object: "LNS") -> ConfigCatalog:  # pylint: disable=protected-access
         """
         Extract and validate LNS configuration from model.
         If in non-declarative mode, the configuration is constructed from options
@@ -447,12 +447,12 @@ class ConfigParser:
         """
         solver = lns_object.solver
         options = lns_object.options
-        declarative = options.declarative
+        declarative = options._declarative
         project_operators = cls._parse_project_operator(solver, declarative)
         destroy_operators = cls._parse_destroy_operators(solver, declarative)
         if not declarative:
-            if options.relax_rate > 0:
-                dest_op = [{"type": "p", "value": options.relax_rate}]
+            if options._relax_rate > 0:
+                dest_op = [{"type": "p", "value": options._relax_rate}]
             else:
                 dest_op = [{"type": "auto", "value": None}]
             destroy_operators = {"default": dest_op}

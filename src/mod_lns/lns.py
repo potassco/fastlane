@@ -38,20 +38,20 @@ class LNS:
     Class handling and performing LNS.
 
     :param files: Problem encodings.
-    :param lns_config: LNSConfig object.
-    :default lns_config: LNSConfig()
+    :param args: Parsed arguments.
+    :param options: LNSOptions object.
     """
 
     def __init__(
         self,
         files: list[str],
         args: Optional[dict[str, Any]] = None,
-        config: Optional[LNSOptions] = None,
+        options: Optional[LNSOptions] = None,
     ):
         """
         Initialization of the lns object.
         """
-        self.options: LNSOptions = config if config is not None else LNSOptions()
+        self.options: LNSOptions = options if options is not None else LNSOptions()
         self.parse_options(args if args is not None else {})
         self.logger = setup_logger("LNS", self.options.log_level)
 

@@ -35,7 +35,7 @@ class TestIntegrationClingo(TestCase):
         """
         out = StringIO()
         with mock.patch("sys.stdout", new=out):
-            lns = LNS(files, config=self.config)
+            lns = LNS(files, options=self.config)
             lns.main()
         return lns, out.getvalue()
 
