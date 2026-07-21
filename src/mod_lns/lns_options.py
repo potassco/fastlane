@@ -1,4 +1,4 @@
-"""
+﻿"""
 Class containing all LNS options and their default values, as well as methods for applying presets and overrides.
 """
 
@@ -43,94 +43,51 @@ class LNSOptions:
     Configuration for LNS.
 
     :param log_level: Logging level.
-    :default log_level: 30
     :param solver: Solver to use.
-    :default solver: ClingoSolver()
     :param seed: Random seed.
-    :default seed: None
     :param time_limit: Time limit for entire program.
-    :default time_limit: None
     :param max_steps: Maximum number of steps for LNS.
-    :default max_steps: None
     :param status_interval: Interval for status updates.
-    :default status_interval: 50
     :param parallel_mode: Parallel mode for solving.
-    :default parallel_mode: None
     :param clingo_args: Additional arguments for Clingo solver.
-    :default clingo_args: None
     :param context: Context for grounding.
-    :default context: None
     :param minimize_variable: Variable to minimize, used by clingo-dl.
-    :default minimize_variable: None
     :param preset: Options preset to use as base.
-    :default preset: None
     :param lex_weight: Weight used to convert lexicographic cost into integer cost for adaptive strategies.
-    :default lex_weight: 1000
     :param learning_rate: Learning rate used to update weights for adaptive strategies.
-    :default learning_rate: 0.5
     :param default_adaptive_strategy_name: Default adaptive strategy name.
-    :default default_adaptive_strategy_name: "static"
     :param auto_converter: Converter for computing destruction percentages of auto-mode destroy operators.
-    :default auto_converter: LastImprovementDestructionConverter()
     :param init_time_limit: Time limit for initial solution.
-    :default init_time_limit: 20
     :param init_solve_limit: Solve limit for initial solution.
-    :default init_solve_limit: None
     :param init_cutoff: Time limit to find new model during initial solving.
-    :default init_cutoff: None
     :param init_configuration: Solver configuration for initial solving.
-    :default init_configuration: None
     :param init_opt_strategy: Optimization strategy for initial solving.
-    :default init_opt_strategy: None
     :param init_opt_heuristic: Optimization heuristic for initial solving.
-    :default init_opt_heuristic: None
     :param init_restart_on_model: Restart on model for initial solving.
-    :default init_restart_on_model: None
     :param init_opt_mode: Optimization mode for initial solving.
-    :default init_opt_mode: None
     :param constrained: Whether to use constrained LNS,
     Short-hand for lns-opt-mode={"mode": "opt", "nf": 0, "modifier": "dynamic"}.
-    :default constrained: False
     :param relaxation: Relaxation type and rate.
-    :default relaxation: ("simple", 20)
     :param declarative: Whether to use declarative relaxation.
     Can cause issue when set directly, use relaxation attribute.
-    :default declarative: False
     :param relax_rate: Relaxation rate for simple relaxation.
     Can cause issue when set directly, use relaxation attribute.
-    :default relax_rate: 20
     :param fix: How to fix atoms during repair.
-    :default fix: False
     :param accept_variability: Required variability for accepting new model in percent.
-    :default accept_variability: 0
     :param accept_improvement: Required improvement for accepting new model in percent.
-    :default accept_improvement: 0
     :param lns_time_limit: Time limit for solver in each LNS step.
-    :default lns_time_limit: 20
     :param lns_solve_limit: Solve limit for solver in each LNS step.
-    :default lns_solve_limit: None
     :param lns_cutoff: Time limit to find new model during LNS solving.
-    :default lns_cutoff: None
     :param lns_time_limit_increase_rate: Time limit increase rate in percent.
-    :default lns_time_limit_increase_rate: 0
     :param lns_solve_limit_increase_rate: Solve limit increase rate in percent.
-    :default lns_solve_limit_increase_rate: 0
     :param lns_cutoff_threshold: Cutoff threshold for increasing cutoff.
-    :default lns_cutoff_threshold: None
     :param lns_cutoff_increase_rate: Cutoff increase rate in percent.
-    :default lns_cutoff_increase_rate: 0
     :param lns_configuration: Solver configuration for LNS solving.
-    :default lns_configuration: None
     :param lns_opt_strategy: Optimization strategy for LNS solving.
-    :default lns_opt_strategy: None
     :param lns_opt_heuristic: Optimization heuristic for LNS solving.
-    :default lns_opt_heuristic: None
     :param lns_restart_on_model: Restart on model for LNS solving.
-    :default lns_restart_on_model: None
     :param lns_heuristic: Heuristic to use in LNS solving.
-    :default lns_heuristic: "Domain"
     :param lns_opt_mode: Optimization mode for LNS solving.
-    :default lns_opt_mode: {"mode": None, "nf": None, "modifier": None}
     """
 
     # utils

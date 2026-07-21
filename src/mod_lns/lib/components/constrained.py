@@ -1,4 +1,4 @@
-"""
+﻿"""
 Components related to constrained optimization in the context of LNS.
 """
 
@@ -12,9 +12,7 @@ def get_opt_bound(cost: list[int], opt_mode: str, opt_modifier: str = "dynamic",
     :param cost: Current cost list
     :param opt_mode: Optimization mode
     :param opt_modifier: Optimization modifier
-    :default opt_modifier: "dynamic"
     :param opt_nf: Optimization factor
-    :default opt_nf: "0"
     :return: String representing the bound for the next step.
     """
     if opt_modifier == "static":

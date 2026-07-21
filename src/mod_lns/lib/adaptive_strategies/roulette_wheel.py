@@ -1,4 +1,4 @@
-"""
+﻿"""
 Roulette-wheel strategy for adaptive LNS configuration selection.
 """
 
@@ -22,13 +22,9 @@ class RouletteWheelStrategy(AdaptiveStrategy):
 
     :param logger: Logger for logging messages.
     :param learning_rate: Learning rate used to update weights, 0 < learning_rate < 1.
-    :default learning_rate: 0.5
     :param lex_weight: Weight used to convert lexicographic cost into integer cost.
-    :default lex_weight: 1000
     :param converter: Converter for computing destruction percentages of auto-mode destroy operators.
-    :default converter: LastImprovementDestructionConverter
     :param min_weight: Minimum value of weight. Defaults to 0.001.
-    :default min_weight: 0.001
     """
 
     def __init__(

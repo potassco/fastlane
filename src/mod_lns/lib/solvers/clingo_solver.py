@@ -1,4 +1,4 @@
-"""
+﻿"""
 clingo solver for LNS.
 """
 
@@ -80,9 +80,7 @@ class ClingoSolver(Solver):
 
         :param lns_object: LNS object.
         :param args: clingo arguments, default: lns_object.clingo_options.
-        :default args: []
         :param files: ASP files to be loaded, default: lns_object.files.
-        :default files: None
         """
         self.setup_interrupt_handling(lns_object)
 
