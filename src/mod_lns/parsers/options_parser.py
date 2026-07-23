@@ -361,6 +361,19 @@ def _parse_opt_strategy(string: str) -> str:
         raise ArgumentTypeError(f"'{string}': Invalid opt strategy.") from e
     return string
 
+def parse_opt_heuristic(string: str) -> str:
+    """
+    Parse the optimization heuristic string.
+
+    :param string: String to parse.
+    :return: Optimization heuristic.
+    """
+    ctl = Control()
+    try:
+        ctl.configuration.solver.opt_heuristic = string  # type: ignore
+    except RuntimeError as e:
+        raise ArgumentTypeError(f"'{string}': Invalid opt heuristic.") from e
+    return string
 
 def _parse_configuration(string: str) -> str:
     """
@@ -507,6 +520,7 @@ class OptionsParser:
         parser.register("type", "init_opt_mode", _parse_init_opt_mode)
         parser.register("type", "lns_opt_mode", _parse_lns_opt_mode)
         parser.register("type", "opt_strategy", _parse_opt_strategy)
+        parser.register("type", "opt_heuristic", parse_opt_heuristic)
         parser.register("type", "configuration", _parse_configuration)
         parser.register("type", "heuristic", _parse_heuristic)
 
@@ -943,8 +957,7 @@ class OptionsParser:
             "--lns-opt-heuristic",
             help=_replace_default("Set LNS optimization heuristic [%(default)s]", LNSOptions.lns_opt_heuristic),
             default=UNSET,
-            type=str,
-            choices=["sign", "model"],
+            type="opt_heuristic",
             dest="lns_opt_heuristic",
         )
         lns_solver_group.add_argument(
