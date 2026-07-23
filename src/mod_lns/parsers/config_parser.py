@@ -436,7 +436,7 @@ class ConfigParser:
         return strategy, candidate_configs
 
     @classmethod
-    def parse_lns_config(cls, lns_object: "LNS") -> ConfigCatalog:  # pylint: disable=protected-access
+    def parse_lns_config(cls, lns_object: "LNS") -> ConfigCatalog:
         """
         Extract and validate LNS configuration from model.
         If in non-declarative mode, the configuration is constructed from options
@@ -445,6 +445,7 @@ class ConfigParser:
         :param lns_object: LNS instance that provides solver and runtime options.
         :return: Configuration catalog used by the LNS loop.
         """
+        # pylint: disable=protected-access
         solver = lns_object.solver
         options = lns_object.options
         declarative = options._declarative

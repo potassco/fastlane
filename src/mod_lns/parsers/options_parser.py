@@ -361,7 +361,8 @@ def _parse_opt_strategy(string: str) -> str:
         raise ArgumentTypeError(f"'{string}': Invalid opt strategy.") from e
     return string
 
-def parse_opt_heuristic(string: str) -> str:
+
+def _parse_opt_heuristic(string: str) -> str:
     """
     Parse the optimization heuristic string.
 
@@ -374,6 +375,7 @@ def parse_opt_heuristic(string: str) -> str:
     except RuntimeError as e:
         raise ArgumentTypeError(f"'{string}': Invalid opt heuristic.") from e
     return string
+
 
 def _parse_configuration(string: str) -> str:
     """
@@ -520,7 +522,7 @@ class OptionsParser:
         parser.register("type", "init_opt_mode", _parse_init_opt_mode)
         parser.register("type", "lns_opt_mode", _parse_lns_opt_mode)
         parser.register("type", "opt_strategy", _parse_opt_strategy)
-        parser.register("type", "opt_heuristic", parse_opt_heuristic)
+        parser.register("type", "opt_heuristic", _parse_opt_heuristic)
         parser.register("type", "configuration", _parse_configuration)
         parser.register("type", "heuristic", _parse_heuristic)
 
