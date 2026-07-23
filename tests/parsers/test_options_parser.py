@@ -23,6 +23,7 @@ from mod_lns.parsers.options_parser import (
     _parse_init_opt_mode,
     _parse_lns_opt_mode,
     _parse_minimize_variable,
+    _parse_opt_heuristic,
     _parse_opt_strategy,
     _parse_parallel_mode,
     _parse_percent,
@@ -34,6 +35,7 @@ from mod_lns.parsers.options_parser import (
     _replace_default,
 )
 
+# pylint: disable=too-many-public-methods
 
 class TestOptionsParser(TestCase):
     """
@@ -300,6 +302,14 @@ class TestOptionsParser(TestCase):
         self.assertEqual(_parse_opt_strategy("bb"), "bb")
         with self.assertRaises(ArgumentTypeError):
             _parse_opt_strategy("unknown_strategy")
+
+    def test_parse_opt_heuristic(self):
+        """
+        Test the _parse_opt_heuristic function.
+        """
+        self.assertEqual(_parse_opt_heuristic("sign"), "sign")
+        with self.assertRaises(ArgumentTypeError):
+            _parse_opt_heuristic("unknown_heuristic")
 
     def test_parse_configuration(self):
         """
