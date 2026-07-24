@@ -74,6 +74,68 @@ extra_javascript = [
   "_custom/javascripts/tablesort.js",
 ]
 
+nav = [
+  {"Home" = "index.md"},
+  {"Getting Started" = [
+    "getting_started/index.md",
+    {"Guide" = "getting_started/guide.md"},
+    {"Examples" = [
+      "getting_started/examples/index.md",
+      {"demo.py" = "getting_started/examples/demo.md"},
+      {"golf.lp" = "getting_started/examples/golf.md"},
+      {"golf_config.lp" = "getting_started/examples/golf_config.md"},
+      {"golf_declarative.lp" = "getting_started/examples/golf_declarative.md"},
+      {"portfolio.lp" = "getting_started/examples/portfolio.md"},
+    ]},
+  ]},
+  {"Implementation" = [
+    "implementation/index.md",
+    {"Library Functions" = [
+      "implementation/lib/index.md",
+      {"Adaptive Strategies" = [
+        "implementation/lib/adaptive_strategies/index.md",
+        {"Roulette Wheel Strategy" = "implementation/lib/adaptive_strategies/roulette_wheel.md"},
+        {"Static Strategy" = "implementation/lib/adaptive_strategies/static.md"},
+      ]},
+      {"Auto Destruction Converters" = [
+        "implementation/lib/auto_destruction_converters/index.md",
+        {"Average Destruction Converter" = "implementation/lib/auto_destruction_converters/average.md"},
+        {"Last Improvement Destruction Converter" = "implementation/lib/auto_destruction_converters/last_improv.md"},
+      ]},
+      {"LNS Components" = [
+        "implementation/lib/components/index.md",
+        {"Constrained" = "implementation/lib/components/constrained.md"},
+        {"Heuristics" = "implementation/lib/components/heuristics.md"},
+        {"Output" = "implementation/lib/components/output.md"},
+        {"Relaxation" = "implementation/lib/components/relaxation.md"},
+        {"Repair" = "implementation/lib/components/repair.md"},
+        {"Utils" = "implementation/lib/components/utils.md"},
+      ]},
+      {"Solvers" = [
+        "implementation/lib/solvers/index.md",
+        {"Clingo" = "implementation/lib/solvers/clingo.md"},
+        {"Clingcon" = "implementation/lib/solvers/clingcon.md"},
+        {"ClingoDL" = "implementation/lib/solvers/clingodl.md"},
+      ]},
+    ]},
+    {"Parsers" = [
+      "implementation/parsers/index.md",
+      {"Config Parser" = "implementation/parsers/config_parser.md"},
+      {"Options Parser" = "implementation/parsers/options_parser.md"},
+    ]},
+    {"Utilities" = [
+      "implementation/utils/index.md",
+      {"Conversions" = "implementation/utils/conversions.md"},
+      {"Logger" = "implementation/utils/logger.md"},
+      {"Types" = "implementation/utils/types.md"},
+    ]},
+  ]},
+  {"Community" = [
+    "community/index.md",
+    {"Contributing" = "community/contributing.md"},
+  ]},
+]
+
 # ----------------------------------------------------------------------------
 # Section for configuring theme options
 # ----------------------------------------------------------------------------
@@ -176,7 +238,7 @@ features = [
     # Turn on this feature to expand all collapsible sections in the
     # navigation sidebar by default.
     # https://zensical.org/docs/setup/navigation/#navigation-expansion
-    # "navigation.expand",
+    #"navigation.expand",
 
     # This feature turns on navigation elements in the footer that allow the
     # user to navigate to a next or previous page.
@@ -253,7 +315,7 @@ features = [
     # When navigation integration for the table of contents is enabled, it is
     # always rendered as part of the navigation sidebar on the left.
     # https://zensical.org/docs/setup/navigation/#navigation-integration
-    #"toc.integrate",
+    "toc.integrate",
 ]
 
 # ----------------------------------------------------------------------------

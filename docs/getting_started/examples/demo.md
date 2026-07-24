@@ -1,3 +1,6 @@
+# demo.py
+
+```python
 """
 Examples on how to use the LNS framework.
 
@@ -65,3 +68,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+```

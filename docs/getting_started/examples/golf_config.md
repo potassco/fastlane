@@ -1,3 +1,6 @@
+# golf_config.lp
+
+```
 % _project_op(name, signature).
 _project_op(plays_3, (plays,3)).
 _project(plays_3, plays(P,W,G)) :- plays(P,W,G).
@@ -18,3 +21,4 @@ _config("Random20", "plays_3", (random,20), "1_true").
 _config("Week_auto", "plays_3", "week_auto", "1_true").
 
 _strategy("roulette", C) :- _config(C, _, _, _).
+```

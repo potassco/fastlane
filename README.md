@@ -27,9 +27,13 @@ You can check a successful installation by running
 mod_lns -h
 ```
 
+
 ## Documentation
 
-A detailed documentation can be build in `./doc` as described in
-`./doc/README.md`. The documentation contains further information regarding
-usage, a user guide with examples, and a description of the frameworks
-components.
+The documentation can be accessed [here](!TODO)
+or build and hosted locally using:
+
+```bash
+$ pip install .[doc]
+$ zensical serve
+```
