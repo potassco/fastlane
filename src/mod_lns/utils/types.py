@@ -9,11 +9,11 @@ class ConfigCatalog(TypedDict, total=False):  # nocoverage
     """
     TypedDict for configuration catalog.
 
-    :param project_operators: Project operator names mapped to projected predicate signatures.
-    :param destroy_operators: Destroy operator names mapped to destruction parameters.
-    :param prioritize_operators: Prioritize operator names mapped to heuristic value/modifier pairs.
-    :param configs: Config names mapped to selected project/destroy/prioritize operators.
-    :param strategy: Name of the adaptive strategy selected for configuration updates.
+    :ivar project_operators: Project operator names mapped to projected predicate signatures.
+    :ivar destroy_operators: Destroy operator names mapped to destruction parameters.
+    :ivar prioritize_operators: Prioritize operator names mapped to heuristic value/modifier pairs.
+    :ivar configs: Config names mapped to selected project/destroy/prioritize operators.
+    :ivar strategy: Name of the adaptive strategy selected for configuration updates.
     """
 
     project_operators: dict[str, set[tuple[str, int]]]
@@ -27,11 +27,11 @@ class ActiveConfig(TypedDict, total=False):  # nocoverage
     """
     TypedDict for active configuration.
 
-    :param name: Name of the active configuration.
-    :param project_operators: List of project operators with their signatures.
-    :param destroy_operators: List of destroy operators with their percentages or numbers.
-    :param prioritize_operators: List of prioritize operators with their values and modifiers.
-    :param config_repr: String representation of the active configuration.
+    :ivar name: Name of the active configuration.
+    :ivar project_operators: List of project operators with their signatures.
+    :ivar destroy_operators: List of destroy operators with their percentages or numbers.
+    :ivar prioritize_operators: List of prioritize operators with their values and modifiers.
+    :ivar config_repr: String representation of the active configuration.
     """
 
     name: str
