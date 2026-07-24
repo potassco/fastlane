@@ -418,6 +418,73 @@ def _replace_default(text: str, default_value: Any) -> str:
     return text.replace("%(default)s", str(default_value))
 
 
+def _format_preset_option_value(
+    key: str,
+    value: Any,
+    converter_name_by_type: dict[type, str],
+) -> str:
+    """
+    Format preset option values so they match expected CLI argument values.
+
+    :param key: Preset option key.
+    :param value: Preset option value.
+    :param converter_name_by_type: Mapping from converter type to converter CLI name.
+    :return: String representation suitable for CLI help output.
+    """
+    if key == "relaxation" and isinstance(value, tuple):
+        return f"{value[0]},{value[1]}"
+    if key == "auto_converter":
+        return converter_name_by_type.get(type(value), str(value))
+    return str(value)
+
+
+def _build_preset_help_text(
+    preset_values: dict[str, dict[str, Any]],
+    converter_name_by_type: dict[type, str],
+) -> str:
+    """
+    Build formatted preset summary text for preset help text.
+
+    :param preset_values: Preset definitions.
+    :param converter_name_by_type: Mapping from converter type to converter CLI name.
+    :return: Formatted preset summary text.
+    """
+    key_aliases = {
+        "default_adaptive_strategy_name": "default-adaptive-strategy",
+    }
+
+    chunks: list[str] = []
+    for preset_name, options in preset_values.items():
+        lines = [f"[{preset_name}]:"]
+        option_texts: list[str] = []
+        for key, value in options.items():
+            if key == "description":
+                continue
+            arg_name = key_aliases.get(key, key.replace("_", "-"))
+            arg_value = _format_preset_option_value(key, value, converter_name_by_type)
+            option_texts.append(f" --{arg_name}={arg_value}")
+
+        for i in range(0, len(option_texts), 2):
+            pair = option_texts[i : i + 2]
+            lines.append(" ".join(pair))
+
+        chunks.append("\n".join(lines))
+    return "\n".join(chunks)
+
+
+def _build_preset_description_text(preset_values: dict[str, dict[str, Any]]) -> str:
+    """
+    Build formatted preset description text for argument help text.
+
+    :param preset_values: Preset definitions.
+    :return: Formatted preset descriptions text.
+    """
+    return "\n".join(
+        f"{preset_name}: {options.get('description', 'Configuration preset.')}"
+        for preset_name, options in preset_values.items()
+    )
+
+
 class OptionsParser:
     """
     Parser for command line options.
@@ -503,6 +570,11 @@ class OptionsParser:
             "avg": AverageDestructionConverter(),
             "last-improv": LastImprovementDestructionConverter(),
         }
+        converter_name_by_type = {type(instance): name for name, instance in converters.items()}
+
+        preset_choice_names = list(LNSOptions.preset_values.keys())
+        preset_description_text = _build_preset_description_text(LNSOptions.preset_values)
+        preset_help_lines = _build_preset_help_text(LNSOptions.preset_values, converter_name_by_type)
 
         parser.register("type", "solver", lambda string: _parse_solver(solvers, string))
         parser.register("type", "pos_int", _parse_pos_int)
@@ -554,39 +626,13 @@ class OptionsParser:
             help=(
                 f"Set LNS configuration preset [{LNSOptions.preset}]\n"
                 "Manually set parameters take precedence over presets.\n"
-                "Presets can be used as a base configuration and then manually adjust individual parameters as needed.\n"
-                "<arg>: {basic-assumptions|auto-heuristics|adaptive-heulingo}\n"
-                "basic-assumptions:  Basic configuration using assumptions and a fixed relax rate.\n"
-                "auto-heuristics:  Configuration using heuristics and an automatically calculated relax rate.\n"
-                "adaptive-heulingo:  Configuration corresponding to default adaptive heulingo. Config encoding is required!\n"
+                "Presets can be used as a base configuration and then manually adjusted as needed.\n"
+                f"<arg>: {{{'|'.join(preset_choice_names)}}}\n"
+                f"{preset_description_text}\n"
                 "Presets:\n"
-                "[basic-assumptions]:\n"
-                f" --relaxation={LNSOptions.preset_values['basic-assumptions']['relaxation'][0]},{LNSOptions.preset_values['basic-assumptions']['relaxation'][1]}"
-                f" --init-time-limit={LNSOptions.preset_values['basic-assumptions']['init_time_limit']}"
-                f" --lns-time-limit={LNSOptions.preset_values['basic-assumptions']['lns_time_limit']}\n"
-                f" --fix={LNSOptions.preset_values['basic-assumptions']['fix']}\n"
-                "[auto-heuristics]:\n"
-                f" --relaxation={LNSOptions.preset_values['auto-heuristics']['relaxation'][0]},{LNSOptions.preset_values['auto-heuristics']['relaxation'][1]}"
-                f" --init-time-limit={LNSOptions.preset_values['auto-heuristics']['init_time_limit']}"
-                f" --init-solve-limit={LNSOptions.preset_values['auto-heuristics']['init_solve_limit']}\n"
-                f" --lns-time-limit={LNSOptions.preset_values['auto-heuristics']['lns_time_limit']}"
-                f" --lns-solve-limit={LNSOptions.preset_values['auto-heuristics']['lns_solve_limit']}"
-                f" --fix={LNSOptions.preset_values['auto-heuristics']['fix']}\n"
-                "[adaptive-heulingo]:\n"
-                f" --relaxation={LNSOptions.preset_values['adaptive-heulingo']['relaxation'][0]},{LNSOptions.preset_values['adaptive-heulingo']['relaxation'][1]}"
-                f" --fix={LNSOptions.preset_values['adaptive-heulingo']['fix']}"
-                f" --default-adaptive-strategy={LNSOptions.preset_values['adaptive-heulingo']['default_adaptive_strategy_name']}\n"
-                f" --learning-rate={LNSOptions.preset_values['adaptive-heulingo']['learning_rate']}"
-                f" --lex-weight={LNSOptions.preset_values['adaptive-heulingo']['lex_weight']}"
-                f' --auto-converter="last-improv"\n'
-                f" --lns-restart-on-model={LNSOptions.preset_values['adaptive-heulingo']['lns_restart_on_model']}"
-                f" --init-cutoff={LNSOptions.preset_values['adaptive-heulingo']['init_cutoff']}"
-                f" --lns-cutoff={LNSOptions.preset_values['adaptive-heulingo']['lns_cutoff']}\n"
-                f" --lns-cutoff-threshold={LNSOptions.preset_values['adaptive-heulingo']['lns_cutoff_threshold']}"
-                f" --lns-cutoff-increase-rate={LNSOptions.preset_values['adaptive-heulingo']['lns_cutoff_increase_rate']}"
-                f" --lns-heuristic={LNSOptions.preset_values['adaptive-heulingo']['lns_heuristic']}\n"
+                f"{preset_help_lines}\n"
             ),
-            choices=["basic-assumptions", "auto-heuristics", "adaptive-heulingo"],
+            choices=preset_choice_names,
             default=UNSET,
             type=str,
             dest="preset",

@@ -121,7 +121,7 @@ class LNSOptions:
 
     # init solver configuration
     # time limit for initial solution
-    init_time_limit: Optional[int] = 20
+    init_time_limit: Optional[int] = 10
     init_solve_limit: Optional[str] = None
     # time limit to find new model during initial solving
     init_cutoff: Optional[int] = None
@@ -136,9 +136,9 @@ class LNSOptions:
     # lns configuration
     constrained: bool = False  # covered by lns_opt_mode
     # set via --relaxation=[simple,[rate],declarative]
-    relaxation: tuple[str, int] = ("simple", 20)
+    relaxation: tuple[str, int] = ("simple", 40)
     _declarative: bool = False  # dont set directly, use relaxation attribute
-    _relax_rate: int = 20  # dont set directly, use relaxation attribute
+    _relax_rate: int = 40  # dont set directly, use relaxation attribute
     # converter default has to be set manually in parser
     auto_converter: AutoDestructionConverter = field(default_factory=LastImprovementDestructionConverter)
     fix: str = "assumptions"  # "assumptions", "heuristics"
@@ -147,7 +147,7 @@ class LNSOptions:
 
     # lns solver configuration
     # time limit for solver in each LNS step
-    lns_time_limit: Optional[int] = 20
+    lns_time_limit: Optional[int] = 5
     lns_solve_limit: Optional[str] = None
     # time limit to find new model during lns solving
     lns_cutoff: Optional[int] = None
@@ -167,33 +167,48 @@ class LNSOptions:
 
     # configuration values
     preset_values: ClassVar[dict[str, dict[str, Any]]] = {
-        "basic-assumptions": {
+        "lns": {
+            "description": "Classic LNS using assumptions and a fixed relax rate.",
             "relaxation": ("simple", 40),
-            "init_time_limit": 20,
-            "lns_time_limit": 20,
+            "init_time_limit": 10,
+            "lns_time_limit": 5,
             "fix": "assumptions",
         },
-        "auto-heuristics": {
+        "lnps": {
+            "description": "LNPS using heuristics and an automatically calculated relax rate (heulingo).",
             "relaxation": ("simple", "auto"),
-            "init_time_limit": 20,
+            "init_time_limit": None,
             "init_solve_limit": "2500000,5000",
-            "lns_time_limit": 20,
+            "lns_time_limit": None,
             "lns_solve_limit": "2500000,5000",
             "fix": "heuristics",
         },
-        "adaptive-heulingo": {
+        "alns": {
+            "description": "ALNS using assumptions and an adaptive strategy. Config encoding is required!",
             "relaxation": ("declarative", 0),
-            "fix": "heuristics",
+            "init_time_limit": 10,
+            "lns_time_limit": 5,
+            "fix": "assumptions",
             "default_adaptive_strategy_name": "roulette",
+            "lex_weight": 1000,
             "learning_rate": 0.5,
             "auto_converter": LastImprovementDestructionConverter(),
-            "lex_weight": 1000,
-            "lns_restart_on_model": False,
+        },
+        "alnps": {
+            "description": (
+                f"ALNPS using heuristics and an adaptive strategy (adaptive heulingo).\n"
+                f"{' '*(len('alnps')+2)}Config encoding is required!"
+            ),
+            "relaxation": ("declarative", 0),
             "init_cutoff": 10,
             "lns_cutoff": 5,
             "lns_cutoff_threshold": 2,
             "lns_cutoff_increase_rate": 5,
-            "lns_heuristic": "Domain",
+            "fix": "heuristics",
+            "default_adaptive_strategy_name": "roulette",
+            "lex_weight": 1000,
+            "learning_rate": 0.5,
+            "auto_converter": LastImprovementDestructionConverter(),
         },
     }
 

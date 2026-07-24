@@ -68,7 +68,7 @@ class TestLNSOptions(TestCase):
         """
         Test the apply_preset method.
         """
-        self.lns_options.preset = "basic-assumptions"
+        self.lns_options.preset = "lns"
         with mock.patch.object(self.lns_options, "apply_overrides") as mock_apply_overrides:
             self.lns_options.apply_preset()
             mock_apply_overrides.assert_called_once_with(self.lns_options.preset_values[self.lns_options.preset])

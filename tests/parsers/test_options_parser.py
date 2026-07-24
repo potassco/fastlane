@@ -14,6 +14,9 @@ from mod_lns.lib.auto_destruction_converters.last_improv import LastImprovementD
 from mod_lns.lib.solvers.clingcon_solver import ClingconSolver
 from mod_lns.parsers.options_parser import (
     OptionsParser,
+    _build_preset_description_text,
+    _build_preset_help_text,
+    _format_preset_option_value,
     _parse_0_1_float,
     _parse_adaptive_strategy,
     _parse_auto_converter,
@@ -36,6 +39,7 @@ from mod_lns.parsers.options_parser import (
 )
 
 # pylint: disable=too-many-public-methods
+
 
 class TestOptionsParser(TestCase):
     """
@@ -334,6 +338,61 @@ class TestOptionsParser(TestCase):
         self.assertEqual(_replace_default("Help text [%(default)s]", 30), "Help text [30]")
         self.assertEqual(_replace_default("Help text [%(default)s]", "test"), "Help text [test]")
 
+    def test_format_preset_option_value(self):
+        """
+        Test the _format_preset_option_value function.
+        """
+        m = mock.Mock()
+        self.assertEqual(_format_preset_option_value("relaxation", ("simple", 20), {}), "simple,20")
+        self.assertEqual(_format_preset_option_value("auto_converter", m, {type(m): "test"}), "test")
+        self.assertEqual(_format_preset_option_value("unknown_option", 5, {}), "5")
+
+    def test_build_preset_help_text(self):
+        """
+        Test the _build_preset_help_text function.
+        """
+        preset = {
+            "lns": {
+                "description": "Classic LNS using assumptions and a fixed relax rate.",
+                "relaxation": ("simple", 40),
+                "init_time_limit": 10,
+                "lns_time_limit": 5,
+                "fix": "assumptions",
+            },
+        }
+        converter_mapping = {type(mock.Mock()): "test"}
+        help_text = _build_preset_help_text(preset, converter_mapping)
+        # fmt: off
+        expected_help_text = (
+            "[lns]:\n"
+            " --relaxation=simple,40  --init-time-limit=10\n" " --lns-time-limit=5  --fix=assumptions"
+        )
+        # fmt: on
+        self.assertEqual(help_text, expected_help_text)
+
+    def test_build_preset_description_text(self):
+        """
+        Test the _build_preset_description_text function.
+        """
+        preset = {
+            "lns": {
+                "description": "Classic LNS using assumptions and a fixed relax rate.",
+                "fix": "assumptions",
+            },
+            "test": {
+                "description": "test description.",
+                "fix": "heuristics",
+            },
+        }
+        description_text = _build_preset_description_text(preset)
+        # fmt: off
+        expected_description_text = (
+            "lns: Classic LNS using assumptions and a fixed relax rate.\n"
+            "test: test description."
+        )
+        # fmt: on
+        self.assertEqual(description_text, expected_description_text)
+
     def test_parser(self):
         """
         Test the parse_args method.
@@ -394,7 +453,7 @@ class TestOptionsParser(TestCase):
                 "--solver",
                 "clingcon",
                 "--preset",
-                "basic-assumptions",
+                "lns",
                 "--seed",
                 "42",
                 "--time-limit",
@@ -471,7 +530,7 @@ class TestOptionsParser(TestCase):
         ref_ret_dict = {
             "log_level": logging.INFO,
             # "solver": ClingconSolver,
-            "preset": "basic-assumptions",
+            "preset": "lns",
             "seed": 42,
             "time_limit": 60,
             "max_steps": 100,
