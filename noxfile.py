@@ -1,7 +1,8 @@
+import nox
 import os
 from pathlib import Path
+import sys
 
-import nox
 
 nox.options.sessions = "lint_pylint", "typecheck", "test"
 
@@ -65,38 +66,29 @@ def format(session):
         black_args.insert(1, "--diff")
     session.run("black", *black_args)
 
-
 @nox.session
 def doc(session):
     """
     Build the documentation.
 
     Accepts the following arguments:
-    - open: open documentation after build
-    - clean: clean up the build folder
-    - <target> <options>: build the given <target> with the given <options>
+    - serve: open documentation after build
+    - further arguments are passed to mkbuild
     """
-    target = "html"
-    options = []
-    open_doc = "open" in session.posargs
-    clean = "clean" in session.posargs
 
+    options = session.posargs[:]
+    open_doc = "serve" in options
     if open_doc:
-        session.posargs.remove("open")
-    if clean:
-        session.posargs.remove("clean")
-
-    if session.posargs:
-        target = session.posargs[0]
-        options = session.posargs[1:]
+        options.remove("serve")
 
     session.install("-e", ".[doc]")
-    session.cd("doc")
-    if clean:
-        session.run("rm", "-rf", "_build")
-    session.run("sphinx-build", "-M", target, ".", "_build", *options)
+
     if open_doc:
-        session.run("open", "_build/html/index.html")
+        open_cmd = "xdg-open" if sys.platform == "linux" else "open"
+        session.run(open_cmd, "http://localhost:8000/")
+        session.run("zensical", "serve", *options)
+    else:
+        session.run("zensical", "build", *options)
 
 
 @nox.session
