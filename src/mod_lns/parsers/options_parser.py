@@ -130,12 +130,12 @@ def _parse_percent(
     return value
 
 
-def _parse_relaxation(string: str) -> tuple[str, int]:
+def _parse_destruction(string: str) -> tuple[str, int]:
     """
-    Parse the relaxation string.
+    Parse the destruction string.
 
     :param string: String to parse.
-    :return: Parsed relaxation type and rate.
+    :return: Parsed destruction type and rate.
     """
     if string == "declarative":
         return "declarative", 0
@@ -143,9 +143,11 @@ def _parse_relaxation(string: str) -> tuple[str, int]:
         rate_str = string.split(",", 1)[1]
         if rate_str.lower() == "auto":
             return "simple", -1
-        rate = _parse_percent(rate_str, msg="Invalid relax rate, rate must be between 0 and 100 (inclusive) or 'auto'.")
+        rate = _parse_percent(
+            rate_str, msg="Invalid destruction rate, rate must be between 0 and 100 (inclusive) or 'auto'."
+        )
         return "simple", rate
-    raise ArgumentTypeError(f"'{string}': Invalid relaxation. Choose from {{simple,<rate>|declarative}}")
+    raise ArgumentTypeError(f"'{string}': Invalid destruction. Choose from {{simple,<rate>|declarative}}")
 
 
 def _parse_parallel_mode(string: str) -> str:
@@ -431,7 +433,7 @@ def _format_preset_option_value(
     :param converter_name_by_type: Mapping from converter type to converter CLI name.
     :return: String representation suitable for CLI help output.
     """
-    if key == "relaxation" and isinstance(value, tuple):
+    if key == "destruction" and isinstance(value, tuple):
         return f"{value[0]},{value[1]}"
     if key == "auto_converter":
         return converter_name_by_type.get(type(value), str(value))
@@ -582,7 +584,7 @@ class OptionsParser:
         parser.register("type", "solve_limit", _parse_solve_limit)
         parser.register("type", "0_1_float", _parse_0_1_float)
         parser.register("type", "percent", _parse_percent)
-        parser.register("type", "relaxation", _parse_relaxation)
+        parser.register("type", "destruction", _parse_destruction)
         parser.register("type", "parallel_mode", _parse_parallel_mode)
         parser.register("type", "minimize_variable", _parse_minimize_variable)
         # parser.register("type", "falsify", parse_falsify)
@@ -882,26 +884,26 @@ class OptionsParser:
         )
 
         lns_group.add_argument(
-            "--relaxation",
+            "--destruction",
             help=_replace_default(
                 (
-                    "Set relaxation mode and rate for simple relaxation in percent [%(default)s]\n"
-                    "<rate>:      Relaxation rate between 0 and 100 or 'auto' for automatic rate.\n"
+                    "Set destruction mode and rate for simple destruction in percent [%(default)s]\n"
+                    "<rate>:      Destruction rate between 0 and 100 or 'auto' for automatic rate.\n"
                     "             See --auto-converter options for details on how the automatic rate is calculated.\n"
-                    "declarative: Use declarative relaxation, LNS configuration encoding has to be provided as input file."
+                    "declarative: Use declarative destruction, LNS configuration encoding has to be provided as input file."
                 ),
-                f"{LNSOptions.relaxation[0]},{LNSOptions.relaxation[1] if LNSOptions.relaxation[1] > 0 else 'auto'}",
+                f"{LNSOptions.destruction[0]},{LNSOptions.destruction[1] if LNSOptions.destruction[1] > 0 else 'auto'}",
             ),
             default=UNSET,
-            type="relaxation",
-            dest="relaxation",
+            type="destruction",
+            dest="destruction",
             metavar="{simple,<rate>|declarative}",
         )
 
         lns_group.add_argument(
             "--fix",
             help=_replace_default(
-                "Set method to fix non-relaxed atoms during repair [%(default)s]",
+                "Set method to fix non-destroyed atoms during repair [%(default)s]",
                 LNSOptions.fix,
             ),
             default=UNSET,
@@ -913,10 +915,10 @@ class OptionsParser:
         lns_group.add_argument(
             "--auto-converter",
             help=(
-                "Set automatic destroy percentage converter [last-improv]\n"
-                "last-improv: Set auto destroy rate based on actually relaxed atoms during last improvement.\n"
-                "avg:         Set auto destroy rate based on average percentages of relaxed atoms during all improvements.\n"
-                "Note: Used for --relaxation=simple,auto and _lns_relax_op/2 for --relaxation=declarative.\n"
+                "Set automatic destruction percentage converter [last-improv]\n"
+                "last-improv: Set auto destruction rate based on actually destroyed atoms during last improvement.\n"
+                "avg:         Set auto destruction rate based on average percentages of destroyed atoms during all improvements.\n"
+                "Note: Used for --destruction=simple,auto and _destruction_op/2 for --destruction=declarative.\n"
                 "      Best used together with --repair=heuristics"
             ),
             default=UNSET,

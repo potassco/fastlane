@@ -90,6 +90,19 @@ nav = [
   ]},
   {"Implementation" = [
     "implementation/index.md",
+    {"Interfaces" = "implementation/interfaces.md"},
+    {"LNS class" = "implementation/lns.md"},
+    {"Parsers" = [
+      "implementation/parsers/index.md",
+      {"Config Parser" = "implementation/parsers/config_parser.md"},
+      {"Options Parser" = "implementation/parsers/options_parser.md"},
+    ]},
+    {"Utilities" = [
+      "implementation/utils/index.md",
+      {"Conversions" = "implementation/utils/conversions.md"},
+      {"Logger" = "implementation/utils/logger.md"},
+      {"Types" = "implementation/utils/types.md"},
+    ]},
     {"Library Functions" = [
       "implementation/lib/index.md",
       {"Adaptive Strategies" = [
@@ -105,9 +118,9 @@ nav = [
       {"LNS Components" = [
         "implementation/lib/components/index.md",
         {"Constrained" = "implementation/lib/components/constrained.md"},
+        {"Destruction" = "implementation/lib/components/destruction.md"},
         {"Heuristics" = "implementation/lib/components/heuristics.md"},
         {"Output" = "implementation/lib/components/output.md"},
-        {"Relaxation" = "implementation/lib/components/relaxation.md"},
         {"Repair" = "implementation/lib/components/repair.md"},
         {"Utils" = "implementation/lib/components/utils.md"},
       ]},
@@ -117,17 +130,6 @@ nav = [
         {"Clingcon" = "implementation/lib/solvers/clingcon.md"},
         {"ClingoDL" = "implementation/lib/solvers/clingodl.md"},
       ]},
-    ]},
-    {"Parsers" = [
-      "implementation/parsers/index.md",
-      {"Config Parser" = "implementation/parsers/config_parser.md"},
-      {"Options Parser" = "implementation/parsers/options_parser.md"},
-    ]},
-    {"Utilities" = [
-      "implementation/utils/index.md",
-      {"Conversions" = "implementation/utils/conversions.md"},
-      {"Logger" = "implementation/utils/logger.md"},
-      {"Types" = "implementation/utils/types.md"},
     ]},
   ]},
   {"Community" = [

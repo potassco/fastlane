@@ -16,7 +16,7 @@ via the provided presets.
 
         # general options
         solver: Solver = ClingoSolver()             # Solver to be used
-        seed: Optional[int] = None                  # Seed used for both solving and random relaxation
+        seed: Optional[int] = None                  # Seed used for both solving and random destruction
         time_limit: Optional[int] = None            # Overall time limit for the search in seconds
         max_steps: Optional[int] = None             # Step limit for the search
         status_interval: int = 50                   # Interval in steps for logging the current status
@@ -46,16 +46,16 @@ via the provided presets.
 
         # lns configuration
         constrained: bool = False                   # Use constrained LNS approach
-        relaxation: tuple[str, int] = ("simple", 20) 
-                                                    # Relaxation approach ["simple","declarative"] and
-                                                    # relaxation percent for "simple" relaxation,
-                                                    # "auto" for automatic relax rate
+        destruction: tuple[str, int] = ("simple", 20) 
+                                                    # Destruction approach ["simple","declarative"] and
+                                                    # destruction percent for "simple" destruction,
+                                                    # "auto" for automatic destruction rate
         auto_converter: AutoDestructionConverter = LastImprovementDestructionConverter()
                                                     # Automatic destroy percentage converter
         fix: str = "assumptions"                    # How to fix atoms ["assumptions", "heuristics"]
         accept_variability: int = 0                 # New solution is accepted if given variability between
                                                     # new and current solution is achieved in percent,
-                                                    # 0 = always accept, should be lower than relax rate
+                                                    # 0 = always accept, should be lower than destruction rate
         accept_improvement: int = 0                 # New solution is accepted if threshold is passed in percent
                                                     # 20 = solution can be upto 20% worse and still accepted
                                                     # 0 = solution has to be strictly better

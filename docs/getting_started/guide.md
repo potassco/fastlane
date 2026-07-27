@@ -29,7 +29,7 @@ meets(P1,P2,W) :- plays(P1,W,G), plays(P2,W,G), P1 < P2.
 #show plays/3.
 ```
 
-Additionally, for declarative relaxation an example configuration can be found in
+Additionally, for declarative destruction an example configuration can be found in
 [`./examples/golf_config.lp`][golf_config].
 The first two lines define the project operator `plays_3` with the signature `(plays,3)`
 and project all `plays/3` atoms using said operator.
@@ -135,7 +135,7 @@ During the search the initial optimization value of 7 is reduced step by step by
 classic LNS approach:
 
 - Find the initial solution in 2s with cost 7
-- Relax 40% of the atoms of the initial solution (randomly chosen)
+- Destroy 40% of the atoms of the initial solution (randomly chosen)
 - Find a new solution with no time limit using the remaining 60% of atoms as assumptions
   (since we wait until the search is finished the new solution is a local optimum and can
   never be worse than the previous solutions (worst case, the previous solution is found
@@ -184,13 +184,13 @@ to dynamically choose the most optimal destruction rate.
 ## Advanced
 
 ### Declarative Destruction, ALNS and ALNPS
-All of the above approaches use fully random relaxation, i.e. atoms to be fixed are
-randomly selected from all shown atoms. We can enable declarative relaxation to define
+All of the above approaches use fully random destruction, i.e. atoms to be fixed are
+randomly selected from all shown atoms. We can enable declarative destruction to define
 a set of atoms from which our fixed atoms are randomly chosen. This is done through an
 additional config encoding, as shown above in the [encoding](#encoding) section.
 This also enables the use of adaptive approaches ALNS and ALNPS.
 
-To use declarative destruction with classic LNS or LNPS simply use the `--relaxation=declarative`
+To use declarative destruction with classic LNS or LNPS simply use the `--destruction=declarative`
 option and the `static` strategy, which always selects the config first defined,
 in the config encoding.
 
@@ -232,18 +232,18 @@ DEBUG:  - Selected LNPS configuration: Random20[project_operators={plays_3[(play
 
 One purpose of this framework is to allow users to easily modify and/or create new LNS
 components. Lets try modifying the `LNS` class so that fixed atoms are printed
-and we can observe the declarative relaxation.
+and we can observe the declarative destruction.
 
 To do so we create a new class called `NewLNS` by inheriting the
-`LNS` and overwrite the `relax` method with our new functionality:
+`LNS` and overwrite the `destroy` method with our new functionality:
 
 ```python
 from mod_lns.lns import LNS
 from mod_lns.utils.conversions import symbol_to_str
 
 class NewLNS(LNS):
-    def relax(self, lns_object):
-        r = super().relax(lns_object)
+    def destroy(self, lns_object):
+        r = super().destroy(lns_object)
         for s in r:
             print(symbol_to_str(s))
         print("--")
@@ -255,7 +255,7 @@ lns = LNS(
         "seed": 42,
         "init_time_limit": 2,
         "lns_time_limit": 2,
-        "relaxation": ("declarative",0),
+        "destruction": ("declarative",0),
         "max_steps": 3,
     }
 )

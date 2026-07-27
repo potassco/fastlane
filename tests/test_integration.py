@@ -81,7 +81,7 @@ class TestIntegrationClingo(TestCase):
         """
         Test basic execution.
         """
-        self.config.relaxation = ("simple", 40)
+        self.config.destruction = ("simple", 40)
         self.config.fix = "assumptions"
         self.config.default_adaptive_strategy_name = "static"
         lns, output = self._run_lns(["./tests/ref/golf.lp"])
@@ -92,7 +92,7 @@ class TestIntegrationClingo(TestCase):
         """
         Test execution using auto relaxation and heuristics.
         """
-        self.config.relaxation = ("simple", "auto")
+        self.config.destruction = ("simple", "auto")
         self.config.fix = "heuristics"
         self.config.default_adaptive_strategy_name = "static"
         lns, output = self._run_lns(["./tests/ref/golf.lp"])
@@ -103,7 +103,7 @@ class TestIntegrationClingo(TestCase):
         """
         Test execution using declarative relaxation and heuristics.
         """
-        self.config.relaxation = ("declarative", 0)
+        self.config.destruction = ("declarative", 0)
         self.config.fix = "heuristics"
         self.config.default_adaptive_strategy_name = "roulette"
         lns, output = self._run_lns(["./tests/ref/golf.lp", "./tests/ref/golf_config.lp"])
@@ -114,7 +114,7 @@ class TestIntegrationClingo(TestCase):
         """
         Test execution with a bigger instance.
         """
-        self.config.relaxation = ("simple", "auto")
+        self.config.destruction = ("simple", "auto")
         self.config.auto_converter = AverageDestructionConverter()
         self.config.fix = "heuristics"
         lns, output = self._run_lns(["./tests/ref/golf_big.lp"])

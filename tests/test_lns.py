@@ -282,9 +282,9 @@ class TestLNS(TestCase):
         self.lns._active_config = {"prioritize_operators": [{"name": "5_sign", "value": 5, "modifier": "sign"}]}
         self.assertTrue(self.lns._check_variability())
 
-    def test_pre_relax(self):
+    def test_pre_destroy(self):
         """
-        Test the pre_relax method.
+        Test the pre_destroy method.
         """
         self.lns._printout = True
         self.lns._is_variable = False
@@ -304,7 +304,7 @@ class TestLNS(TestCase):
             mock.patch.object(self.lns, "_check_variability", return_value=True) as mock_check,
             mock.patch("mod_lns.lns.ConfigParser.get_op_specs", return_value=specs) as mock_get_specs,
         ):
-            self.lns.pre_relax()
+            self.lns.pre_destroy()
 
             mock_check.assert_called_once()
             mock_get_specs.assert_called_once_with(model)
@@ -312,9 +312,9 @@ class TestLNS(TestCase):
             self.assertTrue(self.lns._is_variable)
             self.assertDictEqual(self.lns._op_specs, specs)
 
-    def test_relax(self):
+    def test_destroy(self):
         """
-        Test the relax method.
+        Test the destroy method.
         """
         r_set = {Function("plays", [Number(1), Number(2), Number(3)], True)}
         model = mock.Mock()
@@ -324,10 +324,10 @@ class TestLNS(TestCase):
         self.lns._active_config = config
         self.lns._op_specs = specs
 
-        with mock.patch("mod_lns.lns.relax_config", return_value=r_set) as mock_relax:
-            result = self.lns.relax()
+        with mock.patch("mod_lns.lns.destroy_config", return_value=r_set) as mock_destroy:
+            result = self.lns.destroy()
 
-            mock_relax.assert_called_once_with(model, config, specs, self.lns.logger)
+            mock_destroy.assert_called_once_with(model, config, specs, self.lns.logger)
             self.assertEqual(result, r_set)
 
     def test_prepare_lns_solver_config(self):
@@ -613,8 +613,8 @@ class TestLNS(TestCase):
             ) as mock_get_first_solution,
             mock.patch.object(self.lns, "post_first_solution") as mock_post_first_solution,
             mock.patch.object(self.lns, "check_stop", side_effect=[False, True]) as mock_check_stop,
-            mock.patch.object(self.lns, "pre_relax") as mock_pre_relax,
-            mock.patch.object(self.lns, "relax", return_value={Function("a")}) as mock_relax,
+            mock.patch.object(self.lns, "pre_destroy") as mock_pre_destroy,
+            mock.patch.object(self.lns, "destroy", return_value={Function("a")}) as mock_destroy,
             mock.patch.object(self.lns, "repair", return_value=repaired_model) as mock_repair,
             mock.patch.object(self.lns, "post_repair") as mock_post_repair,
             mock.patch.object(self.lns, "check_accept", return_value=True) as mock_check_accept,
@@ -633,8 +633,8 @@ class TestLNS(TestCase):
             mock_post_first_solution.assert_called_once()
 
             self.assertEqual(mock_check_stop.call_count, 2)
-            mock_pre_relax.assert_called_once()
-            mock_relax.assert_called_once()
+            mock_pre_destroy.assert_called_once()
+            mock_destroy.assert_called_once()
             mock_repair.assert_called_once()
             mock_post_repair.assert_called_once()
             mock_check_accept.assert_called_once()

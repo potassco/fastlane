@@ -1,5 +1,5 @@
 """
-Different relaxation methods for LNS.
+Different destruction methods for LNS.
 """
 
 import random
@@ -15,19 +15,19 @@ from mod_lns.utils.types import ActiveConfig
 LINE = "-" * 50
 
 
-# unused default relaxation method, can be used for testing
-def relax_random(
+# unused default destruction method, can be used for testing
+def destroy_random(
     model: Model,
-    relax_rate: int,
+    destruction_rate: int,
 ) -> set[Symbol]:
     """
-    Relax random number of shown atoms given by the relax_rate.
+    Destroy random number of shown atoms given by the destruction_rate.
 
     :param model: model.
-    :param relax_rate: Percentage of atoms to relax.
-    :return: Fixed (not relaxed) atoms.
+    :param destruction_rate: Percentage of atoms to destroy.
+    :return: Fixed (not destroyed) atoms.
     """
-    fixed_atoms = random.sample(sorted(model.shown), round(len(model.shown) * (1 - relax_rate / 100)))
+    fixed_atoms = random.sample(sorted(model.shown), round(len(model.shown) * (1 - destruction_rate / 100)))
     return set(fixed_atoms)
 
 
@@ -173,14 +173,14 @@ def _destroy(
     return prioritized_atoms
 
 
-def relax_config(model: Model, config: ActiveConfig, op_specs: dict[str, set[Symbol]], logger: Logger) -> set[Symbol]:
+def destroy_config(model: Model, config: ActiveConfig, op_specs: dict[str, set[Symbol]], logger: Logger) -> set[Symbol]:
     """
-    Relax portion of atoms as defined by LNS configuration.
+    Destroy portion of atoms as defined by LNS configuration.
 
     :param config: Active configuration.
     :param op_specs: Operator specifications.
     :param logger: Logger instance.
-    :return: Set of heuristic atoms
+    :return: Set of non destroyed atoms
     """
     projected = _project(model, config["project_operators"], op_specs, logger)
     return _destroy(config["destroy_operators"], op_specs, projected, logger)

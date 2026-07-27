@@ -13,9 +13,9 @@ from mod_lns.interfaces.adaptive_strategy import AdaptiveStrategy
 from mod_lns.interfaces.solver import SolverConfig
 from mod_lns.lib.adaptive_strategies.static import StaticStrategy
 from mod_lns.lib.components.constrained import get_opt_bound
+from mod_lns.lib.components.destruction import destroy_config
 from mod_lns.lib.components.heuristics import generate_heuristic_subprogram, get_fixed_atoms_heuristics
 from mod_lns.lib.components.output import get_output_format
-from mod_lns.lib.components.relaxation import relax_config
 from mod_lns.lib.components.repair import repair_assumptions, repair_heuristics
 from mod_lns.lib.components.utils import (
     calculate_variability,
@@ -250,9 +250,9 @@ class LNS:
                 return False
         return True
 
-    def pre_relax(self) -> None:
+    def pre_destroy(self) -> None:
         """
-        Load operator specifications and check variability of the configuration before relaxation.
+        Load operator specifications and check variability of the configuration before destruction.
         """
         self._printout = False
 
@@ -260,13 +260,13 @@ class LNS:
 
         self._op_specs = ConfigParser.get_op_specs(self.current_model)
 
-    def relax(self) -> set[Symbol]:
+    def destroy(self) -> set[Symbol]:
         """
-        Relax portion of atoms.
+        Destroy portion of atoms.
 
-        :return: Fixed (not relaxed) atoms.
+        :return: Fixed (not destroyed) atoms.
         """
-        return relax_config(self.current_model, self._active_config, self._op_specs, self.logger)
+        return destroy_config(self.current_model, self._active_config, self._op_specs, self.logger)
 
     def _prepare_lns_solver_config(self) -> None:
         """
@@ -494,8 +494,8 @@ class LNS:
         # c = first_sol()
         # post_first_sol()
         # while check_stop()
-        #   pre_relax()
-        #   n = repair(relax(c))
+        #   pre_destroy()
+        #   n = repair(destroy(c))
         #   post_repair()
         #   check_accept(n)
         #       c = n
@@ -542,16 +542,16 @@ class LNS:
 
             self.logger.debug(LINE)
             self.logger.debug("iteration: %s", self.step_c)
-            self.logger.debug("pre_relax")
-            self.pre_relax()
+            self.logger.debug("pre_destroy")
+            self.pre_destroy()
 
             self.logger.debug(LINE)
-            self.logger.debug("relax")
-            fixed_atoms = self.relax()
+            self.logger.debug("destroy")
+            fixed_atoms = self.destroy()
 
             self.logger.debug(LINE)
             self.logger.debug(
-                "repair with %s fixed atoms (%.2f%% relaxed)",
+                "repair with %s fixed atoms (%.2f%% destroyed)",
                 len(fixed_atoms),
                 (len(self.current_model.shown) - len(fixed_atoms)) / len(self.current_model.shown) * 100,
             )

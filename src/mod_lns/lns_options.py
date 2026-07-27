@@ -66,11 +66,11 @@ class LNSOptions:
     :param init_opt_mode: Optimization mode for initial solving.
     :param constrained: Whether to use constrained LNS,
         Short-hand for lns-opt-mode={"mode": "opt", "nf": 0, "modifier": "dynamic"}.
-    :param relaxation: Relaxation type and rate.
-    :param _declarative: Whether to use declarative relaxation.
-        Can cause issue when set directly, use relaxation attribute.
-    :param _relax_rate: Relaxation rate for simple relaxation.
-        Can cause issue when set directly, use relaxation attribute.
+    :param destruction: Destruction type and rate.
+    :param _declarative: Whether to use declarative destruction.
+        Can cause issue when set directly, use destruction attribute.
+    :param _destruction_rate: Destruction rate for simple destruction.
+        Can cause issue when set directly, use destruction attribute.
     :param auto_converter: Converter for computing destruction percentages of auto-mode destroy operators.
     :param fix: How to fix atoms during repair.
     :param accept_variability: Required variability for accepting new model in percent.
@@ -135,10 +135,10 @@ class LNSOptions:
 
     # lns configuration
     constrained: bool = False  # covered by lns_opt_mode
-    # set via --relaxation=[simple,[rate],declarative]
-    relaxation: tuple[str, int] = ("simple", 40)
-    _declarative: bool = False  # dont set directly, use relaxation attribute
-    _relax_rate: int = 40  # dont set directly, use relaxation attribute
+    # set via --destruction=[simple,[rate],declarative]
+    destruction: tuple[str, int] = ("simple", 40)
+    _declarative: bool = False  # dont set directly, use destruction attribute
+    _destruction_rate: int = 40  # dont set directly, use destruction attribute
     # converter default has to be set manually in parser
     auto_converter: AutoDestructionConverter = field(default_factory=LastImprovementDestructionConverter)
     fix: str = "assumptions"  # "assumptions", "heuristics"
@@ -168,15 +168,15 @@ class LNSOptions:
     # configuration values
     preset_values: ClassVar[dict[str, dict[str, Any]]] = {
         "lns": {
-            "description": "Classic LNS using assumptions and a fixed relax rate.",
-            "relaxation": ("simple", 40),
+            "description": "Classic LNS using assumptions and a fixed destruction rate.",
+            "destruction": ("simple", 40),
             "init_time_limit": 10,
             "lns_time_limit": 5,
             "fix": "assumptions",
         },
         "lnps": {
-            "description": "LNPS using heuristics and an automatically calculated relax rate (heulingo).",
-            "relaxation": ("simple", "auto"),
+            "description": "LNPS using heuristics and an automatically calculated destruction rate (heulingo).",
+            "destruction": ("simple", "auto"),
             "init_time_limit": None,
             "init_solve_limit": "2500000,5000",
             "lns_time_limit": None,
@@ -185,7 +185,7 @@ class LNSOptions:
         },
         "alns": {
             "description": "ALNS using assumptions and an adaptive strategy. Config encoding is required!",
-            "relaxation": ("declarative", 0),
+            "destruction": ("declarative", 0),
             "init_time_limit": 10,
             "lns_time_limit": 5,
             "fix": "assumptions",
@@ -199,7 +199,7 @@ class LNSOptions:
                 f"ALNPS using heuristics and an adaptive strategy (adaptive heulingo).\n"
                 f"{' '*(len('alnps')+2)}Config encoding is required!"
             ),
-            "relaxation": ("declarative", 0),
+            "destruction": ("declarative", 0),
             "init_cutoff": 10,
             "lns_cutoff": 5,
             "lns_cutoff_threshold": 2,
@@ -292,8 +292,8 @@ class LNSOptions:
             value = getattr(self, field_obj.name)
             if value is UNSET:
                 setattr(self, field_obj.name, None)
-        self._declarative = self.relaxation[0] == "declarative"
-        self._relax_rate = self.relaxation[1] if isinstance(self.relaxation[1], int) else -1
+        self._declarative = self.destruction[0] == "declarative"
+        self._destruction_rate = self.destruction[1] if isinstance(self.destruction[1], int) else -1
         if self.constrained and self.lns_opt_mode["mode"] is None:
             self.lns_opt_mode["mode"] = "opt"
             self.lns_opt_mode["modifier"] = "dynamic"

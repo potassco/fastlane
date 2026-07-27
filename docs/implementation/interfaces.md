@@ -14,7 +14,7 @@ This interface gives guidelines on how to implement adaptive strategies for adap
 
 ## Auto Destruction Converter
 
-All custom auto destruction converters (for determining relax rates automatically) should
+All custom auto destruction converters (for determining destruction rates automatically) should
 respect the this interface.
 
 ::: mod_lns.interfaces.auto_destruction_converter.AutoDestructionConverter

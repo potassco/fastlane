@@ -7,32 +7,32 @@ from unittest import TestCase, mock
 from clingo.symbol import Function, Number, String, Tuple_
 
 from mod_lns import Model
-from mod_lns.lib.components.relaxation import (
+from mod_lns.lib.components.destruction import (
     _destroy,
     _destroy_atoms_if_all_args_selected,
     _destroy_atoms_if_term_selected,
     _project,
+    destroy_config,
+    destroy_random,
     format_atoms,
-    relax_config,
-    relax_random,
 )
 from mod_lns.utils.types import ActiveConfig
 
 
-class TestRelaxationComponents(TestCase):
+class TestDestructionComponents(TestCase):
     """
-    Test cases for the relaxation component.
+    Test cases for the destruction component.
     """
 
-    def test_relax_random(self):
+    def test_destroy_random(self):
         """
-        Test relax_random function.
+        Test destroy_random function.
         """
         model = Model()
         model.shown = {Function("a", [Number(1)]), Function("b", [Number(2), Number(3)])}
         model.true = {Function("a", [Number(1)]), Function("b", [Number(2), Number(3)]), Function("c")}
-        relax_rate = 50
-        fixed_atoms = relax_random(model, relax_rate)
+        destruction_rate = 50
+        fixed_atoms = destroy_random(model, destruction_rate)
         self.assertEqual(len(fixed_atoms), 1)
 
     def test_format_atoms(self):
@@ -67,7 +67,7 @@ class TestRelaxationComponents(TestCase):
         }
 
         with mock.patch(
-            "mod_lns.lib.components.relaxation.ConfigParser.get_projected_atoms", return_value=projected_atoms
+            "mod_lns.lib.components.destruction.ConfigParser.get_projected_atoms", return_value=projected_atoms
         ) as mock_get_projected_atoms:
             project_operators = [{"name": "plays_3"}]
             self.assertSetEqual(_project(model, project_operators, op_specs, mock.Mock()), projected_atoms)
@@ -146,7 +146,7 @@ class TestRelaxationComponents(TestCase):
             {"atom": Function("plays", [Number(4), Number(5), Number(6)], True), "term": Number(4)},
         ]
         with mock.patch(
-            "mod_lns.lib.components.relaxation.ConfigParser.get_atom_term_pairs", return_value=atom_term_pairs
+            "mod_lns.lib.components.destruction.ConfigParser.get_atom_term_pairs", return_value=atom_term_pairs
         ) as mock_get_atom_term_pairs:
             # 3 projected atoms, 2 with destroy operators, 1 destroyed -> 2 remaining
             self.assertEqual(len(_destroy(destroy_operators, op_specs, projected_atoms, mock.Mock())), 2)
@@ -215,7 +215,7 @@ class TestRelaxationComponents(TestCase):
             },
         ]
         with mock.patch(
-            "mod_lns.lib.components.relaxation.ConfigParser.get_atom_term_pairs", return_value=atom_term_pairs
+            "mod_lns.lib.components.destruction.ConfigParser.get_atom_term_pairs", return_value=atom_term_pairs
         ) as mock_get_atom_term_pairs:
             # 3 projected atoms, 2 with destroy operators, 1 destroyed -> 2 remaining
             self.assertEqual(len(_destroy(destroy_operators, op_specs, projected_atoms, mock.Mock())), 2)
@@ -235,9 +235,9 @@ class TestRelaxationComponents(TestCase):
         logger = mock.Mock()
         projected = {Function("test_atom", [Number(1)])}
         with (
-            mock.patch("mod_lns.lib.components.relaxation._project", return_value=projected) as mock_project,
-            mock.patch("mod_lns.lib.components.relaxation._destroy") as mock_destroy,
+            mock.patch("mod_lns.lib.components.destruction._project", return_value=projected) as mock_project,
+            mock.patch("mod_lns.lib.components.destruction._destroy") as mock_destroy,
         ):
-            relax_config(model, config, op_specs, logger)
+            destroy_config(model, config, op_specs, logger)
             mock_project.assert_called_once_with(model, config["project_operators"], op_specs, logger)
             mock_destroy.assert_called_once_with(config["destroy_operators"], op_specs, projected, logger)

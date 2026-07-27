@@ -452,8 +452,8 @@ class ConfigParser:
         project_operators = cls._parse_project_operator(solver, declarative)
         destroy_operators = cls._parse_destroy_operators(solver, declarative)
         if not declarative:
-            if options._relax_rate > 0:
-                dest_op = [{"type": "p", "value": options._relax_rate}]
+            if options._destruction_rate > 0:
+                dest_op = [{"type": "p", "value": options._destruction_rate}]
             else:
                 dest_op = [{"type": "auto", "value": None}]
             destroy_operators = {"default": dest_op}

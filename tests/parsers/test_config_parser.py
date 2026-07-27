@@ -412,7 +412,7 @@ class TestConfigParser(TestCase):
             )
         # declarative = False
         options._declarative = False
-        options._relax_rate = 30
+        options._destruction_rate = 30
         with (
             mock.patch.object(
                 ConfigParser, "_parse_project_operator", return_value={"plays_3": {("plays", 3)}}
@@ -460,14 +460,14 @@ class TestConfigParser(TestCase):
                             "project_operators": ["plays_3"],
                         }
                     },
-                    "destroy_operators": {"default": [{"type": "p", "value": options._relax_rate}]},
+                    "destroy_operators": {"default": [{"type": "p", "value": options._destruction_rate}]},
                     "prioritize_operators": {"default": {"value": 1, "modifier": "true"}},
                     "project_operators": {"plays_3": {("plays", 3)}},
                     "strategy": "default",
                 },
             )
-        # declarative = False, relax_rate = 0
-        options._relax_rate = 0
+        # declarative = False, destruction_rate = 0
+        options._destruction_rate = 0
         with (
             mock.patch.object(
                 ConfigParser, "_parse_project_operator", return_value={"plays_3": {("plays", 3)}}

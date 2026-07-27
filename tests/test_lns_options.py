@@ -98,14 +98,14 @@ class TestLNSOptions(TestCase):
         Test the prepare method.
         """
         self.lns_options.time_limit = UNSET
-        self.lns_options.relaxation = ("declarative", 20)
+        self.lns_options.destruction = ("declarative", 20)
         self.lns_options.constrained = True
         self.lns_options.lns_solve_limit_increase_rate = -20
         self.lns_options.lns_time_limit_increase_rate = 200
         self.lns_options.prepare()
         self.assertIsNone(self.lns_options.time_limit)
         self.assertTrue(self.lns_options._declarative)
-        self.assertEqual(self.lns_options._relax_rate, 20)
+        self.assertEqual(self.lns_options._destruction_rate, 20)
         self.assertDictEqual(self.lns_options.lns_opt_mode, {"mode": "opt", "nf": "0", "modifier": "dynamic"})
         self.assertEqual(self.lns_options.lns_solve_limit_increase_rate, 0)
         self.assertEqual(self.lns_options.lns_time_limit_increase_rate, 100)

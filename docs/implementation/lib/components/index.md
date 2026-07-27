@@ -3,15 +3,15 @@
 A collection of LNS relevant grouped by their use:
 
 - [constrained]
+- [destruction]
 - [heuristics]
 - [output]
-- [relaxation]
 - [repair]
 - [utils]
 
 [constrained]: constrained.md
+[destruction]: destruction.md
 [heuristics]: heuristics.md
 [output]: output.md
-[relaxation]: relaxation.md
 [repair]: repair.md
 [utils]: utils.md

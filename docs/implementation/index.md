@@ -1,9 +1,16 @@
 Implementation
 ===============
 
-In this section one can find descriptions to the provided [interfaces][inter_ref],
-the [LNS class][lns_ref] and all [library functions and classes][lib_ref].
+In this section one can find descriptions to:
 
-[inter_ref]: ./interfaces.md
-[lns_ref]: ./lns.md
-[lib_ref]: ./lib/index.md
+ - [Interfaces]
+ - [LNS class]
+ - [Parsers]
+ - [Utility functions]
+ - [Library functions and classes]
+
+[Interfaces]: ./interfaces.md
+[LNS class]: ./lns.md
+[Parsers]: ./parsers/index.md
+[Utility functions]: ./utils/index.md
+[Library functions and classes]: ./lib/index.md

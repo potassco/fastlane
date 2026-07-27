@@ -50,7 +50,7 @@ The same search can be performed through the command line as follows:
 The encodings should contain some kind of optimization statement or soft constraint. The lns framework will work
 with the solution cost derived by the solver.
 
-When using `--relaxation=declarative`, additional helper atoms must be specified. These include:
+When using `--destruction=declarative`, additional helper atoms must be specified. These include:
 ```
 _project_op(ID,S).       % ID: identifier, S: signature 
 _project(ID,A).          % ID: identifier, A: affected atom

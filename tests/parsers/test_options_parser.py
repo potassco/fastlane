@@ -22,6 +22,7 @@ from mod_lns.parsers.options_parser import (
     _parse_auto_converter,
     _parse_configuration,
     _parse_context,
+    _parse_destruction,
     _parse_heuristic,
     _parse_init_opt_mode,
     _parse_lns_opt_mode,
@@ -32,7 +33,6 @@ from mod_lns.parsers.options_parser import (
     _parse_percent,
     _parse_pos_int,
     _parse_pos_int_or_none,
-    _parse_relaxation,
     _parse_solve_limit,
     _parse_solver,
     _replace_default,
@@ -126,19 +126,19 @@ class TestOptionsParser(TestCase):
         with self.assertRaises(ArgumentTypeError):
             _parse_percent("abc")
 
-    def test_parse_relaxation(self):
+    def test_parse_destruction(self):
         """
-        Test the _parse_relaxation function.
+        Test the _parse_destruction function.
         """
-        self.assertEqual(_parse_relaxation("declarative"), ("declarative", 0))
-        self.assertEqual(_parse_relaxation("simple,20"), ("simple", 20))
-        self.assertEqual(_parse_relaxation("simple,auto"), ("simple", -1))
+        self.assertEqual(_parse_destruction("declarative"), ("declarative", 0))
+        self.assertEqual(_parse_destruction("simple,20"), ("simple", 20))
+        self.assertEqual(_parse_destruction("simple,auto"), ("simple", -1))
         with self.assertRaises(ArgumentTypeError):
-            _parse_relaxation("None")
+            _parse_destruction("None")
         with self.assertRaises(ArgumentTypeError):
-            _parse_relaxation("simple,-1")
+            _parse_destruction("simple,-1")
         with self.assertRaises(ArgumentTypeError):
-            _parse_relaxation("declarative,20")
+            _parse_destruction("declarative,20")
 
     def test_parse_parallel_mode(self):
         """
@@ -343,7 +343,7 @@ class TestOptionsParser(TestCase):
         Test the _format_preset_option_value function.
         """
         m = mock.Mock()
-        self.assertEqual(_format_preset_option_value("relaxation", ("simple", 20), {}), "simple,20")
+        self.assertEqual(_format_preset_option_value("destruction", ("simple", 20), {}), "simple,20")
         self.assertEqual(_format_preset_option_value("auto_converter", m, {type(m): "test"}), "test")
         self.assertEqual(_format_preset_option_value("unknown_option", 5, {}), "5")
 
@@ -353,8 +353,8 @@ class TestOptionsParser(TestCase):
         """
         preset = {
             "lns": {
-                "description": "Classic LNS using assumptions and a fixed relax rate.",
-                "relaxation": ("simple", 40),
+                "description": "Classic LNS using assumptions and a fixed destruction rate.",
+                "destruction": ("simple", 40),
                 "init_time_limit": 10,
                 "lns_time_limit": 5,
                 "fix": "assumptions",
@@ -365,7 +365,7 @@ class TestOptionsParser(TestCase):
         # fmt: off
         expected_help_text = (
             "[lns]:\n"
-            " --relaxation=simple,40  --init-time-limit=10\n" " --lns-time-limit=5  --fix=assumptions"
+            " --destruction=simple,40  --init-time-limit=10\n" " --lns-time-limit=5  --fix=assumptions"
         )
         # fmt: on
         self.assertEqual(help_text, expected_help_text)
@@ -376,7 +376,7 @@ class TestOptionsParser(TestCase):
         """
         preset = {
             "lns": {
-                "description": "Classic LNS using assumptions and a fixed relax rate.",
+                "description": "Classic LNS using assumptions and a fixed destruction rate.",
                 "fix": "assumptions",
             },
             "test": {
@@ -387,7 +387,7 @@ class TestOptionsParser(TestCase):
         description_text = _build_preset_description_text(preset)
         # fmt: off
         expected_description_text = (
-            "lns: Classic LNS using assumptions and a fixed relax rate.\n"
+            "lns: Classic LNS using assumptions and a fixed destruction rate.\n"
             "test: test description."
         )
         # fmt: on
@@ -424,7 +424,7 @@ class TestOptionsParser(TestCase):
                 "lex_weight": UNSET,
                 "learning_rate": UNSET,
                 "constrained": UNSET,
-                "relaxation": UNSET,
+                "destruction": UNSET,
                 "fix": UNSET,
                 "auto_converter": UNSET,
                 "accept_variability": UNSET,
@@ -488,7 +488,7 @@ class TestOptionsParser(TestCase):
                 "--learning-rate",
                 "0.1",
                 "--constrained",
-                "--relaxation",
+                "--destruction",
                 "simple,20",
                 "--fix",
                 "assumptions",
@@ -550,7 +550,7 @@ class TestOptionsParser(TestCase):
             "lex_weight": 10,
             "learning_rate": 0.1,
             "constrained": True,
-            "relaxation": ("simple", 20),
+            "destruction": ("simple", 20),
             "fix": "assumptions",
             # "auto_converter": "last-improv",
             "accept_variability": 20,
