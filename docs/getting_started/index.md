@@ -4,7 +4,7 @@ This framework can be used both as a command line tool and as a python module.
 When using as a command line tool use the `-h` flag to see all available options:
 
 ```bash
-    mod_lns -h
+mod_lns -h
 ```
 
 The framework currently supports implementation of the clingo, clingo-dl and clingcon solvers,
@@ -26,23 +26,23 @@ An example of the LNS initialization can be seen below or in [`./examples/demo.p
 For a more detailed and step by step introduction to the framework, check out the [guide].
 
 ```python
-    from mod_lns.lns import LNS
-    from mod_lns.lns_options import LNS
+from mod_lns.lns import LNS
+from mod_lns.lns_options import LNS
 
-    options = LNSOptions(seed=42)
-    lns = LNS(
-        ["./examples/golf.lp"],         # ASP encoding
-        {                               # set additional parameters
-            "time_limit": 60,           # overall time limit in seconds
-        }
-        options,                        # LNSOptions object containing defaults
-    )
+options = LNSOptions(seed=42)
+lns = LNS(
+    ["./examples/golf.lp"],         # ASP encoding
+    {                               # set additional parameters
+        "time_limit": 60,           # overall time limit in seconds
+    }
+    options,                        # LNSOptions object containing defaults
+)
 ```
 
 The same search can be performed through the command line as follows:
 
 ```bash
-    mod_lns --seed=42 --time-limit=60 ./examples/golf.lp 
+mod_lns --seed=42 --time-limit=60 ./examples/golf.lp 
 ```
 
 ## Encodings
@@ -64,46 +64,16 @@ _strategy(ID,CID)        % ID: identifier, CID: config id
 An example config encoding for the social golfer problem can be found in [`./examples/golf_config.lp`][golf_config].
 A more complex example can be found in [`./examples/portfolio.lp`][portfolio].
 
-## Benchmark-tool
+## Benchmark-Tool
 
-The `benchmark-tool` directory contains a collection of scripts and files used to run this framework
-with the [poatssco-benchmark-tool].
-
-### Usage
-
-- Install the benchmark-tool (>v2.0.0)
-- Copy files from the :code:`benchmark-tool` folder to the corresponding folders inside the benchmark-tool
-  directory structure
-- Modify one of the provided runscripts to fit your use-case
-- Make sure mod_lns is correctly installed in a conda environment
-- For benchmarking on a cluster (dist jobs), set the correct environment inside `./templates/single.dist`
-- Otherwise set the conda environment inside the `./programs/mod_lns-conda` script
-
-- All following steps assume you are inside the benchmark-tool folder created by the benchmark-tool
-- Generate a start script using:
-
-```bash
-    btool gen ./runscripts/runscript-dist-lns.xml
-```
-
-- Start the benchmarks by executing either the `start.sh` or `start.py` file found in the
-  machine subfolder of the generated structure
-- Evaluate the benchmarks using:
-
-```bash
-    btool eval ./runscripts/runscript-dist-lns.xml | bconv -m "time:t,optimum" -o results.xlsx
-```
-
-- The `-m` option accepts a comma-separated list of measures in the form `name[:{t,to,-}]` to be included
-  in the table (optional argument determines coloring)
-- All supported measures are defined in the resultparser
-- For more information check the benchmark-tool [documentation].
+The [benchmark-tool] section provides some guidelines and examples on how to use this framework with
+the [potassco-benchmark-tool].
 
 [implementation]: ../implementation/index.md
 [interfaces]: ../implementation/interfaces.md
 [guide]: guide.md
 [potassco-benchmark-tool]: https://potassco.org/benchmark-tool/
-[documentation]: https://docs.potassco.org/benchmark-tool/
 [demo]: examples/demo.md
 [golf_config]: examples/golf_config.md
 [portfolio]: examples/portfolio.md
+[benchmark-tool]: benchmark-tool/index.md
