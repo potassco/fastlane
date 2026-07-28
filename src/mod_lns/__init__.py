@@ -35,11 +35,10 @@ class Model:
     """
     Simplified Model class
 
-    Attributes:
-        shown (set[Symbol]): Set of shown atoms.
-        true (set[Symbol]): Set of true atoms.
-        cost (list[int]): List of costs.
-        assignments (list[str]): List of assignments.
+    :ivar shown: Set of shown atoms.
+    :ivar true: Set of true atoms.
+    :ivar cost: List of costs.
+    :ivar assignments: List of assignments.
     """
 
     def __init__(self) -> None:
@@ -75,6 +74,11 @@ class Model:
 class Timer:
     """
     Timer class for measuring time intervals.
+
+    :ivar _started: Indicates if the timer has started.
+    :ivar _ringing: Indicates if the timer is ringing (time limit reached).
+    :ivar _start_time: The time when the timer was started.
+    :ivar _time_limit: The time limit in seconds (None for no limit).
     """
 
     def __init__(self) -> None:

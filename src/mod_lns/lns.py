@@ -4,6 +4,7 @@ A modifiable large neighborhood search framework.
 
 import math
 import random
+from logging import Logger
 from typing import Any, Optional
 
 from clingo import Symbol
@@ -37,9 +38,25 @@ class LNS:
     """
     Class handling and performing LNS.
 
-    :param files: Problem encodings.
-    :param args: Parsed arguments.
-    :param options: LNSOptions object.
+    :ivar options: LNSOptions object.
+    :ivar logger: Logger object.
+    :ivar files: List of problem encoding files.
+    :ivar step_c: Step/iteration counter.
+    :ivar new_model: The newly obtained model.
+    :ivar current_model: The current model.
+    :ivar best_model: The best model found so far.
+    :ivar stats: List of statistics dictionaries.
+    :ivar _config_catalog: Parsed config catalog.
+    :ivar _active_config: Active config for the current iteration.
+    :ivar _op_specs: Operator specifications for the current model.
+    :ivar prev_fixed_atoms: Set of previously fixed atoms.
+    :ivar _is_variable: Indicates if the problem is variable.
+    :ivar _adaptive_strategy: Adaptive strategy object.
+    :ivar init_solver_config: Initial solver configuration.
+    :ivar lns_solver_config: LNS solver configuration.
+    :ivar timer: Timer object.
+    :ivar _printout: Indicates if printout is enabled.
+    :ivar _iter_format: Iteration format string.
     """
 
     def __init__(
@@ -50,10 +67,14 @@ class LNS:
     ):
         """
         Initialization of the lns object.
+
+        :param files: Problem encodings.
+        :param args: Parsed arguments.
+        :param options: LNSOptions object.
         """
         self.options: LNSOptions = options if options is not None else LNSOptions()
         self.parse_options(args if args is not None else {})
-        self.logger = setup_logger("LNS", self.options.log_level)
+        self.logger: Logger = setup_logger("LNS", self.options.log_level)
 
         self.files: list[str] = files
 

@@ -43,51 +43,63 @@ class LNSOptions:
     Configuration for LNS.
 
     :param log_level: Logging level.
-    :param solver: Solver to use.
-    :param seed: Random seed.
-    :param time_limit: Time limit for entire program.
-    :param max_steps: Maximum number of steps for LNS.
-    :param status_interval: Interval for status updates.
-    :param parallel_mode: Parallel mode for solving.
-    :param clingo_args: Additional arguments for Clingo solver.
+
+    :param solver: Solver to be used.
+    :param seed: Seed used for both solving and random destruction.
+    :param time_limit: Overall time limit for the search in seconds.
+    :param max_steps: Step limit for the search.
+    :param status_interval: Interval in steps for logging the current status.
+    :param parallel_mode: Clingo parallel mode, see clingo -t option.
+    :param clingo_args: Additional arguments passed to the solver.
     :param context: Context for grounding.
     :param minimize_variable: Variable to minimize, used by clingo-dl.
-    :param preset: Options preset to use as base.
-    :param lex_weight: Weight used to convert lexicographic cost into integer cost for adaptive strategies.
-    :param learning_rate: Learning rate used to update weights for adaptive strategies.
-    :param default_adaptive_strategy_name: Default adaptive strategy name.
-    :param init_time_limit: Time limit for initial solution.
-    :param init_solve_limit: Solve limit for initial solution.
+    :param preset: Options preset to be applied.
+
+    :param lex_weight: Weight factor for scalarizing lexicographic costs.
+    :param learning_rate: Learning rate for updating config weights.
+    :param default_adaptive_strategy_name: Default adaptive strategy for selecting LNS
+        configurations in each iteration.
+
+    :param init_time_limit: Time limit for the initial solve call in seconds.
+    :param init_solve_limit: Stop initial solve call after this many conflicts
+        and restarts, None or "umax,umax" for no limit.
     :param init_cutoff: Time limit to find new model during initial solving.
     :param init_configuration: Solver configuration for initial solving.
     :param init_opt_strategy: Optimization strategy for initial solving.
     :param init_opt_heuristic: Optimization heuristic for initial solving.
     :param init_restart_on_model: Restart on model for initial solving.
     :param init_opt_mode: Optimization mode for initial solving.
+
     :param constrained: Whether to use constrained LNS,
         Short-hand for lns-opt-mode={"mode": "opt", "nf": 0, "modifier": "dynamic"}.
-    :param destruction: Destruction type and rate.
+    :param destruction: Destruction type ["simple","declarative"] and
+        destruction percent for "simple" destruction, "auto" for automatic destruction rate.
     :param _declarative: Whether to use declarative destruction.
         Can cause issue when set directly, use destruction attribute.
     :param _destruction_rate: Destruction rate for simple destruction.
         Can cause issue when set directly, use destruction attribute.
-    :param auto_converter: Converter for computing destruction percentages of auto-mode destroy operators.
-    :param fix: How to fix atoms during repair.
+    :param auto_converter: Automatic destroy percentage converter.
+    :param fix: How to fix atoms during repair ["assumptions", "heuristics"].
     :param accept_variability: Required variability for accepting new model in percent.
+        0 = always accept
     :param accept_improvement: Required improvement for accepting new model in percent.
+        20 = solution can be upto 20% worse and still accepted
+        0 = solution has to be strictly better
+
     :param lns_time_limit: Time limit for solver in each LNS step.
-    :param lns_solve_limit: Solve limit for solver in each LNS step.
+    :param lns_solve_limit: Stop solver in each LNS step after this many conflicts
+        and restarts, None or "umax,umax" for no limit.
     :param lns_cutoff: Time limit to find new model during LNS solving.
-    :param lns_time_limit_increase_rate: Time limit increase rate in percent.
-    :param lns_solve_limit_increase_rate: Solve limit increase rate in percent.
-    :param lns_cutoff_threshold: Cutoff threshold for increasing cutoff.
-    :param lns_cutoff_increase_rate: Cutoff increase rate in percent.
     :param lns_configuration: Solver configuration for LNS solving.
     :param lns_opt_strategy: Optimization strategy for LNS solving.
     :param lns_opt_heuristic: Optimization heuristic for LNS solving.
     :param lns_restart_on_model: Restart on model for LNS solving.
     :param lns_heuristic: Heuristic to use in LNS solving.
     :param lns_opt_mode: Optimization mode for LNS solving.
+    :param lns_time_limit_increase_rate: Increase lns solver time limit after each iteration in percent.
+    :param lns_solve_limit_increase_rate: Increase lns solver solve limit after each iteration in percent.
+    :param lns_cutoff_threshold: Increase cutoff after <n> times no better solution could be found.
+    :param lns_cutoff_increase_rate: Increase lns solver cutoff after each iteration in percent.
     """
 
     # utils
