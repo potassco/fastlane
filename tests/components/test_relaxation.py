@@ -16,7 +16,7 @@ from mod_lns.lib.components.destruction import (
     destroy_random,
     format_atoms,
 )
-from mod_lns.utils.types import ActiveConfig
+from mod_lns.utils.types import ActiveConfig, ProjectOperator
 
 
 class TestDestructionComponents(TestCase):
@@ -69,7 +69,7 @@ class TestDestructionComponents(TestCase):
         with mock.patch(
             "mod_lns.lib.components.destruction.ConfigParser.get_projected_atoms", return_value=projected_atoms
         ) as mock_get_projected_atoms:
-            project_operators = [{"name": "plays_3"}]
+            project_operators = [ProjectOperator(name="plays_3")]
             self.assertSetEqual(_project(model, project_operators, op_specs, mock.Mock()), projected_atoms)
             mock_get_projected_atoms.assert_called_once_with(model, op_specs, "plays_3")
 

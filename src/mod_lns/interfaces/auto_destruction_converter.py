@@ -4,9 +4,9 @@ Interface for computing destruction percentages of auto-mode destroy operators.
 
 import copy
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Optional
 
-from mod_lns.utils.types import ActiveConfig
+from mod_lns.utils.types import ActiveConfig, ProjectOperator
 
 if TYPE_CHECKING:
     from mod_lns.lns import LNS  # nocoverage
@@ -52,7 +52,7 @@ class AutoDestructionConverter(ABC):
 
     @abstractmethod
     def compute_auto_destruction_percent(
-        self, config_name: str, project_operators: list[dict[str, Any]], destroy_operator_name: str
+        self, config_name: str, project_operators: list[ProjectOperator], destroy_operator_name: str
     ) -> float:  # nocoverage
         """
         Compute destruction percentage of auto-mode destroy operator.

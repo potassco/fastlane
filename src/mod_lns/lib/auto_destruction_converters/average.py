@@ -3,7 +3,7 @@ Average destruction converter for adaptive LNS configuration selection.
 """
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Optional
 
 from clingo import Symbol
 
@@ -11,7 +11,7 @@ from mod_lns import Model
 from mod_lns.interfaces.auto_destruction_converter import AutoDestructionConverter
 from mod_lns.lib.auto_destruction_converters.utils import calculate_actual_destruction_percent, is_new_model_better
 from mod_lns.parsers.config_parser import ConfigParser
-from mod_lns.utils.types import ActiveConfig
+from mod_lns.utils.types import ActiveConfig, ProjectOperator
 
 if TYPE_CHECKING:
     from mod_lns.lns import LNS  # nocoverage
@@ -160,7 +160,7 @@ class AverageDestructionConverter(AutoDestructionConverter):
     def compute_auto_destruction_percent(
         self,
         config_name: str,
-        project_operators: list[dict[str, Any]],
+        project_operators: list[ProjectOperator],
         destroy_operator_name: str,
     ) -> float:
         """
@@ -171,7 +171,7 @@ class AverageDestructionConverter(AutoDestructionConverter):
         :param destroy_operator_name: Destroy operator name.
         :return: Destruction percentage of auto-mode destroy operator.
         """
-        operator_names = [operator["name"] for operator in project_operators]
+        operator_names = [operator.name for operator in project_operators]
         key = (config_name, destroy_operator_name)
         if key not in self._running_averages:
             self._register_key(key, operator_names)

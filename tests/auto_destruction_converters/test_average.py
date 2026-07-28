@@ -8,6 +8,7 @@ from clingo.symbol import Function
 
 from mod_lns import Model
 from mod_lns.lib.auto_destruction_converters.average import AverageDestructionConverter, _RunningAverage
+from mod_lns.utils.types import ProjectOperator
 
 # pylint: disable=protected-access
 
@@ -188,7 +189,7 @@ class TestAverageDestructionConverter(TestCase):
         Test compute_auto_destruction_percent method.
         """
         config_name = "config1"
-        project_operators = [{"name": "op1"}, {"name": "op2"}]
+        project_operators = [ProjectOperator(name="op1"), ProjectOperator(name="op2")]
         destroy_operator_name = "destroy_op"
         key = (config_name, destroy_operator_name)
         average_mock = mock.Mock()

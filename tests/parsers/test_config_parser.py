@@ -11,6 +11,7 @@ from clingo.symbol import Function, Number, String
 from mod_lns import Model
 from mod_lns.lib.solvers.clingo_solver import ClingoSolver
 from mod_lns.parsers.config_parser import ConfigParser
+from mod_lns.utils.types import ProjectOperator
 
 # pylint: disable=protected-access
 
@@ -57,9 +58,9 @@ class TestConfigParser(TestCase):
         self.assertDictEqual(
             project_operators,
             {
-                "plays_3": {("plays", 3)},
-                "other": {("abc", 2)},
-                "invalid": set(),
+                "plays_3": ProjectOperator.from_signatures(name="plays_3", signatures={("plays", 3)}),
+                "other": ProjectOperator.from_signatures(name="other", signatures={("abc", 2)}),
+                "invalid": ProjectOperator(name="invalid"),
             },
         )
 
@@ -70,7 +71,7 @@ class TestConfigParser(TestCase):
         self.assertDictEqual(
             project_operators,
             {
-                "default": {("a", 2), ("abc", 1)},
+                "default": ProjectOperator.from_signatures(name="default", signatures={("a", 2), ("abc", 1)}),
             },
         )
 

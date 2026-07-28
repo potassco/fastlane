@@ -74,9 +74,7 @@ class AdaptiveStrategy(ABC):
 
         # project
         for operator_name in config_catalog["configs"][config_name]["project_operators"]:
-            config["project_operators"].append(
-                {"name": operator_name, "signatures": config_catalog["project_operators"][operator_name]}
-            )
+            config["project_operators"].append(config_catalog["project_operators"][operator_name])
         # destroy
         for operator_name in config_catalog["configs"][config_name]["destroy_operators"]:
             config["destroy_operators"].append(
@@ -106,9 +104,9 @@ class AdaptiveStrategy(ABC):
         :return: String representing active LNS configuration.
         """
         project_operators = ",".join(
-            project_operator["name"]
+            project_operator.name
             + "["
-            + ",".join(f"({signature[0]},{signature[1]})" for signature in project_operator["signatures"])
+            + ",".join(f"({signature[0]},{signature[1]})" for signature in project_operator)
             + "]"
             for project_operator in config["project_operators"]
         )

@@ -8,6 +8,7 @@ from clingo.symbol import Function, Number, String
 
 from mod_lns import Model
 from mod_lns.lib.auto_destruction_converters.last_improv import LastImprovementDestructionConverter
+from mod_lns.utils.types import ProjectOperator
 
 # pylint: disable=protected-access
 
@@ -69,8 +70,8 @@ class TestLastImprovementDestructionConverter(TestCase):
             }
         }
         project_operators = [
-            {"name": "plays_3", "signatures": {("plays", 3)}},
-            {"name": "day_1", "signatures": {("day", 1)}},
+            ProjectOperator.from_signatures(name="plays_3", signatures={("plays", 3)}),
+            ProjectOperator.from_signatures(name="day_1", signatures={("day", 1)}),
         ]
         projected_atoms = [
             {

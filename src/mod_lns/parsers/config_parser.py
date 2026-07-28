@@ -8,7 +8,7 @@ from clingo.symbol import Symbol, SymbolType, Tuple_
 
 from mod_lns import Model
 from mod_lns.interfaces.solver import Solver
-from mod_lns.utils.types import ConfigCatalog
+from mod_lns.utils.types import ConfigCatalog, ProjectOperator
 
 if TYPE_CHECKING:
     from mod_lns.lns import LNS  # nocoverage
@@ -62,15 +62,15 @@ class ConfigParser:
     #     return project_operators, projected_signatures
 
     @classmethod
-    def _parse_project_operator(cls, solver: Solver, declarative: bool) -> dict[str, set[tuple[str, int]]]:
+    def _parse_project_operator(cls, solver: Solver, declarative: bool) -> dict[str, ProjectOperator]:
         """
         Extract and validate project operators from atoms of _project_op/2 in model.
 
         :param solver: Solver interface object.
         :param declarative: Whether to parse declarative configuration or not.
-        :return: Dictionary of project operator names and their corresponding signatures.
+        :return: Dictionary of project operator names and their corresponding ProjectOperator objects.
         """
-        project_operators: dict[str, set[tuple[str, int]]] = {}
+        project_operators: dict[str, ProjectOperator] = {}
 
         if declarative:
             for atom in solver.control.symbolic_atoms.by_signature("_project_op", 2):
@@ -79,7 +79,7 @@ class ConfigParser:
                     operator = str(args[0])
                 else:
                     operator = args[0].string
-                project_operators.setdefault(operator, set())
+                project_operators.setdefault(operator, ProjectOperator(operator))
                 if args[1].type == SymbolType.Function and len(args[1].arguments) == 2:
                     signature = args[1].arguments
                     # !todo catch bad args
@@ -103,7 +103,7 @@ class ConfigParser:
 
         # no operators defined -> default to all shown
         if not project_operators:
-            project_operators.setdefault("default", set())
+            project_operators.setdefault("default", ProjectOperator("default"))
             if solver.last_model is not None:
                 for model_atom in solver.last_model.shown:
                     if cls._is_atom(model_atom):
@@ -493,8 +493,8 @@ class ConfigParser:
         :return: String representing LNS configuration catalog.
         """
         project_operators = ",".join(
-            name + "{" + ",".join(f"{signature[0]}/{signature[1]}" for signature in signatures) + "}"
-            for name, signatures in config_catalog["project_operators"].items()
+            name + "{" + ",".join(f"{signature[0]}/{signature[1]}" for signature in project_operators) + "}"
+            for name, project_operators in config_catalog["project_operators"].items()
         )
 
         destroy_operators = ",".join(

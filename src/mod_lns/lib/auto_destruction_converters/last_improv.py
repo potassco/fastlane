@@ -2,7 +2,7 @@
 Last improvement destruction converter for adaptive LNS configuration selection.
 """
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Optional
 
 from clingo import Symbol
 
@@ -10,7 +10,7 @@ from mod_lns import Model
 from mod_lns.interfaces.auto_destruction_converter import AutoDestructionConverter
 from mod_lns.lib.auto_destruction_converters.utils import calculate_actual_destruction_percent, is_new_model_better
 from mod_lns.parsers.config_parser import ConfigParser
-from mod_lns.utils.types import ActiveConfig
+from mod_lns.utils.types import ActiveConfig, ProjectOperator
 
 if TYPE_CHECKING:
     from mod_lns.lns import LNS  # nocoverage
@@ -41,7 +41,7 @@ class LastImprovementDestructionConverter(AutoDestructionConverter):
         self,
         current_model: Model,
         op_specs: dict[str, set[Symbol]],
-        project_operators: list[dict[str, Any]],
+        project_operators: list[ProjectOperator],
     ) -> set[Symbol]:
         """
         Collect projected atoms for all project operators with per-operator caching.
@@ -53,7 +53,7 @@ class LastImprovementDestructionConverter(AutoDestructionConverter):
         """
         projected_atoms: set[Symbol] = set()
         for project_operator in project_operators:
-            project_operator_name = project_operator["name"]
+            project_operator_name = project_operator.name
             if project_operator_name not in self._projected_atoms_cache:
                 self._projected_atoms_cache[project_operator_name] = ConfigParser.get_projected_atoms(
                     current_model,
@@ -89,7 +89,7 @@ class LastImprovementDestructionConverter(AutoDestructionConverter):
         return super().convert_auto_in_config(config, lns_object)
 
     def compute_auto_destruction_percent(
-        self, config_name: str, project_operators: list[dict[str, Any]], destroy_operator_name: str
+        self, config_name: str, project_operators: list[ProjectOperator], destroy_operator_name: str
     ) -> float:
         """
         Compute destruction percentage of auto-mode destroy operator based on actual destruction percentage.

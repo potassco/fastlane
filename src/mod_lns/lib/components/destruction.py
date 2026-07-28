@@ -10,7 +10,7 @@ from clingo.symbol import Symbol, SymbolType
 
 from mod_lns import Model
 from mod_lns.parsers.config_parser import ConfigParser
-from mod_lns.utils.types import ActiveConfig
+from mod_lns.utils.types import ActiveConfig, ProjectOperator
 
 LINE = "-" * 50
 
@@ -42,7 +42,7 @@ def format_atoms(atoms: set[Symbol]) -> str:
 
 
 def _project(
-    model: Model, project_operators: list[dict[str, Any]], op_specs: dict[str, set[Symbol]], logger: Logger
+    model: Model, project_operators: list[ProjectOperator], op_specs: dict[str, set[Symbol]], logger: Logger
 ) -> set[Symbol]:
     """
     Project atoms based on the runtime configuration.
@@ -56,7 +56,7 @@ def _project(
     projected_atoms: set[Symbol] = set()
 
     for project_operator in project_operators:
-        projected_atoms.update(ConfigParser.get_projected_atoms(model, op_specs, project_operator["name"]))
+        projected_atoms.update(ConfigParser.get_projected_atoms(model, op_specs, project_operator.name))
 
     logger.debug(f"{len(projected_atoms)} projected atoms: {format_atoms(projected_atoms)}")
     logger.debug(LINE)

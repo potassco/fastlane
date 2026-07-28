@@ -5,7 +5,7 @@ Test cases for adaptive strategy interface and static adaptive strategy.
 from unittest import TestCase, mock
 
 from mod_lns.lib.adaptive_strategies.static import StaticStrategy
-from mod_lns.utils.types import ActiveConfig, ConfigCatalog
+from mod_lns.utils.types import ActiveConfig, ConfigCatalog, ProjectOperator
 
 # pylint: disable=protected-access
 
@@ -21,7 +21,9 @@ class TestStaticStrategy(TestCase):
         """
         self.strategy = StaticStrategy()
         self.config_catalog: ConfigCatalog = {
-            "project_operators": {"default": {("plays", 3)}},
+            "project_operators": {
+                "default": ProjectOperator.from_signatures(name="default", signatures={("plays", 3)})
+            },
             "destroy_operators": {"default": [{"type": "p", "value": 20}]},
             "prioritize_operators": {"default": {"value": 1, "modifier": "true"}},
             "configs": {
@@ -41,7 +43,7 @@ class TestStaticStrategy(TestCase):
         """
         ref_config: ActiveConfig = {
             "name": "default",
-            "project_operators": [{"name": "default", "signatures": {("plays", 3)}}],
+            "project_operators": [ProjectOperator.from_signatures(name="default", signatures={("plays", 3)})],
             "destroy_operators": [{"name": "default", "percents_or_numbers": [{"type": "p", "value": 20}]}],
             "prioritize_operators": [{"name": "default", "value": 1, "modifier": "true"}],
             "config_repr": (
