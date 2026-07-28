@@ -43,8 +43,8 @@ def main():
 
     # Example of custom LNS
     class NewLNS(LNS):
-        def relax(self):
-            r = super().relax()
+        def destroy(self):
+            r = super().destroy()
             for s in r:
                 print(symbol_to_str(s))
             print("--")
@@ -55,7 +55,7 @@ def main():
             "seed": 42,
             "init_time_limit": 2,
             "lns_time_limit": 2,
-            "relaxation": ("declarative",0),
+            "destruction": ("declarative",0),
             "max_steps": 3,
     }
     #lns = NewLNS(files, options)
