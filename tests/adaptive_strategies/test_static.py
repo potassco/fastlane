@@ -5,7 +5,7 @@ Test cases for adaptive strategy interface and static adaptive strategy.
 from unittest import TestCase, mock
 
 from mod_lns.lib.adaptive_strategies.static import StaticStrategy
-from mod_lns.utils.types import ActiveConfig, ConfigCatalog, ProjectOperator
+from mod_lns.utils.types import ActiveConfig, ConfigCatalog, DestroyOperator, ProjectOperator
 
 # pylint: disable=protected-access
 
@@ -24,7 +24,7 @@ class TestStaticStrategy(TestCase):
             "project_operators": {
                 "default": ProjectOperator.from_signatures(name="default", signatures={("plays", 3)})
             },
-            "destroy_operators": {"default": [{"type": "p", "value": 20}]},
+            "destroy_operators": {"default": DestroyOperator.from_specs("default", [{"type": "p", "value": 20}])},
             "prioritize_operators": {"default": {"value": 1, "modifier": "true"}},
             "configs": {
                 "default": {
@@ -44,7 +44,7 @@ class TestStaticStrategy(TestCase):
         ref_config: ActiveConfig = {
             "name": "default",
             "project_operators": [ProjectOperator.from_signatures(name="default", signatures={("plays", 3)})],
-            "destroy_operators": [{"name": "default", "percents_or_numbers": [{"type": "p", "value": 20}]}],
+            "destroy_operators": [DestroyOperator.from_specs("default", [{"type": "p", "value": 20}])],
             "prioritize_operators": [{"name": "default", "value": 1, "modifier": "true"}],
             "config_repr": (
                 "default[project_operators={default[(plays,3)]},"

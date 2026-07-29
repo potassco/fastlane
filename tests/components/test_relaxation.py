@@ -16,7 +16,7 @@ from mod_lns.lib.components.destruction import (
     destroy_random,
     format_atoms,
 )
-from mod_lns.utils.types import ActiveConfig, ProjectOperator
+from mod_lns.utils.types import ActiveConfig, DestroyOperator, ProjectOperator
 
 
 class TestDestructionComponents(TestCase):
@@ -140,7 +140,7 @@ class TestDestructionComponents(TestCase):
             Function("plays", [Number(4), Number(5), Number(6)], True),
             Function("plays", [Number(7), Number(8), Number(9)], True),
         }
-        destroy_operators = [{"name": "random_n", "percents_or_numbers": [{"type": "p", "value": 50}]}]
+        destroy_operators = [DestroyOperator.from_specs("random_n", [{"type": "p", "value": 50}])]
         atom_term_pairs = [
             {"atom": Function("plays", [Number(1), Number(2), Number(3)], True), "term": Number(1)},
             {"atom": Function("plays", [Number(4), Number(5), Number(6)], True), "term": Number(4)},
@@ -202,7 +202,7 @@ class TestDestructionComponents(TestCase):
             Function("plays", [Number(7), Number(8), Number(9)], True),
         }
         destroy_operators = [
-            {"name": "random_n", "percents_or_numbers": [{"type": "p", "value": 50}, {"type": "n", "value": 1}]}
+            DestroyOperator.from_specs("random_n", [{"type": "p", "value": 50}, {"type": "n", "value": 1}])
         ]
         atom_term_pairs = [
             {
@@ -229,8 +229,8 @@ class TestDestructionComponents(TestCase):
         op_specs = {"test_op": "test_spec"}
         config: ActiveConfig = {
             "prioritize_operators": [{"name": "test_op", "value": 1, "modifier": "true"}],
-            "destroy_operators": [{"name": "test_op", "percents_or_numbers": [{"type": "p", "value": 50}]}],
-            "project_operators": [{"name": "test_op"}],
+            "destroy_operators": [DestroyOperator.from_specs("test_op", [{"type": "p", "value": 50}])],
+            "project_operators": [ProjectOperator.from_signatures(name="test_op", signatures={("test_op", 1)})],
         }
         logger = mock.Mock()
         projected = {Function("test_atom", [Number(1)])}

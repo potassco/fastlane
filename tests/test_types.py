@@ -4,7 +4,7 @@ Test cases for the types module.
 
 from unittest import TestCase
 
-from mod_lns.utils.types import ProjectOperator
+from mod_lns.utils.types import DestroyOperator, ProjectOperator
 
 # pylint: disable=protected-access
 
@@ -55,9 +55,9 @@ class TestProjectOperator(TestCase):
         # __len__
         self.assertEqual(len(self.project_operator), len(self.signatures))
 
+        # __eq__
         with self.assertRaises(TypeError):
             _ = self.project_operator == "not_a_project_operator"
-
         self.assertFalse(self.project_operator == ProjectOperator("different_operator"))
         self.assertTrue(self.project_operator == ProjectOperator.from_signatures(self.name, set(self.signatures)))
 
@@ -79,3 +79,107 @@ class TestProjectOperator(TestCase):
 
         with self.assertRaises(TypeError):
             self.project_operator._validate("not_a_tuple")
+
+
+class TestDestroyOperator(TestCase):
+    """
+    Test cases for the DestroyOperator class.
+    """
+
+    def setUp(self):
+        self.name = "test_operator"
+        self.specs = [{"type": "p", "value": 20}, {"type": "n", "value": 5}, {"type": "auto", "value": None}]
+        self.destroy_operator = DestroyOperator(self.name)
+
+    def test_init(self):
+        """
+        Test the initialization of the DestroyOperator class.
+        """
+        self.assertEqual(self.destroy_operator.name, self.name)
+
+    def test_from_specs(self):
+        """
+        Test the from_specs class method of the DestroyOperator class.
+        """
+        destroy_operator = DestroyOperator.from_specs(self.name, self.specs)
+        self.assertEqual(destroy_operator.name, self.name)
+        self.assertListEqual(destroy_operator._destruction_specs, self.specs)
+
+    def test_append(self):
+        """
+        Test the append method of the DestroyOperator class.
+        """
+        for spec in self.specs:
+            self.destroy_operator.append(spec)
+        self.assertListEqual(self.destroy_operator._destruction_specs, self.specs)
+
+    def test_get_first_spec(self):
+        """
+        Test the get_first_spec method of the DestroyOperator class.
+        """
+        self.destroy_operator.append(self.specs[0])
+        self.assertEqual(self.destroy_operator.get_first_spec(), self.specs[0])
+
+        with self.assertRaises(ValueError):
+            empty_destroy_operator = DestroyOperator("empty_operator")
+            empty_destroy_operator.get_first_spec()
+
+    def test_get_all_specs(self):
+        """
+        Test the get_all_specs method of the DestroyOperator class.
+        """
+        for spec in self.specs:
+            self.destroy_operator.append(spec)
+        self.assertListEqual(self.destroy_operator.get_all_specs(), self.specs)
+
+    def test_helper(self):
+        """
+        Test the helper methods of the DestroyOperator class.
+        """
+        self.test_append()
+        # __iter__
+        for spec in self.destroy_operator:
+            self.assertIn(spec, self.specs)
+        # __contains__
+        for spec in self.specs:
+            self.assertIn(spec, self.destroy_operator)
+        # __len__
+        self.assertEqual(len(self.destroy_operator), len(self.specs))
+
+        # __eq__
+        with self.assertRaises(TypeError):
+            _ = self.destroy_operator == "not_a_destroy_operator"
+        self.assertFalse(self.destroy_operator == DestroyOperator("different_operator"))
+        self.assertTrue(self.destroy_operator == DestroyOperator.from_specs(self.name, self.specs))
+
+        # __get_item__
+        self.assertEqual(self.destroy_operator[0], self.specs[0])
+
+        # __set_item__
+        new_spec = {"type": "p", "value": 50}
+        self.destroy_operator[0] = new_spec
+        self.assertEqual(self.destroy_operator[0], new_spec)
+
+    def test_validate(self):
+        """
+        Test the _validate method of the DestroyOperator class.
+        """
+        valid_specs = [
+            {"type": "p", "value": 20},
+            {"type": "n", "value": 5},
+            {"type": "auto", "value": None},
+        ]
+        for spec in valid_specs:
+            self.assertEqual(self.destroy_operator._validate(spec), spec)
+
+        invalid_specs = [
+            "not-dict",
+            {"wrong_key": "value"},
+            {"type": "p", "value": "not_a_number"},
+            {"type": "n", "value": 5.5},
+            {"type": "auto", "value": 10},
+            {"type": "invalid_type", "value": 10},
+        ]
+        for spec in invalid_specs:
+            with self.assertRaises(TypeError):
+                self.destroy_operator._validate(spec)

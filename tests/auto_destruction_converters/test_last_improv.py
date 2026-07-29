@@ -8,7 +8,7 @@ from clingo.symbol import Function, Number, String
 
 from mod_lns import Model
 from mod_lns.lib.auto_destruction_converters.last_improv import LastImprovementDestructionConverter
-from mod_lns.utils.types import ProjectOperator
+from mod_lns.utils.types import DestroyOperator, ProjectOperator
 
 # pylint: disable=protected-access
 
@@ -136,9 +136,9 @@ class TestLastImprovementDestructionConverter(TestCase):
         config = {
             "name": "test",
             "project_operators": [
-                {"name": "proj", "signatures": {("t", 1)}},
+                ProjectOperator.from_signatures(name="proj", signatures={("t", 1)}),
             ],
-            "destroy_operators": [{"name": "dest_op", "percents_or_numbers": [{"type": "auto", "value": 0}]}],
+            "destroy_operators": [DestroyOperator.from_specs("dest_op", [{"type": "auto", "value": None}])],
         }
         lns_object = mock.Mock()
         lns_object.new_model = mock.Mock(spec=Model)
@@ -153,9 +153,9 @@ class TestLastImprovementDestructionConverter(TestCase):
             new_config = self.converter.convert_auto_in_config(config, lns_object)
             mock_update_last_improvement_stats.assert_called_once_with(lns_object.new_model, lns_object.current_model)
             mock_compute_auto_destruction_percent.assert_called_once_with(
-                "test", [{"name": "proj", "signatures": {("t", 1)}}], "dest_op"
+                "test", [ProjectOperator.from_signatures(name="proj", signatures={("t", 1)})], "dest_op"
             )
-            self.assertEqual(new_config["destroy_operators"][0]["percents_or_numbers"], [{"type": "p", "value": 20}])
+            self.assertEqual(new_config["destroy_operators"][0]._destruction_specs, [{"type": "p", "value": 20}])
 
         with (
             mock.patch.object(self.converter, "_update_last_improvement_stats") as mock_update_last_improvement_stats,

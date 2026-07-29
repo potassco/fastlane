@@ -11,7 +11,7 @@ from clingo.symbol import Function, Number, String
 from mod_lns import Model
 from mod_lns.lib.solvers.clingo_solver import ClingoSolver
 from mod_lns.parsers.config_parser import ConfigParser
-from mod_lns.utils.types import ProjectOperator
+from mod_lns.utils.types import DestroyOperator, ProjectOperator
 
 # pylint: disable=protected-access
 
@@ -112,13 +112,15 @@ class TestConfigParser(TestCase):
         self.assertDictEqual(
             destroy_operators,
             {
-                "percent": [{"type": "p", "value": 50}],
-                "number": [{"type": "n", "value": 3}],
-                "auto": [{"type": "auto", "value": None}],
-                "invalid": [{"type": "auto", "value": None}],
-                "invalid2": [{"type": "auto", "value": None}],
-                "multi": [{"type": "p", "value": 10}, {"type": "p", "value": 20}, {"type": "n", "value": 3}],
-                "bad_multi": [{"type": "auto", "value": None}],
+                "percent": DestroyOperator.from_specs("percent", [{"type": "p", "value": 50}]),
+                "number": DestroyOperator.from_specs("number", [{"type": "n", "value": 3}]),
+                "auto": DestroyOperator.from_specs("auto", [{"type": "auto", "value": None}]),
+                "invalid": DestroyOperator.from_specs("invalid", [{"type": "auto", "value": None}]),
+                "invalid2": DestroyOperator.from_specs("invalid2", [{"type": "auto", "value": None}]),
+                "multi": DestroyOperator.from_specs(
+                    "multi", [{"type": "p", "value": 10}, {"type": "p", "value": 20}, {"type": "n", "value": 3}]
+                ),
+                "bad_multi": DestroyOperator.from_specs("bad_multi", [{"type": "auto", "value": None}]),
             },
         )
 
@@ -126,7 +128,7 @@ class TestConfigParser(TestCase):
         self.assertDictEqual(
             destroy_operators,
             {
-                "default": [{"type": "auto", "value": None}],
+                "default": DestroyOperator.from_specs("default", [{"type": "auto", "value": None}]),
             },
         )
 
@@ -341,10 +343,14 @@ class TestConfigParser(TestCase):
         # declarative = True
         with (
             mock.patch.object(
-                ConfigParser, "_parse_project_operator", return_value={"plays_3": {("plays", 3)}}
+                ConfigParser,
+                "_parse_project_operator",
+                return_value={"plays_3": ProjectOperator.from_signatures("plays_3", {("plays", 3)})},
             ) as mock_parse_project_operator,
             mock.patch.object(
-                ConfigParser, "_parse_destroy_operators", return_value={"random_n": [{"type": "p", "value": 20}]}
+                ConfigParser,
+                "_parse_destroy_operators",
+                return_value={"random_n": DestroyOperator.from_specs("random_n", [{"type": "p", "value": 20}])},
             ) as mock_parse_destroy_operators,
             mock.patch.object(
                 ConfigParser, "_parse_prioritize_operators", return_value={"1_true": {"value": 1, "modifier": "true"}}
@@ -405,9 +411,11 @@ class TestConfigParser(TestCase):
                             "project_operators": ["plays_3"],
                         }
                     },
-                    "destroy_operators": {"random_n": [{"type": "p", "value": 20}]},
+                    "destroy_operators": {
+                        "random_n": DestroyOperator.from_specs("random_n", [{"type": "p", "value": 20}])
+                    },
                     "prioritize_operators": {"1_true": {"value": 1, "modifier": "true"}},
-                    "project_operators": {"plays_3": {("plays", 3)}},
+                    "project_operators": {"plays_3": ProjectOperator.from_signatures("plays_3", {("plays", 3)})},
                     "strategy": "default",
                 },
             )
@@ -416,10 +424,14 @@ class TestConfigParser(TestCase):
         options._destruction_rate = 30
         with (
             mock.patch.object(
-                ConfigParser, "_parse_project_operator", return_value={"plays_3": {("plays", 3)}}
+                ConfigParser,
+                "_parse_project_operator",
+                return_value={"plays_3": ProjectOperator.from_signatures("plays_3", {("plays", 3)})},
             ) as mock_parse_project_operator,
             mock.patch.object(
-                ConfigParser, "_parse_destroy_operators", return_value={"default": [{"type": "auto", "value": None}]}
+                ConfigParser,
+                "_parse_destroy_operators",
+                return_value={"default": DestroyOperator.from_specs("default", [{"type": "auto", "value": None}])},
             ) as mock_parse_destroy_operators,
             mock.patch.object(
                 ConfigParser, "_parse_prioritize_operators", return_value={"default": {"value": 1, "modifier": "true"}}
@@ -461,9 +473,13 @@ class TestConfigParser(TestCase):
                             "project_operators": ["plays_3"],
                         }
                     },
-                    "destroy_operators": {"default": [{"type": "p", "value": options._destruction_rate}]},
+                    "destroy_operators": {
+                        "default": DestroyOperator.from_specs(
+                            "default", [{"type": "p", "value": options._destruction_rate}]
+                        )
+                    },
                     "prioritize_operators": {"default": {"value": 1, "modifier": "true"}},
-                    "project_operators": {"plays_3": {("plays", 3)}},
+                    "project_operators": {"plays_3": ProjectOperator.from_signatures("plays_3", {("plays", 3)})},
                     "strategy": "default",
                 },
             )
@@ -471,10 +487,14 @@ class TestConfigParser(TestCase):
         options._destruction_rate = 0
         with (
             mock.patch.object(
-                ConfigParser, "_parse_project_operator", return_value={"plays_3": {("plays", 3)}}
+                ConfigParser,
+                "_parse_project_operator",
+                return_value={"plays_3": ProjectOperator.from_signatures("plays_3", {("plays", 3)})},
             ) as mock_parse_project_operator,
             mock.patch.object(
-                ConfigParser, "_parse_destroy_operators", return_value={"default": [{"type": "auto", "value": None}]}
+                ConfigParser,
+                "_parse_destroy_operators",
+                return_value={"default": DestroyOperator.from_specs("default", [{"type": "auto", "value": None}])},
             ) as mock_parse_destroy_operators,
             mock.patch.object(
                 ConfigParser, "_parse_prioritize_operators", return_value={"default": {"value": 1, "modifier": "true"}}
@@ -516,9 +536,11 @@ class TestConfigParser(TestCase):
                             "project_operators": ["plays_3"],
                         }
                     },
-                    "destroy_operators": {"default": [{"type": "auto", "value": None}]},
+                    "destroy_operators": {
+                        "default": DestroyOperator.from_specs("default", [{"type": "auto", "value": None}])
+                    },
                     "prioritize_operators": {"default": {"value": 1, "modifier": "true"}},
-                    "project_operators": {"plays_3": {("plays", 3)}},
+                    "project_operators": {"plays_3": ProjectOperator.from_signatures("plays_3", {("plays", 3)})},
                     "strategy": "default",
                 },
             )
@@ -535,9 +557,9 @@ class TestConfigParser(TestCase):
                     "project_operators": ["plays_3"],
                 }
             },
-            "destroy_operators": {"random_n": [{"type": "p", "value": 20}]},
+            "destroy_operators": {"random_n": DestroyOperator.from_specs("random_n", [{"type": "p", "value": 20}])},
             "prioritize_operators": {"1_true": {"value": 1, "modifier": "true"}},
-            "project_operators": {"plays_3": {("plays", 3)}},
+            "project_operators": {"plays_3": ProjectOperator.from_signatures("plays_3", {("plays", 3)})},
             "strategy": "default",
         }
         self.assertEqual(

@@ -7,7 +7,7 @@ from unittest import TestCase, mock
 from mod_lns import Model
 from mod_lns.lib.adaptive_strategies.roulette_wheel import RouletteWheelStrategy
 from mod_lns.lib.auto_destruction_converters.last_improv import LastImprovementDestructionConverter
-from mod_lns.utils.types import ConfigCatalog, ProjectOperator
+from mod_lns.utils.types import ConfigCatalog, DestroyOperator, ProjectOperator
 
 # pylint: disable=protected-access
 
@@ -26,7 +26,7 @@ class TestRouletteWheelStrategy(TestCase):
             "project_operators": {
                 "default": ProjectOperator.from_signatures(name="default", signatures={("plays", 3)})
             },
-            "destroy_operators": {"default": [{"type": "p", "value": 20}]},
+            "destroy_operators": {"default": DestroyOperator.from_specs("default", [{"type": "p", "value": 20}])},
             "prioritize_operators": {"default": {"value": 1, "modifier": "true"}},
             "configs": {
                 "default": {
