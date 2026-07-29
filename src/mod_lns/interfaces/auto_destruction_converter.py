@@ -35,10 +35,10 @@ class AutoDestructionConverter(ABC):
         """
         resolved_config: ActiveConfig = copy.deepcopy(config)
         for destroy_operator in resolved_config["destroy_operators"]:
-            destroy_operator_name = destroy_operator["name"]
-            for percent_or_number in destroy_operator["percents_or_numbers"]:
-                if percent_or_number["type"] == "auto":
-                    percent_or_number["type"] = "p"
+            destroy_operator_name = destroy_operator.name
+            for i, destruction_spec in enumerate(destroy_operator):
+                if destruction_spec["type"] == "auto":
+
                     destruction_percent = self.compute_auto_destruction_percent(
                         config["name"], config["project_operators"], destroy_operator_name
                     )
@@ -47,7 +47,7 @@ class AutoDestructionConverter(ABC):
                             f"Auto destruction percent: {destruction_percent} "
                             f"(destroy operator: {destroy_operator_name})"
                         )
-                    percent_or_number["value"] = destruction_percent
+                    destroy_operator[i] = {"type": "p", "value": destruction_percent}
         return resolved_config
 
     @abstractmethod

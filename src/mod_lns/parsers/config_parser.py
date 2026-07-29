@@ -8,7 +8,7 @@ from clingo.symbol import Symbol, SymbolType, Tuple_
 
 from mod_lns import Model
 from mod_lns.interfaces.solver import Solver
-from mod_lns.utils.types import ConfigCatalog, ProjectOperator
+from mod_lns.utils.types import ConfigCatalog, DestroyOperator, ProjectOperator
 
 if TYPE_CHECKING:
     from mod_lns.lns import LNS  # nocoverage
@@ -126,7 +126,7 @@ class ConfigParser:
 
     # pylint: disable=too-many-nested-blocks, too-many-branches
     @classmethod
-    def _parse_destroy_operators(cls, solver: Solver, declarative: bool) -> dict[str, list[dict[str, Any]]]:
+    def _parse_destroy_operators(cls, solver: Solver, declarative: bool) -> dict[str, DestroyOperator]:
         """
         Extract and validate destroy operators from atoms of _destroy_op/2 in model.
 
@@ -134,7 +134,7 @@ class ConfigParser:
         :param declarative: Whether to parse declarative configuration or not.
         :return: Dictionary mapping destroy operator names to lists of percentages or numbers.
         """
-        destroy_operators: dict[str, list[dict[str, Any]]] = {}
+        destroy_operators: dict[str, DestroyOperator] = {}
 
         if declarative:
             for atom in solver.control.symbolic_atoms.by_signature("_destroy_op", 2):
@@ -147,24 +147,26 @@ class ConfigParser:
                     # logger.warning(f"_destroy/2: Multiple definitions of destroy operator
                     # {operator}. Ignoring {atom}.")
                     continue
-                destroy_operators.setdefault(operator, [{"type": "auto", "value": None}])
-                parameter = args[1]
-                if parameter.type == SymbolType.Function:
-                    percents_or_numbers = []
-                    if parameter.name:
-                        if parameter.match("auto", 0):
+                destroy_operators.setdefault(
+                    operator, DestroyOperator.from_specs(operator, [{"type": "auto", "value": None}])
+                )
+                spec = args[1]
+                if spec.type == SymbolType.Function:
+                    parsed_spec = []
+                    if spec.name:
+                        if spec.match("auto", 0):
                             # default
                             # percents_or_numbers = [{"type": "auto", "value": None}]
                             continue
-                        if cls._is_percent_or_number(parameter):
-                            percents_or_numbers = [{"type": parameter.name, "value": parameter.arguments[0].number}]
+                        if cls._is_percent_or_number(spec):
+                            parsed_spec = [{"type": spec.name, "value": spec.arguments[0].number}]
                         else:
                             # logger.warning(f"_destroy/2: Second argument {second_arg} is invalid. (atom: {atom})")
                             continue
                     else:
-                        for arg in parameter.arguments:
+                        for arg in spec.arguments:
                             if cls._is_percent_or_number(arg):
-                                percents_or_numbers.append({"type": arg.name, "value": arg.arguments[0].number})
+                                parsed_spec.append({"type": arg.name, "value": arg.arguments[0].number})
                             else:
                                 # logger.warning(f"_destroy/2: Second argument {second_arg} is invalid. (atom: {atom})")
                                 break
@@ -174,16 +176,16 @@ class ConfigParser:
                         # --
                         # _destroy_op("random_n", (p(10),p(20))).
                         # _destroy("random_n", plays(P,W,G), W) :- plays(P,W,G).
-                        if len(percents_or_numbers) < len(parameter.arguments):
+                        if len(parsed_spec) < len(spec.arguments):
                             continue
                 else:
                     # logger.warning(f"_destroy/2: Second argument {second_arg} is invalid. (atom: {atom})")
                     continue
 
-                destroy_operators[operator] = percents_or_numbers
+                destroy_operators[operator] = DestroyOperator.from_specs(operator, parsed_spec)
 
         if not destroy_operators:
-            destroy_operators["default"] = [{"type": "auto", "value": None}]
+            destroy_operators["default"] = DestroyOperator.from_specs("default", [{"type": "auto", "value": None}])
 
         return destroy_operators
 
@@ -453,9 +455,9 @@ class ConfigParser:
         destroy_operators = cls._parse_destroy_operators(solver, declarative)
         if not declarative:
             if options._destruction_rate > 0:
-                dest_op = [{"type": "p", "value": options._destruction_rate}]
+                dest_op = DestroyOperator.from_specs("default", [{"type": "p", "value": options._destruction_rate}])
             else:
-                dest_op = [{"type": "auto", "value": None}]
+                dest_op = DestroyOperator.from_specs("default", [{"type": "auto", "value": None}])
             destroy_operators = {"default": dest_op}
 
         prioritize_operators = cls._parse_prioritize_operators(solver, declarative)
@@ -501,11 +503,10 @@ class ConfigParser:
             name
             + "{"
             + ",".join(
-                f"{pn['type']}({pn['value']})" if pn["value"] is not None else pn["type"]
-                for pn in percents_or_numbers_list
+                f"{ds['type']}({ds['value']})" if ds["value"] is not None else ds["type"] for ds in destruction_specs
             )
             + "}"
-            for name, percents_or_numbers_list in config_catalog["destroy_operators"].items()
+            for name, destruction_specs in config_catalog["destroy_operators"].items()
         )
 
         prioritize_operators = ",".join(

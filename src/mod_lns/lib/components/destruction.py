@@ -4,13 +4,12 @@ Different destruction methods for LNS.
 
 import random
 from logging import Logger  # nocoverage
-from typing import Any
 
 from clingo.symbol import Symbol, SymbolType
 
 from mod_lns import Model
 from mod_lns.parsers.config_parser import ConfigParser
-from mod_lns.utils.types import ActiveConfig, ProjectOperator
+from mod_lns.utils.types import ActiveConfig, DestroyOperator, DestructionSpec, ProjectOperator
 
 LINE = "-" * 50
 
@@ -65,7 +64,7 @@ def _project(
 
 
 def _destroy_atoms_if_term_selected(
-    atom_term_pairs: list[dict[str, Symbol]], percent_or_number: dict[str, Any]
+    atom_term_pairs: list[dict[str, Symbol]], percent_or_number: DestructionSpec
 ) -> set[Symbol]:
     """
     Randomly select terms by given percentage (or number)
@@ -83,7 +82,7 @@ def _destroy_atoms_if_term_selected(
     value = percent_or_number["value"]
     if percent_or_number["type"] == "p":
         num_selected_terms = round(len(candidate_terms) * value / 100)
-    else:
+    else:  # n, "auto" should not be present here
         num_selected_terms = min(len(candidate_terms), value)
     selected_terms = random.sample(sorted(candidate_terms), num_selected_terms)
     for pair in atom_term_pairs:
@@ -97,7 +96,7 @@ def _destroy_atoms_if_term_selected(
 
 
 def _destroy_atoms_if_all_args_selected(
-    atom_term_pairs: list[dict[str, Symbol]], percents_or_numbers: list[dict[str, Any]]
+    atom_term_pairs: list[dict[str, Symbol]], percents_or_numbers: list[DestructionSpec]
 ) -> set[Symbol]:
     """
     Randomly select arguments based on the specified percentages (or numbers),
@@ -124,7 +123,7 @@ def _destroy_atoms_if_all_args_selected(
         value = pn["value"]
         if pn["type"] == "p":
             num_selected_args = round(len(candidate_args[i]) * value / 100)
-        else:
+        else:  # n, "auto" should not be present here
             num_selected_args = min(len(candidate_args[i]), value)
         selected_args.append(random.sample(sorted(candidate_args[i]), num_selected_args))
     for pair in atom_term_pairs:
@@ -137,7 +136,7 @@ def _destroy_atoms_if_all_args_selected(
 
 
 def _destroy(
-    destroy_operators: list[dict[str, Any]],
+    destroy_operators: list[DestroyOperator],
     op_specs: dict[str, set[Symbol]],
     projected_atoms: set[Symbol],
     logger: Logger,
@@ -152,14 +151,12 @@ def _destroy(
     """
     destroyed_atoms: set[Symbol] = set()
     for destroy_operator in destroy_operators:
-        atom_term_pairs = ConfigParser.get_atom_term_pairs(op_specs, projected_atoms, destroy_operator["name"])
-        if len(destroy_operator["percents_or_numbers"]) == 1:
-            destroyed_atoms.update(
-                _destroy_atoms_if_term_selected(atom_term_pairs, destroy_operator["percents_or_numbers"][0])
-            )
+        atom_term_pairs = ConfigParser.get_atom_term_pairs(op_specs, projected_atoms, destroy_operator.name)
+        if len(destroy_operator) == 1:
+            destroyed_atoms.update(_destroy_atoms_if_term_selected(atom_term_pairs, destroy_operator.get_first_spec()))
         else:
             destroyed_atoms.update(
-                _destroy_atoms_if_all_args_selected(atom_term_pairs, destroy_operator["percents_or_numbers"])
+                _destroy_atoms_if_all_args_selected(atom_term_pairs, destroy_operator.get_all_specs())
             )
 
     logger.debug(f"{len(destroyed_atoms)} destroyed atoms: {format_atoms(destroyed_atoms)}")

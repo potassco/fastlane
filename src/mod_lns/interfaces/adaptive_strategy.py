@@ -77,9 +77,7 @@ class AdaptiveStrategy(ABC):
             config["project_operators"].append(config_catalog["project_operators"][operator_name])
         # destroy
         for operator_name in config_catalog["configs"][config_name]["destroy_operators"]:
-            config["destroy_operators"].append(
-                {"name": operator_name, "percents_or_numbers": config_catalog["destroy_operators"][operator_name]}
-            )
+            config["destroy_operators"].append(config_catalog["destroy_operators"][operator_name])
 
         # prioritize
         for operator_name in config_catalog["configs"][config_name]["prioritize_operators"]:
@@ -112,15 +110,15 @@ class AdaptiveStrategy(ABC):
         )
 
         destroy_operators = ",".join(
-            destroy_operator["name"]
+            destroy_operator.name
             + "["
             + ",".join(
                 (
-                    f"{percent_or_number['type']}({percent_or_number['value']})"
-                    if percent_or_number["value"] is not None
-                    else percent_or_number["type"]
+                    f"{destruction_spec['type']}({destruction_spec['value']})"
+                    if destruction_spec["value"] is not None
+                    else destruction_spec["type"]
                 )
-                for percent_or_number in destroy_operator["percents_or_numbers"]
+                for destruction_spec in destroy_operator
             )
             + "]"
             for destroy_operator in config["destroy_operators"]
