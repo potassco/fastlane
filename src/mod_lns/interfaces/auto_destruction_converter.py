@@ -43,8 +43,8 @@ class AutoDestructionConverter(ABC):
                         config["name"], config["project_operators"], destroy_operator_name
                     )
                     if lns_object is not None:
-                        lns_object.logger.debug(
-                            f"Auto destruction percent: {destruction_percent} "
+                        lns_object.logger.info(
+                            f"Auto destruction percent: {destruction_percent:.3f}% "
                             f"(destroy operator: {destroy_operator_name})"
                         )
                     destroy_operator[i] = {"type": "p", "value": destruction_percent}

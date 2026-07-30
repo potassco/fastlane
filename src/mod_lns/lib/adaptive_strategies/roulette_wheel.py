@@ -88,7 +88,7 @@ class RouletteWheelStrategy(AdaptiveStrategy):
         normalized_weights = [w / max(weights) for w in weights]
         selected_config = random.choices(list(self._weights.keys()), weights=normalized_weights, k=1)[0]
         active_config = self._get_config(selected_config, config_catalog)
-        self.logger.debug("Selected LNPS configuration: %s", active_config["config_repr"])
+        self.logger.info("Selected LNPS configuration: %s", active_config["config_repr"])
         return active_config
 
     def get_initial_config(self, config_catalog: ConfigCatalog, initial_model: Model) -> ActiveConfig:
