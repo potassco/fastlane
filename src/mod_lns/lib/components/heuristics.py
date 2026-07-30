@@ -45,7 +45,7 @@ def get_fixed_atoms_heuristics(
     heu_atoms: set[Symbol] = set()
 
     for prioritize_operator in active_config["prioritize_operators"]:
-        targets = ConfigParser.get_heuristic_targets(spec_ops, fixed_atoms, prioritize_operator["name"])
+        targets = ConfigParser.get_heuristic_targets(spec_ops, fixed_atoms, prioritize_operator.name)
         for target in targets:
             prioritized_atoms.add(target)
             if prioritize_operator["value"] == "inf":

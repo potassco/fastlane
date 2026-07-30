@@ -11,7 +11,7 @@ from mod_lns.lib.components.heuristics import (
     get_fixed_atoms_heuristics,
 )
 from mod_lns.parsers.config_parser import ConfigParser
-from mod_lns.utils.types import ActiveConfig, ConfigCatalog
+from mod_lns.utils.types import ActiveConfig, ConfigCatalog, PrioritizeOperator
 
 
 class TestHeuristicsComponents(TestCase):
@@ -59,8 +59,8 @@ class TestHeuristicsComponents(TestCase):
         """
         active_config: ActiveConfig = {
             "prioritize_operators": [
-                {"name": "1_true", "value": "inf", "modifier": "true"},
-                {"name": "5_sign", "value": 5, "modifier": "sign"},
+                PrioritizeOperator.from_spec("1_true", {"value": "inf", "modifier": "true"}),
+                PrioritizeOperator.from_spec("5_sign", {"value": 5, "modifier": "sign"}),
             ]
         }
         spec_ops = {

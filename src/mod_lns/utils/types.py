@@ -2,14 +2,11 @@
 Additional types used in the LNS framework.
 """
 
+from collections.abc import MutableMapping
 from dataclasses import dataclass, field
-from typing import Any, Iterable, Iterator, Literal, TypeAlias, TypedDict
+from typing import Any, ClassVar, Iterable, Iterator, Literal, TypeAlias, TypedDict
 
 PredicateSignature: TypeAlias = tuple[str, int]  # (predicate_name, arity)
-
-DestructionSpec: TypeAlias = dict[
-    Literal["type", "value"], Any
-]  # {"type": Literal["auto", "p", "n"], "value": None | int | float}
 
 
 @dataclass
@@ -72,6 +69,11 @@ class ProjectOperator:
         for sig in signatures:
             op.add(sig)
         return op
+
+
+DestructionSpec: TypeAlias = dict[
+    Literal["type", "value"], Any
+]  # {"type": Literal["auto", "p", "n"], "value": None | int | float}
 
 
 @dataclass
@@ -175,6 +177,95 @@ class DestroyOperator:
         return self._destruction_specs
 
 
+PrioritizeKey: TypeAlias = Literal["value", "modifier"]
+
+PrioritizeSpec: TypeAlias = dict[
+    PrioritizeKey, Any
+]  # {"value": int | Literal["inf"], "modifier": Literal["sign","level","true","false","init","factor"]}
+
+
+@dataclass
+class PrioritizeOperator(MutableMapping[PrioritizeKey, Any]):
+    """
+    Container for prioritize operator specifications.
+    Behaves like a dict for iteration, membership, length and assignments.
+    Additional attribute for operator name.
+
+    :param name: Name of the prioritize operator.
+    :ivar _prioritization_spec: Dictionary with heuristic value and modifier.
+    """
+
+    name: str
+    _prioritization_spec: PrioritizeSpec = field(default_factory=dict, init=False)
+
+    _VALID_MODIFIERS: ClassVar[frozenset[str]] = frozenset({"sign", "level", "true", "false", "init", "factor"})
+    _VALID_KEYS: ClassVar[frozenset[PrioritizeKey]] = frozenset({"value", "modifier"})
+
+    def __iter__(self) -> Iterator[PrioritizeKey]:
+        return iter(self._prioritization_spec)
+
+    def __len__(self) -> int:
+        return len(self._prioritization_spec)
+
+    def __getitem__(self, key: PrioritizeKey) -> Any:
+        return self._prioritization_spec[key]
+
+    def __setitem__(self, key: PrioritizeKey, value: Any) -> None:
+        candidate = dict(self._prioritization_spec)
+        candidate[key] = value
+        self._prioritization_spec = self._validate(candidate)
+
+    def __delitem__(self, key: PrioritizeKey) -> None:
+        raise TypeError("Deleting keys from PrioritizeOperator is not supported.")
+
+    @classmethod
+    def _validate(cls, item: dict[PrioritizeKey, Any]) -> PrioritizeSpec:
+        if not isinstance(item, dict):
+            raise TypeError(f"Expected prioritize spec dict, got {type(item).__name__}.")
+        if set(item.keys()) != cls._VALID_KEYS:
+            raise TypeError(f"Prioritize spec must only have keys: {', '.join(cls._VALID_KEYS)}.")
+
+        value = item["value"]
+        modifier = item["modifier"]
+
+        if value != "inf" and not isinstance(value, int):
+            raise TypeError(f"spec 'value' must be int or 'inf', got {type(value).__name__}.")
+        if not isinstance(modifier, str) or modifier not in cls._VALID_MODIFIERS:
+            raise TypeError(f"spec 'modifier' must be one of: {', '.join(cls._VALID_MODIFIERS)}.")
+        return {"value": value, "modifier": modifier}
+
+    def set_spec(self, item: dict[PrioritizeKey, Any]) -> None:
+        """
+        Set prioritize specification.
+
+        :param item: Prioritization specification.
+        """
+        self._prioritization_spec = self._validate(item)
+
+    @classmethod
+    def from_spec(cls, name: str, spec: dict[PrioritizeKey, Any]) -> "PrioritizeOperator":
+        """
+        Create a PrioritizeOperator from a prioritization specification.
+
+        :param name: Name of the prioritize operator.
+        :param spec: Prioritization specification.
+        :return: PrioritizeOperator instance.
+        """
+        op = cls(name)
+        op.set_spec(spec)
+        return op
+
+    def get_spec(self) -> PrioritizeSpec:
+        """
+        Get prioritization specification.
+
+        :return: Prioritize specification.
+        """
+        if not self._prioritization_spec:
+            raise ValueError("PrioritizeOperator has no prioritization specification.")
+        return self._prioritization_spec
+
+
 class ConfigCatalog(TypedDict, total=False):  # nocoverage
     """
     TypedDict for configuration catalog.
@@ -188,7 +279,7 @@ class ConfigCatalog(TypedDict, total=False):  # nocoverage
 
     project_operators: dict[str, ProjectOperator]
     destroy_operators: dict[str, DestroyOperator]
-    prioritize_operators: dict[str, dict[str, Any]]
+    prioritize_operators: dict[str, PrioritizeOperator]
     configs: dict[str, dict[str, list[str]]]
     strategy: str
 
@@ -207,5 +298,5 @@ class ActiveConfig(TypedDict, total=False):  # nocoverage
     name: str
     project_operators: list[ProjectOperator]
     destroy_operators: list[DestroyOperator]
-    prioritize_operators: list[dict[str, Any]]
+    prioritize_operators: list[PrioritizeOperator]
     config_repr: str

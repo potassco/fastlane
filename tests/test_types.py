@@ -4,7 +4,7 @@ Test cases for the types module.
 
 from unittest import TestCase
 
-from mod_lns.utils.types import DestroyOperator, ProjectOperator
+from mod_lns.utils.types import DestroyOperator, PrioritizeOperator, ProjectOperator
 
 # pylint: disable=protected-access
 
@@ -183,3 +183,96 @@ class TestDestroyOperator(TestCase):
         for spec in invalid_specs:
             with self.assertRaises(TypeError):
                 self.destroy_operator._validate(spec)
+
+
+class TestPrioritizeOperator(TestCase):
+    """
+    Test cases for the PrioritizeOperator class.
+    """
+
+    def setUp(self):
+        self.name = "test_operator"
+        self.spec = {"value": 1, "modifier": "true"}
+        self.prioritize_operator = PrioritizeOperator(self.name)
+
+    def test_init(self):
+        """
+        Test the initialization of the PrioritizeOperator class.
+        """
+        self.assertEqual(self.prioritize_operator.name, self.name)
+
+    def test_from_spec(self):
+        """
+        Test the from_spec class method of the PrioritizeOperator class.
+        """
+        prioritize_operator = PrioritizeOperator.from_spec(self.name, self.spec)
+        self.assertEqual(prioritize_operator.name, self.name)
+        self.assertDictEqual(prioritize_operator._prioritization_spec, self.spec)
+
+    def test_set_spec(self):
+        """
+        Test the set_spec method of the PrioritizeOperator class.
+        """
+        self.prioritize_operator.set_spec(self.spec)
+        self.assertDictEqual(self.prioritize_operator._prioritization_spec, self.spec)
+
+    def test_get_spec(self):
+        """
+        Test the get_spec method of the PrioritizeOperator class.
+        """
+        with self.assertRaises(ValueError):
+            self.prioritize_operator.get_spec()
+
+        self.test_set_spec()
+        self.assertDictEqual(self.prioritize_operator.get_spec(), self.spec)
+
+    def test_helper(self):
+        """
+        Test the helper methods of the PrioritizeOperator class.
+        """
+        self.test_set_spec()
+        # __iter__
+        for key in self.prioritize_operator:
+            self.assertIn(key, self.spec)
+        for key, value in self.prioritize_operator.items():
+            self.assertIn(key, self.spec)
+            self.assertEqual(value, self.spec[key])
+        for key in self.prioritize_operator.keys():
+            self.assertIn(key, self.spec)
+        for value in self.prioritize_operator.values():
+            self.assertIn(value, self.spec.values())
+        # __len__
+        self.assertEqual(len(self.prioritize_operator), len(self.spec))
+        # __contains__
+        for key in self.spec:
+            self.assertIn(key, self.prioritize_operator)
+        # __getitem__
+        for key, value in self.spec.items():
+            self.assertEqual(self.prioritize_operator[key], value)
+        # __setitem__
+        new_spec = {"value": 2, "modifier": "false"}
+        self.prioritize_operator["value"] = 2
+        self.prioritize_operator["modifier"] = "false"
+        self.assertDictEqual(self.prioritize_operator._prioritization_spec, new_spec)
+        # __delitem__
+        with self.assertRaises(TypeError):
+            self.test_set_spec()
+            del self.prioritize_operator["value"]
+
+    def test_validate(self):
+        """
+        Test the _validate method of the PrioritizeOperator class.
+        """
+        valid_spec = {"value": 1, "modifier": "true"}
+        self.assertEqual(self.prioritize_operator._validate(valid_spec), valid_spec)
+
+        invalid_specs = [
+            "not-dict",
+            {"wrong_key": "value"},
+            {"value": "not_a_number", "modifier": "true"},
+            {"value": 1, "modifier": 5},
+            {"value": 1, "modifier": "invalid_modifier"},
+        ]
+        for spec in invalid_specs:
+            with self.assertRaises(TypeError):
+                self.prioritize_operator._validate(spec)

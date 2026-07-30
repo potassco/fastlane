@@ -2,13 +2,13 @@
 Parser for LNS configuration inside ASP encodings.
 """
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Optional
 
 from clingo.symbol import Symbol, SymbolType, Tuple_
 
 from mod_lns import Model
 from mod_lns.interfaces.solver import Solver
-from mod_lns.utils.types import ConfigCatalog, DestroyOperator, ProjectOperator
+from mod_lns.utils.types import ConfigCatalog, DestroyOperator, PrioritizeOperator, ProjectOperator
 
 if TYPE_CHECKING:
     from mod_lns.lns import LNS  # nocoverage
@@ -232,7 +232,7 @@ class ConfigParser:
         )
 
     @classmethod
-    def _parse_prioritize_operators(cls, solver: Solver, declarative: bool) -> dict[str, dict[str, Any]]:
+    def _parse_prioritize_operators(cls, solver: Solver, declarative: bool) -> dict[str, PrioritizeOperator]:
         """
         Extract and validate prioritize operators from atoms of _prioritize_op/3 in model.
 
@@ -240,7 +240,7 @@ class ConfigParser:
         :param declarative: Whether to parse declarative configuration or not.
         :return: Dictionary mapping prioritize operator names to dictionaries of heuristic modifiers and their values.
         """
-        prioritize_operators: dict[str, dict[str, Any]] = {}
+        prioritize_operators: dict[str, PrioritizeOperator] = {}
 
         if declarative:
             for atom in solver.control.symbolic_atoms.by_signature("_prioritize_op", 3):
@@ -253,7 +253,9 @@ class ConfigParser:
                     # logger.warning(f"_prioritize/3: Multiple definitions of prioritize
                     # operator {operator}. Ignoring {atom}.")
                     continue
-                prioritize_operators.setdefault(operator, {"value": 1, "modifier": "true"})
+                prioritize_operators.setdefault(
+                    operator, PrioritizeOperator.from_spec(operator, {"value": 1, "modifier": "true"})
+                )
 
                 value_param = args[1]
                 value: int | str
@@ -268,14 +270,14 @@ class ConfigParser:
 
                 modifier_param = args[2]
                 if cls._is_heuristic_modifier(modifier_param):
-                    prioritize_operators[operator] = {"value": value, "modifier": modifier_param.name}
+                    prioritize_operators[operator].set_spec({"value": value, "modifier": modifier_param.name})
                 else:
                     # logger.warning(f"_prioritize/3: Third argument {modifier_param} is not one
                     # of: sign, level, true, false, init, factor. (atom: {atom})")
                     continue
 
         if not prioritize_operators:
-            prioritize_operators["default"] = {"value": 1, "modifier": "true"}
+            prioritize_operators["default"] = PrioritizeOperator.from_spec("default", {"value": 1, "modifier": "true"})
 
         return prioritize_operators
 
@@ -510,8 +512,8 @@ class ConfigParser:
         )
 
         prioritize_operators = ",".join(
-            name + "{" + f"{modifiers_and_values['value']},{modifiers_and_values['modifier']}" + "}"
-            for name, modifiers_and_values in config_catalog["prioritize_operators"].items()
+            name + "{" + f"{prioritize_specs['value']},{prioritize_specs['modifier']}" + "}"
+            for name, prioritize_specs in config_catalog["prioritize_operators"].items()
         )
 
         out = (

@@ -81,14 +81,7 @@ class AdaptiveStrategy(ABC):
 
         # prioritize
         for operator_name in config_catalog["configs"][config_name]["prioritize_operators"]:
-            heuristic_modifier = config_catalog["prioritize_operators"][operator_name]
-            config["prioritize_operators"].append(
-                {
-                    "name": operator_name,
-                    "value": heuristic_modifier["value"],
-                    "modifier": heuristic_modifier["modifier"],
-                }
-            )
+            config["prioritize_operators"].append(config_catalog["prioritize_operators"][operator_name])
 
         config["config_repr"] = self._format_config(config)
 
@@ -125,7 +118,7 @@ class AdaptiveStrategy(ABC):
         )
 
         prioritize_operators = ",".join(
-            f"{prioritize_operator['name']}[{prioritize_operator['value']},{prioritize_operator['modifier']}]"
+            f"{prioritize_operator.name}[{prioritize_operator['value']},{prioritize_operator['modifier']}]"
             for prioritize_operator in config["prioritize_operators"]
         )
 

@@ -11,7 +11,7 @@ from clingo.symbol import Function, Number, String
 from mod_lns import Model
 from mod_lns.lib.solvers.clingo_solver import ClingoSolver
 from mod_lns.parsers.config_parser import ConfigParser
-from mod_lns.utils.types import DestroyOperator, ProjectOperator
+from mod_lns.utils.types import DestroyOperator, PrioritizeOperator, ProjectOperator
 
 # pylint: disable=protected-access
 
@@ -169,10 +169,10 @@ class TestConfigParser(TestCase):
         self.assertDictEqual(
             prioritize_operators,
             {
-                "op1": {"value": 3, "modifier": "false"},
-                "op2": {"value": "inf", "modifier": "sign"},
-                "invalid": {"value": 1, "modifier": "true"},
-                "invalid2": {"value": 1, "modifier": "true"},
+                "op1": PrioritizeOperator.from_spec("op1", {"value": 3, "modifier": "false"}),
+                "op2": PrioritizeOperator.from_spec("op2", {"value": "inf", "modifier": "sign"}),
+                "invalid": PrioritizeOperator.from_spec("invalid", {"value": 1, "modifier": "true"}),
+                "invalid2": PrioritizeOperator.from_spec("invalid2", {"value": 1, "modifier": "true"}),
             },
         )
 
@@ -180,7 +180,7 @@ class TestConfigParser(TestCase):
         self.assertDictEqual(
             prioritize_operators,
             {
-                "default": {"value": 1, "modifier": "true"},
+                "default": PrioritizeOperator.from_spec("default", {"value": 1, "modifier": "true"}),
             },
         )
 
