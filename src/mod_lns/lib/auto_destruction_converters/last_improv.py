@@ -40,7 +40,6 @@ class LastImprovementDestructionConverter(AutoDestructionConverter):
     def _get_projected_atoms(
         self,
         current_model: Model,
-        op_specs: dict[str, set[Symbol]],
         project_operators: list[ProjectOperator],
     ) -> set[Symbol]:
         """
@@ -57,7 +56,6 @@ class LastImprovementDestructionConverter(AutoDestructionConverter):
             if project_operator_name not in self._projected_atoms_cache:
                 self._projected_atoms_cache[project_operator_name] = ConfigParser.get_projected_atoms(
                     current_model,
-                    op_specs,
                     project_operator_name,
                 )
             projected_atoms.update(self._projected_atoms_cache[project_operator_name])
@@ -107,13 +105,12 @@ class LastImprovementDestructionConverter(AutoDestructionConverter):
             return float(self._auto_init_percent)
 
         current_model = self._last_improvement_models[0]
-        op_specs = self._last_improvement_specs
         new_model = self._last_improvement_models[1]
 
-        projected_atoms = self._get_projected_atoms(current_model, op_specs, project_operators)
+        projected_atoms = self._get_projected_atoms(current_model, project_operators)
 
         destruction_candidate_atoms = ConfigParser.get_destruction_candidate_atoms(
-            op_specs, projected_atoms, destroy_operator_name
+            current_model, projected_atoms, destroy_operator_name
         )
         actual_destruction_percent = calculate_actual_destruction_percent(destruction_candidate_atoms, new_model)
         self._actual_destruction_percent_cache[key] = actual_destruction_percent

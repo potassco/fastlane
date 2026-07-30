@@ -48,7 +48,6 @@ class LNS:
     :ivar stats: List of statistics dictionaries.
     :ivar _config_catalog: Parsed config catalog.
     :ivar _active_config: Active config for the current iteration.
-    :ivar _op_specs: Operator specifications for the current model.
     :ivar prev_fixed_atoms: Set of previously fixed atoms.
     :ivar _is_variable: Indicates if the problem is variable.
     :ivar _adaptive_strategy: Adaptive strategy object.
@@ -92,8 +91,6 @@ class LNS:
         self._config_catalog: ConfigCatalog = {}
         # selected config specification for current iteration
         self._active_config: ActiveConfig = {}
-        # operator specifications of current model
-        self._op_specs: dict[str, set[Symbol]] = {}
 
         self.prev_fixed_atoms: set[Symbol] = set()
 
@@ -279,15 +276,13 @@ class LNS:
 
         self._is_variable = self._check_variability()
 
-        self._op_specs = ConfigParser.get_op_specs(self.current_model)
-
     def destroy(self) -> set[Symbol]:
         """
         Destroy portion of atoms.
 
         :return: Fixed (not destroyed) atoms.
         """
-        return destroy_config(self.current_model, self._active_config, self._op_specs, self.logger)
+        return destroy_config(self.current_model, self._active_config, self.logger)
 
     def _prepare_lns_solver_config(self) -> None:
         """
@@ -354,7 +349,7 @@ class LNS:
         if self.options.fix == "heuristics":
             self.logger.debug("repair using heuristics")
             fixed_atoms_heuristics = get_fixed_atoms_heuristics(
-                self._active_config, self._op_specs, fixed_atoms, self.step_c
+                self._active_config, self.current_model, fixed_atoms, self.step_c
             )
             new_model = repair_heuristics(
                 solver=self.solver,

@@ -4,6 +4,7 @@ Components for implementing fixation via heuristics in the context of LNS.
 
 from clingo.symbol import Function, Number, Symbol
 
+from mod_lns import Model
 from mod_lns.parsers.config_parser import ConfigParser
 from mod_lns.utils.types import ActiveConfig, ConfigCatalog
 
@@ -30,13 +31,16 @@ def generate_heuristic_subprogram(config_catalog: ConfigCatalog) -> str:
 
 
 def get_fixed_atoms_heuristics(
-    active_config: ActiveConfig, spec_ops: dict[str, set[Symbol]], fixed_atoms: set[Symbol], step: int
+    active_config: ActiveConfig,
+    model: Model,
+    fixed_atoms: set[Symbol],
+    step: int,
 ) -> set[Symbol]:
     """
     Get fixed atoms according to heuristics.
 
     :param active_config: LNS configuration dictionary.
-    :param spec_ops: Dictionary of operator specifications.
+    :param model: Model containing operation specifications.
     :param fixed_atoms: Set of fixed atoms from previous iteration.
     :param step: Current LNS iteration.
     :return: Set of fixed atoms for current iteration.
@@ -45,7 +49,7 @@ def get_fixed_atoms_heuristics(
     heu_atoms: set[Symbol] = set()
 
     for prioritize_operator in active_config["prioritize_operators"]:
-        targets = ConfigParser.get_heuristic_targets(spec_ops, fixed_atoms, prioritize_operator.name)
+        targets = ConfigParser.get_heuristic_targets(model, fixed_atoms, prioritize_operator.name)
         for target in targets:
             prioritized_atoms.add(target)
             if prioritize_operator["value"] == "inf":

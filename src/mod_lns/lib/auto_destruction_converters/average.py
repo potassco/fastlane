@@ -84,14 +84,12 @@ class AverageDestructionConverter(AutoDestructionConverter):
         :param new_model: New model.
         :return: Actual destruction percentage.
         """
-        op_specs = ConfigParser.get_op_specs(current_model)
-
         projected_atoms: set[Symbol] = set()
         for project_operator_name in project_operator_names:
-            projected_atoms.update(ConfigParser.get_projected_atoms(current_model, op_specs, project_operator_name))
+            projected_atoms.update(ConfigParser.get_projected_atoms(current_model, project_operator_name))
 
         destruction_candidate_atoms = ConfigParser.get_destruction_candidate_atoms(
-            op_specs,
+            current_model,
             projected_atoms,
             destroy_operator_name,
         )

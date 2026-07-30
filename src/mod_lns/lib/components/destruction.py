@@ -40,22 +40,19 @@ def format_atoms(atoms: set[Symbol]) -> str:
     return " ".join([str(atom) for atom in sorted(atoms)])
 
 
-def _project(
-    model: Model, project_operators: list[ProjectOperator], op_specs: dict[str, set[Symbol]], logger: Logger
-) -> set[Symbol]:
+def _project(model: Model, project_operators: list[ProjectOperator], logger: Logger) -> set[Symbol]:
     """
     Project atoms based on the runtime configuration.
 
     :param model: Model containing the atoms.
     :param project_operators: List of project operators.
-    :param op_specs: Operator specifications.
     :param logger: Logger for debugging.
     :return: Set of projected atoms
     """
     projected_atoms: set[Symbol] = set()
 
     for project_operator in project_operators:
-        projected_atoms.update(ConfigParser.get_projected_atoms(model, op_specs, project_operator.name))
+        projected_atoms.update(ConfigParser.get_projected_atoms(model, project_operator.name))
 
     logger.debug(f"{len(projected_atoms)} projected atoms: {format_atoms(projected_atoms)}")
     logger.debug(LINE)
@@ -136,22 +133,22 @@ def _destroy_atoms_if_all_args_selected(
 
 
 def _destroy(
+    model: Model,
     destroy_operators: list[DestroyOperator],
-    op_specs: dict[str, set[Symbol]],
     projected_atoms: set[Symbol],
     logger: Logger,
 ) -> set[Symbol]:
     """
     Destroy a subset of atoms according to the runtime configuration.
 
+    :param model: Model containing the atoms.
     :param destroy_operators: List of destroy operators.
-    :param op_specs: Operator specifications.
     :param projected_atoms: Set of projected atoms
     :return: Set of prioritized atoms
     """
     destroyed_atoms: set[Symbol] = set()
     for destroy_operator in destroy_operators:
-        atom_term_pairs = ConfigParser.get_atom_term_pairs(op_specs, projected_atoms, destroy_operator.name)
+        atom_term_pairs = ConfigParser.get_atom_term_pairs(model, projected_atoms, destroy_operator.name)
         if len(destroy_operator) == 1:
             destroyed_atoms.update(_destroy_atoms_if_term_selected(atom_term_pairs, destroy_operator.get_first_spec()))
         else:
@@ -170,14 +167,14 @@ def _destroy(
     return prioritized_atoms
 
 
-def destroy_config(model: Model, config: ActiveConfig, op_specs: dict[str, set[Symbol]], logger: Logger) -> set[Symbol]:
+def destroy_config(model: Model, config: ActiveConfig, logger: Logger) -> set[Symbol]:
     """
     Destroy portion of atoms as defined by LNS configuration.
 
+    :param model: Model containing the atoms.
     :param config: Active configuration.
-    :param op_specs: Operator specifications.
     :param logger: Logger instance.
     :return: Set of non destroyed atoms
     """
-    projected = _project(model, config["project_operators"], op_specs, logger)
-    return _destroy(config["destroy_operators"], op_specs, projected, logger)
+    projected = _project(model, config["project_operators"], logger)
+    return _destroy(model, config["destroy_operators"], projected, logger)
