@@ -1,5 +1,5 @@
 """
-Test cases for the relaxation component.
+Test cases for the destruction component.
 """
 
 from unittest import TestCase, mock
@@ -48,19 +48,6 @@ class TestDestructionComponents(TestCase):
         Test _project function.
         """
         model = mock.Mock(spec=Model)
-        op_specs = {
-            "_project": {
-                Function(
-                    "_project", [String("plays_3"), Function("plays", [Number(1), Number(2), Number(3)], True)], True
-                ),
-                Function(
-                    "_project", [String("plays_3"), Function("plays", [Number(4), Number(5), Number(6)], True)], True
-                ),
-                Function(
-                    "_project", [String("other"), Function("plays", [Number(7), Number(8), Number(9)], True)], True
-                ),
-            }
-        }
         projected_atoms = {
             Function("plays", [Number(1), Number(2), Number(3)], True),
             Function("plays", [Number(4), Number(5), Number(6)], True),
@@ -70,8 +57,8 @@ class TestDestructionComponents(TestCase):
             "mod_lns.lib.components.destruction.ConfigParser.get_projected_atoms", return_value=projected_atoms
         ) as mock_get_projected_atoms:
             project_operators = [ProjectOperator(name="plays_3")]
-            self.assertSetEqual(_project(model, project_operators, op_specs, mock.Mock()), projected_atoms)
-            mock_get_projected_atoms.assert_called_once_with(model, op_specs, "plays_3")
+            self.assertSetEqual(_project(model, project_operators, mock.Mock()), projected_atoms)
+            mock_get_projected_atoms.assert_called_once_with(model, "plays_3")
 
     def test_destroy_atoms_if_term_selected(self):
         """
@@ -108,33 +95,7 @@ class TestDestructionComponents(TestCase):
         Test _destroy function.
         """
         # single destroy argument
-        op_specs = {
-            "_destroy": {
-                # valid
-                Function(
-                    "_destroy",
-                    [String("random_n"), Function("plays", [Number(1), Number(2), Number(3)], True), Number(1)],
-                    True,
-                ),
-                Function(
-                    "_destroy",
-                    [String("random_n"), Function("plays", [Number(4), Number(5), Number(6)], True), Number(4)],
-                    True,
-                ),
-                # destroy_op not used
-                Function(
-                    "_destroy",
-                    [String("other"), Function("plays", [Number(7), Number(8), Number(9)], True), Number(7)],
-                    True,
-                ),
-                # not projected
-                Function(
-                    "_destroy",
-                    [String("random_n"), Function("plays", [Number(10), Number(11), Number(12)], True), Number(10)],
-                    True,
-                ),
-            }
-        }
+        model = mock.Mock(spec=Model)
         projected_atoms = {
             Function("plays", [Number(1), Number(2), Number(3)], True),
             Function("plays", [Number(4), Number(5), Number(6)], True),
@@ -149,53 +110,11 @@ class TestDestructionComponents(TestCase):
             "mod_lns.lib.components.destruction.ConfigParser.get_atom_term_pairs", return_value=atom_term_pairs
         ) as mock_get_atom_term_pairs:
             # 3 projected atoms, 2 with destroy operators, 1 destroyed -> 2 remaining
-            self.assertEqual(len(_destroy(destroy_operators, op_specs, projected_atoms, mock.Mock())), 2)
-            mock_get_atom_term_pairs.assert_called_once_with(op_specs, projected_atoms, "random_n")
+            self.assertEqual(len(_destroy(model, destroy_operators, projected_atoms, mock.Mock())), 2)
+            mock_get_atom_term_pairs.assert_called_once_with(model, projected_atoms, "random_n")
 
         # multiple destroy arguments
-        op_specs = {
-            "_destroy": {
-                # valid
-                Function(
-                    "_destroy",
-                    [
-                        String("random_n"),
-                        Function("plays", [Number(1), Number(2), Number(3)], True),
-                        Tuple_([Number(1), Number(2)]),
-                    ],
-                    True,
-                ),
-                Function(
-                    "_destroy",
-                    [
-                        String("random_n"),
-                        Function("plays", [Number(4), Number(5), Number(6)], True),
-                        Tuple_([Number(4), Number(2)]),
-                    ],
-                    True,
-                ),
-                # destroy_op not used
-                Function(
-                    "_destroy",
-                    [
-                        String("other"),
-                        Function("plays", [Number(7), Number(8), Number(9)], True),
-                        Tuple_([Number(7), Number(2)]),
-                    ],
-                    True,
-                ),
-                # not projected
-                Function(
-                    "_destroy",
-                    [
-                        String("random_n"),
-                        Function("plays", [Number(10), Number(11), Number(12)], True),
-                        Tuple_([Number(10), Number(2)]),
-                    ],
-                    True,
-                ),
-            }
-        }
+        model = mock.Mock(spec=Model)
         projected_atoms = {
             Function("plays", [Number(1), Number(2), Number(3)], True),
             Function("plays", [Number(4), Number(5), Number(6)], True),
@@ -218,15 +137,14 @@ class TestDestructionComponents(TestCase):
             "mod_lns.lib.components.destruction.ConfigParser.get_atom_term_pairs", return_value=atom_term_pairs
         ) as mock_get_atom_term_pairs:
             # 3 projected atoms, 2 with destroy operators, 1 destroyed -> 2 remaining
-            self.assertEqual(len(_destroy(destroy_operators, op_specs, projected_atoms, mock.Mock())), 2)
-            mock_get_atom_term_pairs.assert_called_once_with(op_specs, projected_atoms, "random_n")
+            self.assertEqual(len(_destroy(model, destroy_operators, projected_atoms, mock.Mock())), 2)
+            mock_get_atom_term_pairs.assert_called_once_with(model, projected_atoms, "random_n")
 
-    def test_relax_config(self):
+    def test_destroy_config(self):
         """
-        Test relax_config function.
+        Test destroy_config function.
         """
         model = mock.Mock(spec=Model)
-        op_specs = {"test_op": "test_spec"}
         config: ActiveConfig = {
             "prioritize_operators": [{"name": "test_op", "value": 1, "modifier": "true"}],
             "destroy_operators": [DestroyOperator.from_specs("test_op", [{"type": "p", "value": 50}])],
@@ -238,6 +156,6 @@ class TestDestructionComponents(TestCase):
             mock.patch("mod_lns.lib.components.destruction._project", return_value=projected) as mock_project,
             mock.patch("mod_lns.lib.components.destruction._destroy") as mock_destroy,
         ):
-            destroy_config(model, config, op_specs, logger)
-            mock_project.assert_called_once_with(model, config["project_operators"], op_specs, logger)
-            mock_destroy.assert_called_once_with(config["destroy_operators"], op_specs, projected, logger)
+            destroy_config(model, config, logger)
+            mock_project.assert_called_once_with(model, config["project_operators"], logger)
+            mock_destroy.assert_called_once_with(model, config["destroy_operators"], projected, logger)

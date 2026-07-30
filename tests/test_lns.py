@@ -290,27 +290,13 @@ class TestLNS(TestCase):
         self.lns._is_variable = False
         model = mock.Mock()
         self.lns.current_model = model
-        specs = {
-            "_project": {
-                Function(
-                    "_project",
-                    [String("plays_3"), Function("plays", [Number(1), Number(2), Number(3)], True)],
-                    True,
-                )
-            }
-        }
 
-        with (
-            mock.patch.object(self.lns, "_check_variability", return_value=True) as mock_check,
-            mock.patch("mod_lns.lns.ConfigParser.get_op_specs", return_value=specs) as mock_get_specs,
-        ):
+        with (mock.patch.object(self.lns, "_check_variability", return_value=True) as mock_check,):
             self.lns.pre_destroy()
 
             mock_check.assert_called_once()
-            mock_get_specs.assert_called_once_with(model)
             self.assertFalse(self.lns._printout)
             self.assertTrue(self.lns._is_variable)
-            self.assertDictEqual(self.lns._op_specs, specs)
 
     def test_destroy(self):
         """
@@ -319,15 +305,14 @@ class TestLNS(TestCase):
         r_set = {Function("plays", [Number(1), Number(2), Number(3)], True)}
         model = mock.Mock()
         config = mock.Mock()
-        specs = mock.Mock()
+        mock.Mock()
         self.lns.current_model = model
         self.lns._active_config = config
-        self.lns._op_specs = specs
 
         with mock.patch("mod_lns.lns.destroy_config", return_value=r_set) as mock_destroy:
             result = self.lns.destroy()
 
-            mock_destroy.assert_called_once_with(model, config, specs, self.lns.logger)
+            mock_destroy.assert_called_once_with(model, config, self.lns.logger)
             self.assertEqual(result, r_set)
 
     def test_prepare_lns_solver_config(self):

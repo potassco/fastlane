@@ -4,7 +4,7 @@ Test cases for the last improvement auto-destruction converter.
 
 from unittest import TestCase, mock
 
-from clingo.symbol import Function, Number, String
+from clingo.symbol import Function, Number
 
 from mod_lns import Model
 from mod_lns.lib.auto_destruction_converters.last_improv import LastImprovementDestructionConverter
@@ -55,20 +55,6 @@ class TestLastImprovementDestructionConverter(TestCase):
         Test the get_projected_atoms method.
         """
         model = mock.Mock(spec=Model)
-        op_specs = {
-            "_project": {
-                Function(
-                    "_project", [String("plays_3"), Function("plays", [Number(1), Number(2), Number(3)], True)], True
-                ),
-                Function(
-                    "_project", [String("plays_3"), Function("plays", [Number(4), Number(5), Number(6)], True)], True
-                ),
-                Function("_project", [String("day_1"), Function("day", [Number(1)], True)], True),
-                Function(
-                    "_project", [String("other"), Function("plays", [Number(7), Number(8), Number(9)], True)], True
-                ),
-            }
-        }
         project_operators = [
             ProjectOperator.from_signatures(name="plays_3", signatures={("plays", 3)}),
             ProjectOperator.from_signatures(name="day_1", signatures={("day", 1)}),
@@ -88,15 +74,15 @@ class TestLastImprovementDestructionConverter(TestCase):
             side_effect=projected_atoms,
         ) as mock_get_projected_atoms:
             self.assertSetEqual(
-                self.converter._get_projected_atoms(model, op_specs, project_operators),
+                self.converter._get_projected_atoms(model, project_operators),
                 {
                     Function("plays", [Number(1), Number(2), Number(3)], True),
                     Function("plays", [Number(4), Number(5), Number(6)], True),
                     Function("day", [Number(1)], True),
                 },
             )
-            mock_get_projected_atoms.assert_any_call(model, op_specs, "plays_3")
-            mock_get_projected_atoms.assert_any_call(model, op_specs, "day_1")
+            mock_get_projected_atoms.assert_any_call(model, "plays_3")
+            mock_get_projected_atoms.assert_any_call(model, "day_1")
 
     def test_update_last_improvement_stats(self):
         """
@@ -232,11 +218,9 @@ class TestLastImprovementDestructionConverter(TestCase):
                 40.0,
             )
 
-            mock_get_projected_atoms.assert_called_once_with(
-                current_model, self.converter._last_improvement_specs, project_operators
-            )
+            mock_get_projected_atoms.assert_called_once_with(current_model, project_operators)
             mock_get_destructuon_candidate_atoms.assert_called_once_with(
-                self.converter._last_improvement_specs, projected_atoms, destroy_operator_name
+                current_model, projected_atoms, destroy_operator_name
             )
             mock_calculate_actual_destruction_percent.assert_called_once_with(destruction_candidate_atoms, new_model)
             self.assertEqual(

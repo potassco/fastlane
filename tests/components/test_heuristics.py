@@ -4,7 +4,7 @@ Test cases for the heuristics components of the LNS framework.
 
 from unittest import TestCase, mock
 
-from clingo.symbol import Function, Number, String
+from clingo.symbol import Function, Number
 
 from mod_lns.lib.components.heuristics import (
     generate_heuristic_subprogram,
@@ -63,19 +63,7 @@ class TestHeuristicsComponents(TestCase):
                 PrioritizeOperator.from_spec("5_sign", {"value": 5, "modifier": "sign"}),
             ]
         }
-        spec_ops = {
-            "_prioritize": {
-                Function(
-                    "_prioritize", [String("1_true"), Function("plays", [Number(1), Number(2), Number(3)], True)], True
-                ),
-                Function(
-                    "_prioritize", [String("5_sign"), Function("plays", [Number(4), Number(5), Number(6)], True)], True
-                ),
-                Function(
-                    "_prioritize", [String("other"), Function("plays", [Number(7), Number(8), Number(9)], True)], True
-                ),
-            }
-        }
+        model = mock.Mock()
         fixed_atoms = {
             Function("plays", [Number(1), Number(2), Number(3)], True),
             Function("plays", [Number(4), Number(5), Number(6)], True),
@@ -121,7 +109,7 @@ class TestHeuristicsComponents(TestCase):
         with mock.patch.object(
             ConfigParser, "get_heuristic_targets", side_effect=heuristic_targets
         ) as mock_get_heuristic_targets:
-            fixed_atoms_heuristics = get_fixed_atoms_heuristics(active_config, spec_ops, fixed_atoms, step=1)
-            mock_get_heuristic_targets.assert_any_call(spec_ops, fixed_atoms, "1_true")
-            mock_get_heuristic_targets.assert_any_call(spec_ops, fixed_atoms, "5_sign")
+            fixed_atoms_heuristics = get_fixed_atoms_heuristics(active_config, model, fixed_atoms, step=1)
+            mock_get_heuristic_targets.assert_any_call(model, fixed_atoms, "1_true")
+            mock_get_heuristic_targets.assert_any_call(model, fixed_atoms, "5_sign")
         self.assertSetEqual(fixed_atoms_heuristics, expected_fixed_atoms_heuristics)

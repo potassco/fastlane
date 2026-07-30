@@ -76,7 +76,6 @@ class TestAverageDestructionConverter(TestCase):
         """
         Test the _compute_actual_destruction_percent method.
         """
-        op_specs = mock.Mock()
         current_model = mock.Mock()
         new_model = mock.Mock()
         project_operator_names = ["op1", "op2"]
@@ -85,9 +84,6 @@ class TestAverageDestructionConverter(TestCase):
         destruction_candidate_atoms = {Function("atom3"), Function("atom4")}
 
         with (
-            mock.patch(
-                "mod_lns.lib.auto_destruction_converters.average.ConfigParser.get_op_specs", return_value=op_specs
-            ) as mock_get_op_specs,
             mock.patch(
                 "mod_lns.lib.auto_destruction_converters.average.ConfigParser.get_projected_atoms",
                 side_effect=projected_atoms,
@@ -107,10 +103,9 @@ class TestAverageDestructionConverter(TestCase):
                 ),
                 50.0,
             )
-            mock_get_op_specs.assert_called_once_with(current_model)
             self.assertEqual(mock_get_projected_atoms.call_count, len(project_operator_names))
             mock_get_destruction_candidate_atoms.assert_called_once_with(
-                op_specs, {Function("atom1"), Function("atom2")}, destroy_operator_name
+                current_model, {Function("atom1"), Function("atom2")}, destroy_operator_name
             )
             mock_calculate_actual_destruction_percent.assert_called_once_with(destruction_candidate_atoms, new_model)
 

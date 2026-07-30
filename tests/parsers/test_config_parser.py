@@ -4,6 +4,7 @@ Test cases for config parser.
 
 import tempfile
 from unittest import TestCase, mock
+from weakref import WeakKeyDictionary
 
 import clingo
 from clingo.symbol import Function, Number, String
@@ -584,8 +585,9 @@ class TestConfigParser(TestCase):
             Function("_destroy", [String("random_n"), Function("plays", [Number(1), Number(2), Number(3)]), Number(2)]),
             Function("_prioritize", [String("1_true"), Function("plays", [Number(1), Number(2), Number(3)])]),
         }
+        specs = ConfigParser.get_op_specs(model)
         self.assertDictEqual(
-            ConfigParser.get_op_specs(model),
+            specs,
             {
                 "_project": {
                     Function(
@@ -611,10 +613,14 @@ class TestConfigParser(TestCase):
             },
         )
 
+        # Repeated calls for the same model should return the cached object.
+        self.assertIs(specs, ConfigParser.get_op_specs(model))
+
     def test_get_projected_atoms(self):
         """
         Test the _get_projected_atoms method.
         """
+        ConfigParser._projected_atoms_cache = WeakKeyDictionary()
         model = Model()
         model.shown = {
             Function("plays", [Number(1), Number(2), Number(3)]),
@@ -640,20 +646,29 @@ class TestConfigParser(TestCase):
                 ),
             }
         }
+        with mock.patch.object(ConfigParser, "get_op_specs", return_value=op_specs):
+            projected_atoms = ConfigParser.get_projected_atoms(model, "plays_3")
         self.assertSetEqual(
-            ConfigParser.get_projected_atoms(model, op_specs, "plays_3"),
+            projected_atoms,
             {Function("plays", [Number(1), Number(2), Number(3)])},
         )
 
-        self.assertSetEqual(
-            ConfigParser.get_projected_atoms(model, {}, "plays_3"),
-            model.shown,
-        )
+        # Repeated calls with the same inputs should return the cached object.
+        with mock.patch.object(ConfigParser, "get_op_specs", return_value=op_specs):
+            self.assertIs(projected_atoms, ConfigParser.get_projected_atoms(model, "plays_3"))
+
+        ConfigParser._projected_atoms_cache = WeakKeyDictionary()
+        with mock.patch.object(ConfigParser, "get_op_specs", return_value={}):
+            default_projected_atoms = ConfigParser.get_projected_atoms(model, "plays_3")
+        self.assertSetEqual(default_projected_atoms, model.shown)
+        self.assertIsNot(projected_atoms, default_projected_atoms)
 
     def test_get_atom_term_pairs(self):
         """
         Test the _get_atom_term_pairs method.
         """
+        ConfigParser._atom_term_pairs_cache = WeakKeyDictionary()
+        model = Model()
         projected_atoms = {
             Function("plays", [Number(1), Number(2), Number(3)]),
             Function("abc", [Number(1), Number(2), Number(3)]),
@@ -677,20 +692,29 @@ class TestConfigParser(TestCase):
                 ),
             }
         }
+        with mock.patch.object(ConfigParser, "get_op_specs", return_value=op_specs):
+            atom_term_pairs = ConfigParser.get_atom_term_pairs(model, projected_atoms, "random_n")
         self.assertEqual(
-            ConfigParser.get_atom_term_pairs(op_specs, projected_atoms, "random_n"),
+            atom_term_pairs,
             [
                 {"atom": Function("plays", [Number(1), Number(2), Number(3)], True), "term": Number(2)},
             ],
         )
 
-        self.assertEqual(len(ConfigParser.get_atom_term_pairs({}, projected_atoms, "random_n")), 2)
+        # Repeated calls with the same inputs should return the cached object.
+        with mock.patch.object(ConfigParser, "get_op_specs", return_value=op_specs):
+            self.assertIs(atom_term_pairs, ConfigParser.get_atom_term_pairs(model, projected_atoms, "random_n"))
+
+        ConfigParser._atom_term_pairs_cache = WeakKeyDictionary()
+        with mock.patch.object(ConfigParser, "get_op_specs", return_value={}):
+            default_atom_term_pairs = ConfigParser.get_atom_term_pairs(model, projected_atoms, "random_n")
+        self.assertEqual(len(default_atom_term_pairs), 2)
 
     def test_get_destruction_candidate_atoms(self):
         """
         Test the _get_destruction_candidate_atoms method.
         """
-        op_specs = mock.Mock()
+        model = mock.Mock(spec=Model)
         projected_atoms = mock.Mock()
         op_name = "random_n"
         with mock.patch.object(
@@ -701,8 +725,8 @@ class TestConfigParser(TestCase):
                 {"atom": Function("plays", [Number(4), Number(5), Number(6)], True), "term": Number(5)},
             ],
         ) as mock_get_atom_term_pairs:
-            candidates = ConfigParser.get_destruction_candidate_atoms(op_specs, projected_atoms, op_name)
-            mock_get_atom_term_pairs.assert_called_once_with(op_specs, projected_atoms, op_name)
+            candidates = ConfigParser.get_destruction_candidate_atoms(model, projected_atoms, op_name)
+            mock_get_atom_term_pairs.assert_called_once_with(model, projected_atoms, op_name)
             self.assertSetEqual(
                 candidates,
                 {
@@ -715,6 +739,8 @@ class TestConfigParser(TestCase):
         """
         Test the _get_heuristic_targets method.
         """
+        ConfigParser._heuristic_targets_cache = WeakKeyDictionary()
+        model = Model()
         op_specs = {
             "_prioritize": {
                 Function(
@@ -738,12 +764,18 @@ class TestConfigParser(TestCase):
             Function("plays", [Number(1), Number(2), Number(3)]),
             Function("abc", [Number(1), Number(2)]),
         }
+        with mock.patch.object(ConfigParser, "get_op_specs", return_value=op_specs):
+            heuristic_targets = ConfigParser.get_heuristic_targets(model, undestroyed_atoms, "1_true")
         self.assertSetEqual(
-            ConfigParser.get_heuristic_targets(op_specs, undestroyed_atoms, "1_true"),
+            heuristic_targets,
             {Function("plays", [Number(1), Number(2), Number(3)])},
         )
 
-        self.assertSetEqual(
-            ConfigParser.get_heuristic_targets({}, undestroyed_atoms, "1_true"),
-            undestroyed_atoms,
-        )
+        # Repeated calls with the same inputs should return the cached object.
+        with mock.patch.object(ConfigParser, "get_op_specs", return_value=op_specs):
+            self.assertIs(heuristic_targets, ConfigParser.get_heuristic_targets(model, undestroyed_atoms, "1_true"))
+
+        ConfigParser._heuristic_targets_cache = WeakKeyDictionary()
+        with mock.patch.object(ConfigParser, "get_op_specs", return_value={}):
+            default_heuristic_targets = ConfigParser.get_heuristic_targets(model, undestroyed_atoms, "1_true")
+        self.assertSetEqual(default_heuristic_targets, undestroyed_atoms)
