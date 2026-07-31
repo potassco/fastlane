@@ -5,7 +5,7 @@ Test cases for LNS class.
 from io import StringIO
 from unittest import TestCase, mock
 
-from clingo.symbol import Function, Number, String
+from clingo.symbol import Function, Number
 
 from mod_lns import Model, Timer
 from mod_lns.interfaces.solver import SolverConfig

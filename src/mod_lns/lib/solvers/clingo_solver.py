@@ -15,6 +15,7 @@ from clingo.statistics import StatisticsMap
 
 from mod_lns import Model, Timer
 from mod_lns.interfaces.solver import Solver, SolverConfig
+from mod_lns.utils.logger import DEBUG_EXTRA
 
 if TYPE_CHECKING:
     from mod_lns.lns import LNS  # nocoverage
@@ -205,16 +206,17 @@ class ClingoSolver(Solver):
         """
         Debug print of clingo.Control configuration.
         """
-        self.logger.debug("configuration: %s", self.control.configuration.configuration)
+        self.logger.debug_extra("clingo.Control configuration:")
+        self.logger.debug_extra("configuration: %s", self.control.configuration.configuration)
         if isinstance(self.control.configuration.solver, clingo.Configuration):
-            self.logger.debug("opt-strategy: %s", self.control.configuration.solver.opt_strategy)
-            self.logger.debug("opt-heuristic: %s", self.control.configuration.solver.opt_heuristic)
-            self.logger.debug("restart-on-model: %s", self.control.configuration.solver.restart_on_model)
-            self.logger.debug("heuristic: %s", self.control.configuration.solver.heuristic)
+            self.logger.debug_extra("opt-strategy: %s", self.control.configuration.solver.opt_strategy)
+            self.logger.debug_extra("opt-heuristic: %s", self.control.configuration.solver.opt_heuristic)
+            self.logger.debug_extra("restart-on-model: %s", self.control.configuration.solver.restart_on_model)
+            self.logger.debug_extra("heuristic: %s", self.control.configuration.solver.heuristic)
         if isinstance(self.control.configuration.solve, clingo.Configuration):
-            self.logger.debug("opt-mode: %s", self.control.configuration.solve.opt_mode)
-            self.logger.debug("solve-limit: %s", self.control.configuration.solve.solve_limit)
-            self.logger.debug("parallel-mode: %s", self.control.configuration.solve.parallel_mode)
+            self.logger.debug_extra("opt-mode: %s", self.control.configuration.solve.opt_mode)
+            self.logger.debug_extra("solve-limit: %s", self.control.configuration.solve.solve_limit)
+            self.logger.debug_extra("parallel-mode: %s", self.control.configuration.solve.parallel_mode)
 
     # pylint: disable=too-many-branches
     def solve(
@@ -243,9 +245,10 @@ class ClingoSolver(Solver):
             cutoff = config.cutoff
             self._apply_config_to_control(config)
 
-        self._control_config_debug()
-        self.logger.debug("time-limit: %s", time_limit)
-        self.logger.debug("cutoff: %s", cutoff)
+        if self.logger.isEnabledFor(DEBUG_EXTRA):  # nocoverage
+            self._control_config_debug()
+            self.logger.debug_extra("time-limit: %s", time_limit)
+            self.logger.debug_extra("cutoff: %s", cutoff)
 
         self._solve_timer.reset()
         self._solve_timer.start(time_limit)

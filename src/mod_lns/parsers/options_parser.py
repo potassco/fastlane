@@ -25,6 +25,7 @@ from mod_lns.lib.auto_destruction_converters.average import (
 )
 from mod_lns.lib.auto_destruction_converters.last_improv import LastImprovementDestructionConverter
 from mod_lns.lns_options import LNSOptions
+from mod_lns.utils.logger import DEBUG_EXTRA
 
 if sys.version_info[1] < 8:
     import importlib_metadata as metadata  # nocoverage
@@ -559,6 +560,7 @@ class OptionsParser:
             "warning": logging.WARNING,
             "info": logging.INFO,
             "debug": logging.DEBUG,
+            "debug-extra": DEBUG_EXTRA,
         }
 
         parser.register("type", "logging_level", logging_levels.get)

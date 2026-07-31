@@ -4,12 +4,11 @@ A modifiable large neighborhood search framework.
 
 import math
 import random
-from logging import Logger
 from typing import Any, Optional
 
 from clingo import Symbol
 
-from mod_lns import UNSET, Model, Timer
+from mod_lns import LINE, UNSET, Model, Timer
 from mod_lns.interfaces.adaptive_strategy import AdaptiveStrategy
 from mod_lns.interfaces.solver import SolverConfig
 from mod_lns.lib.adaptive_strategies.static import StaticStrategy
@@ -27,10 +26,8 @@ from mod_lns.lib.components.utils import (
 )
 from mod_lns.lns_options import LNSOptions
 from mod_lns.parsers.config_parser import ConfigParser
-from mod_lns.utils.logger import setup_logger
+from mod_lns.utils.logger import LNSLogger, setup_logger
 from mod_lns.utils.types import ActiveConfig, ConfigCatalog
-
-LINE = "--------------------------------------------------------------------------------------"
 
 
 # pylint: disable=too-many-instance-attributes
@@ -73,7 +70,7 @@ class LNS:
         """
         self.options: LNSOptions = options if options is not None else LNSOptions()
         self.parse_options(args if args is not None else {})
-        self.logger: Logger = setup_logger("LNS", self.options.log_level)
+        self.logger: LNSLogger = setup_logger("LNS", self.options.log_level)
 
         self.files: list[str] = files
 
@@ -411,7 +408,6 @@ class LNS:
         cost_new = self.new_model.cost
         threshold = cost[:-1]
         threshold.append(cost[-1] + math.ceil(int(abs(cost[-1]) * self.options.accept_improvement / 100)))
-        self.logger.debug(LINE)
         self.logger.debug("cost_new: %s", cost_new)
         self.logger.debug("cost: %s", cost)
         self.logger.debug("cost threshold: %s", threshold)
@@ -523,49 +519,51 @@ class LNS:
         self.logger.info("info")
         self.logger.warning("warning")
         self.logger.debug("debug")
+        self.logger.debug_extra("debug-extra")
         self.logger.error("error")
 
         self.step_c = -1
 
         self.logger.debug(LINE)
-        self.logger.debug("pre_setup")
+        self.logger.debug("# pre_setup")
         self.pre_setup()
 
         self.logger.debug(LINE)
-        self.logger.debug("solver_setup")
+        self.logger.debug("# solver_setup")
         self.setup_solver()
 
         self.logger.debug(LINE)
-        self.logger.debug("post_setup")
+        self.logger.debug("# post_setup")
         self.post_setup()
 
         self.step_c = 0
 
         self.logger.debug(LINE)
-        self.logger.debug("get first solution")
+        self.logger.debug("# get first solution")
         if not self.get_first_solution():
             self.logger.error("First solution could not be obtained")
             raise SystemExit
 
         self.logger.debug(LINE)
-        self.logger.debug("post first solution")
+        self.logger.debug("# post first solution")
         self.post_first_solution()
 
         self.logger.debug(LINE)
-        self.logger.debug("start LNS loop")
+        self.logger.debug("# start LNS loop")
         while not self.check_stop():
             self.step_c += 1
 
             self.logger.debug(LINE)
-            self.logger.debug("iteration: %s", self.step_c)
-            self.logger.debug("pre_destroy")
+            self.logger.debug("# iteration: %s", self.step_c)
+            self.logger.debug("# pre_destroy")
             self.pre_destroy()
 
             self.logger.debug(LINE)
-            self.logger.debug("destroy")
+            self.logger.debug("# destroy")
             fixed_atoms = self.destroy()
 
             self.logger.debug(LINE)
+            self.logger.debug("# repair")
             self.logger.info(
                 "repair with %s fixed atoms (%.2f%% destroyed)",
                 len(fixed_atoms),
@@ -574,19 +572,25 @@ class LNS:
             self.new_model = self.repair(fixed_atoms)
 
             self.logger.debug(LINE)
-            self.logger.debug("post_repair")
+            self.logger.debug("# post_repair")
             self.post_repair()
 
+            self.logger.debug(LINE)
+            self.logger.debug("# check_accept")
             if self.check_accept():
                 assert isinstance(self.new_model, Model)
                 self.current_model = self.new_model
                 self.accepted()
 
+            self.logger.debug(LINE)
+            self.logger.debug("# check_better")
             if self.check_better():
                 assert isinstance(self.new_model, Model)
                 self.best_model = self.new_model
                 self.better()
 
+            self.logger.debug(LINE)
+            self.logger.debug("# pre_next_iteration")
             self.pre_next_iteration()
 
         self.print_result()

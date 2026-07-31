@@ -214,9 +214,9 @@ class TestSolverClingo(TestCase):
         """
         self.solver.setup(self.lns)
         self.test_apply_config_to_control()
-        with mock.patch.object(self.solver.logger, "debug") as mock_debug:
+        with mock.patch.object(self.solver.logger, "debug_extra") as mock_debug:
             self.solver._control_config_debug()
-            self.assertEqual(mock_debug.call_count, 8)
+            self.assertEqual(mock_debug.call_count, 9)
 
     def test_solve(self):
         """

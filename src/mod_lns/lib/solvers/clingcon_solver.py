@@ -15,6 +15,7 @@ from clingo.statistics import StatisticsMap
 from mod_lns import Model
 from mod_lns.interfaces.solver import SolverConfig
 from mod_lns.lib.solvers.clingo_solver import ClingoSolver
+from mod_lns.utils.logger import DEBUG_EXTRA
 
 if TYPE_CHECKING:
     from mod_lns.lns import LNS  # nocoverage
@@ -138,9 +139,10 @@ class ClingconSolver(ClingoSolver):
             cutoff = config.cutoff
             self._apply_config_to_control(config)
 
-        self._control_config_debug()
-        self.logger.debug("time-limit: %s", time_limit)
-        self.logger.debug("cutoff: %s", cutoff)
+        if self.logger.isEnabledFor(DEBUG_EXTRA):  # nocoverage
+            self._control_config_debug()
+            self.logger.debug_extra("time-limit: %s", time_limit)
+            self.logger.debug_extra("cutoff: %s", cutoff)
 
         self.theory.prepare(self.control)
 

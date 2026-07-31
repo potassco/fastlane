@@ -4,7 +4,7 @@ Test cases for the destruction component.
 
 from unittest import TestCase, mock
 
-from clingo.symbol import Function, Number, String, Tuple_
+from clingo.symbol import Function, Number, Tuple_
 
 from mod_lns import Model
 from mod_lns.lib.components.destruction import (

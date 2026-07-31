@@ -6,11 +6,12 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from logging import Logger
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 import clingo
 from clingo.symbol import Symbol
+
+from mod_lns.utils.logger import LNSLogger
 
 if TYPE_CHECKING:  # nocoverage
     from mod_lns import Model
@@ -54,7 +55,7 @@ class Solver(ABC):
         self.result = "UNKNOWN"
         self.optimum = "unknown"
         self.minimize_variable: Optional[Symbol] = None
-        self.logger: Logger = Logger("temporary_solver_logger")
+        self.logger: LNSLogger = LNSLogger("temporary_solver_logger")
         self.stop: bool = False
         self._assumptions_used = False
         self.last_model: Optional[Model] = None

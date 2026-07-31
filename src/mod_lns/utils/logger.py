@@ -5,6 +5,29 @@ Setup project wide loggers.
 import logging
 import sys
 
+DEBUG_EXTRA = 5
+logging.addLevelName(DEBUG_EXTRA, "DEBUG_EXTRA")
+
+
+class LNSLogger(logging.Logger):
+    """
+    Logger with an additional DEBUG_EXTRA level method.
+    """
+
+    def debug_extra(self, message: object, *args: object, **kwargs: object) -> None:  # nocoverage
+        """
+        Log a message with level DEBUG_EXTRA.
+
+        :param message: The message to log.
+        :param args: Additional positional arguments.
+        :param kwargs: Additional keyword arguments.
+        """
+        if self.isEnabledFor(DEBUG_EXTRA):
+            self.log(DEBUG_EXTRA, message, *args, **kwargs)  # type: ignore[arg-type]
+
+
+logging.setLoggerClass(LNSLogger)
+
 COLORS = {
     "GREY": "\033[90m",
     "BLUE": "\033[94m",
@@ -32,12 +55,16 @@ class SingleLevelFilter(logging.Filter):
         return record.levelno == self.passlevel
 
 
-def setup_logger(name: str, level: int) -> logging.Logger:
+def setup_logger(name: str, level: int) -> LNSLogger:
     """
     Setup logger.
     """
 
     logger = logging.getLogger(name)
+    assert isinstance(logger, LNSLogger)
+
+    # Avoid duplicate handlers when setup is called repeatedly with the same logger name.
+    logger.handlers.clear()
     logger.propagate = False
     logger.setLevel(level)
     log_message_str = "{}%(levelname)s:{}  - %(message)s{}"
@@ -53,6 +80,7 @@ def setup_logger(name: str, level: int) -> logging.Logger:
     set_handler(logging.INFO, "GREEN")
     set_handler(logging.WARNING, "YELLOW")
     set_handler(logging.DEBUG, "BLUE")
+    set_handler(DEBUG_EXTRA, "BLUE")
     set_handler(logging.ERROR, "RED")
 
     return logger

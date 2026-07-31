@@ -7,6 +7,8 @@ from typing import Any, ClassVar, Optional
 
 from clingo import Symbol
 
+LINE = "-" * 86
+
 
 class UnsetMarker:
     """

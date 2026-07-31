@@ -2,14 +2,13 @@
 Components for repairing solutions in the context of LNS.
 """
 
-from logging import Logger
 from typing import Optional
 
 from clingo.symbol import Number, Symbol
 
-from mod_lns import Model
+from mod_lns import LINE, Model
 from mod_lns.interfaces.solver import Solver, SolverConfig
-from mod_lns.lib.components.destruction import LINE
+from mod_lns.utils.logger import DEBUG_EXTRA, LNSLogger
 
 
 def repair_assumptions(solver: Solver, solver_config: SolverConfig, fixed_atoms: set[Symbol]) -> Optional[Model]:
@@ -31,7 +30,7 @@ def repair_heuristics(
     fixed_atoms_heuristics: set[Symbol],
     prev_fixed_atoms_heuristics: set[Symbol],
     step: int,
-    logger: Logger,
+    logger: LNSLogger,
 ) -> Optional[Model]:
     """
     Repair solution by prioritizing fixed atoms.
@@ -44,34 +43,36 @@ def repair_heuristics(
     :param logger: Logger instance.
     :return: New model if found, otherwise None.
     """
-    logger.debug("release externals:")
-    # released_externals = []
+    logger.debug(f"release {len(prev_fixed_atoms_heuristics)} externals:")
+    released_externals = []
     for a in prev_fixed_atoms_heuristics:
         solver.release_external(a)
-        # released_externals.append(str(a))
-    # released_line = ". ".join(released_externals)
-    # logger.debug("%s%s", released_line, "." if released_line else "")
-    logger.debug(LINE)
-    logger.debug("get new externals:")
+        released_externals.append(str(a))
+
+    if logger.isEnabledFor(DEBUG_EXTRA):  # nocoverage
+        released_line = ". ".join(released_externals)
+        logger.debug_extra("%s%s", released_line, "." if released_line else "")
+    logger.debug(f"get {len(fixed_atoms_heuristics)} new externals:")
     statements = ""
     for a in fixed_atoms_heuristics:
         ext_statement = f"#external {a}."
         statements += ext_statement
-    # logger.debug(statements)
-    logger.debug(LINE)
+    logger.debug_extra(statements)
     solver.add("external", ["t"], statements)
     solver.ground([("external", [Number(step)])])
     solver.ground([("heuristic", [Number(step)])])
 
-    logger.debug("enable externals:")
-    # enabled_externals = []
+    logger.debug(f"enable {len(fixed_atoms_heuristics)} externals:")
+    enabled_externals = []
     for a in fixed_atoms_heuristics:
         solver.assign_external(a, True)
-        # enabled_externals.append(str(a))
-    # enabled_externals_line = ". ".join(enabled_externals)
-    # logger.debug("%s%s", enabled_externals_line, "." if enabled_externals_line else "")
-    logger.debug(LINE)
+        enabled_externals.append(str(a))
+    if logger.isEnabledFor(DEBUG_EXTRA):  # nocoverage
+        enabled_externals_line = ". ".join(enabled_externals)
+        logger.debug_extra("%s%s", enabled_externals_line, "." if enabled_externals_line else "")
 
+    logger.debug(LINE)
+    logger.debug("start solving...")
     new_model = solver.solve(solver_config)
     # release externals after solving instead of before solving of next iteration
     # for a in fixed_atoms_heuristics:
