@@ -174,12 +174,34 @@ class TestClingoDLSolver(TestSolverClingo):
         self.setUp()
         self.solver.setup(self.lns)
         self.solver.ground()
-        self.solver.control.configuration.solve.models = 2
-        # minimize variable set
         self.solver.minimize_variable = Function("x")
+
+        def make_solve_context() -> tuple[mock.MagicMock, mock.MagicMock]:
+            handle = mock.MagicMock()
+            handle.wait.side_effect = [False, True]
+            solve_context = mock.MagicMock()
+            solve_context.__enter__.return_value = handle
+            solve_context.__exit__.return_value = False
+            return solve_context, handle
+
+        # minimize variable set
+        self.solver.last_model = None
+        self.solver.finished = False
+        self.solver._interrupted = False
+        self.solver._solve_timer = mock.MagicMock()
+        self.solver._solve_timer.is_ringing = False
+        self.solver._cutoff_timer = mock.MagicMock()
+        self.solver._cutoff_timer.is_ringing = True
+        self.solver._cutoff_timer.get_elapsed_time.return_value = 1
+        solve_context, handle = make_solve_context()
         with (
-            mock.patch("mod_lns.Timer.is_ringing", mock.PropertyMock(return_value=True)),
+            mock.patch.object(self.solver.theory, "prepare") as mock_prepare,
+            mock.patch.object(self.solver.control, "solve", return_value=solve_context),
+            mock.patch.object(self.solver, "_add_bound") as mock_add_bound,
             mock.patch.object(self.solver, "_minimize_variable") as mock_minimize,
         ):
             self.solver.solve(SolverConfig(opt_mode="opt,10"))
-            mock_minimize.assert_has_calls([mock.call(10)])
+            mock_prepare.assert_called_once()
+            handle.cancel.assert_called_once()
+            mock_add_bound.assert_called_once_with(10)
+            mock_minimize.assert_called_once_with(10)

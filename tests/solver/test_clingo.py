@@ -14,7 +14,7 @@ from mod_lns.interfaces.solver import SolverConfig
 from mod_lns.lib.solvers.clingo_solver import ClingoSolver
 from mod_lns.lns import LNS
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access, too-many-statements
 
 
 class TestSolverConfig(TestCase):
@@ -223,42 +223,77 @@ class TestSolverClingo(TestCase):
         Test solve method.
         """
         self.solver.setup(self.lns)
-        self.solver.ground()
-        # default run
-        self.solver.control.configuration.solve.models = 2
-        model = self.solver.solve()
-        self.assertIsInstance(model, Model)
-        self.assertIn(self.solver.result, ["SATISFIABLE", "OPTIMUM"])
 
-        def spy_decorator(method_to_decorate):
-            mock_obj = mock.MagicMock()
+        def setup_mock_timers(solve_ringing: bool, cutoff_ringing: bool) -> None:
+            self.solver._solve_timer = mock.MagicMock()
+            self.solver._solve_timer.is_ringing = solve_ringing
+            self.solver._solve_timer.get_elapsed_time.return_value = 1
+            self.solver._cutoff_timer = mock.MagicMock()
+            self.solver._cutoff_timer.is_ringing = cutoff_ringing
+            self.solver._cutoff_timer.get_elapsed_time.return_value = 1
 
-            def wrapper(self, *args, **kwargs):
-                mock_obj(*args, **kwargs)
-                return method_to_decorate(self, *args, **kwargs)
+        def make_solve_context() -> tuple[mock.MagicMock, mock.MagicMock]:
+            handle = mock.MagicMock()
+            handle.wait.side_effect = [False, True]
+            solve_context = mock.MagicMock()
+            solve_context.__enter__.return_value = handle
+            solve_context.__exit__.return_value = False
+            return solve_context, handle
 
-            wrapper.mock_obj = mock_obj
-            return wrapper
-
-        # test interruption by timer and finding first solution call
-        mock_cancel = spy_decorator(clingo.SolveHandle.cancel)
-        self.solver.setup(self.lns, [], ["./tests/ref/golf_big.lp"])
-        self.solver.ground()
+        # default -> cutoff cancels
         self.solver.last_model = None
-        with (
-            mock.patch("mod_lns.Timer.is_ringing", mock.PropertyMock(return_value=True)),
-            mock.patch.object(clingo.SolveHandle, "cancel", mock_cancel),
-        ):
-            self.solver.finished = False
-            self.solver.solve(SolverConfig())
-            mock_cancel.mock_obj.assert_called_once()
+        self.solver.finished = False
+        self.solver._interrupted = False
+        setup_mock_timers(solve_ringing=False, cutoff_ringing=True)
+        solve_context, handle = make_solve_context()
+        with mock.patch.object(self.solver.control, "solve", return_value=solve_context):
+            self.solver.solve()
+            handle.cancel.assert_called_once()
 
-        # test assumptions being used
-        self.solver.setup(self.lns)
+        # require_model=True -> cutoff does not cancel if no model exists yet
+        self.solver.last_model = None
+        self.solver.finished = False
+        self.solver._interrupted = False
+        setup_mock_timers(solve_ringing=False, cutoff_ringing=True)
+        solve_context, handle = make_solve_context()
+        with mock.patch.object(self.solver.control, "solve", return_value=solve_context):
+            self.solver.solve(require_model=True)
+            handle.cancel.assert_not_called()
+
+        # model exists -> cutoff cancels even when require_model=True
         self.solver.last_model = Model()
+        self.solver.finished = False
+        self.solver._interrupted = False
+        setup_mock_timers(solve_ringing=False, cutoff_ringing=True)
+        solve_context, handle = make_solve_context()
+        with mock.patch.object(self.solver.control, "solve", return_value=solve_context):
+            self.solver.solve(require_model=True)
+            handle.cancel.assert_called_once()
+
+        # solve timer always cancels, independent of require_model
+        self.solver.last_model = None
+        self.solver.finished = False
+        self.solver._interrupted = False
+        setup_mock_timers(solve_ringing=True, cutoff_ringing=False)
+        solve_context, handle = make_solve_context()
+        with mock.patch.object(self.solver.control, "solve", return_value=solve_context):
+            self.solver.solve(require_model=True)
+            handle.cancel.assert_called_once()
+
+        # assumptions are forwarded and config is applied
         assumptions = [(Function("a"), True)]
-        with mock.patch.object(self.solver.control, "solve") as mock_solve:
+        config = SolverConfig(time_limit=10, cutoff=5)
+        self.solver.last_model = None
+        self.solver.finished = False
+        self.solver._interrupted = False
+        setup_mock_timers(solve_ringing=False, cutoff_ringing=False)
+        solve_context, _ = make_solve_context()
+        with (
+            mock.patch.object(self.solver, "_apply_config_to_control") as mock_apply,
+            mock.patch.object(self.solver.control, "solve", return_value=solve_context) as mock_solve,
+        ):
             self.assertFalse(self.solver._assumptions_used)
-            self.solver.solve(assumptions=assumptions)
+            self.solver.solve(config=config, assumptions=assumptions)
             self.assertTrue(self.solver._assumptions_used)
+            mock_apply.assert_called_once_with(config)
             self.assertEqual(mock_solve.call_args.kwargs["assumptions"], assumptions)

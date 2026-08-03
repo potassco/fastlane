@@ -153,7 +153,7 @@ class TestLNS(TestCase):
             self.assertFalse(self.lns.get_first_solution())
             mock_update_time_limit.assert_called_once_with(self.lns, self.lns.init_solver_config)
 
-        self.lns.solver.solve.assert_called_once_with(self.lns.init_solver_config)
+        self.lns.solver.solve.assert_called_once_with(self.lns.init_solver_config, require_model=True)
         self.assertIsNone(self.lns.new_model)
         self.assertIs(self.lns.current_model, prev_current_model)
         self.assertIs(self.lns.best_model, prev_best_model)
@@ -166,7 +166,7 @@ class TestLNS(TestCase):
             self.assertTrue(self.lns.get_first_solution())
             mock_update_time_limit.assert_called_once_with(self.lns, self.lns.init_solver_config)
 
-        self.lns.solver.solve.assert_called_once_with(self.lns.init_solver_config)
+        self.lns.solver.solve.assert_called_once_with(self.lns.init_solver_config, require_model=True)
         self.assertIs(self.lns.new_model, new_model)
         self.assertIs(self.lns.current_model, new_model)
         self.assertIs(self.lns.best_model, new_model)
