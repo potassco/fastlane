@@ -190,7 +190,7 @@ class LNS:
         :return: Whether a solution was found or not
         """
         update_time_limit(self, self.init_solver_config)
-        self.new_model = self.solver.solve(self.init_solver_config)
+        self.new_model = self.solver.solve(self.init_solver_config, require_model=True)
         if self.new_model is None:
             return False
         self.current_model = self.new_model

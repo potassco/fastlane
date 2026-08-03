@@ -115,12 +115,14 @@ class ClingconSolver(ClingoSolver):
         self,
         config: Optional[SolverConfig] = None,
         assumptions: list[tuple[clingo.symbol.Symbol, bool]] = [],
+        require_model: bool = False,
     ) -> Optional[Model]:
         """
         Solve under assumptions using clingo.
 
         :config: Solver configuration.
         :param assumptions: Assumptions for solving (fixed atoms).
+        :param require_model: If True, ignore cutoff time until a model is found.
         :return: Last obtained model.
         """
         assert isinstance(self.theory, ClingconTheory)
@@ -163,8 +165,11 @@ class ClingconSolver(ClingoSolver):
                     ringing_timers.append("solve_timer")
                     self.logger.debug("solve timer ringing after %s seconds", self._solve_timer.get_elapsed_time())
                 if self._cutoff_timer.is_ringing:
-                    ringing_timers.append("cutoff_timer")
-                    self.logger.debug("cutoff timer ringing after %s seconds", self._cutoff_timer.get_elapsed_time())
+                    if not require_model or self.last_model is not None:
+                        ringing_timers.append("cutoff_timer")
+                        self.logger.debug(
+                            "cutoff timer ringing after %s seconds", self._cutoff_timer.get_elapsed_time()
+                        )
                 if ringing_timers and not self._interrupted and not self.finished:
                     self._interrupted = True
                     self.logger.debug("interrupted by timer(s): %s", ", ".join(ringing_timers))

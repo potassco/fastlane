@@ -108,12 +108,14 @@ class Solver(ABC):
         self,
         config: Optional[SolverConfig],
         assumptions: list[tuple[clingo.symbol.Symbol, bool]] = [],
+        require_model: bool = False,
     ) -> Optional[Model]:  # nocoverage
         """
         Solve with fixed atoms.
 
         :param config: Solver configuration.
         :param assumptions: Assumptions for solving (fixed atoms).
+        :param require_model: If True, ignore cutoff time until a model is found.
         :return: Last obtained model.
         """
         raise NotImplementedError
