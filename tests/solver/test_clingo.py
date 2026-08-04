@@ -241,7 +241,6 @@ class TestSolverClingo(TestCase):
             return solve_context, handle
 
         # default -> cutoff cancels
-        self.solver.last_model = None
         self.solver.finished = False
         self.solver._interrupted = False
         setup_mock_timers(solve_ringing=False, cutoff_ringing=True)
@@ -251,7 +250,6 @@ class TestSolverClingo(TestCase):
             handle.cancel.assert_called_once()
 
         # require_model=True -> cutoff does not cancel if no model exists yet
-        self.solver.last_model = None
         self.solver.finished = False
         self.solver._interrupted = False
         setup_mock_timers(solve_ringing=False, cutoff_ringing=True)
@@ -260,18 +258,24 @@ class TestSolverClingo(TestCase):
             self.solver.solve(require_model=True)
             handle.cancel.assert_not_called()
 
-        # model exists -> cutoff cancels even when require_model=True
-        self.solver.last_model = Model()
+        # model found during search -> cutoff cancels even when require_model=True
         self.solver.finished = False
         self.solver._interrupted = False
         setup_mock_timers(solve_ringing=False, cutoff_ringing=True)
         solve_context, handle = make_solve_context()
+
+        def find_model(timeout) -> bool:
+            if self.solver.last_model is None:
+                self.solver.last_model = Model()
+                return False
+            return True
+
+        handle.wait.side_effect = find_model
         with mock.patch.object(self.solver.control, "solve", return_value=solve_context):
             self.solver.solve(require_model=True)
             handle.cancel.assert_called_once()
 
         # solve timer always cancels, independent of require_model
-        self.solver.last_model = None
         self.solver.finished = False
         self.solver._interrupted = False
         setup_mock_timers(solve_ringing=True, cutoff_ringing=False)

@@ -185,7 +185,6 @@ class TestClingoDLSolver(TestSolverClingo):
             return solve_context, handle
 
         # minimize variable set
-        self.solver.last_model = None
         self.solver.finished = False
         self.solver._interrupted = False
         self.solver._solve_timer = mock.MagicMock()
