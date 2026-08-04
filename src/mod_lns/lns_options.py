@@ -322,6 +322,7 @@ class LNSOptions:
         config = SolverConfig()
         config.solve_limit = self.init_solve_limit
         config.time_limit = self.init_time_limit
+        config.cutoff = self.init_cutoff
         config.seed = self.seed
 
         config.configuration = self.init_configuration
@@ -343,6 +344,7 @@ class LNSOptions:
         config = SolverConfig()
         config.solve_limit = self.lns_solve_limit
         config.time_limit = self.lns_time_limit
+        config.cutoff = self.lns_cutoff
         config.seed = self.seed
 
         config.configuration = self.lns_configuration
