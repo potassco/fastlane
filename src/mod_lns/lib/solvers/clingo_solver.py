@@ -233,7 +233,8 @@ class ClingoSolver(Solver):
         :param require_model: If True, ignore cutoff time until a model is found.
         :return: Last obtained model.
         """
-        # remember assumptions were are being used
+        self.last_model = None
+        # remember assumptions were being used
         if assumptions:
             self._assumptions_used = True
         else:

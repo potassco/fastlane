@@ -260,7 +260,8 @@ class ClingoDLSolver(ClingoSolver):
         """
         assert isinstance(self.theory, ClingoDLTheory)
 
-        # remember assumptions were are being used
+        self.last_model = None
+        # remember assumptions were being used
         if assumptions:
             self._assumptions_used = True
         else:

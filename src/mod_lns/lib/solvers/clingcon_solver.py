@@ -127,7 +127,8 @@ class ClingconSolver(ClingoSolver):
         """
         assert isinstance(self.theory, ClingconTheory)
 
-        # remember assumptions were are being used
+        self.last_model = None
+        # remember assumptions were being used
         if assumptions:
             self._assumptions_used = True
         else:
