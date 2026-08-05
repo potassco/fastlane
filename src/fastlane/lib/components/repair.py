@@ -6,9 +6,9 @@ from typing import Optional
 
 from clingo.symbol import Number, Symbol
 
-from mod_lns import LINE, Model
-from mod_lns.interfaces.solver import Solver, SolverConfig
-from mod_lns.utils.logger import DEBUG_EXTRA, LNSLogger
+from fastlane import LINE, Model
+from fastlane.interfaces.solver import Solver, SolverConfig
+from fastlane.utils.logger import DEBUG_EXTRA, LNSLogger
 
 
 def repair_assumptions(solver: Solver, solver_config: SolverConfig, fixed_atoms: set[Symbol]) -> Optional[Model]:

@@ -4,7 +4,7 @@ Test cases for the output component.
 
 from unittest import TestCase
 
-from mod_lns.lib.components.output import get_output_format
+from fastlane.lib.components.output import get_output_format
 
 
 class TestOutputComponents(TestCase):

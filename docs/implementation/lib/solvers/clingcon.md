@@ -1,1 +1,1 @@
-::: mod_lns.lib.solvers.clingcon_solver.ClingconSolver
+::: fastlane.lib.solvers.clingcon_solver.ClingconSolver

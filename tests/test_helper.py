@@ -7,7 +7,7 @@ from unittest import TestCase, mock
 
 from clingo.symbol import Function, Number
 
-from mod_lns import Model, Timer, UnsetMarker
+from fastlane import Model, Timer, UnsetMarker
 
 # pylint: disable=protected-access
 
@@ -153,7 +153,7 @@ class TestTimer(TestCase):
         Test remaining_time method.
         """
         timer = Timer()
-        with mock.patch("mod_lns.time.time", side_effect=[100.0, 100.2, 101.2]):
+        with mock.patch("fastlane.time.time", side_effect=[100.0, 100.2, 101.2]):
             timer.start(1)
             self.assertEqual(timer.remaining_time(), 1)
             self.assertEqual(timer.remaining_time(), 0)
@@ -167,7 +167,7 @@ class TestTimer(TestCase):
         Test get_elapsed_time method.
         """
         timer = Timer()
-        with mock.patch("mod_lns.time.time", side_effect=[200.0, 201.4]):
+        with mock.patch("fastlane.time.time", side_effect=[200.0, 201.4]):
             timer.start(10)
             self.assertAlmostEqual(timer.get_elapsed_time(), 1.4, places=6)
 
@@ -179,7 +179,7 @@ class TestTimer(TestCase):
         Test is_ringing property.
         """
         timer = Timer()
-        with mock.patch("mod_lns.time.time", side_effect=[300.0, 300.4, 301.0]):
+        with mock.patch("fastlane.time.time", side_effect=[300.0, 300.4, 301.0]):
             timer.start(1)
             self.assertFalse(timer.is_ringing)
             self.assertTrue(timer.is_ringing)

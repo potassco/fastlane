@@ -9,10 +9,10 @@ from unittest import TestCase, mock
 
 from clingo import parse_term
 
-from mod_lns import UNSET
-from mod_lns.lib.auto_destruction_converters.last_improv import LastImprovementDestructionConverter
-from mod_lns.lib.solvers.clingcon_solver import ClingconSolver
-from mod_lns.parsers.options_parser import (
+from fastlane import UNSET
+from fastlane.lib.auto_destruction_converters.last_improv import LastImprovementDestructionConverter
+from fastlane.lib.solvers.clingcon_solver import ClingconSolver
+from fastlane.parsers.options_parser import (
     OptionsParser,
     _build_preset_description_text,
     _build_preset_help_text,
@@ -239,7 +239,7 @@ class TestOptionsParser(TestCase):
 
             # Spec loader fails
             with mock.patch(
-                "mod_lns.parsers.options_parser.importlib.util.spec_from_file_location",
+                "fastlane.parsers.options_parser.importlib.util.spec_from_file_location",
                 return_value=mock.Mock(loader=None),
             ):
                 with self.assertRaises(ArgumentTypeError):

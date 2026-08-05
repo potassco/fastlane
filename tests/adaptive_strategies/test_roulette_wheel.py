@@ -4,10 +4,10 @@ Test cases for the roulette wheel adaptive strategy.
 
 from unittest import TestCase, mock
 
-from mod_lns import Model
-from mod_lns.lib.adaptive_strategies.roulette_wheel import RouletteWheelStrategy
-from mod_lns.lib.auto_destruction_converters.last_improv import LastImprovementDestructionConverter
-from mod_lns.utils.types import ConfigCatalog, DestroyOperator, PrioritizeOperator, ProjectOperator
+from fastlane import Model
+from fastlane.lib.adaptive_strategies.roulette_wheel import RouletteWheelStrategy
+from fastlane.lib.auto_destruction_converters.last_improv import LastImprovementDestructionConverter
+from fastlane.utils.types import ConfigCatalog, DestroyOperator, PrioritizeOperator, ProjectOperator
 
 # pylint: disable=protected-access
 

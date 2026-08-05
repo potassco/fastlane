@@ -11,11 +11,11 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 import clingo
 from clingo.symbol import Symbol
 
-from mod_lns.utils.logger import LNSLogger
+from fastlane.utils.logger import LNSLogger
 
 if TYPE_CHECKING:  # nocoverage
-    from mod_lns import Model
-    from mod_lns.lns import LNS
+    from fastlane import Model
+    from fastlane.lns import LNS
 
 
 # pylint: disable=too-many-instance-attributes

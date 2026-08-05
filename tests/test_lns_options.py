@@ -4,11 +4,11 @@ Tests for the LNSOptions class.
 
 from unittest import TestCase, mock
 
-from mod_lns import UNSET
-from mod_lns.interfaces.solver import SolverConfig
-from mod_lns.lib.adaptive_strategies.roulette_wheel import RouletteWheelStrategy
-from mod_lns.lib.adaptive_strategies.static import StaticStrategy
-from mod_lns.lns_options import LNSOptions
+from fastlane import UNSET
+from fastlane.interfaces.solver import SolverConfig
+from fastlane.lib.adaptive_strategies.roulette_wheel import RouletteWheelStrategy
+from fastlane.lib.adaptive_strategies.static import StaticStrategy
+from fastlane.lns_options import LNSOptions
 
 # pylint: disable=protected-access
 

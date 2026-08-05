@@ -1,7 +1,7 @@
 # Program
 
 Below is the program to use this LNS framework with the [potassco-benchmark-tool].
-Create an executable file with the name `mod_lns-conda` and contents below inside the
+Create an executable file with the name `fastlane-conda` and contents below inside the
 `programs` folder created by `btool init`.
 
 ```
@@ -13,7 +13,7 @@ Create an executable file with the name `mod_lns-conda` and contents below insid
 #source ~/miniconda3/bin/activate
 #source activate lns
 
-exec mod_lns "${@}" 2> solver.err
+exec fastlane "${@}" 2> solver.err
 ```
 
 [potassco-benchmark-tool]: https://potassco.org/benchmark-tool/

@@ -8,8 +8,8 @@ from unittest import TestCase
 
 from clingo.symbol import Function, Infimum, Number, String, Supremum
 
-from mod_lns.utils.conversions import args_to_dict, str_to_symbols, symbol_to_str
-from mod_lns.utils.logger import setup_logger
+from fastlane.utils.conversions import args_to_dict, str_to_symbols, symbol_to_str
+from fastlane.utils.logger import setup_logger
 
 
 class TestLogger(TestCase):

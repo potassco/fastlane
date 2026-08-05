@@ -4,7 +4,7 @@ This framework can be used both as a command line tool and as a python module.
 When using as a command line tool use the `-h` flag to see all available options:
 
 ```bash
-mod_lns -h
+fastlane -h
 ```
 
 The framework currently supports implementation of the clingo, clingo-dl and clingcon solvers,
@@ -26,8 +26,8 @@ An example of the LNS initialization can be seen below or in [`./examples/demo.p
 For a more detailed and step by step introduction to the framework, check out the [guide].
 
 ```python
-from mod_lns.lns import LNS
-from mod_lns.lns_options import LNS
+from fastlane.lns import LNS
+from fastlane.lns_options import LNS
 
 options = LNSOptions(seed=42)
 lns = LNS(
@@ -42,7 +42,7 @@ lns = LNS(
 The same search can be performed through the command line as follows:
 
 ```bash
-mod_lns --seed=42 --time-limit=60 ./examples/golf.lp 
+fastlane --seed=42 --time-limit=60 ./examples/golf.lp 
 ```
 
 ## Encodings

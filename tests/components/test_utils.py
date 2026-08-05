@@ -4,8 +4,8 @@ Test cases for utility functions of the LNS framework.
 
 from unittest import TestCase, mock
 
-from mod_lns import Timer
-from mod_lns.lib.components.utils import (
+from fastlane import Timer
+from fastlane.lib.components.utils import (
     calculate_variability,
     get_unique_list,
     increase_cutoff,
@@ -13,8 +13,8 @@ from mod_lns.lib.components.utils import (
     increase_time_limit,
     update_time_limit,
 )
-from mod_lns.lns import LNS
-from mod_lns.lns_options import LNSOptions
+from fastlane.lns import LNS
+from fastlane.lns_options import LNSOptions
 
 
 class TestUtils(TestCase):

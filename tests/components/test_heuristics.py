@@ -6,12 +6,12 @@ from unittest import TestCase, mock
 
 from clingo.symbol import Function, Number
 
-from mod_lns.lib.components.heuristics import (
+from fastlane.lib.components.heuristics import (
     generate_heuristic_subprogram,
     get_fixed_atoms_heuristics,
 )
-from mod_lns.parsers.config_parser import ConfigParser
-from mod_lns.utils.types import ActiveConfig, ConfigCatalog, PrioritizeOperator
+from fastlane.parsers.config_parser import ConfigParser
+from fastlane.utils.types import ActiveConfig, ConfigCatalog, PrioritizeOperator
 
 
 class TestHeuristicsComponents(TestCase):

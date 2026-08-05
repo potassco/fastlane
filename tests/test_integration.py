@@ -5,12 +5,12 @@ Integration tests.
 from io import StringIO
 from unittest import TestCase, mock
 
-from mod_lns.lib.auto_destruction_converters.average import AverageDestructionConverter
-from mod_lns.lib.solvers.clingcon_solver import ClingconSolver
-from mod_lns.lib.solvers.clingo_dl_solver import ClingoDLSolver
-from mod_lns.lib.solvers.clingo_solver import ClingoSolver
-from mod_lns.lns import LNS
-from mod_lns.lns_options import LNSOptions
+from fastlane.lib.auto_destruction_converters.average import AverageDestructionConverter
+from fastlane.lib.solvers.clingcon_solver import ClingconSolver
+from fastlane.lib.solvers.clingo_dl_solver import ClingoDLSolver
+from fastlane.lib.solvers.clingo_solver import ClingoSolver
+from fastlane.lns import LNS
+from fastlane.lns_options import LNSOptions
 
 
 class TestIntegrationClingo(TestCase):

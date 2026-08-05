@@ -6,8 +6,8 @@ from unittest import TestCase, mock
 
 from clingo.symbol import Function
 
-from mod_lns import Model
-from mod_lns.lib.auto_destruction_converters.utils import calculate_actual_destruction_percent, is_new_model_better
+from fastlane import Model
+from fastlane.lib.auto_destruction_converters.utils import calculate_actual_destruction_percent, is_new_model_better
 
 
 class TestAutoDestructionConverterUtils(TestCase):

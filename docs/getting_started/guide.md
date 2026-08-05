@@ -78,13 +78,13 @@ default options are used.
 === "CLI"
 
     ```bash
-    mod_lns ./examples/golf_demo.lp
+    fastlane ./examples/golf_demo.lp
     ```
 
 === "Python"
 
     ```python
-    from mod_lns.lns import LNS
+    from fastlane.lns import LNS
 
     lns = LNS(["./examples/golf_demo.lp"])
     lns.main()
@@ -109,13 +109,13 @@ We also limit the initial solving to 2 seconds to start the LNS sooner and limit
 === "CLI"
 
     ```bash
-    mod_lns --preset=lns --seed=42 --init-time-limit=2 --max-steps=100 ./examples/golf_demo.lp
+    fastlane --preset=lns --seed=42 --init-time-limit=2 --max-steps=100 ./examples/golf_demo.lp
     ```
 
 === "Python"
 
     ```python
-    from mod_lns.lns import LNS
+    from fastlane.lns import LNS
 
     lns = LNS(
         ["./examples/golf_demo.lp"],
@@ -161,13 +161,13 @@ to dynamically choose the most optimal destruction rate.
 === "CLI"
 
     ```bash
-    mod_lns --preset=lnps --seed=42 --init-time-limit=2 --lns-time-limit=2 ./examples/golf_demo.lp
+    fastlane --preset=lnps --seed=42 --init-time-limit=2 --lns-time-limit=2 ./examples/golf_demo.lp
     ```
 
 === "Python"
 
     ```python
-    from mod_lns.lns import LNS
+    from fastlane.lns import LNS
     
     lns = LNS(
         ["./examples/golf_demo.lp"],
@@ -200,13 +200,13 @@ and the weights updated:
 === "CLI"
     
     ```bash
-    mod_lns --preset=alnps --seed=42 --init-time-limit=2 --lns-time-limit=2 --log-level=debug ./examples/golf_demo.lp ./examples/golf_config.lp
+    fastlane --preset=alnps --seed=42 --init-time-limit=2 --lns-time-limit=2 --log-level=debug ./examples/golf_demo.lp ./examples/golf_config.lp
     ```
 
 === "Python"
 
     ```python
-    from mod_lns.lns import LNS
+    from fastlane.lns import LNS
     
     lns = LNS(
         ["./examples/golf_demo.lp", "./examples/golf_config.lp"],
@@ -238,8 +238,8 @@ To do so we create a new class called `NewLNS` by inheriting the
 `LNS` and overwrite the `destroy` method with our new functionality:
 
 ```python
-from mod_lns.lns import LNS
-from mod_lns.utils.conversions import symbol_to_str
+from fastlane.lns import LNS
+from fastlane.utils.conversions import symbol_to_str
 
 class NewLNS(LNS):
     def destroy(self, lns_object):

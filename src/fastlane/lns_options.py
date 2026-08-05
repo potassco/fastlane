@@ -10,14 +10,14 @@ from typing import Any, ClassVar, Optional, TypeVar
 
 from clingo import Symbol
 
-from mod_lns import UNSET
-from mod_lns.interfaces.adaptive_strategy import AdaptiveStrategy
-from mod_lns.interfaces.auto_destruction_converter import AutoDestructionConverter
-from mod_lns.interfaces.solver import Solver, SolverConfig
-from mod_lns.lib.adaptive_strategies.roulette_wheel import RouletteWheelStrategy
-from mod_lns.lib.adaptive_strategies.static import StaticStrategy
-from mod_lns.lib.auto_destruction_converters.last_improv import LastImprovementDestructionConverter
-from mod_lns.lib.solvers.clingo_solver import ClingoSolver
+from fastlane import UNSET
+from fastlane.interfaces.adaptive_strategy import AdaptiveStrategy
+from fastlane.interfaces.auto_destruction_converter import AutoDestructionConverter
+from fastlane.interfaces.solver import Solver, SolverConfig
+from fastlane.lib.adaptive_strategies.roulette_wheel import RouletteWheelStrategy
+from fastlane.lib.adaptive_strategies.static import StaticStrategy
+from fastlane.lib.auto_destruction_converters.last_improv import LastImprovementDestructionConverter
+from fastlane.lib.solvers.clingo_solver import ClingoSolver
 
 LINE = "--------------------------------------------------------------------------------------"
 

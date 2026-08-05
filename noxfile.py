@@ -44,7 +44,7 @@ def format(session):
 
     autoflake_args = [
         "--in-place",
-        "--imports=mod_lns",
+        "--imports=fastlane",
         "--ignore-init-module-imports",
         "--remove-unused-variables",
         "-r",

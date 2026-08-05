@@ -4,7 +4,7 @@ Test cases for the types module.
 
 from unittest import TestCase
 
-from mod_lns.utils.types import DestroyOperator, PrioritizeOperator, ProjectOperator
+from fastlane.utils.types import DestroyOperator, PrioritizeOperator, ProjectOperator
 
 # pylint: disable=protected-access
 

@@ -5,11 +5,11 @@ Interface for adaptive strategies to select declarative LNS configuration.
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
-from mod_lns import Model
-from mod_lns.utils.types import ActiveConfig, ConfigCatalog
+from fastlane import Model
+from fastlane.utils.types import ActiveConfig, ConfigCatalog
 
 if TYPE_CHECKING:
-    from mod_lns.lns import LNS  # nocoverage
+    from fastlane.lns import LNS  # nocoverage
 
 
 class AdaptiveStrategy(ABC):

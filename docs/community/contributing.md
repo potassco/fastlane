@@ -9,7 +9,7 @@ filing a new issue.
 
 ## How to make a contribution
 
-- Fork the [benchmark-tool][project_url] repository and create a branch for
+- Fork the [fastlane][project_url] repository and create a branch for
   your changes.
 - Submit a pull request to the master branch with your changes.
 - Respond to feedback on your pull request.
@@ -21,6 +21,6 @@ When contributing to this project, you agree that you have authored 100% of the
 content, that you have the necessary rights to the content and that the content
 you contribute may be provided under the project license.
 
-[issues]: https://github.com/krr-up/mod_lns/issues
-[new_issue]: https://github.com/krr-up/mod_lns/issues/new
-[project_url]: https://github.com/krr-up/mod_lns
+[issues]: https://github.com/potassco/fastlane/issues
+[new_issue]: https://github.com/potassco/fastlane/issues/new
+[project_url]: https://github.com/potassco/fastlane

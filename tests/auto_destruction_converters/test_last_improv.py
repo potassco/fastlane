@@ -6,9 +6,9 @@ from unittest import TestCase, mock
 
 from clingo.symbol import Function, Number
 
-from mod_lns import Model
-from mod_lns.lib.auto_destruction_converters.last_improv import LastImprovementDestructionConverter
-from mod_lns.utils.types import DestroyOperator, ProjectOperator
+from fastlane import Model
+from fastlane.lib.auto_destruction_converters.last_improv import LastImprovementDestructionConverter
+from fastlane.utils.types import DestroyOperator, ProjectOperator
 
 # pylint: disable=protected-access
 
@@ -70,7 +70,7 @@ class TestLastImprovementDestructionConverter(TestCase):
         ]
 
         with mock.patch(
-            "mod_lns.lib.auto_destruction_converters.last_improv.ConfigParser.get_projected_atoms",
+            "fastlane.lib.auto_destruction_converters.last_improv.ConfigParser.get_projected_atoms",
             side_effect=projected_atoms,
         ) as mock_get_projected_atoms:
             self.assertSetEqual(
@@ -92,19 +92,19 @@ class TestLastImprovementDestructionConverter(TestCase):
         current_model = mock.Mock(spec=Model)
         with (
             mock.patch(
-                "mod_lns.lib.auto_destruction_converters.last_improv.ConfigParser.get_op_specs",
+                "fastlane.lib.auto_destruction_converters.last_improv.ConfigParser.get_op_specs",
                 return_value={"test": {Function("test", [Number(1)], True)}},
             ) as mock_get_op_specs,
             mock.patch.object(self.converter, "_reset_caches") as mock_reset_caches,
         ):
             with mock.patch(
-                "mod_lns.lib.auto_destruction_converters.last_improv.is_new_model_better", return_value=False
+                "fastlane.lib.auto_destruction_converters.last_improv.is_new_model_better", return_value=False
             ):
                 self.converter._update_last_improvement_stats(new_model, current_model)
                 mock_get_op_specs.assert_not_called()
                 mock_reset_caches.assert_not_called()
             with mock.patch(
-                "mod_lns.lib.auto_destruction_converters.last_improv.is_new_model_better", return_value=True
+                "fastlane.lib.auto_destruction_converters.last_improv.is_new_model_better", return_value=True
             ):
                 self.converter._update_last_improvement_stats(new_model, current_model)
                 mock_get_op_specs.assert_called_once_with(current_model)
@@ -146,7 +146,7 @@ class TestLastImprovementDestructionConverter(TestCase):
         with (
             mock.patch.object(self.converter, "_update_last_improvement_stats") as mock_update_last_improvement_stats,
             mock.patch(
-                "mod_lns.lib.auto_destruction_converters.last_improv.AutoDestructionConverter.convert_auto_in_config"
+                "fastlane.lib.auto_destruction_converters.last_improv.AutoDestructionConverter.convert_auto_in_config"
             ) as mock_super_convert,
         ):
             lns_object.new_model = None
@@ -205,11 +205,11 @@ class TestLastImprovementDestructionConverter(TestCase):
                 self.converter, "_get_projected_atoms", return_value=projected_atoms
             ) as mock_get_projected_atoms,
             mock.patch(
-                "mod_lns.lib.auto_destruction_converters.last_improv.ConfigParser.get_destruction_candidate_atoms",
+                "fastlane.lib.auto_destruction_converters.last_improv.ConfigParser.get_destruction_candidate_atoms",
                 return_value=destruction_candidate_atoms,
             ) as mock_get_destructuon_candidate_atoms,
             mock.patch(
-                "mod_lns.lib.auto_destruction_converters.last_improv.calculate_actual_destruction_percent",
+                "fastlane.lib.auto_destruction_converters.last_improv.calculate_actual_destruction_percent",
                 return_value=40.0,
             ) as mock_calculate_actual_destruction_percent,
         ):

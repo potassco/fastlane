@@ -6,8 +6,8 @@ from unittest import TestCase, mock
 
 from clingo.symbol import Function, Number
 
-from mod_lns.interfaces.solver import Solver, SolverConfig
-from mod_lns.lib.components.repair import repair_assumptions, repair_heuristics
+from fastlane.interfaces.solver import Solver, SolverConfig
+from fastlane.lib.components.repair import repair_assumptions, repair_heuristics
 
 
 class TestRepairComponents(TestCase):

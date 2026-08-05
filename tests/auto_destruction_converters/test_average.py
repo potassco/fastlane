@@ -6,9 +6,9 @@ from unittest import TestCase, mock
 
 from clingo.symbol import Function
 
-from mod_lns import Model
-from mod_lns.lib.auto_destruction_converters.average import AverageDestructionConverter, _RunningAverage
-from mod_lns.utils.types import ProjectOperator
+from fastlane import Model
+from fastlane.lib.auto_destruction_converters.average import AverageDestructionConverter, _RunningAverage
+from fastlane.utils.types import ProjectOperator
 
 # pylint: disable=protected-access
 
@@ -85,15 +85,15 @@ class TestAverageDestructionConverter(TestCase):
 
         with (
             mock.patch(
-                "mod_lns.lib.auto_destruction_converters.average.ConfigParser.get_projected_atoms",
+                "fastlane.lib.auto_destruction_converters.average.ConfigParser.get_projected_atoms",
                 side_effect=projected_atoms,
             ) as mock_get_projected_atoms,
             mock.patch(
-                "mod_lns.lib.auto_destruction_converters.average.ConfigParser.get_destruction_candidate_atoms",
+                "fastlane.lib.auto_destruction_converters.average.ConfigParser.get_destruction_candidate_atoms",
                 return_value=destruction_candidate_atoms,
             ) as mock_get_destruction_candidate_atoms,
             mock.patch(
-                "mod_lns.lib.auto_destruction_converters.average.calculate_actual_destruction_percent",
+                "fastlane.lib.auto_destruction_converters.average.calculate_actual_destruction_percent",
                 return_value=50.0,
             ) as mock_calculate_actual_destruction_percent,
         ):
@@ -152,11 +152,11 @@ class TestAverageDestructionConverter(TestCase):
 
         with (
             mock.patch(
-                "mod_lns.lib.auto_destruction_converters.average.is_new_model_better", return_value=True
+                "fastlane.lib.auto_destruction_converters.average.is_new_model_better", return_value=True
             ) as mock_is_new_model_better,
             mock.patch.object(self.converter, "_update_running_averages") as mock_update_running_averages,
             mock.patch(
-                "mod_lns.lib.auto_destruction_converters.average.AutoDestructionConverter.convert_auto_in_config"
+                "fastlane.lib.auto_destruction_converters.average.AutoDestructionConverter.convert_auto_in_config"
             ) as mock_super_convert,
         ):
             self.converter.convert_auto_in_config(config, lns_object)

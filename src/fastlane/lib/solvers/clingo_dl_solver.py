@@ -14,13 +14,13 @@ from clingo.statistics import StatisticsMap
 from clingo.symbol import Function, Number
 from clingodl import ClingoDLTheory
 
-from mod_lns import Model
-from mod_lns.interfaces.solver import SolverConfig
-from mod_lns.lib.solvers.clingo_solver import ClingoSolver
-from mod_lns.utils.logger import DEBUG_EXTRA
+from fastlane import Model
+from fastlane.interfaces.solver import SolverConfig
+from fastlane.lib.solvers.clingo_solver import ClingoSolver
+from fastlane.utils.logger import DEBUG_EXTRA
 
 if TYPE_CHECKING:
-    from mod_lns.lns import LNS  # nocoverage
+    from fastlane.lns import LNS  # nocoverage
 
 LINE = "--------------------------------------------------------------------------------------"
 

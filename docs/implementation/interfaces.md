@@ -1,7 +1,7 @@
 # Interfaces
 
 This page describes the interfaces provided to customize the LNS search.
-All interfaces can be found in the `mod_lns.interfaces` module.
+All interfaces can be found in the `fastlane.interfaces` module.
 Example implementations of these interfaces can be found in the `lib` submodule.
 
 
@@ -9,7 +9,7 @@ Example implementations of these interfaces can be found in the `lib` submodule.
 
 This interface gives guidelines on how to implement adaptive strategies for adaptive LNS.
 
-::: mod_lns.interfaces.adaptive_strategy.AdaptiveStrategy
+::: fastlane.interfaces.adaptive_strategy.AdaptiveStrategy
 
 
 ## Auto Destruction Converter
@@ -17,10 +17,10 @@ This interface gives guidelines on how to implement adaptive strategies for adap
 All custom auto destruction converters (for determining destruction rates automatically) should
 respect the this interface.
 
-::: mod_lns.interfaces.auto_destruction_converter.AutoDestructionConverter
+::: fastlane.interfaces.auto_destruction_converter.AutoDestructionConverter
 
 ## Solver Interface
 
 Solver implementations should follow the `Solver` Interface and make use of the `SolverConfig` class.
 
-::: mod_lns.interfaces.solver.Solver
+::: fastlane.interfaces.solver.Solver

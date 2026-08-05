@@ -7,13 +7,13 @@ from weakref import WeakKeyDictionary
 
 from clingo.symbol import Symbol, SymbolType, Tuple_
 
-from mod_lns import Model
-from mod_lns.interfaces.solver import Solver
-from mod_lns.utils.logger import LNSLogger
-from mod_lns.utils.types import ConfigCatalog, DestroyOperator, PrioritizeOperator, ProjectOperator
+from fastlane import Model
+from fastlane.interfaces.solver import Solver
+from fastlane.utils.logger import LNSLogger
+from fastlane.utils.types import ConfigCatalog, DestroyOperator, PrioritizeOperator, ProjectOperator
 
 if TYPE_CHECKING:
-    from mod_lns.lns import LNS  # nocoverage
+    from fastlane.lns import LNS  # nocoverage
 
 
 class ConfigParser:

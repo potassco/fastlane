@@ -1,1 +1,1 @@
-::: mod_lns.lib.solvers.clingo_solver.ClingoSolver
+::: fastlane.lib.solvers.clingo_solver.ClingoSolver

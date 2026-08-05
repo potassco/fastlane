@@ -6,7 +6,7 @@ from typing import Optional
 
 from clingo import Symbol
 
-from mod_lns import Model
+from fastlane import Model
 
 
 def calculate_actual_destruction_percent(destruction_candidate_atoms: set[Symbol], model: Model) -> float:

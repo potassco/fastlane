@@ -5,8 +5,8 @@ Test cases for ClingconSolver class.
 import clingcon
 import clingo
 
-from mod_lns.lib.solvers.clingcon_solver import ClingconSolver
-from mod_lns.lns import LNS
+from fastlane.lib.solvers.clingcon_solver import ClingconSolver
+from fastlane.lns import LNS
 from tests.solver.test_clingo import TestSolverClingo
 
 

@@ -4,8 +4,8 @@ Examples on how to use the LNS framework.
 Check out the Guide section in the documentation for
 a step by step introduction.
 """
-from mod_lns.lns import LNS
-from mod_lns.utils.conversions import symbol_to_str
+from fastlane.lns import LNS
+from fastlane.utils.conversions import symbol_to_str
 
 
 def main():

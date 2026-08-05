@@ -9,10 +9,10 @@ from weakref import WeakKeyDictionary
 import clingo
 from clingo.symbol import Function, Number, String
 
-from mod_lns import Model
-from mod_lns.lib.solvers.clingo_solver import ClingoSolver
-from mod_lns.parsers.config_parser import ConfigParser
-from mod_lns.utils.types import DestroyOperator, PrioritizeOperator, ProjectOperator
+from fastlane import Model
+from fastlane.lib.solvers.clingo_solver import ClingoSolver
+from fastlane.parsers.config_parser import ConfigParser
+from fastlane.utils.types import DestroyOperator, PrioritizeOperator, ProjectOperator
 
 # pylint: disable=protected-access
 

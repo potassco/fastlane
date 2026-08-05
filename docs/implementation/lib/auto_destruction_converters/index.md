@@ -8,7 +8,7 @@ Implementations of the `AutoDestructionConverter` interface:
 
 ## Utility functions
 
-::: mod_lns.lib.auto_destruction_converters.utils
+::: fastlane.lib.auto_destruction_converters.utils
 
 [Average Destruction Converter]: average.md
 [Last Improvement Destruction Converter]: last_improv.md

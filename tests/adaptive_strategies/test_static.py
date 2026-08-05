@@ -4,8 +4,8 @@ Test cases for adaptive strategy interface and static adaptive strategy.
 
 from unittest import TestCase, mock
 
-from mod_lns.lib.adaptive_strategies.static import StaticStrategy
-from mod_lns.utils.types import ActiveConfig, ConfigCatalog, DestroyOperator, PrioritizeOperator, ProjectOperator
+from fastlane.lib.adaptive_strategies.static import StaticStrategy
+from fastlane.utils.types import ActiveConfig, ConfigCatalog, DestroyOperator, PrioritizeOperator, ProjectOperator
 
 # pylint: disable=protected-access
 

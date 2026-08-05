@@ -4,7 +4,7 @@ Test cases for the constrained components of the LNS framework.
 
 from unittest import TestCase
 
-from mod_lns.lib.components.constrained import get_opt_bound
+from fastlane.lib.components.constrained import get_opt_bound
 
 
 class TestConstrainedComponents(TestCase):

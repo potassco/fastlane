@@ -17,22 +17,22 @@ from typing import Any, Optional, no_type_check
 from clingo import Control, parse_term
 from clingo.symbol import Symbol
 
-from mod_lns import UNSET
-from mod_lns.interfaces.auto_destruction_converter import AutoDestructionConverter
-from mod_lns.interfaces.solver import Solver
-from mod_lns.lib.auto_destruction_converters.average import (
+from fastlane import UNSET
+from fastlane.interfaces.auto_destruction_converter import AutoDestructionConverter
+from fastlane.interfaces.solver import Solver
+from fastlane.lib.auto_destruction_converters.average import (
     AverageDestructionConverter,
 )
-from mod_lns.lib.auto_destruction_converters.last_improv import LastImprovementDestructionConverter
-from mod_lns.lns_options import LNSOptions
-from mod_lns.utils.logger import DEBUG_EXTRA
+from fastlane.lib.auto_destruction_converters.last_improv import LastImprovementDestructionConverter
+from fastlane.lns_options import LNSOptions
+from fastlane.utils.logger import DEBUG_EXTRA
 
 if sys.version_info[1] < 8:
     import importlib_metadata as metadata  # nocoverage
 else:
     from importlib import metadata  # nocoverage
 
-VERSION = metadata.version("mod_lns")
+VERSION = metadata.version("fastlane")
 
 # pylint: disable=line-too-long, too-many-lines
 
@@ -541,16 +541,11 @@ class OptionsParser:
         Return the parser for command line options.
         """
         parser = ArgumentParser(
-            prog="mod_lns",
+            prog="fastlane",
             description=dedent("""\
-                Modular Large Neighbourhood Search (LNS) Framework using ASP.\n
+                Framework for Answer Set Programming-based Large Neighborhood Search.\n
                 Check the documentation for a guide on how to use this framework
                 and all possible options for configuration.
-
-                This framework can not be run on its own but requires the use of a
-                sub command to run a specific LNS strategy.
-
-                You can access the sub command help by using 'mod_lns <strategy> -h'.
                 """),
             formatter_class=cls.formatter,
         )
@@ -567,7 +562,7 @@ class OptionsParser:
 
         solvers = {
             solver_cls.get_name(): solver_cls()
-            for solver_cls in cls.get_classes_from_package("mod_lns.lib.solvers", Solver)
+            for solver_cls in cls.get_classes_from_package("fastlane.lib.solvers", Solver)
         }
         adaptive_strategies: list[str] = LNSOptions.get_supported_adaptive_strategy_names()
         converters: dict[str, AutoDestructionConverter] = {

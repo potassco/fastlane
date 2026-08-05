@@ -4,9 +4,9 @@ Components for implementing fixation via heuristics in the context of LNS.
 
 from clingo.symbol import Function, Number, Symbol
 
-from mod_lns import Model
-from mod_lns.parsers.config_parser import ConfigParser
-from mod_lns.utils.types import ActiveConfig, ConfigCatalog
+from fastlane import Model
+from fastlane.parsers.config_parser import ConfigParser
+from fastlane.utils.types import ActiveConfig, ConfigCatalog
 
 
 def generate_heuristic_subprogram(config_catalog: ConfigCatalog) -> str:

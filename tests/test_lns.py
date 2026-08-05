@@ -7,10 +7,10 @@ from unittest import TestCase, mock
 
 from clingo.symbol import Function, Number
 
-from mod_lns import Model, Timer
-from mod_lns.interfaces.solver import SolverConfig
-from mod_lns.lns import LNS
-from mod_lns.lns_options import LNSOptions
+from fastlane import Model, Timer
+from fastlane.interfaces.solver import SolverConfig
+from fastlane.lns import LNS
+from fastlane.lns_options import LNSOptions
 
 # pylint: disable=protected-access, too-many-public-methods
 
@@ -37,8 +37,8 @@ class TestLNS(TestCase):
         config.log_level = 20
 
         with (
-            mock.patch("mod_lns.lns.LNS.parse_options") as mock_parse_options,
-            mock.patch("mod_lns.lns.setup_logger", return_value=logger) as mock_setup_logger,
+            mock.patch("fastlane.lns.LNS.parse_options") as mock_parse_options,
+            mock.patch("fastlane.lns.setup_logger", return_value=logger) as mock_setup_logger,
         ):
             lns = LNS(["example.lp"], {"time_limit": 10}, config)
 
@@ -85,7 +85,7 @@ class TestLNS(TestCase):
             mock.patch.object(
                 self.lns.options, "get_lns_solver_configuration", return_value=lns_solver_config
             ) as mock_get_lns_solver_configuration,
-            mock.patch("mod_lns.lns.random.seed") as mock_seed,
+            mock.patch("fastlane.lns.random.seed") as mock_seed,
         ):
             self.lns.pre_setup()
 
@@ -104,7 +104,7 @@ class TestLNS(TestCase):
             mock.patch.object(
                 self.lns.options, "get_lns_solver_configuration", return_value=lns_solver_config
             ) as mock_get_lns_solver_configuration,
-            mock.patch("mod_lns.lns.random.seed") as mock_seed,
+            mock.patch("fastlane.lns.random.seed") as mock_seed,
         ):
             self.lns.pre_setup()
 
@@ -149,7 +149,7 @@ class TestLNS(TestCase):
         prev_current_model = self.lns.current_model
         prev_best_model = self.lns.best_model
 
-        with mock.patch("mod_lns.lns.update_time_limit") as mock_update_time_limit:
+        with mock.patch("fastlane.lns.update_time_limit") as mock_update_time_limit:
             self.assertFalse(self.lns.get_first_solution())
             mock_update_time_limit.assert_called_once_with(self.lns, self.lns.init_solver_config)
 
@@ -162,7 +162,7 @@ class TestLNS(TestCase):
         new_model = mock.Mock()
         self.lns.solver.solve.return_value = new_model
 
-        with mock.patch("mod_lns.lns.update_time_limit") as mock_update_time_limit:
+        with mock.patch("fastlane.lns.update_time_limit") as mock_update_time_limit:
             self.assertTrue(self.lns.get_first_solution())
             mock_update_time_limit.assert_called_once_with(self.lns, self.lns.init_solver_config)
 
@@ -194,10 +194,10 @@ class TestLNS(TestCase):
         iter_fmt = "iter: {} | {} | {}"
 
         with (
-            mock.patch("mod_lns.lns.ConfigParser.parse_lns_config", return_value=config_catalog) as mock_parse,
+            mock.patch("fastlane.lns.ConfigParser.parse_lns_config", return_value=config_catalog) as mock_parse,
             mock.patch.object(self.lns.options, "build_adaptive_strategy", return_value=strategy) as mock_build,
-            mock.patch("mod_lns.lns.generate_heuristic_subprogram", return_value="heuristic_rule.") as mock_heur,
-            mock.patch("mod_lns.lns.get_output_format", return_value=(header_fmt, iter_fmt)) as mock_output,
+            mock.patch("fastlane.lns.generate_heuristic_subprogram", return_value="heuristic_rule.") as mock_heur,
+            mock.patch("fastlane.lns.get_output_format", return_value=(header_fmt, iter_fmt)) as mock_output,
             mock.patch("builtins.print") as mock_print,
         ):
             self.lns.post_first_solution()
@@ -309,7 +309,7 @@ class TestLNS(TestCase):
         self.lns.current_model = model
         self.lns._active_config = config
 
-        with mock.patch("mod_lns.lns.destroy_config", return_value=r_set) as mock_destroy:
+        with mock.patch("fastlane.lns.destroy_config", return_value=r_set) as mock_destroy:
             result = self.lns.destroy()
 
             mock_destroy.assert_called_once_with(model, config, self.lns.logger)
@@ -325,8 +325,8 @@ class TestLNS(TestCase):
         self.lns.current_model.cost = [4, 2]
         self.lns.options.lns_opt_mode = {"mode": "opt", "modifier": "dynamic", "nf": 2}
         with (
-            mock.patch("mod_lns.lns.get_opt_bound", return_value="opt,2,dynamic") as mock_get_opt,
-            mock.patch("mod_lns.lns.update_time_limit") as mock_update_time_limit,
+            mock.patch("fastlane.lns.get_opt_bound", return_value="opt,2,dynamic") as mock_get_opt,
+            mock.patch("fastlane.lns.update_time_limit") as mock_update_time_limit,
         ):
             self.lns._prepare_lns_solver_config()
 
@@ -393,8 +393,8 @@ class TestLNS(TestCase):
         self.lns.options.fix = "heuristics"
         with (
             mock.patch.object(self.lns, "_prepare_lns_solver_config") as mock_prepare,
-            mock.patch("mod_lns.lns.get_fixed_atoms_heuristics", return_value=fixed_heu) as mock_fixed_heu,
-            mock.patch("mod_lns.lns.repair_heuristics", return_value=model) as mock_repair,
+            mock.patch("fastlane.lns.get_fixed_atoms_heuristics", return_value=fixed_heu) as mock_fixed_heu,
+            mock.patch("fastlane.lns.repair_heuristics", return_value=model) as mock_repair,
             mock.patch.object(self.lns, "update_stats") as mock_update_stats,
         ):
             new_model = self.lns.repair(fixed_atoms)
@@ -409,7 +409,7 @@ class TestLNS(TestCase):
         self.lns.options.fix = "assumptions"
         with (
             mock.patch.object(self.lns, "_prepare_lns_solver_config") as mock_prepare,
-            mock.patch("mod_lns.lns.repair_assumptions", return_value=model) as mock_repair,
+            mock.patch("fastlane.lns.repair_assumptions", return_value=model) as mock_repair,
             mock.patch.object(self.lns, "update_stats") as mock_update_stats,
         ):
             new_model = self.lns.repair(fixed_atoms)
@@ -448,7 +448,7 @@ class TestLNS(TestCase):
 
         # no model -> not accepted, variability is not calculated
         self.lns.new_model = None
-        with mock.patch("mod_lns.lns.calculate_variability") as mock_calculate:
+        with mock.patch("fastlane.lns.calculate_variability") as mock_calculate:
             self.assertFalse(self.lns.check_accept())
             mock_calculate.assert_not_called()
 
@@ -456,19 +456,19 @@ class TestLNS(TestCase):
         self.lns.new_model = mock.Mock()
         self.lns.new_model.shown = {"new"}
         self.lns.new_model.cost = [10, 109]
-        with mock.patch("mod_lns.lns.calculate_variability", return_value=40) as mock_calculate:
+        with mock.patch("fastlane.lns.calculate_variability", return_value=40) as mock_calculate:
             self.assertTrue(self.lns.check_accept())
             mock_calculate.assert_called_once_with(self.lns.new_model.shown, self.lns.current_model.shown)
 
         # rejected: variability too low
         self.lns.new_model.cost = [10, 1]
-        with mock.patch("mod_lns.lns.calculate_variability", return_value=20) as mock_calculate:
+        with mock.patch("fastlane.lns.calculate_variability", return_value=20) as mock_calculate:
             self.assertFalse(self.lns.check_accept())
             mock_calculate.assert_called_once_with(self.lns.new_model.shown, self.lns.current_model.shown)
 
         # rejected: cost not strictly better than threshold (equal is not enough)
         self.lns.new_model.cost = [10, 110]
-        with mock.patch("mod_lns.lns.calculate_variability", return_value=40) as mock_calculate:
+        with mock.patch("fastlane.lns.calculate_variability", return_value=40) as mock_calculate:
             self.assertFalse(self.lns.check_accept())
             mock_calculate.assert_called_once_with(self.lns.new_model.shown, self.lns.current_model.shown)
 
@@ -526,9 +526,9 @@ class TestLNS(TestCase):
         self.lns.stats = [{}]
 
         with (
-            mock.patch("mod_lns.lns.increase_solve_limit", return_value="1200,1200") as mock_increase_solve,
-            mock.patch("mod_lns.lns.increase_time_limit", return_value=12) as mock_increase_time,
-            mock.patch("mod_lns.lns.increase_cutoff", return_value=12) as mock_increase_cutoff,
+            mock.patch("fastlane.lns.increase_solve_limit", return_value="1200,1200") as mock_increase_solve,
+            mock.patch("fastlane.lns.increase_time_limit", return_value=12) as mock_increase_time,
+            mock.patch("fastlane.lns.increase_cutoff", return_value=12) as mock_increase_cutoff,
             mock.patch("builtins.print") as mock_print,
         ):
             self.lns.pre_next_iteration()

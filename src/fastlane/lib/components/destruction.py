@@ -6,10 +6,10 @@ import random
 
 from clingo.symbol import Symbol, SymbolType
 
-from mod_lns import Model
-from mod_lns.parsers.config_parser import ConfigParser
-from mod_lns.utils.logger import DEBUG_EXTRA, LNSLogger
-from mod_lns.utils.types import ActiveConfig, DestroyOperator, DestructionSpec, ProjectOperator
+from fastlane import Model
+from fastlane.parsers.config_parser import ConfigParser
+from fastlane.utils.logger import DEBUG_EXTRA, LNSLogger
+from fastlane.utils.types import ActiveConfig, DestroyOperator, DestructionSpec, ProjectOperator
 
 
 # unused default destruction method, can be used for testing

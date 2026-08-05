@@ -10,14 +10,14 @@ via the provided presets.
     that were explicitly set to `None`. Before starting the search, all remaining `UNSET` parameters
     will be set to `None`.
     Additional default parameters can be set using the `preset` argument/option.
-    Use `mod_lns -h` to see all available presets and their parameter values.
+    Use `fastlane -h` to see all available presets and their parameter values.
 
-::: mod_lns.lns.LNS
+::: fastlane.lns.LNS
 
-::: mod_lns.lns_options.LNSOptions
+::: fastlane.lns_options.LNSOptions
 
 ## Helper classes
 
-::: mod_lns.Model
+::: fastlane.Model
 
-::: mod_lns.Timer
+::: fastlane.Timer

@@ -1,1 +1,1 @@
-::: mod_lns.lib.components.heuristics
+::: fastlane.lib.components.heuristics

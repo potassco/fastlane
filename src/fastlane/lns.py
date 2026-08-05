@@ -8,26 +8,26 @@ from typing import Any, Optional
 
 from clingo import Symbol
 
-from mod_lns import LINE, UNSET, Model, Timer
-from mod_lns.interfaces.adaptive_strategy import AdaptiveStrategy
-from mod_lns.interfaces.solver import SolverConfig
-from mod_lns.lib.adaptive_strategies.static import StaticStrategy
-from mod_lns.lib.components.constrained import get_opt_bound
-from mod_lns.lib.components.destruction import destroy_config
-from mod_lns.lib.components.heuristics import generate_heuristic_subprogram, get_fixed_atoms_heuristics
-from mod_lns.lib.components.output import get_output_format
-from mod_lns.lib.components.repair import repair_assumptions, repair_heuristics
-from mod_lns.lib.components.utils import (
+from fastlane import LINE, UNSET, Model, Timer
+from fastlane.interfaces.adaptive_strategy import AdaptiveStrategy
+from fastlane.interfaces.solver import SolverConfig
+from fastlane.lib.adaptive_strategies.static import StaticStrategy
+from fastlane.lib.components.constrained import get_opt_bound
+from fastlane.lib.components.destruction import destroy_config
+from fastlane.lib.components.heuristics import generate_heuristic_subprogram, get_fixed_atoms_heuristics
+from fastlane.lib.components.output import get_output_format
+from fastlane.lib.components.repair import repair_assumptions, repair_heuristics
+from fastlane.lib.components.utils import (
     calculate_variability,
     increase_cutoff,
     increase_solve_limit,
     increase_time_limit,
     update_time_limit,
 )
-from mod_lns.lns_options import LNSOptions
-from mod_lns.parsers.config_parser import ConfigParser
-from mod_lns.utils.logger import LNSLogger, setup_logger
-from mod_lns.utils.types import ActiveConfig, ConfigCatalog
+from fastlane.lns_options import LNSOptions
+from fastlane.parsers.config_parser import ConfigParser
+from fastlane.utils.logger import LNSLogger, setup_logger
+from fastlane.utils.types import ActiveConfig, ConfigCatalog
 
 
 # pylint: disable=too-many-instance-attributes

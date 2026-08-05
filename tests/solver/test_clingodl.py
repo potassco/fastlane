@@ -8,10 +8,10 @@ import clingo
 import clingodl
 from clingo.symbol import Function, Number
 
-from mod_lns import Model
-from mod_lns.interfaces.solver import SolverConfig
-from mod_lns.lib.solvers.clingo_dl_solver import ClingoDLSolver
-from mod_lns.lns import LNS
+from fastlane import Model
+from fastlane.interfaces.solver import SolverConfig
+from fastlane.lib.solvers.clingo_dl_solver import ClingoDLSolver
+from fastlane.lns import LNS
 from tests.solver.test_clingo import TestSolverClingo
 
 # pylint: disable=protected-access

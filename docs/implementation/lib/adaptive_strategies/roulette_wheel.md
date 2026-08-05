@@ -3,4 +3,4 @@
 Randomly select config for each iteration based on weights.
 Weights are updated depending on success.
 
-::: mod_lns.lib.adaptive_strategies.roulette_wheel.RouletteWheelStrategy
+::: fastlane.lib.adaptive_strategies.roulette_wheel.RouletteWheelStrategy

@@ -7,11 +7,11 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING, Any, Optional, Sequence
 
-from mod_lns import Timer
+from fastlane import Timer
 
 if TYPE_CHECKING:
-    from mod_lns.interfaces.solver import SolverConfig  # nocoverage
-    from mod_lns.lns import LNS  # nocoverage
+    from fastlane.interfaces.solver import SolverConfig  # nocoverage
+    from fastlane.lns import LNS  # nocoverage
 
 UINT_MAX = 4294967295
 

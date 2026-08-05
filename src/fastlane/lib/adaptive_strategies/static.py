@@ -4,14 +4,14 @@ Static strategy for adaptive LNS configuration selection.
 
 from typing import TYPE_CHECKING, Any
 
-from mod_lns import Model
-from mod_lns.interfaces.adaptive_strategy import AdaptiveStrategy
-from mod_lns.interfaces.auto_destruction_converter import AutoDestructionConverter
-from mod_lns.lib.auto_destruction_converters.last_improv import LastImprovementDestructionConverter
-from mod_lns.utils.types import ActiveConfig, ConfigCatalog
+from fastlane import Model
+from fastlane.interfaces.adaptive_strategy import AdaptiveStrategy
+from fastlane.interfaces.auto_destruction_converter import AutoDestructionConverter
+from fastlane.lib.auto_destruction_converters.last_improv import LastImprovementDestructionConverter
+from fastlane.utils.types import ActiveConfig, ConfigCatalog
 
 if TYPE_CHECKING:
-    from mod_lns.lns import LNS  # nocoverage
+    from fastlane.lns import LNS  # nocoverage
 
 
 class StaticStrategy(AdaptiveStrategy):

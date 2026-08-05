@@ -6,10 +6,10 @@ import copy
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Optional
 
-from mod_lns.utils.types import ActiveConfig, ProjectOperator
+from fastlane.utils.types import ActiveConfig, ProjectOperator
 
 if TYPE_CHECKING:
-    from mod_lns.lns import LNS  # nocoverage
+    from fastlane.lns import LNS  # nocoverage
 
 
 class AutoDestructionConverter(ABC):

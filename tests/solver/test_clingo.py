@@ -9,10 +9,10 @@ from unittest import TestCase, mock
 import clingo
 from clingo.symbol import Function
 
-from mod_lns import Model, Timer
-from mod_lns.interfaces.solver import SolverConfig
-from mod_lns.lib.solvers.clingo_solver import ClingoSolver
-from mod_lns.lns import LNS
+from fastlane import Model, Timer
+from fastlane.interfaces.solver import SolverConfig
+from fastlane.lib.solvers.clingo_solver import ClingoSolver
+from fastlane.lns import LNS
 
 # pylint: disable=protected-access, too-many-statements
 
@@ -264,7 +264,7 @@ class TestSolverClingo(TestCase):
         setup_mock_timers(solve_ringing=False, cutoff_ringing=True)
         solve_context, handle = make_solve_context()
 
-        def find_model(timeout) -> bool:
+        def find_model(timeout) -> bool:  # pylint: disable=unused-argument
             if self.solver.last_model is None:
                 self.solver.last_model = Model()
                 return False

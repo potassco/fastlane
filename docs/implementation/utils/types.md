@@ -1,3 +1,3 @@
-::: mod_lns.utils.types
+::: fastlane.utils.types
     options:
         show_root_heading: false

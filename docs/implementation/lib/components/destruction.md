@@ -1,1 +1,1 @@
-::: mod_lns.lib.components.destruction
+::: fastlane.lib.components.destruction

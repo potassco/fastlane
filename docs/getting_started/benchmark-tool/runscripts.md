@@ -13,7 +13,7 @@ Use `runscript-seq-lns.xml` for local benchmarks and `runscript-dist-lns.xml` fo
 
   	<config name="seq-generic" template="templates/seq-generic.sh"/>
 
-	<system name="mod_lns" version="conda" measures="clasp" config="seq-generic">
+	<system name="fastlane" version="conda" measures="clasp" config="seq-generic">
     		<setting name="classic_lns" cmdline="--preset=lns" tag="basic">
 				<variable cmd="--destruction=simple,{}" value="40;60"/>
 			</setting>
@@ -43,7 +43,7 @@ Use `runscript-seq-lns.xml` for local benchmarks and `runscript-dist-lns.xml` fo
 
   	<config name="dist-generic" template="templates/seq-generic.sh"/>
 
-	<system name="mod_lns" version="conda" measures="clasp" config="dist-generic">
+	<system name="fastlane" version="conda" measures="clasp" config="dist-generic">
     		<setting name="classic_lns" cmdline="--preset=lns" tag="basic">
 				<variable cmd="--destruction=simple,{}" value="40;60"/>
 			</setting>

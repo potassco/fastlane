@@ -13,12 +13,12 @@ from typing import TYPE_CHECKING, Optional, Union
 import clingo
 from clingo.statistics import StatisticsMap
 
-from mod_lns import Model, Timer
-from mod_lns.interfaces.solver import Solver, SolverConfig
-from mod_lns.utils.logger import DEBUG_EXTRA
+from fastlane import Model, Timer
+from fastlane.interfaces.solver import Solver, SolverConfig
+from fastlane.utils.logger import DEBUG_EXTRA
 
 if TYPE_CHECKING:
-    from mod_lns.lns import LNS  # nocoverage
+    from fastlane.lns import LNS  # nocoverage
 
 
 # pylint: disable=too-many-instance-attributes
