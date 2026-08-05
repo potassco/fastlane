@@ -1,0 +1,756 @@
+"""
+Parser for LNS configuration inside ASP encodings.
+"""
+
+from typing import TYPE_CHECKING, Optional
+from weakref import WeakKeyDictionary
+
+from clingo.symbol import Symbol, SymbolType, Tuple_
+
+from fastlane import Model
+from fastlane.interfaces.solver import Solver
+from fastlane.utils.logger import LNSLogger
+from fastlane.utils.types import ConfigCatalog, DestroyOperator, PrioritizeOperator, ProjectOperator
+
+if TYPE_CHECKING:
+    from fastlane.lns import LNS  # nocoverage
+
+
+class ConfigParser:
+    """
+    Parser for extracting and validating configuration from model.
+    """
+
+    _op_specs_cache: WeakKeyDictionary[Model, dict[str, set[Symbol]]] = WeakKeyDictionary()
+    _projected_atoms_cache: WeakKeyDictionary[Model, dict[str, set[Symbol]]] = WeakKeyDictionary()
+    _atom_term_pairs_cache: WeakKeyDictionary[Model, dict[tuple[int, str], list[dict[str, Symbol]]]] = (
+        WeakKeyDictionary()
+    )
+    _heuristic_targets_cache: WeakKeyDictionary[Model, dict[tuple[int, str], set[Symbol]]] = WeakKeyDictionary()
+
+    @staticmethod
+    def _is_atom(term: Symbol) -> bool:
+        """
+        Check if given term is atom.
+
+        :param term: Term.
+        :return: True if given term is atom, False otherwise.
+        """
+        return term.type == SymbolType.Function and term.name != ""
+
+    # project operator can not be created through _project/2
+    # @classmethod
+    # def _get_project_operators_and_signatures_from_project2(
+    #     cls,
+    #     model: Model,
+    # ) -> tuple[set[str], list[dict[str, Any]]]:
+    #     """
+    #     Extract and validate project operator names and predicate signatures
+    #     of projected atoms from atoms of _project/2 in model.
+
+    #     :param model: Model object.
+    #     :type model: Model
+    #     :return: Set of project operator names and list of predicate names and arities of projected atoms.
+    #     :rtype: tuple[set[str], list[dict[str, Any]]]
+    #     """
+    #     project_operators = set()
+    #     projected_signatures = []
+
+    #     for atom in model.true:
+    #         if atom.match("_project", 2):
+    #             project_operators.add(str(atom.arguments[0]))
+    #             second_arg = atom.arguments[1]
+    #             if cls._is_atom(second_arg):
+    #                 projected_signature = {"name": second_arg.name, "arity": len(second_arg.arguments)}
+    #             else:
+    #                 #logger.warning(f"_project/2: Second argument {second_arg} is not an atom. (atom: {atom})")
+    #                 continue
+    #             if projected_signature not in projected_signatures:
+    #                 projected_signatures.append(projected_signature)
+
+    #     return project_operators, projected_signatures
+
+    @classmethod
+    def _parse_project_operator(
+        cls, solver: Solver, declarative: bool, logger: LNSLogger
+    ) -> dict[str, ProjectOperator]:
+        """
+        Extract and validate project operators from atoms of _project_op/2 in model.
+
+        :param solver: Solver interface object.
+        :param declarative: Whether to parse declarative configuration or not.
+        :return: Dictionary of project operator names and their corresponding ProjectOperator objects.
+        """
+        project_operators: dict[str, ProjectOperator] = {}
+
+        if declarative:
+            for atom in solver.control.symbolic_atoms.by_signature("_project_op", 2):
+                args = atom.symbol.arguments
+                if args[0].type != SymbolType.String:
+                    operator = str(args[0])
+                else:
+                    operator = args[0].string
+                project_operators.setdefault(operator, ProjectOperator(operator))
+                if args[1].type == SymbolType.Function and len(args[1].arguments) == 2:
+                    signature = args[1].arguments
+                    # !todo catch bad args
+                    # project_operators[operator].add({"name": signature[0].name, "arity": signature[1].number})
+                    project_operators[operator].add((signature[0].name, signature[1].number))
+                else:
+                    logger.warning(
+                        f"_project_op/2: Second argument '{args[1]}' is not a valid signature. (atom: {atom.symbol})"
+                    )
+                    continue
+
+            # from specifications
+            # for atom in solver.control.symbolic_atoms.by_signature("_project", 2):
+            #     args = atom.symbol.arguments
+            #     operator = str(args[0])
+            #     if operator not in project_operators:
+            #         project_operators.setdefault(operator, set())
+            #         if cls._is_atom(args[1]):
+            #             project_operators[operator].add({"name": args[1].name, "arity": len(args[1].arguments)})
+            #         else:
+            #             #logger.warning(f"_project/2: Second argument {args[1]} is not a valid signature.")
+            #             continue
+
+        # no operators defined -> default to all shown
+        if not project_operators:
+            project_operators.setdefault("default", ProjectOperator("default"))
+            if solver.last_model is not None:
+                for model_atom in solver.last_model.shown:
+                    if cls._is_atom(model_atom):
+                        project_operators["default"].add((model_atom.name, len(model_atom.arguments)))
+                    else:
+                        continue
+                # default empty -> exception
+
+        return project_operators
+
+    @staticmethod
+    def _is_percent_or_number(term: Symbol) -> bool:
+        """
+        Check if given term is atom representing percent or number.
+
+        :param term: Term.
+        :return: True if given term is atom representing percent or number, False otherwise.
+        """
+        return (term.match("p", 1) or term.match("n", 1)) and term.arguments[0].type == SymbolType.Number
+
+    # pylint: disable=too-many-nested-blocks, too-many-branches
+    @classmethod
+    def _parse_destroy_operators(
+        cls, solver: Solver, declarative: bool, logger: LNSLogger
+    ) -> dict[str, DestroyOperator]:
+        """
+        Extract and validate destroy operators from atoms of _destroy_op/2 in model.
+
+        :param solver: Solver interface object.
+        :param declarative: Whether to parse declarative configuration or not.
+        :return: Dictionary mapping destroy operator names to lists of percentages or numbers.
+        """
+        destroy_operators: dict[str, DestroyOperator] = {}
+
+        if declarative:
+            for atom in solver.control.symbolic_atoms.by_signature("_destroy_op", 2):
+                args = atom.symbol.arguments
+                if args[0].type != SymbolType.String:
+                    operator = str(args[0])
+                else:
+                    operator = args[0].string
+                if operator in destroy_operators:
+                    logger.warning(
+                        f"_destroy_op/2: Multiple definitions of destroy operator '{operator}'. Ignoring {atom}."
+                    )
+                    continue
+                destroy_operators.setdefault(
+                    operator, DestroyOperator.from_specs(operator, [{"type": "auto", "value": None}])
+                )
+                spec = args[1]
+                if spec.type == SymbolType.Function:
+                    parsed_spec = []
+                    if spec.name:
+                        if spec.match("auto", 0):
+                            # default
+                            # percents_or_numbers = [{"type": "auto", "value": None}]
+                            continue
+                        if cls._is_percent_or_number(spec):
+                            parsed_spec = [{"type": spec.name, "value": spec.arguments[0].number}]
+                        else:
+                            logger.warning(f"_destroy_op/2: Second argument '{spec}' is invalid. (atom: {atom.symbol})")
+                            continue
+                    else:
+                        for arg in spec.arguments:
+                            if cls._is_percent_or_number(arg):
+                                parsed_spec.append({"type": arg.name, "value": arg.arguments[0].number})
+                            else:
+                                logger.warning(
+                                    f"_destroy_op/2: Second argument '{arg}' is invalid. (atom: {atom.symbol})"
+                                )
+                                break
+                        # ?? TODO check arg missmatch
+                        # _destroy_op("random_n", (p(10),p(20))).
+                        # _destroy("random_n", plays(P,W,G), P,W,G) :- plays(P,W,G).
+                        # --
+                        # _destroy_op("random_n", (p(10),p(20))).
+                        # _destroy("random_n", plays(P,W,G), W) :- plays(P,W,G).
+                        if len(parsed_spec) < len(spec.arguments):
+                            continue
+                else:
+                    logger.warning(f"_destroy_op/2: Second argument '{spec}' is invalid. (atom: {atom.symbol})")
+                    continue
+
+                destroy_operators[operator] = DestroyOperator.from_specs(operator, parsed_spec)
+
+        if not destroy_operators:
+            destroy_operators["default"] = DestroyOperator.from_specs("default", [{"type": "auto", "value": None}])
+
+        return destroy_operators
+
+    # destroy op can not be created through _destroy/3
+    # @classmethod
+    # def _get_destroy_operators_from_destroy3(cls, model: Model) -> dict[str, list[list[dict[str, Any]]]]:
+    #     """
+    #     Extract and validate destroy operators from atoms of _destroy/3 in model.
+
+    #     :param model: Model object.
+    #     :type model: Model
+    #     :return: Dictionary mapping destroy operator names to default percentage.
+    #     :rtype: dict[str, list[list[dict[str, Any]]]]
+    #     """
+    #     destroy_operators = {}
+
+    #     for atom in model.true:
+    #         if atom.match("_destroy", 3):
+    #             name = str(atom.arguments[0])
+    #             if name not in destroy_operators:
+    #                 destroy_operators[name] = [[{"type": "auto", "value": None}]]
+
+    #             second_arg = atom.arguments[1]
+    #             if not cls._is_atom(second_arg):
+    #                 #logger.warning(f"_destroy/3: Second argument {second_arg} is not an atom. (atom: {atom})")
+    #                 pass
+    #     return destroy_operators
+
+    @staticmethod
+    def _is_heuristic_modifier(term: Symbol) -> bool:
+        """
+        Check if given term is modifier used in #heuristic statements.
+
+        :param term: Term.
+        :return: True if given term is heuristic modifier, False otherwise.
+        """
+        return (
+            term.match("sign", 0)
+            or term.match("level", 0)
+            or term.match("true", 0)
+            or term.match("false", 0)
+            or term.match("init", 0)
+            or term.match("factor", 0)
+        )
+
+    @classmethod
+    def _parse_prioritize_operators(
+        cls, solver: Solver, declarative: bool, logger: LNSLogger
+    ) -> dict[str, PrioritizeOperator]:
+        """
+        Extract and validate prioritize operators from atoms of _prioritize_op/3 in model.
+
+        :param solver: SolverInterface object.
+        :param declarative: Whether to parse declarative configuration or not.
+        :return: Dictionary mapping prioritize operator names to dictionaries of heuristic modifiers and their values.
+        """
+        prioritize_operators: dict[str, PrioritizeOperator] = {}
+
+        if declarative:
+            for atom in solver.control.symbolic_atoms.by_signature("_prioritize_op", 3):
+                args = atom.symbol.arguments
+                if args[0].type != SymbolType.String:
+                    operator = str(args[0])
+                else:
+                    operator = args[0].string
+                if operator in prioritize_operators:
+                    # fmt: off
+                    logger.warning(
+                        f"_prioritize_op/3: Multiple definitions of prioritize operator '{operator}'. "
+                        f"Ignoring {atom.symbol}."
+                    )
+                    # fmt: on
+                    continue
+                prioritize_operators.setdefault(
+                    operator, PrioritizeOperator.from_spec(operator, {"value": 1, "modifier": "true"})
+                )
+
+                value_param = args[1]
+                value: int | str
+                if value_param.match("inf", 0):
+                    value = "inf"
+                elif value_param.type == SymbolType.Number:
+                    value = value_param.number
+                else:
+                    # fmt: off
+                    logger.warning(
+                        f"_prioritize_op/3: Second argument '{value_param}' is neither an integer nor inf. "
+                        f"(atom: {atom.symbol})"
+                    )
+                    # fmt: on
+                    continue
+
+                modifier_param = args[2]
+                if cls._is_heuristic_modifier(modifier_param):
+                    prioritize_operators[operator].set_spec({"value": value, "modifier": modifier_param.name})
+                else:
+                    # fmt: off
+                    logger.warning(
+                        f"_prioritize_op/3: Third argument '{modifier_param}' is not one of: "
+                        f"sign, level, true, false, init, factor. (atom: {atom.symbol})"
+                    )
+                    # fmt: on
+                    continue
+
+        if not prioritize_operators:
+            prioritize_operators["default"] = PrioritizeOperator.from_spec("default", {"value": 1, "modifier": "true"})
+
+        return prioritize_operators
+
+    # prioritize op can not be created through _prioritize/2
+    # @classmethod
+    # def _get_prioritize_operators_from_prioritize2(cls, model: Model) -> dict[str, list[dict[str, Any]]]:
+    #     """
+    #     Extract and validate prioritize operators from atoms of _prioritize/2 in model.
+
+    #     :param model: Model object.
+    #     :type model: Model
+    #     :return: Dictionary mapping prioritize operator names to default heuristic modifier and its value.
+    #     :rtype: dict[str, list[dict[str, Any]]]
+    #     """
+    #     prioritize_operators = {}
+
+    #     for atom in model.true:
+    #         if atom.match("_prioritize", 2):
+    #             name = str(atom.arguments[0])
+    #             if name not in prioritize_operators:
+    #                 prioritize_operators[name] = [{"value": 1, "modifier": "true"}]
+
+    #             second_arg = atom.arguments[1]
+    #             if not cls._is_atom(second_arg):
+    #                 #logger.warning(f"_prioritize/2: Second argument {second_arg} is not an atom. (atom: {atom})")
+    #                 pass
+
+    #     return prioritize_operators
+
+    # pylint: disable=too-many-positional-arguments
+    @classmethod
+    def _parse_configs(
+        cls,
+        solver: Solver,
+        defined_project_operators: list[str],
+        defined_destroy_operators: list[str],
+        defined_prioritize_operators: list[str],
+        declarative: bool,
+        logger: LNSLogger,
+    ) -> dict[str, dict[str, list[str]]]:
+        """
+        Extract and validate configurations from atoms of _config/4.
+
+        :param solver: Solver object.
+        :param defined_project_operators: List of available project operator names.
+        :param defined_destroy_operators: List of available destroy operator names.
+        :param defined_prioritize_operators: List of available prioritize operator names.
+        :param declarative: Whether to parse declarative configuration or not.
+        :return: Dictionary mapping configuration names to lists of operator names.
+        """
+        configs: dict[str, dict[str, set[str]]] = {}
+        defined_operators = {
+            "project_operators": set(defined_project_operators),
+            "destroy_operators": set(defined_destroy_operators),
+            "prioritize_operators": set(defined_prioritize_operators),
+        }
+        operator_args_info: list[tuple[int, dict[str, str]]] = [
+            (1, {"key": "project_operators", "type": "Project"}),
+            (2, {"key": "destroy_operators", "type": "Destroy"}),
+            (3, {"key": "prioritize_operators", "type": "Prioritize"}),
+        ]
+
+        if declarative:
+            for atom in solver.control.symbolic_atoms.by_signature("_config", 4):
+                args = atom.symbol.arguments
+                if args[0].type != SymbolType.String:
+                    config_name = str(args[0])
+                else:
+                    config_name = args[0].string
+                # multiple configs with the same name -> combine operators
+                # if config_name in configs:
+                # logger.warning(f"_config/4: Multiple definitions of configuration '{config_name}'. Ignoring {atom}.")
+                # continue
+                configs.setdefault(
+                    config_name, {"project_operators": set(), "destroy_operators": set(), "prioritize_operators": set()}
+                )
+
+                # !todo support for multi ops required?
+                # _config("Random", "plays_3",("random_n";"random_40"), "1_true").
+                for index, info in operator_args_info:
+                    key = info["key"]
+                    operator_atom = args[index]
+                    if operator_atom.type != SymbolType.String:
+                        operator_name = str(operator_atom)
+                    else:
+                        operator_name = operator_atom.string
+                    if operator_name in defined_operators[key]:
+                        configs[config_name][key].add(operator_name)
+                    else:
+                        logger.warning(
+                            f"_config/4: {info['type']} operator {operator_name} is not defined. (atom: {atom.symbol})"
+                        )
+
+        if not configs:
+            configs["default"] = defined_operators
+
+        # !todo why sort?
+        sorted_configs = {
+            config_name: {key: sorted(operator_names) for key, operator_names in operators.items()}
+            for config_name, operators in configs.items()
+        }
+
+        return sorted_configs
+
+    # pylint: disable=too-many-positional-arguments
+    @classmethod
+    def _parse_strategy(
+        cls,
+        solver: Solver,
+        defined_configs: dict[str, dict[str, list[str]]],
+        supported_strategies: list[str],
+        default_strategy: str,
+        declarative: bool,
+        logger: LNSLogger,
+    ) -> tuple[str, dict[str, dict[str, list[str]]]]:
+        """
+        Extract and validate strategy and configurations subject to selection from atoms of _strategy/2.
+
+        :param solver: Solver object.
+        :param defined_configs: Dictionary mapping names of available configurations to lists of operator names.
+        :param supported_strategies: List of available strategy names.
+        :param default_strategy: Name of strategy to use when not specified.
+        :param declarative: Whether to parse declarative configuration or not.
+        :return: Strategy name and Dictionary mapping names of configurations subject to selection to
+            lists of operator names.
+        """
+        strategy: Optional[str] = None
+        candidate_configs = {}
+
+        if declarative:
+            for atom in solver.control.symbolic_atoms.by_signature("_strategy", 2):
+                args = atom.symbol.arguments
+                if args[0].type != SymbolType.String:
+                    strategy_name = str(args[0])
+                else:
+                    strategy_name = args[0].string
+                if strategy_name not in supported_strategies:
+                    logger.warning(f"_strategy/2: Strategy '{strategy_name}' is not supported. (atom: {atom.symbol})")
+                    continue
+
+                if strategy is None:
+                    strategy = strategy_name
+                if strategy != strategy_name:
+                    # fmt: off
+                    logger.warning(
+                        f"_strategy/2: Multiple strategies specified. Using '{strategy}' and ignoring "
+                        f"'{strategy_name}'. (atom: {atom.symbol})"
+                    )
+                    # fmt: on
+                    continue
+
+                if args[1].type != SymbolType.String:
+                    config_name = str(args[1])
+                else:
+                    config_name = args[1].string
+                if config_name in defined_configs:
+                    candidate_configs[config_name] = defined_configs[config_name]
+                else:
+                    logger.warning(f"_strategy/2: Config '{config_name}' is not defined. (atom: {atom.symbol})")
+                    continue
+
+        if not candidate_configs:
+            # !!!todo maybe deep copy needed
+            candidate_configs = defined_configs.copy()
+        if strategy is None:
+            strategy = default_strategy
+
+        return strategy, candidate_configs
+
+    @classmethod
+    def parse_lns_config(cls, lns_object: "LNS") -> ConfigCatalog:
+        """
+        Extract and validate LNS configuration from model.
+        If in non-declarative mode, the configuration is constructed from options
+        and default behavior of operators.
+
+        :param lns_object: LNS instance that provides solver and runtime options.
+        :return: Configuration catalog used by the LNS loop.
+        """
+        # pylint: disable=protected-access
+        logger = lns_object.logger.getChild("ConfigParser")
+        solver = lns_object.solver
+        options = lns_object.options
+        declarative = options._declarative
+        project_operators = cls._parse_project_operator(solver, declarative, logger)
+        destroy_operators = cls._parse_destroy_operators(solver, declarative, logger)
+        if not declarative:
+            if options._destruction_rate > 0:
+                dest_op = DestroyOperator.from_specs("default", [{"type": "p", "value": options._destruction_rate}])
+            else:
+                dest_op = DestroyOperator.from_specs("default", [{"type": "auto", "value": None}])
+            destroy_operators = {"default": dest_op}
+
+        prioritize_operators = cls._parse_prioritize_operators(solver, declarative, logger)
+        defined_configs = cls._parse_configs(
+            solver,
+            list(project_operators.keys()),
+            list(destroy_operators.keys()),
+            list(prioritize_operators.keys()),
+            declarative,
+            logger,
+        )
+        strategy, candidate_configs = cls._parse_strategy(
+            solver,
+            defined_configs,
+            options.get_supported_adaptive_strategy_names(),
+            options.default_adaptive_strategy_name,
+            declarative,
+            logger,
+        )
+
+        config_catalog: ConfigCatalog = {
+            "project_operators": project_operators,
+            "destroy_operators": destroy_operators,
+            "prioritize_operators": prioritize_operators,
+            "configs": candidate_configs,
+            "strategy": strategy,
+        }
+        lns_object.logger.debug("LNS configuration catalog: %s", cls._format_config_catalog(config_catalog))
+        return config_catalog
+
+    @classmethod
+    def _format_config_catalog(cls, config_catalog: ConfigCatalog) -> str:
+        """
+        Convert LNS configuration catalog into string.
+
+        :param config_catalog: LNS configuration catalog.
+        :return: String representing LNS configuration catalog.
+        """
+        project_operators = ",".join(
+            name + "{" + ",".join(f"{signature[0]}/{signature[1]}" for signature in project_operators) + "}"
+            for name, project_operators in config_catalog["project_operators"].items()
+        )
+
+        destroy_operators = ",".join(
+            name
+            + "{"
+            + ",".join(
+                f"{ds['type']}({ds['value']})" if ds["value"] is not None else ds["type"] for ds in destruction_specs
+            )
+            + "}"
+            for name, destruction_specs in config_catalog["destroy_operators"].items()
+        )
+
+        prioritize_operators = ",".join(
+            name + "{" + f"{prioritize_specs['value']},{prioritize_specs['modifier']}" + "}"
+            for name, prioritize_specs in config_catalog["prioritize_operators"].items()
+        )
+
+        out = (
+            f"project_operators={{{project_operators}}}, "
+            f"destroy_operators={{{destroy_operators}}}, "
+            f"prioritize_operators={{{prioritize_operators}}}"
+        )
+        if "configs" in config_catalog:
+            configs = ",".join(
+                config
+                + "["
+                + "project_operators={"
+                + ",".join(operators["project_operators"])
+                + "},destroy_operators={"
+                + ",".join(operators["destroy_operators"])
+                + "},prioritize_operators={"
+                + ",".join(operators["prioritize_operators"])
+                + "}"
+                + "]"
+                for config, operators in config_catalog["configs"].items()
+            )
+            out += f", configs={{{configs}}}"
+
+        if "strategy" in config_catalog:
+            strategy = config_catalog["strategy"]
+            out += f", strategy={strategy}"
+
+        return out
+
+    @classmethod
+    def get_op_specs(cls, model: Model) -> dict[str, set[Symbol]]:
+        """
+        Extract operation specifications from the model.
+
+        :param model: Model containing the atoms.
+        :return: Dictionary mapping operation names to sets of symbols.
+        """
+        cached_specs = cls._op_specs_cache.get(model)
+        if cached_specs is not None:
+            return cached_specs
+
+        specs: dict[str, set[Symbol]] = {}
+        for atom in model.true:
+            if atom.match("_project", 2):
+                specs.setdefault("_project", set()).add(atom)
+            elif atom.match("_destroy", 3):
+                specs.setdefault("_destroy", set()).add(atom)
+            elif atom.match("_prioritize", 2):
+                specs.setdefault("_prioritize", set()).add(atom)
+
+        cls._op_specs_cache[model] = specs
+        return specs
+
+    @classmethod
+    def get_projected_atoms(cls, model: Model, project_operator_name: str) -> set[Symbol]:
+        """
+        Extract subset of atoms included in answer set from atoms of _project/2.
+
+        :param model: Model containing the atoms.
+        :param project_operator_name: Project operator name.
+        :return: Projected atoms.
+        """
+        op_specs = cls.get_op_specs(model)
+
+        model_cache = cls._projected_atoms_cache.setdefault(model, {})
+        cached_projected_atoms = model_cache.get(project_operator_name)
+        if cached_projected_atoms is not None:
+            return cached_projected_atoms
+
+        projected_atoms = set()
+        is_project2_defined = False
+
+        for atom in op_specs.get("_project", set()):
+            args = atom.arguments
+            if args[0].type != SymbolType.String:
+                operator_name = str(args[0])
+            else:
+                operator_name = args[0].string
+            if operator_name == project_operator_name:
+                is_project2_defined = True
+                second_arg = args[1]
+                if cls._is_atom(second_arg) and second_arg in model.shown:
+                    projected_atoms.add(second_arg)
+
+        # default project all shown
+        if not is_project2_defined:
+            for atom in model.shown:
+                if cls._is_atom(atom):
+                    projected_atoms.add(atom)
+
+        model_cache[project_operator_name] = projected_atoms
+        return projected_atoms
+
+    @classmethod
+    def get_atom_term_pairs(
+        cls, model: Model, projected_atoms: set[Symbol], destroy_operator_name: str
+    ) -> list[dict[str, Symbol]]:
+        """
+        Extract atoms subject to destruction and corresponding terms from atoms of _destroy/3.
+
+        :param model: Model containing the atoms.
+        :param projected_atoms: Projected atoms.
+        :param destroy_operator_name: Destroy operator name.
+        :return: Atoms subject to destruction and corresponding terms.
+        """
+        op_specs = cls.get_op_specs(model)
+
+        model_cache = cls._atom_term_pairs_cache.setdefault(model, {})
+        cache_key = (id(projected_atoms), destroy_operator_name)
+        cached_atom_term_pairs = model_cache.get(cache_key)
+        if cached_atom_term_pairs is not None:
+            return cached_atom_term_pairs
+
+        atom_term_pairs: list[dict[str, Symbol]] = []
+        is_destroy3_defined = False
+
+        for atom in op_specs.get("_destroy", set()):
+            args = atom.arguments
+            if args[0].type != SymbolType.String:
+                operator_name = str(args[0])
+            else:
+                operator_name = args[0].string
+            if operator_name == destroy_operator_name:
+                is_destroy3_defined = True
+                candidate_atom = args[1]
+                if candidate_atom in projected_atoms:
+                    # !todo dict to tuple
+                    atom_term_pairs.append({"atom": candidate_atom, "term": args[2]})
+
+        # default destroy all projected
+        if not is_destroy3_defined:
+            for atom in projected_atoms:
+                atom_term_pairs.append({"atom": atom, "term": Tuple_(atom.arguments)})
+
+        # !todo improve reproducibility of order of atom_term_pairs
+        model_cache[cache_key] = atom_term_pairs
+        return atom_term_pairs
+
+    @classmethod
+    def get_destruction_candidate_atoms(
+        cls, model: Model, projected_atoms: set[Symbol], destroy_operator_name: str
+    ) -> set[Symbol]:
+        """
+        Extract atoms subject to destruction from atoms of _destroy/3.
+
+        :param model: Model containing the atoms.
+        :param projected_atoms: Projected atoms.
+        :param destroy_operator_name: Destroy operator name.
+        :return: Atoms subject to destruction.
+        """
+        atom_term_pairs = cls.get_atom_term_pairs(model, projected_atoms, destroy_operator_name)
+        return set(pair["atom"] for pair in atom_term_pairs)
+
+    @classmethod
+    def get_heuristic_targets(
+        cls,
+        model: Model,
+        undestroyed_atoms: set[Symbol],
+        prioritize_operator_name: str,
+    ) -> set[Symbol]:
+        """
+        Extract atoms subject to prioritization from atoms of _prioritize/2.
+
+        :param model: Model containing the atoms.
+        :param undestroyed_atoms: Undestroyed atoms.
+        :param prioritize_operator_name: Prioritize operator name.
+        :return: Atoms subject to prioritization.
+        """
+        op_specs = cls.get_op_specs(model)
+
+        model_cache = cls._heuristic_targets_cache.setdefault(model, {})
+        cache_key = (id(undestroyed_atoms), prioritize_operator_name)
+        cached_heuristic_targets = model_cache.get(cache_key)
+        if cached_heuristic_targets is not None:
+            return cached_heuristic_targets
+
+        heuristic_targets: set[Symbol] = set()
+        is_prioritize2_defined = False
+
+        for atom in op_specs.get("_prioritize", set()):
+            args = atom.arguments
+            if args[0].type != SymbolType.String:
+                operator_name = str(args[0])
+            else:
+                operator_name = args[0].string
+            if operator_name == prioritize_operator_name:
+                is_prioritize2_defined = True
+                candidate_atom = args[1]
+                if candidate_atom in undestroyed_atoms:
+                    heuristic_targets.add(candidate_atom)
+
+        # default prioritize all undestroyed
+        if not is_prioritize2_defined:
+            heuristic_targets = undestroyed_atoms.copy()
+
+        model_cache[cache_key] = heuristic_targets
+        return heuristic_targets

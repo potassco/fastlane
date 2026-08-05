@@ -1,18 +1,35 @@
-import os
-
 import nox
+import os
+from pathlib import Path
+import sys
+
 
 nox.options.sessions = "lint_pylint", "typecheck", "test"
 
 EDITABLE_TESTS = True
-PYTHON_VERSIONS = None
+PYTHON_VERSIONS = ["3.12"]
 if "GITHUB_ACTIONS" in os.environ:
-    PYTHON_VERSIONS = ["3.11"]
+    PYTHON_VERSIONS = ["3.12", "3.14"]
     EDITABLE_TESTS = False
 
 FILES_TO_BE_CHECKED = [
     "src",
 ]
+
+
+def _discover_test_modules(*, include_integration: bool) -> list[str]:
+    """
+    Discover unittest modules and optionally include integration tests.
+    """
+    modules = []
+    for path in sorted(Path("tests").rglob("test*.py")):
+        if path.name == "__init__.py":
+            continue
+        is_integration = "integration" in path.stem
+        if include_integration != is_integration:
+            continue
+        modules.append(".".join(path.with_suffix("").parts))
+    return modules
 
 
 @nox.session
@@ -27,7 +44,7 @@ def format(session):
 
     autoflake_args = [
         "--in-place",
-        "--imports=mod_lns",
+        "--imports=fastlane",
         "--ignore-init-module-imports",
         "--remove-unused-variables",
         "-r",
@@ -43,12 +60,11 @@ def format(session):
         isort_args.insert(1, "--diff")
     session.run("isort", *isort_args)
 
-    black_args = ["tests"] + FILES_TO_BE_CHECKED
+    black_args = ["--target-version", "py312", "tests"] + FILES_TO_BE_CHECKED
     if check:
         black_args.insert(0, "--check")
         black_args.insert(1, "--diff")
     session.run("black", *black_args)
-
 
 @nox.session
 def doc(session):
@@ -56,31 +72,23 @@ def doc(session):
     Build the documentation.
 
     Accepts the following arguments:
-    - open: open documentation after build
-    - clean: clean up the build folder
-    - <target> <options>: build the given <target> with the given <options>
+    - serve: open documentation after build
+    - further arguments are passed to mkbuild
     """
-    target = "html"
-    options = []
-    open_doc = "open" in session.posargs
-    clean = "clean" in session.posargs
 
+    options = session.posargs[:]
+    open_doc = "serve" in options
     if open_doc:
-        session.posargs.remove("open")
-    if clean:
-        session.posargs.remove("clean")
-
-    if session.posargs:
-        target = session.posargs[0]
-        options = session.posargs[1:]
+        options.remove("serve")
 
     session.install("-e", ".[doc]")
-    session.cd("doc")
-    if clean:
-        session.run("rm", "-rf", "_build")
-    session.run("sphinx-build", "-M", target, ".", "_build", *options)
+
     if open_doc:
-        session.run("open", "_build/html/index.html")
+        open_cmd = "xdg-open" if sys.platform == "linux" else "open"
+        session.run(open_cmd, "http://localhost:8000/")
+        session.run("zensical", "serve", *options)
+    else:
+        session.run("zensical", "build", *options)
 
 
 @nox.session
@@ -118,7 +126,7 @@ def typecheck(session):
 @nox.session(python=PYTHON_VERSIONS)
 def test(session):
     """
-    Run the tests.
+    Run non-integration tests with coverage.
 
     Accepts an additional arguments which are passed to the unittest module.
     This can for example be used to selectively run test cases.
@@ -131,6 +139,23 @@ def test(session):
     if session.posargs:
         session.run("coverage", "run", "-m", "unittest", session.posargs[0], "-v")
     else:
-        session.run("coverage", "run", "-m", "unittest", "discover", "-v")
-        # session.run("coverage", "run", "-m", "unittest", "tests.test_strategies", "-v")
-        session.run("coverage", "report", "-m", "--fail-under=100")
+        modules = _discover_test_modules(include_integration=False)
+        session.run("coverage", "run", "-m", "unittest", "-v", *modules)
+    session.run("coverage", "report", "-m", "--fail-under=100")
+
+
+@nox.session(python=PYTHON_VERSIONS)
+def test_integration(session):
+    """
+    Run integration tests only.
+    """
+
+    args = [".[test]"]
+    if EDITABLE_TESTS:
+        args.insert(0, "-e")
+    session.install(*args)
+    if session.posargs:
+        session.run("python", "-m", "unittest", session.posargs[0], "-v")
+    else:
+        modules = _discover_test_modules(include_integration=True)
+        session.run("python", "-m", "unittest", "-v", *modules)

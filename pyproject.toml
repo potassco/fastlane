@@ -3,10 +3,10 @@ requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "mod_lns"
+name = "fastlane"
 authors = [{name = "Tom Schmidt"}]
-description = "A Modular Large Neighbourhood Search Framework."
-requires-python = ">=3.11"
+description = "A Framework for Answer Set Programming-based Large Neighborhood Search."
+requires-python = ">=3.12"
 dynamic = ["version"]
 dependencies = [
     "importlib_metadata;python_version<'3.12'",
@@ -22,12 +22,12 @@ format = ["black", "isort", "autoflake"]
 lint_pylint = ["pylint"]
 typecheck = ["types-setuptools", "mypy"]
 test = ["coverage[toml]"]
-doc = ["sphinx", "furo", "nbsphinx", "sphinx_copybutton", "myst-parser"]
-dev = ["mod_lns[test,typecheck,lint_pylint]"]
-full = ["mod_lns[doc]"]
+doc = ["zensical", "mkdocstrings-python"]
+dev = ["fastlane[test,typecheck,lint_pylint]"]
+full = ["fastlane[doc]"]
 
 [project.scripts]
-mod_lns = "mod_lns.__main__:main"
+fastlane = "fastlane.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -73,8 +73,8 @@ good-names = ["_"]
 disable = ["duplicate-code"]
 
 [tool.coverage.run]
-source = ["mod_lns", "tests"]
-omit = ["*/mod_lns/__main__.py"]
+source = ["fastlane"]
+omit = ["*/fastlane/__main__.py", "tests/*", "*/tests/*"]
 
 [tool.coverage.report]
 exclude_also = ["assert", "nocoverage"]
