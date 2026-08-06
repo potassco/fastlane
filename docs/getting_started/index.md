@@ -62,7 +62,6 @@ _config(ID,PID,DID,PIID) % ID: identifier, PID: project id, DID: destroy id, PII
 _strategy(ID,CID)        % ID: identifier, CID: config id
 ```
 An example config encoding for the social golfer problem can be found in [`./examples/golf_config.lp`][golf_config].
-A more complex example can be found in [`./examples/portfolio.lp`][portfolio].
 
 ## Benchmark-Tool
 
@@ -75,5 +74,4 @@ the [potassco-benchmark-tool].
 [potassco-benchmark-tool]: https://potassco.org/benchmark-tool/
 [demo]: examples/demo.md
 [golf_config]: examples/golf_config.md
-[portfolio]: examples/portfolio.md
 [benchmark-tool]: benchmark-tool/index.md
