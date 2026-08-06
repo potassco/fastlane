@@ -85,7 +85,6 @@ nav = [
       {"golf.lp" = "getting_started/examples/golf.md"},
       {"golf_config.lp" = "getting_started/examples/golf_config.md"},
       {"golf_declarative.lp" = "getting_started/examples/golf_declarative.md"},
-      {"portfolio.lp" = "getting_started/examples/portfolio.md"},
     ]},
     {"Benchmark-Tool" = [
       "getting_started/benchmark-tool/index.md",

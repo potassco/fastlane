@@ -269,4 +269,3 @@ two (`int(5*(1-0.6))`) random weeks are fixed (`plays/3: plays(Player,Week,Group
 [demo]: examples/demo.md
 [golf]: examples/golf.md
 [golf_config]: examples/golf_config.md
-[portfolio]: examples/portfolio.md
