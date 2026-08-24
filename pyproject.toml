@@ -3,7 +3,7 @@ requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "fastlane"
+name = "potassco-fastlane"
 authors = [{name = "Tom Schmidt"}]
 description = "A Framework for Answer Set Programming-based Large Neighborhood Search."
 requires-python = ">=3.12"

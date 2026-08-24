@@ -32,7 +32,7 @@ if sys.version_info[1] < 8:
 else:
     from importlib import metadata  # nocoverage
 
-VERSION = metadata.version("fastlane")
+VERSION = metadata.version("potassco-fastlane")
 
 # pylint: disable=line-too-long, too-many-lines
 
