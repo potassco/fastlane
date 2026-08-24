@@ -1,5 +1,34 @@
 # Getting started
 
+## Installation
+
+The framework can be installed with any Python version newer than 3.12
+using pip:
+
+```bash
+pip install potassco-fastlane
+```
+
+To access the latest updates and fixes you can either use:
+
+```bash
+pip install git+https://github.com/potassco/fastlane
+```
+
+Or alternatively build the tool yourself, which requires the `setuptools`
+package. We recommend using conda, which includes `setuptools` in its default
+Python installation. To build the tool manually run the following commands:
+
+```bash
+git clone https://github.com/potassco/fastlane
+cd fastlane
+conda create -n <env-name> python=3.14
+conda activate <env-name>
+pip install .
+```
+
+## Usage
+
 This framework can be used both as a command line tool and as a python module.
 When using as a command line tool use the `-h` flag to see all available options:
 
