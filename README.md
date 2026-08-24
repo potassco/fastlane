@@ -9,7 +9,7 @@ The framework can be installed with any Python version newer than 3.12
 using pip:
 
 ```bash
-pip install fastlane
+pip install potassco-fastlane
 ```
 
 To access the latest updates and fixes you can either use:
