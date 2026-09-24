@@ -70,7 +70,7 @@ class TestLastImprovementDestructionConverter(TestCase):
         ]
 
         with mock.patch(
-            "fastlane.lib.auto_destruction_converters.last_improv.ConfigParser.get_projected_atoms",
+            "fastlane.lib.auto_destruction_converters.last_improv.ModelParser.get_projected_atoms",
             side_effect=projected_atoms,
         ) as mock_get_projected_atoms:
             self.assertSetEqual(
@@ -92,7 +92,7 @@ class TestLastImprovementDestructionConverter(TestCase):
         current_model = mock.Mock(spec=Model)
         with (
             mock.patch(
-                "fastlane.lib.auto_destruction_converters.last_improv.ConfigParser.get_op_specs",
+                "fastlane.lib.auto_destruction_converters.last_improv.ModelParser.get_op_specs",
                 return_value={"test": {Function("test", [Number(1)], True)}},
             ) as mock_get_op_specs,
             mock.patch.object(self.converter, "_reset_caches") as mock_reset_caches,
@@ -205,9 +205,9 @@ class TestLastImprovementDestructionConverter(TestCase):
                 self.converter, "_get_projected_atoms", return_value=projected_atoms
             ) as mock_get_projected_atoms,
             mock.patch(
-                "fastlane.lib.auto_destruction_converters.last_improv.ConfigParser.get_destruction_candidate_atoms",
+                "fastlane.lib.auto_destruction_converters.last_improv.ModelParser.get_destruction_candidate_atoms",
                 return_value=destruction_candidate_atoms,
-            ) as mock_get_destructuon_candidate_atoms,
+            ) as mock_get_destruction_candidate_atoms,
             mock.patch(
                 "fastlane.lib.auto_destruction_converters.last_improv.calculate_actual_destruction_percent",
                 return_value=40.0,
@@ -219,7 +219,7 @@ class TestLastImprovementDestructionConverter(TestCase):
             )
 
             mock_get_projected_atoms.assert_called_once_with(current_model, project_operators)
-            mock_get_destructuon_candidate_atoms.assert_called_once_with(
+            mock_get_destruction_candidate_atoms.assert_called_once_with(
                 current_model, projected_atoms, destroy_operator_name
             )
             mock_calculate_actual_destruction_percent.assert_called_once_with(destruction_candidate_atoms, new_model)

@@ -25,7 +25,7 @@ from fastlane.lib.components.utils import (
     update_time_limit,
 )
 from fastlane.lns_options import LNSOptions
-from fastlane.parsers.config_parser import ConfigParser
+from fastlane.parsers.model_parser import ModelParser
 from fastlane.utils.logger import LNSLogger, setup_logger
 from fastlane.utils.types import ActiveConfig, ConfigCatalog
 
@@ -202,7 +202,7 @@ class LNS:
         Get LNS configuration catalog and prepare heuristics if needed.
         """
         if not self.solver.finished:
-            self._config_catalog = ConfigParser.parse_lns_config(self)
+            self._config_catalog = ModelParser.parse_lns_config(self)
 
             self._adaptive_strategy = self.options.build_adaptive_strategy(
                 self._config_catalog["strategy"], self.logger

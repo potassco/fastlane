@@ -10,7 +10,7 @@ from fastlane.lib.components.heuristics import (
     generate_heuristic_subprogram,
     get_fixed_atoms_heuristics,
 )
-from fastlane.parsers.config_parser import ConfigParser
+from fastlane.parsers.model_parser import ModelParser
 from fastlane.utils.types import ActiveConfig, ConfigCatalog, PrioritizeOperator
 
 
@@ -107,7 +107,7 @@ class TestHeuristicsComponents(TestCase):
         }
 
         with mock.patch.object(
-            ConfigParser, "get_heuristic_targets", side_effect=heuristic_targets
+            ModelParser, "get_heuristic_targets", side_effect=heuristic_targets
         ) as mock_get_heuristic_targets:
             fixed_atoms_heuristics = get_fixed_atoms_heuristics(active_config, model, fixed_atoms, step=1)
             mock_get_heuristic_targets.assert_any_call(model, fixed_atoms, "1_true")

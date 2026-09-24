@@ -1,5 +1,5 @@
 """
-Parser for LNS configuration inside ASP encodings.
+Parser for ASP models.
 """
 
 from typing import TYPE_CHECKING, Optional
@@ -16,9 +16,9 @@ if TYPE_CHECKING:
     from fastlane.lns import LNS  # nocoverage
 
 
-class ConfigParser:
+class ModelParser:
     """
-    Parser for extracting and validating configuration from model.
+    Model parser.
     """
 
     _op_specs_cache: WeakKeyDictionary[Model, dict[str, set[Symbol]]] = WeakKeyDictionary()

@@ -54,7 +54,7 @@ class TestDestructionComponents(TestCase):
         }
 
         with mock.patch(
-            "fastlane.lib.components.destruction.ConfigParser.get_projected_atoms", return_value=projected_atoms
+            "fastlane.lib.components.destruction.ModelParser.get_projected_atoms", return_value=projected_atoms
         ) as mock_get_projected_atoms:
             project_operators = [ProjectOperator(name="plays_3")]
             self.assertSetEqual(_project(model, project_operators, mock.Mock()), projected_atoms)
@@ -107,7 +107,7 @@ class TestDestructionComponents(TestCase):
             {"atom": Function("plays", [Number(4), Number(5), Number(6)], True), "term": Number(4)},
         ]
         with mock.patch(
-            "fastlane.lib.components.destruction.ConfigParser.get_atom_term_pairs", return_value=atom_term_pairs
+            "fastlane.lib.components.destruction.ModelParser.get_atom_term_pairs", return_value=atom_term_pairs
         ) as mock_get_atom_term_pairs:
             # 3 projected atoms, 2 with destroy operators, 1 destroyed -> 2 remaining
             self.assertEqual(len(_destroy(model, destroy_operators, projected_atoms, mock.Mock())), 2)
@@ -134,7 +134,7 @@ class TestDestructionComponents(TestCase):
             },
         ]
         with mock.patch(
-            "fastlane.lib.components.destruction.ConfigParser.get_atom_term_pairs", return_value=atom_term_pairs
+            "fastlane.lib.components.destruction.ModelParser.get_atom_term_pairs", return_value=atom_term_pairs
         ) as mock_get_atom_term_pairs:
             # 3 projected atoms, 2 with destroy operators, 1 destroyed -> 2 remaining
             self.assertEqual(len(_destroy(model, destroy_operators, projected_atoms, mock.Mock())), 2)

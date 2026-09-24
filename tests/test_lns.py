@@ -194,7 +194,7 @@ class TestLNS(TestCase):
         iter_fmt = "iter: {} | {} | {}"
 
         with (
-            mock.patch("fastlane.lns.ConfigParser.parse_lns_config", return_value=config_catalog) as mock_parse,
+            mock.patch("fastlane.lns.ModelParser.parse_lns_config", return_value=config_catalog) as mock_parse,
             mock.patch.object(self.lns.options, "build_adaptive_strategy", return_value=strategy) as mock_build,
             mock.patch("fastlane.lns.generate_heuristic_subprogram", return_value="heuristic_rule.") as mock_heur,
             mock.patch("fastlane.lns.get_output_format", return_value=(header_fmt, iter_fmt)) as mock_output,

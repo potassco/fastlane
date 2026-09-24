@@ -85,11 +85,11 @@ class TestAverageDestructionConverter(TestCase):
 
         with (
             mock.patch(
-                "fastlane.lib.auto_destruction_converters.average.ConfigParser.get_projected_atoms",
+                "fastlane.lib.auto_destruction_converters.average.ModelParser.get_projected_atoms",
                 side_effect=projected_atoms,
             ) as mock_get_projected_atoms,
             mock.patch(
-                "fastlane.lib.auto_destruction_converters.average.ConfigParser.get_destruction_candidate_atoms",
+                "fastlane.lib.auto_destruction_converters.average.ModelParser.get_destruction_candidate_atoms",
                 return_value=destruction_candidate_atoms,
             ) as mock_get_destruction_candidate_atoms,
             mock.patch(

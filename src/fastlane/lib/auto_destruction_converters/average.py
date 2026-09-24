@@ -10,7 +10,7 @@ from clingo import Symbol
 from fastlane import Model
 from fastlane.interfaces.auto_destruction_converter import AutoDestructionConverter
 from fastlane.lib.auto_destruction_converters.utils import calculate_actual_destruction_percent, is_new_model_better
-from fastlane.parsers.config_parser import ConfigParser
+from fastlane.parsers.model_parser import ModelParser
 from fastlane.utils.types import ActiveConfig, ProjectOperator
 
 if TYPE_CHECKING:
@@ -86,9 +86,9 @@ class AverageDestructionConverter(AutoDestructionConverter):
         """
         projected_atoms: set[Symbol] = set()
         for project_operator_name in project_operator_names:
-            projected_atoms.update(ConfigParser.get_projected_atoms(current_model, project_operator_name))
+            projected_atoms.update(ModelParser.get_projected_atoms(current_model, project_operator_name))
 
-        destruction_candidate_atoms = ConfigParser.get_destruction_candidate_atoms(
+        destruction_candidate_atoms = ModelParser.get_destruction_candidate_atoms(
             current_model,
             projected_atoms,
             destroy_operator_name,

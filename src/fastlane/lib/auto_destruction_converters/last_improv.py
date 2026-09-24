@@ -9,7 +9,7 @@ from clingo import Symbol
 from fastlane import Model
 from fastlane.interfaces.auto_destruction_converter import AutoDestructionConverter
 from fastlane.lib.auto_destruction_converters.utils import calculate_actual_destruction_percent, is_new_model_better
-from fastlane.parsers.config_parser import ConfigParser
+from fastlane.parsers.model_parser import ModelParser
 from fastlane.utils.types import ActiveConfig, ProjectOperator
 
 if TYPE_CHECKING:
@@ -54,7 +54,7 @@ class LastImprovementDestructionConverter(AutoDestructionConverter):
         for project_operator in project_operators:
             project_operator_name = project_operator.name
             if project_operator_name not in self._projected_atoms_cache:
-                self._projected_atoms_cache[project_operator_name] = ConfigParser.get_projected_atoms(
+                self._projected_atoms_cache[project_operator_name] = ModelParser.get_projected_atoms(
                     current_model,
                     project_operator_name,
                 )
@@ -70,7 +70,7 @@ class LastImprovementDestructionConverter(AutoDestructionConverter):
         """
         if is_new_model_better(new_model, current_model):
             self._last_improvement_models = (current_model, new_model)
-            self._last_improvement_specs = ConfigParser.get_op_specs(current_model)
+            self._last_improvement_specs = ModelParser.get_op_specs(current_model)
             self._reset_caches()
 
     def convert_auto_in_config(self, config: ActiveConfig, lns_object: Optional["LNS"] = None) -> ActiveConfig:
@@ -109,7 +109,7 @@ class LastImprovementDestructionConverter(AutoDestructionConverter):
 
         projected_atoms = self._get_projected_atoms(current_model, project_operators)
 
-        destruction_candidate_atoms = ConfigParser.get_destruction_candidate_atoms(
+        destruction_candidate_atoms = ModelParser.get_destruction_candidate_atoms(
             current_model, projected_atoms, destroy_operator_name
         )
         actual_destruction_percent = calculate_actual_destruction_percent(destruction_candidate_atoms, new_model)

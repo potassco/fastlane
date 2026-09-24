@@ -7,7 +7,7 @@ import random
 from clingo.symbol import Symbol, SymbolType
 
 from fastlane import Model
-from fastlane.parsers.config_parser import ConfigParser
+from fastlane.parsers.model_parser import ModelParser
 from fastlane.utils.logger import DEBUG_EXTRA, LNSLogger
 from fastlane.utils.types import ActiveConfig, DestroyOperator, DestructionSpec, ProjectOperator
 
@@ -50,7 +50,7 @@ def _project(model: Model, project_operators: list[ProjectOperator], logger: LNS
     projected_atoms: set[Symbol] = set()
 
     for project_operator in project_operators:
-        projected_atoms.update(ConfigParser.get_projected_atoms(model, project_operator.name))
+        projected_atoms.update(ModelParser.get_projected_atoms(model, project_operator.name))
 
     logger.debug(f"{len(projected_atoms)} projected atoms:")
     if logger.isEnabledFor(DEBUG_EXTRA):  # nocoverage
@@ -147,7 +147,7 @@ def _destroy(
     """
     destroyed_atoms: set[Symbol] = set()
     for destroy_operator in destroy_operators:
-        atom_term_pairs = ConfigParser.get_atom_term_pairs(model, projected_atoms, destroy_operator.name)
+        atom_term_pairs = ModelParser.get_atom_term_pairs(model, projected_atoms, destroy_operator.name)
         if len(destroy_operator) == 1:
             destroyed_atoms.update(_destroy_atoms_if_term_selected(atom_term_pairs, destroy_operator.get_first_spec()))
         else:

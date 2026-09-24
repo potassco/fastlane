@@ -5,7 +5,7 @@ Components for implementing fixation via heuristics in the context of LNS.
 from clingo.symbol import Function, Number, Symbol
 
 from fastlane import Model
-from fastlane.parsers.config_parser import ConfigParser
+from fastlane.parsers.model_parser import ModelParser
 from fastlane.utils.types import ActiveConfig, ConfigCatalog
 
 
@@ -49,7 +49,7 @@ def get_fixed_atoms_heuristics(
     heu_atoms: set[Symbol] = set()
 
     for prioritize_operator in active_config["prioritize_operators"]:
-        targets = ConfigParser.get_heuristic_targets(model, fixed_atoms, prioritize_operator.name)
+        targets = ModelParser.get_heuristic_targets(model, fixed_atoms, prioritize_operator.name)
         for target in targets:
             prioritized_atoms.add(target)
             if prioritize_operator["value"] == "inf":
