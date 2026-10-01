@@ -10,7 +10,7 @@ from clingo.symbol import Symbol, SymbolType, Tuple_
 from fastlane import Model
 from fastlane.interfaces.solver import Solver
 from fastlane.utils.logger import LNSLogger
-from fastlane.utils.types import ConfigCatalog, DestroyOperator, PrioritizeOperator, ProjectOperator
+from fastlane.utils.types import ConfigCatalog, DestroyOperator, PrioritizeOperator, ProjectOperator, SearchOperator
 
 if TYPE_CHECKING:
     from fastlane.lns import LNS  # nocoverage
@@ -79,6 +79,7 @@ class ModelParser:
 
         :param solver: Solver interface object.
         :param declarative: Whether to parse declarative configuration or not.
+        :param logger: Logger object for logging warnings and information.
         :return: Dictionary of project operator names and their corresponding ProjectOperator objects.
         """
         project_operators: dict[str, ProjectOperator] = {}
@@ -147,6 +148,7 @@ class ModelParser:
 
         :param solver: Solver interface object.
         :param declarative: Whether to parse declarative configuration or not.
+        :param logger: Logger object for logging warnings and information.
         :return: Dictionary mapping destroy operator names to lists of percentages or numbers.
         """
         destroy_operators: dict[str, DestroyOperator] = {}
@@ -258,6 +260,7 @@ class ModelParser:
 
         :param solver: SolverInterface object.
         :param declarative: Whether to parse declarative configuration or not.
+        :param logger: Logger object for warnings and errors.
         :return: Dictionary mapping prioritize operator names to dictionaries of heuristic modifiers and their values.
         """
         prioritize_operators: dict[str, PrioritizeOperator] = {}
@@ -313,6 +316,53 @@ class ModelParser:
 
         return prioritize_operators
 
+    @classmethod
+    def _parse_search_operators(cls, solver: Solver, declarative: bool, logger: LNSLogger) -> dict[str, SearchOperator]:
+        """
+        Extract LNS solver option sets from _search_param/2 atoms.
+
+        :param solver: SolverInterface object.
+        :param declarative: Whether to parse declarative configuration or not.
+        :param logger: Logger object for logging warnings and information.
+        :return: Dictionary mapping search operator names to SearchOperator objects.
+        """
+        search_operators: dict[str, SearchOperator] = {}
+        if not declarative:
+            return search_operators
+
+        for atom in solver.control.symbolic_atoms.by_signature("_search_param", 2):
+            operator_arg, parameter = atom.symbol.arguments
+            if operator_arg.type != SymbolType.String:
+                operator = str(operator_arg)
+            else:
+                operator = operator_arg.string
+
+            search_operators.setdefault(operator, SearchOperator(operator))
+
+            if parameter.type != SymbolType.Function or parameter.name != "" or len(parameter.arguments) != 2:
+                logger.warning(f"_search_param/2: Second argument '{parameter}' is invalid. (atom: {atom.symbol})")
+                continue
+
+            key_arg, value_arg = parameter.arguments
+            value: int | str
+            if key_arg.type == SymbolType.String:
+                key = key_arg.string
+            else:
+                key = str(key_arg)
+            key = key.replace("-", "_")
+            if value_arg.type == SymbolType.Number:
+                value = value_arg.number
+            elif value_arg.type == SymbolType.String:
+                value = value_arg.string
+            else:
+                value = str(value_arg)
+            try:
+                search_operators[operator][key] = value
+            except (KeyError, TypeError) as error:
+                logger.warning(f"_search_param/2: {error} (atom: {atom.symbol})")
+
+        return search_operators
+
     # prioritize op can not be created through _prioritize/2
     # @classmethod
     # def _get_prioritize_operators_from_prioritize2(cls, model: Model) -> dict[str, list[dict[str, Any]]]:
@@ -347,6 +397,7 @@ class ModelParser:
         defined_project_operators: list[str],
         defined_destroy_operators: list[str],
         defined_prioritize_operators: list[str],
+        defined_search_operators: list[str],
         declarative: bool,
         logger: LNSLogger,
     ) -> dict[str, dict[str, list[str]]]:
@@ -357,7 +408,9 @@ class ModelParser:
         :param defined_project_operators: List of available project operator names.
         :param defined_destroy_operators: List of available destroy operator names.
         :param defined_prioritize_operators: List of available prioritize operator names.
+        :param defined_search_operators: List of available search operator names.
         :param declarative: Whether to parse declarative configuration or not.
+        :param logger: Logger object for logging warnings and errors.
         :return: Dictionary mapping configuration names to lists of operator names.
         """
         configs: dict[str, dict[str, set[str]]] = {}
@@ -365,15 +418,17 @@ class ModelParser:
             "project_operators": set(defined_project_operators),
             "destroy_operators": set(defined_destroy_operators),
             "prioritize_operators": set(defined_prioritize_operators),
+            "search_operators": set(defined_search_operators),
         }
         operator_args_info: list[tuple[int, dict[str, str]]] = [
             (1, {"key": "project_operators", "type": "Project"}),
             (2, {"key": "destroy_operators", "type": "Destroy"}),
             (3, {"key": "prioritize_operators", "type": "Prioritize"}),
+            (4, {"key": "search_operators", "type": "Search"}),
         ]
 
         if declarative:
-            for atom in solver.control.symbolic_atoms.by_signature("_config", 4):
+            for atom in solver.control.symbolic_atoms.by_signature("_config", 5):
                 args = atom.symbol.arguments
                 if args[0].type != SymbolType.String:
                     config_name = str(args[0])
@@ -384,7 +439,13 @@ class ModelParser:
                 # logger.warning(f"_config/4: Multiple definitions of configuration '{config_name}'. Ignoring {atom}.")
                 # continue
                 configs.setdefault(
-                    config_name, {"project_operators": set(), "destroy_operators": set(), "prioritize_operators": set()}
+                    config_name,
+                    {
+                        "project_operators": set(),
+                        "destroy_operators": set(),
+                        "prioritize_operators": set(),
+                        "search_operators": set(),
+                    },
                 )
 
                 # !todo support for multi ops required?
@@ -404,7 +465,7 @@ class ModelParser:
                         )
 
         if not configs:
-            configs["default"] = defined_operators
+            configs["default"] = {key: set(operators) for key, operators in defined_operators.items()}
 
         # !todo why sort?
         sorted_configs = {
@@ -433,6 +494,7 @@ class ModelParser:
         :param supported_strategies: List of available strategy names.
         :param default_strategy: Name of strategy to use when not specified.
         :param declarative: Whether to parse declarative configuration or not.
+        :param logger: Logger object for logging warnings and information.
         :return: Strategy name and Dictionary mapping names of configurations subject to selection to
             lists of operator names.
         """
@@ -504,11 +566,13 @@ class ModelParser:
             destroy_operators = {"default": dest_op}
 
         prioritize_operators = cls._parse_prioritize_operators(solver, declarative, logger)
+        search_operators = cls._parse_search_operators(solver, declarative, logger)
         defined_configs = cls._parse_configs(
             solver,
             list(project_operators.keys()),
             list(destroy_operators.keys()),
             list(prioritize_operators.keys()),
+            list(search_operators.keys()),
             declarative,
             logger,
         )
@@ -526,6 +590,7 @@ class ModelParser:
             "destroy_operators": destroy_operators,
             "prioritize_operators": prioritize_operators,
             "configs": candidate_configs,
+            "search_operators": search_operators,
             "strategy": strategy,
         }
         lns_object.logger.debug("LNS configuration catalog: %s", cls._format_config_catalog(config_catalog))
@@ -559,10 +624,16 @@ class ModelParser:
             for name, prioritize_specs in config_catalog["prioritize_operators"].items()
         )
 
+        search_operators = ",".join(
+            name + "{" + ",".join(f"{key}={value}" for key, value in search_options.items()) + "}"
+            for name, search_options in config_catalog["search_operators"].items()
+        )
+
         out = (
             f"project_operators={{{project_operators}}}, "
             f"destroy_operators={{{destroy_operators}}}, "
-            f"prioritize_operators={{{prioritize_operators}}}"
+            f"prioritize_operators={{{prioritize_operators}}}, "
+            f"search_operators={{{search_operators}}}"
         )
         if "configs" in config_catalog:
             configs = ",".join(
@@ -574,6 +645,8 @@ class ModelParser:
                 + ",".join(operators["destroy_operators"])
                 + "},prioritize_operators={"
                 + ",".join(operators["prioritize_operators"])
+                + "},search_operators={"
+                + ",".join(operators["search_operators"])
                 + "}"
                 + "]"
                 for config, operators in config_catalog["configs"].items()

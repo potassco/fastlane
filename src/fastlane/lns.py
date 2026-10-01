@@ -285,6 +285,11 @@ class LNS:
         """
         Prepare LNS solver configuration for the next repair step.
         """
+
+        for search_operator in self._active_config.get("search_operators", []):
+            for key, value in search_operator.items():
+                setattr(self.lns_solver_config, key, value)
+
         lns_opt_mode = self.options.lns_opt_mode
         if lns_opt_mode["mode"] is not None:
             kwargs = {}

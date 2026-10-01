@@ -70,6 +70,7 @@ class AdaptiveStrategy(ABC):
             "project_operators": [],
             "destroy_operators": [],
             "prioritize_operators": [],
+            "search_operators": [],
         }
 
         # project
@@ -82,6 +83,10 @@ class AdaptiveStrategy(ABC):
         # prioritize
         for operator_name in config_catalog["configs"][config_name]["prioritize_operators"]:
             config["prioritize_operators"].append(config_catalog["prioritize_operators"][operator_name])
+
+        # search
+        for operator_name in config_catalog["configs"][config_name]["search_operators"]:
+            config["search_operators"].append(config_catalog["search_operators"][operator_name])
 
         config["config_repr"] = self._format_config(config)
 
@@ -122,10 +127,16 @@ class AdaptiveStrategy(ABC):
             for prioritize_operator in config["prioritize_operators"]
         )
 
+        search_operators = ",".join(
+            search_operator.name + "[" + ",".join(f"{key}={value}" for key, value in search_operator.items()) + "]"
+            for search_operator in config["search_operators"]
+        )
+
         s = (
             f"{config['name']}["
             f"project_operators={{{project_operators}}},"
             f"destroy_operators={{{destroy_operators}}},"
-            f"prioritize_operators={{{prioritize_operators}}}]"
+            f"prioritize_operators={{{prioritize_operators}}},"
+            f"search_operators={{{search_operators}}}]"
         )
         return s

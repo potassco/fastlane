@@ -266,6 +266,77 @@ class PrioritizeOperator(MutableMapping[PrioritizeKey, Any]):
         return self._prioritization_spec
 
 
+@dataclass
+class SearchOperator(MutableMapping[str, int | str]):
+    """
+    Validated container for per-configuration LNS solver options.
+
+    :param name: Name of the search operator.
+    :ivar _options: Solver configuration field names mapped to override values.
+    """
+
+    name: str
+    _options: dict[str, int | str] = field(default_factory=dict, init=False)
+
+    _INTEGER_OPTIONS: ClassVar[frozenset[str]] = frozenset(
+        {
+            "time_limit",
+            "cutoff",
+        }
+    )
+    _STRING_OPTIONS: ClassVar[frozenset[str]] = frozenset(
+        {
+            "solve_limit",
+            "configuration",
+            "opt_strategy",
+            "opt_heuristic",
+            "restart_on_model",
+            "heuristic",
+        }
+    )
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._options)
+
+    def __len__(self) -> int:
+        return len(self._options)
+
+    def __getitem__(self, key: str) -> int | str:
+        return self._options[key]
+
+    def __setitem__(self, key: str, value: int | str) -> None:
+        self._options[key] = self._validate(key, value)
+
+    def __delitem__(self, key: str) -> None:
+        del self._options[key]
+
+    @classmethod
+    def _validate(cls, key: str, value: object) -> int | str:
+        if key in cls._INTEGER_OPTIONS:
+            if not isinstance(value, int):
+                raise TypeError(f"Search option '{key}' must be int, got {type(value).__name__}.")
+            return value
+        if key in cls._STRING_OPTIONS:
+            if not isinstance(value, str):
+                raise TypeError(f"Search option '{key}' must be str, got {type(value).__name__}.")
+            return value
+        raise KeyError(f"Unknown search option: '{key}'.")
+
+    @classmethod
+    def from_options(cls, name: str, options: dict[str, int | str]) -> "SearchOperator":
+        """
+        Create a search operator from solver option overrides.
+
+        :param name: Name of the search operator.
+        :param options: Dictionary of search option overrides.
+        :return: An instance of SearchOperator initialized with the given options.
+        """
+        operator = cls(name)
+        for key, value in options.items():
+            operator[key] = value
+        return operator
+
+
 class ConfigCatalog(TypedDict, total=False):  # nocoverage
     """
     TypedDict for configuration catalog.
@@ -273,6 +344,7 @@ class ConfigCatalog(TypedDict, total=False):  # nocoverage
     :ivar project_operators: Project operator names mapped to projected predicate signatures.
     :ivar destroy_operators: Destroy operator names mapped to destruction parameters.
     :ivar prioritize_operators: Prioritize operator names mapped to heuristic value/modifier pairs.
+    :ivar search_operators: Search operator names mapped to their option overrides.
     :ivar configs: Config names mapped to selected project/destroy/prioritize operators.
     :ivar strategy: Name of the adaptive strategy selected for configuration updates.
     """
@@ -280,6 +352,7 @@ class ConfigCatalog(TypedDict, total=False):  # nocoverage
     project_operators: dict[str, ProjectOperator]
     destroy_operators: dict[str, DestroyOperator]
     prioritize_operators: dict[str, PrioritizeOperator]
+    search_operators: dict[str, SearchOperator]
     configs: dict[str, dict[str, list[str]]]
     strategy: str
 
@@ -292,6 +365,7 @@ class ActiveConfig(TypedDict, total=False):  # nocoverage
     :ivar project_operators: List of project operators with their signatures.
     :ivar destroy_operators: List of destroy operators with their percentages or numbers.
     :ivar prioritize_operators: List of prioritize operators with their values and modifiers.
+    :ivar search_operators: List of search operators with their option overrides.
     :ivar config_repr: String representation of the active configuration.
     """
 
@@ -299,4 +373,5 @@ class ActiveConfig(TypedDict, total=False):  # nocoverage
     project_operators: list[ProjectOperator]
     destroy_operators: list[DestroyOperator]
     prioritize_operators: list[PrioritizeOperator]
+    search_operators: list[SearchOperator]
     config_repr: str
