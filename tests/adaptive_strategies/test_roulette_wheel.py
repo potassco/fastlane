@@ -7,7 +7,7 @@ from unittest import TestCase, mock
 from fastlane import Model
 from fastlane.lib.adaptive_strategies.roulette_wheel import RouletteWheelStrategy
 from fastlane.lib.auto_destruction_converters.last_improv import LastImprovementDestructionConverter
-from fastlane.utils.types import ConfigCatalog, DestroyOperator, PrioritizeOperator, ProjectOperator
+from fastlane.utils.types import ConfigCatalog, DestroyOperator, PrioritizeOperator, ProjectOperator, SearchOperator
 
 # pylint: disable=protected-access
 
@@ -30,11 +30,15 @@ class TestRouletteWheelStrategy(TestCase):
             "prioritize_operators": {
                 "default": PrioritizeOperator.from_spec("default", {"value": 1, "modifier": "true"})
             },
+            "search_operators": {
+                "default": SearchOperator.from_options("default", {"configuration": "frumpy", "cutoff": 42})
+            },
             "configs": {
                 "default": {
                     "project_operators": ["default"],
                     "destroy_operators": ["default"],
                     "prioritize_operators": ["default"],
+                    "search_operators": ["default"],
                 }
             },
             "strategy": "static",

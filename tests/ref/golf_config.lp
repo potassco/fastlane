@@ -15,8 +15,12 @@ _destroy("random_auto", plays(P,W,G), (P,W,G)) :- plays(P,W,G).
 _prioritize_op("1_true", 1, true).
 _prioritize("1_true", plays(P,W,G)) :- plays(P,W,G).
 
-_config("Week", "plays_3", "week_n", "1_true").
-_config("Week_auto", "plays_3", "week_auto", "1_true").
-_config("Random", "plays_3", "random_auto", "1_true").
+_search_param("cutoff-1s-tweety", ("cutoff", 1)).
+_search_param("cutoff-1s-tweety", ("configuration", "tweety")).
+_search_param("cutoff-3s", ("cutoff", 3)).
 
-_strategy("roulette", C) :- _config(C, _, _, _).
+_config("Week", "plays_3", "week_n", "1_true", "cutoff-3s").
+_config("Week_auto", "plays_3", "week_auto", "1_true", "").
+_config("Random", "plays_3", "random_auto", "1_true", "cutoff-1s-tweety").
+
+_strategy("roulette", C) :- _config(C, _, _, _, _).

@@ -5,7 +5,14 @@ Test cases for adaptive strategy interface and static adaptive strategy.
 from unittest import TestCase, mock
 
 from fastlane.lib.adaptive_strategies.static import StaticStrategy
-from fastlane.utils.types import ActiveConfig, ConfigCatalog, DestroyOperator, PrioritizeOperator, ProjectOperator
+from fastlane.utils.types import (
+    ActiveConfig,
+    ConfigCatalog,
+    DestroyOperator,
+    PrioritizeOperator,
+    ProjectOperator,
+    SearchOperator,
+)
 
 # pylint: disable=protected-access
 
@@ -28,11 +35,15 @@ class TestStaticStrategy(TestCase):
             "prioritize_operators": {
                 "default": PrioritizeOperator.from_spec("default", {"value": 1, "modifier": "true"})
             },
+            "search_operators": {
+                "default": SearchOperator.from_options("default", {"configuration": "frumpy", "cutoff": 42})
+            },
             "configs": {
                 "default": {
                     "project_operators": ["default"],
                     "destroy_operators": ["default"],
                     "prioritize_operators": ["default"],
+                    "search_operators": ["default"],
                 }
             },
             "strategy": "static",
@@ -48,10 +59,12 @@ class TestStaticStrategy(TestCase):
             "project_operators": [ProjectOperator.from_signatures(name="default", signatures={("plays", 3)})],
             "destroy_operators": [DestroyOperator.from_specs("default", [{"type": "p", "value": 20}])],
             "prioritize_operators": [PrioritizeOperator.from_spec("default", {"value": 1, "modifier": "true"})],
+            "search_operators": [SearchOperator.from_options("default", {"configuration": "frumpy", "cutoff": 42})],
             "config_repr": (
                 "default[project_operators={default[(plays,3)]},"
                 "destroy_operators={default[p(20)]},"
-                "prioritize_operators={default[1,true]}]"
+                "prioritize_operators={default[1,true]},"
+                "search_operators={default[configuration=frumpy,cutoff=42]}]"
             ),
         }
         self.assertDictEqual(self.strategy._get_config("default", self.config_catalog), ref_config)

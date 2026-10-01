@@ -12,7 +12,7 @@ from clingo.symbol import Function, Number, String
 from fastlane import Model
 from fastlane.lib.solvers.clingo_solver import ClingoSolver
 from fastlane.parsers.model_parser import ModelParser
-from fastlane.utils.types import DestroyOperator, PrioritizeOperator, ProjectOperator
+from fastlane.utils.types import DestroyOperator, PrioritizeOperator, ProjectOperator, SearchOperator
 
 # pylint: disable=protected-access
 
@@ -186,6 +186,38 @@ class TestModelParser(TestCase):
             },
         )
 
+    def test_parse_search_operators(self):
+        """
+        Test the _parse_search_operators method.
+        """
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".lp", encoding="utf-8", delete_on_close=False) as temp_file:
+            # fmt: off
+            temp_file.write(
+                # valid
+                '_search_param("test", ("time-limit", 60)).'
+                '_search_param(test, (configuration, tweety)).'
+                # invalid
+                '_search_param("test", (cutoff, "bad")).'
+                '_search_param("test", malformed).'
+                '_search_param("test", ("unknown", 1)).'
+                '_search_param(operator, (heuristic, "Domain")).'
+            )
+            # fmt: on
+            temp_file.close()
+            self.solver.control.load(temp_file.name)
+            self.solver.control.ground([("base", [])])
+        search_operators = ModelParser._parse_search_operators(self.solver, True, self.logger)
+        self.assertDictEqual(
+            search_operators,
+            {
+                "test": SearchOperator.from_options("test", {"time_limit": 60, "configuration": "tweety"}),
+                "operator": SearchOperator.from_options("operator", {"heuristic": "Domain"}),
+            },
+        )
+
+        search_operators = ModelParser._parse_search_operators(self.solver, False, self.logger)
+        self.assertDictEqual(search_operators, {})
+
     def test_parse_configs(self):
         """
         Test the _parse_configs method.
@@ -193,10 +225,10 @@ class TestModelParser(TestCase):
         with tempfile.NamedTemporaryFile(mode="w", suffix=".lp", encoding="utf-8", delete_on_close=False) as temp_file:
             # fmt: off
             temp_file.write(
-                '_config("config1", "plays_3", "random_n", "1_true").'
-                '_config(config2, plays_3, auto, sign_inf).'
+                '_config("config1", "plays_3", "random_n", "1_true", "fast").'
+                '_config(config2, plays_3, auto, sign_inf, slow).'
                 # multiple configs with the same name
-                '_config("config1", "plays_3", "auto", "1_true").'
+                '_config("config1", "plays_3", "auto", "1_true", "fast").'
             )
             # fmt: on
             temp_file.close()
@@ -205,8 +237,9 @@ class TestModelParser(TestCase):
         project_operators = ["plays_3"]
         destroy_operators = ["random_n", "auto", "extra"]
         prioritize_operators = ["1_true", "sign_inf"]
+        search_operators = ["fast", "slow"]
         configs = ModelParser._parse_configs(
-            self.solver, project_operators, destroy_operators, prioritize_operators, True, self.logger
+            self.solver, project_operators, destroy_operators, prioritize_operators, search_operators, True, self.logger
         )
         self.assertDictEqual(
             configs,
@@ -215,17 +248,25 @@ class TestModelParser(TestCase):
                     "project_operators": ["plays_3"],
                     "destroy_operators": ["auto", "random_n"],
                     "prioritize_operators": ["1_true"],
+                    "search_operators": ["fast"],
                 },
                 "config2": {
                     "project_operators": ["plays_3"],
                     "destroy_operators": ["auto"],
                     "prioritize_operators": ["sign_inf"],
+                    "search_operators": ["slow"],
                 },
             },
         )
 
         configs = ModelParser._parse_configs(
-            self.solver, project_operators, destroy_operators, prioritize_operators, False, self.logger
+            self.solver,
+            project_operators,
+            destroy_operators,
+            prioritize_operators,
+            search_operators,
+            False,
+            self.logger,
         )
         self.assertDictEqual(
             configs,
@@ -234,14 +275,15 @@ class TestModelParser(TestCase):
                     "project_operators": ["plays_3"],
                     "destroy_operators": ["auto", "extra", "random_n"],
                     "prioritize_operators": ["1_true", "sign_inf"],
+                    "search_operators": ["fast", "slow"],
                 },
             },
         )
 
         self.logger.reset_mock()
-        ModelParser._parse_configs(self.solver, [], [], [], True, self.logger)
-        # 3 configs with 3 missing operators each = 9 warnings
-        self.assertEqual(self.logger.warning.call_count, 9)
+        ModelParser._parse_configs(self.solver, [], [], [], [], True, self.logger)
+        # 3 config atoms with 4 missing operator references each = 12 warnings
+        self.assertEqual(self.logger.warning.call_count, 12)
 
     def test_parse_strategy(self):
         """
@@ -362,12 +404,18 @@ class TestModelParser(TestCase):
             ) as mock_parse_prioritize_operators,
             mock.patch.object(
                 ModelParser,
+                "_parse_search_operators",
+                return_value={"fast": SearchOperator.from_options("fast", {"cutoff": 42})},
+            ) as mock_parse_search_operators,
+            mock.patch.object(
+                ModelParser,
                 "_parse_configs",
                 return_value={
                     "default": {
                         "project_operators": ["plays_3"],
                         "destroy_operators": ["random_n"],
                         "prioritize_operators": ["1_true"],
+                        "search_operators": ["fast"],
                     },
                 },
             ) as mock_parse_configs,
@@ -381,6 +429,7 @@ class TestModelParser(TestCase):
                             "project_operators": ["plays_3"],
                             "destroy_operators": ["random_n"],
                             "prioritize_operators": ["1_true"],
+                            "search_operators": ["fast"],
                         }
                     },
                 ),
@@ -392,8 +441,15 @@ class TestModelParser(TestCase):
             mock_parse_prioritize_operators.assert_called_once_with(
                 solver, options._declarative, self.logger.getChild()
             )
+            mock_parse_search_operators.assert_called_once_with(solver, options._declarative, self.logger.getChild())
             mock_parse_configs.assert_called_once_with(
-                solver, ["plays_3"], ["random_n"], ["1_true"], options._declarative, self.logger.getChild()
+                solver,
+                ["plays_3"],
+                ["random_n"],
+                ["1_true"],
+                ["fast"],
+                options._declarative,
+                self.logger.getChild(),
             )
             mock_parse_strategy.assert_called_once_with(
                 solver,
@@ -402,6 +458,7 @@ class TestModelParser(TestCase):
                         "project_operators": ["plays_3"],
                         "destroy_operators": ["random_n"],
                         "prioritize_operators": ["1_true"],
+                        "search_operators": ["fast"],
                     }
                 },
                 ["default", "roulette"],
@@ -417,12 +474,14 @@ class TestModelParser(TestCase):
                             "destroy_operators": ["random_n"],
                             "prioritize_operators": ["1_true"],
                             "project_operators": ["plays_3"],
+                            "search_operators": ["fast"],
                         }
                     },
                     "destroy_operators": {
                         "random_n": DestroyOperator.from_specs("random_n", [{"type": "p", "value": 20}])
                     },
                     "prioritize_operators": {"1_true": {"value": 1, "modifier": "true"}},
+                    "search_operators": {"fast": SearchOperator.from_options("fast", {"cutoff": 42})},
                     "project_operators": {"plays_3": ProjectOperator.from_signatures("plays_3", {("plays", 3)})},
                     "strategy": "default",
                 },
@@ -444,6 +503,7 @@ class TestModelParser(TestCase):
             mock.patch.object(
                 ModelParser, "_parse_prioritize_operators", return_value={"default": {"value": 1, "modifier": "true"}}
             ) as mock_parse_prioritize_operators,
+            mock.patch.object(ModelParser, "_parse_search_operators", return_value={}),
             mock.patch.object(
                 ModelParser,
                 "_parse_configs",
@@ -452,6 +512,7 @@ class TestModelParser(TestCase):
                         "project_operators": ["plays_3"],
                         "destroy_operators": ["default"],
                         "prioritize_operators": ["default"],
+                        "search_operators": [],
                     },
                 },
             ) as mock_parse_configs,
@@ -465,6 +526,7 @@ class TestModelParser(TestCase):
                             "project_operators": ["plays_3"],
                             "destroy_operators": ["default"],
                             "prioritize_operators": ["default"],
+                            "search_operators": [],
                         }
                     },
                 ),
@@ -479,6 +541,7 @@ class TestModelParser(TestCase):
                             "destroy_operators": ["default"],
                             "prioritize_operators": ["default"],
                             "project_operators": ["plays_3"],
+                            "search_operators": [],
                         }
                     },
                     "destroy_operators": {
@@ -487,6 +550,7 @@ class TestModelParser(TestCase):
                         )
                     },
                     "prioritize_operators": {"default": {"value": 1, "modifier": "true"}},
+                    "search_operators": {},
                     "project_operators": {"plays_3": ProjectOperator.from_signatures("plays_3", {("plays", 3)})},
                     "strategy": "default",
                 },
@@ -507,6 +571,7 @@ class TestModelParser(TestCase):
             mock.patch.object(
                 ModelParser, "_parse_prioritize_operators", return_value={"default": {"value": 1, "modifier": "true"}}
             ) as mock_parse_prioritize_operators,
+            mock.patch.object(ModelParser, "_parse_search_operators", return_value={}),
             mock.patch.object(
                 ModelParser,
                 "_parse_configs",
@@ -515,6 +580,7 @@ class TestModelParser(TestCase):
                         "project_operators": ["plays_3"],
                         "destroy_operators": ["default"],
                         "prioritize_operators": ["default"],
+                        "search_operators": [],
                     },
                 },
             ) as mock_parse_configs,
@@ -528,6 +594,7 @@ class TestModelParser(TestCase):
                             "project_operators": ["plays_3"],
                             "destroy_operators": ["default"],
                             "prioritize_operators": ["default"],
+                            "search_operators": [],
                         }
                     },
                 ),
@@ -542,12 +609,14 @@ class TestModelParser(TestCase):
                             "destroy_operators": ["default"],
                             "prioritize_operators": ["default"],
                             "project_operators": ["plays_3"],
+                            "search_operators": [],
                         }
                     },
                     "destroy_operators": {
                         "default": DestroyOperator.from_specs("default", [{"type": "auto", "value": None}])
                     },
                     "prioritize_operators": {"default": {"value": 1, "modifier": "true"}},
+                    "search_operators": {},
                     "project_operators": {"plays_3": ProjectOperator.from_signatures("plays_3", {("plays", 3)})},
                     "strategy": "default",
                 },
@@ -563,11 +632,15 @@ class TestModelParser(TestCase):
                     "destroy_operators": ["random_n"],
                     "prioritize_operators": ["1_true"],
                     "project_operators": ["plays_3"],
+                    "search_operators": ["fast"],
                 }
             },
             "destroy_operators": {"random_n": DestroyOperator.from_specs("random_n", [{"type": "p", "value": 20}])},
             "prioritize_operators": {"1_true": {"value": 1, "modifier": "true"}},
             "project_operators": {"plays_3": ProjectOperator.from_signatures("plays_3", {("plays", 3)})},
+            "search_operators": {
+                "fast": SearchOperator.from_options("fast", {"configuration": "frumpy", "cutoff": 42})
+            },
             "strategy": "default",
         }
         self.assertEqual(
@@ -576,8 +649,9 @@ class TestModelParser(TestCase):
             "project_operators={plays_3{plays/3}}, "
             "destroy_operators={random_n{p(20)}}, "
             "prioritize_operators={1_true{1,true}}, "
+            "search_operators={fast{configuration=frumpy,cutoff=42}}, "
             "configs={default[project_operators={plays_3},"
-                "destroy_operators={random_n},prioritize_operators={1_true}]}, "
+                "destroy_operators={random_n},prioritize_operators={1_true},search_operators={fast}]}, "
             "strategy=default",
             # fmt: on
         )

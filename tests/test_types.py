@@ -4,7 +4,7 @@ Test cases for the types module.
 
 from unittest import TestCase
 
-from fastlane.utils.types import DestroyOperator, PrioritizeOperator, ProjectOperator
+from fastlane.utils.types import DestroyOperator, PrioritizeOperator, ProjectOperator, SearchOperator
 
 # pylint: disable=protected-access
 
@@ -276,3 +276,85 @@ class TestPrioritizeOperator(TestCase):
         for spec in invalid_specs:
             with self.assertRaises(TypeError):
                 self.prioritize_operator._validate(spec)
+
+
+class TestSearchOperator(TestCase):
+    """
+    Test cases for the SearchOperator class.
+    """
+
+    def setUp(self):
+        self.name = "test_operator"
+        self.search_operator = SearchOperator(self.name)
+
+    def test_init(self):
+        """
+        Test the initialization of the SearchOperator class.
+        """
+        self.assertEqual(self.search_operator.name, self.name)
+        self.assertEqual(len(self.search_operator), 0)
+
+    def test_from_options(self):
+        """
+        Test construction from validated solver overrides.
+        """
+        options = {"time_limit": 30, "configuration": "frumpy"}
+        operator = SearchOperator.from_options(self.name, options)
+        self.assertEqual(operator.name, self.name)
+        self.assertDictEqual(dict(operator), options)
+
+        with self.assertRaises(TypeError):
+            SearchOperator.from_options(self.name, {"cutoff": "42"})
+        with self.assertRaises(KeyError):
+            SearchOperator.from_options(self.name, {"unknown": 42})
+
+    def test_helper(self):
+        """
+        Test the helper methods of the SearchOperator class.
+        """
+        self.test_from_options()
+        ref = self.search_operator._options
+        # __iter__
+        for key in self.search_operator:
+            self.assertIn(key, ref)
+        for key, value in self.search_operator.items():
+            self.assertIn(key, ref)
+            self.assertEqual(value, ref[key])
+        for key in self.search_operator.keys():
+            self.assertIn(key, ref)
+        for value in self.search_operator.values():
+            self.assertIn(value, ref.values())
+        # __len__
+        self.assertEqual(len(self.search_operator), len(ref))
+        # __contains__
+        for key in ref:
+            self.assertIn(key, self.search_operator)
+        # __getitem__
+        for key, value in ref.items():
+            self.assertEqual(self.search_operator[key], value)
+        # __setitem__
+        new_opt = {"cutoff": 123, "heuristic": "Greedy"}
+        self.search_operator["cutoff"] = new_opt["cutoff"]
+        self.search_operator["heuristic"] = new_opt["heuristic"]
+        self.assertDictEqual(self.search_operator._options, new_opt)
+        with self.assertRaises(KeyError):
+            self.search_operator["unknown"] = 1
+        # __delitem__
+        with self.assertRaises(KeyError):
+            del self.search_operator["nonexistent"]
+        del self.search_operator["cutoff"]
+        self.assertNotIn("cutoff", self.search_operator)
+
+    def test_validate(self):
+        """
+        Test the _validate method of the SearchOperator class.
+        """
+        self.assertEqual(self.search_operator._validate("cutoff", 5), 5)
+        self.assertEqual(self.search_operator._validate("solve_limit", "umax"), "umax")
+
+        with self.assertRaises(TypeError):
+            self.search_operator._validate("time_limit", "5")
+        with self.assertRaises(TypeError):
+            self.search_operator._validate("configuration", 1)
+        with self.assertRaises(KeyError):
+            self.search_operator._validate("unknown", 1)

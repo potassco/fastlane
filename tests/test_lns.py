@@ -11,6 +11,7 @@ from fastlane import Model, Timer
 from fastlane.interfaces.solver import SolverConfig
 from fastlane.lns import LNS
 from fastlane.lns_options import LNSOptions
+from fastlane.utils.types import SearchOperator
 
 # pylint: disable=protected-access, too-many-public-methods
 
@@ -323,6 +324,9 @@ class TestLNS(TestCase):
         self.lns.lns_solver_config = mock.Mock()
         self.lns.current_model = mock.Mock()
         self.lns.current_model.cost = [4, 2]
+        self.lns._active_config = {
+            "search_operators": [SearchOperator.from_options("fast", {"time_limit": 12, "configuration": "frumpy"})]
+        }
         self.lns.options.lns_opt_mode = {"mode": "opt", "modifier": "dynamic", "nf": 2}
         with (
             mock.patch("fastlane.lns.get_opt_bound", return_value="opt,2,dynamic") as mock_get_opt,
@@ -332,6 +336,8 @@ class TestLNS(TestCase):
 
             mock_get_opt.assert_called_once_with([4, 2], "opt", opt_modifier="dynamic", opt_nf=2)
             mock_update_time_limit.assert_called_once_with(self.lns, self.lns.lns_solver_config)
+            self.assertEqual(self.lns.lns_solver_config.time_limit, 12)
+            self.assertEqual(self.lns.lns_solver_config.configuration, "frumpy")
             self.assertEqual(self.lns.lns_solver_config.opt_mode, "opt,2,dynamic")
             self.assertTrue(self.lns.lns_solver_config.variability)
 
