@@ -1,4 +1,4 @@
-# FASTLANE: A Framework for Answer Set Programming-based Large Neighborhood Search
+# fastlane: A Framework for Answer Set Programming-based Large Neighborhood Search
 
 The goal of this project is to implement an extensive and easily modifiable
 implementation of LNS using the tools of [potassco](https://potassco.org/).

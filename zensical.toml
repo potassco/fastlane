@@ -11,7 +11,7 @@
 # The site_name is shown in the page header and the browser window title
 #
 # Read more: https://zensical.org/docs/setup/basics/#site_name
-site_name = "LNS Framework"
+site_name = "fastlane"
 
 # The site_description is included in the HTML head and should contain a
 # meaningful description of the site content for use by search engines.
@@ -384,7 +384,7 @@ accent = "indigo"
 # ----------------------------------------------------------------------------
 [[project.extra.social]]
 icon = "fontawesome/brands/github"
-link = "https://github.com/krr-up/large-neighbourhood-search"
+link = "https://github.com/potassco/fastlane"
 
 [[project.extra.social]]
 icon = "potassco-logo"
