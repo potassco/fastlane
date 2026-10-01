@@ -11,6 +11,6 @@ _prioritize_op("1_true", 1, true).
 _prioritize("1_true", plays(P,W,G)) :- plays(P,W,G).
 
 % _config(name, project_op, destroy_op, prioritize_op).
-_config("Week_60", "plays_3", "week_60", "1_true").
+_config("Week_60", "plays_3", "week_60", "1_true", "").
 
-_strategy("static", C) :- _config(C, _, _, _).
+_strategy("static", C) :- _config(C, _, _, _, _).
