@@ -79,16 +79,18 @@ fastlane --seed=42 --time-limit=60 ./examples/golf.lp
 The encodings should contain some kind of optimization statement or soft constraint. The lns framework will work
 with the solution cost derived by the solver.
 
-When using `--destruction=declarative`, additional helper atoms must be specified. These include:
+When using `--destruction=declarative`, additional helper atoms should be specified. These include:
 ```
-_project_op(ID,S).       % ID: identifier, S: signature 
-_project(ID,A).          % ID: identifier, A: affected atom
-_destroy_op(ID,V)        % ID: identifier, V: value i.e. percent/number/auto
-_destroy(ID,A,S)         % ID: identifier, A: affected atom, S: selected term for destruction
-_prioritize_op(ID,V,M)   % ID: identifier, V: value, M: modifier
-_prioritize(ID,A).       % ID: identifier, A: affected atom
-_config(ID,PID,DID,PIID) % ID: identifier, PID: project id, DID: destroy id, PIID: prioritize id
-_strategy(ID,CID)        % ID: identifier, CID: config id
+_project_op(ID,S).           % ID: identifier, S: signature 
+_project(ID,A).              % ID: identifier, A: affected atom
+_destroy_op(ID,V)            % ID: identifier, V: value i.e. percent/number/auto
+_destroy(ID,A,S)             % ID: identifier, A: affected atom, S: selected term for destruction
+_prioritize_op(ID,V,M)       % ID: identifier, V: value, M: modifier
+_prioritize(ID,A).           % ID: identifier, A: affected atom
+_search_param(ID,(O,V))      % ID: identifier, O: option name, V: value
+_config(ID,PID,DID,PIID,SID) % ID: identifier, PID: project id, DID: destroy id, PIID: prioritize id,
+                             % SID: search operator id
+_strategy(ID,CID)            % ID: identifier, CID: config id
 ```
 An example config encoding for the social golfer problem can be found in [`./examples/golf_config.lp`][golf_config].
 

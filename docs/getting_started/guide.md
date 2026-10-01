@@ -41,6 +41,25 @@ correlated atoms are subject to destruction. Destroy operators only affect proje
 - week_auto: automatically destroy a percentage of weeks and their corresponding projected `plays/3` atoms
 
 The prioritize operator in the next lines is only relevant when using `--fix=heuristics` and specifies how fixed (not destroyed) atoms should be prioritized in their respective `#heuristic` statements.
+
+`_search_param/2` can be used to define search operators which can influence solver parameters.
+Currently supported parameters inckude:
+
+- integers:
+  - time-limit
+  - cutoff
+- string:
+  - solve-limit
+  - configuration
+  - opt-strategy
+  - opt-heuristic
+  - restart-on-model
+  - heuristic
+
+To set multiple parameters for a single operator, simply use the same name.
+The usage of search parameters, disables features such as automatic increases for time-limit,
+solve-limit and cutoff.
+
 The following lines define three configurations using the previously defined operators.
 Finally, the `_strategy` atoms selects the strategy to be used, in this case `RouletteWheelStrategy`,
 and adds the configurations to the portfolio. 
@@ -60,13 +79,17 @@ _destroy("week_auto", plays(P,W,G), W) :- plays(P,W,G).
 _prioritize_op("1_true", 1, true).
 _prioritize("1_true", plays(P,W,G)) :- plays(P,W,G).
 
-% _config(name, project_op, destroy_op, prioritize_op).
-_config("Random10", "plays_3", (random,10), "1_true").
-_config("Random20", "plays_3", (random,20), "1_true").
-_config("Week_auto", "plays_3", "week_auto", "1_true").
+% _search_param(name, (option, value))
+_search_param("cutoff-1s-tweety", ("cutoff", 1)).
+_search_param("cutoff-1s-tweety", ("configuration", "tweety")).
+_search_param("cutoff-3s", ("cutoff", 3)).
 
-% _strategy(strategy_name, config_name).
-_strategy("roulette", C) :- _config(C, _, _, _).
+% _config(name, project_op, destroy_op, prioritize_op, search_param).
+_config("Random10", "plays_3", (random,10), "1_true", "cutoff-3s").
+_config("Random20", "plays_3", (random,20), "1_true", "").
+_config("Week_auto", "plays_3", "week_auto", "1_true", "cutoff-1s-tweety").
+
+_strategy("roulette", C) :- _config(C, _, _, _, _).
 ```
 
 ## Basics
