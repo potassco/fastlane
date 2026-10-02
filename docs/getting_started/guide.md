@@ -43,7 +43,7 @@ correlated atoms are subject to destruction. Destroy operators only affect proje
 The prioritize operator in the next lines is only relevant when using `--fix=heuristics` and specifies how fixed (not destroyed) atoms should be prioritized in their respective `#heuristic` statements.
 
 `_search_param/2` can be used to define search operators which can influence solver parameters.
-Currently supported parameters inckude:
+Currently supported parameters include:
 
 - integers:
   - time-limit
@@ -61,6 +61,7 @@ The usage of search parameters, disables features such as automatic increases fo
 solve-limit and cutoff.
 
 The following lines define three configurations using the previously defined operators.
+Search parameters are optional.
 Finally, the `_strategy` atoms selects the strategy to be used, in this case `RouletteWheelStrategy`,
 and adds the configurations to the portfolio. 
 
@@ -84,12 +85,13 @@ _search_param("cutoff-1s-tweety", ("cutoff", 1)).
 _search_param("cutoff-1s-tweety", ("configuration", "tweety")).
 _search_param("cutoff-3s", ("cutoff", 3)).
 
-% _config(name, project_op, destroy_op, prioritize_op, search_param).
+% _config(name, project_op, destroy_op, prioritize_op[, search_param]).
 _config("Random10", "plays_3", (random,10), "1_true", "cutoff-3s").
-_config("Random20", "plays_3", (random,20), "1_true", "").
+_config("Random20", "plays_3", (random,20), "1_true").
 _config("Week_auto", "plays_3", "week_auto", "1_true", "cutoff-1s-tweety").
 
 _strategy("roulette", C) :- _config(C, _, _, _, _).
+_strategy("roulette", C) :- _config(C, _, _, _).
 ```
 
 ## Basics

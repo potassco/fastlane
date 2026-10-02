@@ -232,6 +232,9 @@ class TestModelParser(TestCase):
                 '_config(config2, plays_3, auto, sign_inf, slow).'
                 # multiple configs with the same name
                 '_config("config1", "plays_3", "auto", "1_true", "fast").'
+                '_config("config3", "plays_3", "random_n", "1_true").'
+                '_config(config3, plays_3, auto, sign_inf).'
+                '_config(config1, plays_3, auto, sign_inf).'
             )
             # fmt: on
             temp_file.close()
@@ -250,7 +253,7 @@ class TestModelParser(TestCase):
                 "config1": {
                     "project_operators": ["plays_3"],
                     "destroy_operators": ["auto", "random_n"],
-                    "prioritize_operators": ["1_true"],
+                    "prioritize_operators": ["1_true", "sign_inf"],
                     "search_operators": ["fast"],
                 },
                 "config2": {
@@ -258,6 +261,12 @@ class TestModelParser(TestCase):
                     "destroy_operators": ["auto"],
                     "prioritize_operators": ["sign_inf"],
                     "search_operators": ["slow"],
+                },
+                "config3": {
+                    "project_operators": ["plays_3"],
+                    "destroy_operators": ["auto", "random_n"],
+                    "prioritize_operators": ["1_true", "sign_inf"],
+                    "search_operators": [],
                 },
             },
         )
@@ -284,8 +293,31 @@ class TestModelParser(TestCase):
 
         self.logger.reset_mock()
         ModelParser._parse_configs(self.solver, [], [], [], [], True)
-        # 3 config atoms with 4 missing operator references each = 12 warnings
-        self.assertEqual(self.logger.warning.call_count, 12)
+        self.assertEqual(self.logger.warning.call_count, 21)
+
+    def test_parse_configs_without_search_operators(self):
+        """
+        Four-argument configurations do not select or require search operators.
+        """
+        self.solver.control.add("base", [], '_config(config, project, destroy, prioritize).')
+        self.solver.control.ground([("base", [])])
+        for search_operators in ([], ["fast"]):
+            with self.subTest(search_operators=search_operators):
+                configs = ModelParser._parse_configs(
+                    self.solver, ["project"], ["destroy"], ["prioritize"], search_operators, True
+                )
+                self.assertDictEqual(
+                    configs,
+                    {
+                        "config": {
+                            "project_operators": ["project"],
+                            "destroy_operators": ["destroy"],
+                            "prioritize_operators": ["prioritize"],
+                            "search_operators": [],
+                        },
+                    },
+                )
+        self.logger.warning.assert_not_called()
 
     def test_parse_strategy(self):
         """

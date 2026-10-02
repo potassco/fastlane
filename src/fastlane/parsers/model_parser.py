@@ -2,6 +2,7 @@
 Parser for ASP models.
 """
 
+from itertools import chain
 from typing import TYPE_CHECKING, Optional
 from weakref import WeakKeyDictionary
 
@@ -405,7 +406,7 @@ class ModelParser:
         declarative: bool,
     ) -> dict[str, dict[str, list[str]]]:
         """
-        Extract and validate configurations from atoms of _config/4.
+        Extract and validate configurations from atoms of _config/4 and _config/5.
 
         :param solver: Solver object.
         :param defined_project_operators: List of available project operator names.
@@ -430,7 +431,10 @@ class ModelParser:
         ]
 
         if declarative:
-            for atom in solver.control.symbolic_atoms.by_signature("_config", 5):
+            for atom in chain(
+                solver.control.symbolic_atoms.by_signature("_config", 5),
+                solver.control.symbolic_atoms.by_signature("_config", 4),
+            ):
                 args = atom.symbol.arguments
                 if args[0].type != SymbolType.String:
                     config_name = str(args[0])
@@ -452,7 +456,7 @@ class ModelParser:
 
                 # !todo support for multi ops required?
                 # _config("Random", "plays_3",("random_n";"random_40"), "1_true").
-                for index, info in operator_args_info:
+                for index, info in operator_args_info[: len(args) - 1]:
                     key = info["key"]
                     operator_atom = args[index]
                     if operator_atom.type != SymbolType.String:
@@ -463,7 +467,8 @@ class ModelParser:
                         configs[config_name][key].add(operator_name)
                     else:
                         cls.logger.warning(
-                            "_config/4: %s operator %s is not defined. (atom: %s)",
+                            "_config/%s: %s operator %s is not defined. (atom: %s)",
+                            len(args),
                             info["type"],
                             operator_name,
                             atom.symbol,

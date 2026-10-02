@@ -20,10 +20,11 @@ _search_param("cutoff-1s-tweety", ("cutoff", 1)).
 _search_param("cutoff-1s-tweety", ("configuration", "tweety")).
 _search_param("cutoff-3s", ("cutoff", 3)).
 
-% _config(name, project_op, destroy_op, prioritize_op, search_param).
+% _config(name, project_op, destroy_op, prioritize_op[, search_param]).
 _config("Random10", "plays_3", (random,10), "1_true", "cutoff-3s").
-_config("Random20", "plays_3", (random,20), "1_true", "").
+_config("Random20", "plays_3", (random,20), "1_true").
 _config("Week_auto", "plays_3", "week_auto", "1_true", "cutoff-1s-tweety").
 
 _strategy("roulette", C) :- _config(C, _, _, _, _).
+_strategy("roulette", C) :- _config(C, _, _, _).
 ```
