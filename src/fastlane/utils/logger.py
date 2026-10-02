@@ -55,13 +55,21 @@ class SingleLevelFilter(logging.Filter):
         return record.levelno == self.passlevel
 
 
+def getLogger(name: str) -> LNSLogger:  # pylint: disable=invalid-name
+    """
+    Retrieve the shared logger for a name without changing its configuration.
+    """
+    logger = logging.getLogger(name)
+    assert isinstance(logger, LNSLogger)
+    return logger
+
+
 def setup_logger(name: str, level: int) -> LNSLogger:
     """
     Setup logger.
     """
 
-    logger = logging.getLogger(name)
-    assert isinstance(logger, LNSLogger)
+    logger = getLogger(name)
 
     # Avoid duplicate handlers when setup is called repeatedly with the same logger name.
     logger.handlers.clear()

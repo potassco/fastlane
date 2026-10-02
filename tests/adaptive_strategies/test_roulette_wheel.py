@@ -21,7 +21,7 @@ class TestRouletteWheelStrategy(TestCase):
         """
         Set up the test case.
         """
-        self.strategy = RouletteWheelStrategy(mock.Mock())
+        self.strategy = RouletteWheelStrategy()
         self.config_catalog: ConfigCatalog = {
             "project_operators": {
                 "default": ProjectOperator.from_signatures(name="default", signatures={("plays", 3)})

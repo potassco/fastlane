@@ -9,7 +9,7 @@ from clingo.symbol import Symbol, SymbolType, Tuple_
 
 from fastlane import Model
 from fastlane.interfaces.solver import Solver
-from fastlane.utils.logger import LNSLogger
+from fastlane.utils.logger import getLogger
 from fastlane.utils.types import ConfigCatalog, DestroyOperator, PrioritizeOperator, ProjectOperator, SearchOperator
 
 if TYPE_CHECKING:
@@ -20,6 +20,8 @@ class ModelParser:
     """
     Model parser.
     """
+
+    logger = getLogger("LNS.ModelParser")
 
     _op_specs_cache: WeakKeyDictionary[Model, dict[str, set[Symbol]]] = WeakKeyDictionary()
     _projected_atoms_cache: WeakKeyDictionary[Model, dict[str, set[Symbol]]] = WeakKeyDictionary()
@@ -71,15 +73,12 @@ class ModelParser:
     #     return project_operators, projected_signatures
 
     @classmethod
-    def _parse_project_operator(
-        cls, solver: Solver, declarative: bool, logger: LNSLogger
-    ) -> dict[str, ProjectOperator]:
+    def _parse_project_operator(cls, solver: Solver, declarative: bool) -> dict[str, ProjectOperator]:
         """
         Extract and validate project operators from atoms of _project_op/2 in model.
 
         :param solver: Solver interface object.
         :param declarative: Whether to parse declarative configuration or not.
-        :param logger: Logger object for logging warnings and information.
         :return: Dictionary of project operator names and their corresponding ProjectOperator objects.
         """
         project_operators: dict[str, ProjectOperator] = {}
@@ -98,8 +97,10 @@ class ModelParser:
                     # project_operators[operator].add({"name": signature[0].name, "arity": signature[1].number})
                     project_operators[operator].add((signature[0].name, signature[1].number))
                 else:
-                    logger.warning(
-                        f"_project_op/2: Second argument '{args[1]}' is not a valid signature. (atom: {atom.symbol})"
+                    cls.logger.warning(
+                        "_project_op/2: Second argument '%s' is not a valid signature. (atom: %s)",
+                        args[1],
+                        atom.symbol,
                     )
                     continue
 
@@ -140,15 +141,12 @@ class ModelParser:
 
     # pylint: disable=too-many-nested-blocks, too-many-branches
     @classmethod
-    def _parse_destroy_operators(
-        cls, solver: Solver, declarative: bool, logger: LNSLogger
-    ) -> dict[str, DestroyOperator]:
+    def _parse_destroy_operators(cls, solver: Solver, declarative: bool) -> dict[str, DestroyOperator]:
         """
         Extract and validate destroy operators from atoms of _destroy_op/2 in model.
 
         :param solver: Solver interface object.
         :param declarative: Whether to parse declarative configuration or not.
-        :param logger: Logger object for logging warnings and information.
         :return: Dictionary mapping destroy operator names to lists of percentages or numbers.
         """
         destroy_operators: dict[str, DestroyOperator] = {}
@@ -161,8 +159,10 @@ class ModelParser:
                 else:
                     operator = args[0].string
                 if operator in destroy_operators:
-                    logger.warning(
-                        f"_destroy_op/2: Multiple definitions of destroy operator '{operator}'. Ignoring {atom}."
+                    cls.logger.warning(
+                        "_destroy_op/2: Multiple definitions of destroy operator '%s'. Ignoring %s.",
+                        operator,
+                        atom,
                     )
                     continue
                 destroy_operators.setdefault(
@@ -179,15 +179,17 @@ class ModelParser:
                         if cls._is_percent_or_number(spec):
                             parsed_spec = [{"type": spec.name, "value": spec.arguments[0].number}]
                         else:
-                            logger.warning(f"_destroy_op/2: Second argument '{spec}' is invalid. (atom: {atom.symbol})")
+                            cls.logger.warning(
+                                "_destroy_op/2: Second argument '%s' is invalid. (atom: %s)", spec, atom.symbol
+                            )
                             continue
                     else:
                         for arg in spec.arguments:
                             if cls._is_percent_or_number(arg):
                                 parsed_spec.append({"type": arg.name, "value": arg.arguments[0].number})
                             else:
-                                logger.warning(
-                                    f"_destroy_op/2: Second argument '{arg}' is invalid. (atom: {atom.symbol})"
+                                cls.logger.warning(
+                                    "_destroy_op/2: Second argument '%s' is invalid. (atom: %s)", arg, atom.symbol
                                 )
                                 break
                         # ?? TODO check arg missmatch
@@ -199,7 +201,7 @@ class ModelParser:
                         if len(parsed_spec) < len(spec.arguments):
                             continue
                 else:
-                    logger.warning(f"_destroy_op/2: Second argument '{spec}' is invalid. (atom: {atom.symbol})")
+                    cls.logger.warning("_destroy_op/2: Second argument '%s' is invalid. (atom: %s)", spec, atom.symbol)
                     continue
 
                 destroy_operators[operator] = DestroyOperator.from_specs(operator, parsed_spec)
@@ -252,15 +254,12 @@ class ModelParser:
         )
 
     @classmethod
-    def _parse_prioritize_operators(
-        cls, solver: Solver, declarative: bool, logger: LNSLogger
-    ) -> dict[str, PrioritizeOperator]:
+    def _parse_prioritize_operators(cls, solver: Solver, declarative: bool) -> dict[str, PrioritizeOperator]:
         """
         Extract and validate prioritize operators from atoms of _prioritize_op/3 in model.
 
         :param solver: SolverInterface object.
         :param declarative: Whether to parse declarative configuration or not.
-        :param logger: Logger object for warnings and errors.
         :return: Dictionary mapping prioritize operator names to dictionaries of heuristic modifiers and their values.
         """
         prioritize_operators: dict[str, PrioritizeOperator] = {}
@@ -274,9 +273,10 @@ class ModelParser:
                     operator = args[0].string
                 if operator in prioritize_operators:
                     # fmt: off
-                    logger.warning(
-                        f"_prioritize_op/3: Multiple definitions of prioritize operator '{operator}'. "
-                        f"Ignoring {atom.symbol}."
+                    cls.logger.warning(
+                        "_prioritize_op/3: Multiple definitions of prioritize operator '%s'. Ignoring %s.",
+                        operator,
+                        atom.symbol,
                     )
                     # fmt: on
                     continue
@@ -292,9 +292,10 @@ class ModelParser:
                     value = value_param.number
                 else:
                     # fmt: off
-                    logger.warning(
-                        f"_prioritize_op/3: Second argument '{value_param}' is neither an integer nor inf. "
-                        f"(atom: {atom.symbol})"
+                    cls.logger.warning(
+                        "_prioritize_op/3: Second argument '%s' is neither an integer nor inf. (atom: %s)",
+                        value_param,
+                        atom.symbol,
                     )
                     # fmt: on
                     continue
@@ -304,9 +305,11 @@ class ModelParser:
                     prioritize_operators[operator].set_spec({"value": value, "modifier": modifier_param.name})
                 else:
                     # fmt: off
-                    logger.warning(
-                        f"_prioritize_op/3: Third argument '{modifier_param}' is not one of: "
-                        f"sign, level, true, false, init, factor. (atom: {atom.symbol})"
+                    cls.logger.warning(
+                        "_prioritize_op/3: Third argument '%s' is not one of: "
+                        "sign, level, true, false, init, factor. (atom: %s)",
+                        modifier_param,
+                        atom.symbol,
                     )
                     # fmt: on
                     continue
@@ -317,13 +320,12 @@ class ModelParser:
         return prioritize_operators
 
     @classmethod
-    def _parse_search_operators(cls, solver: Solver, declarative: bool, logger: LNSLogger) -> dict[str, SearchOperator]:
+    def _parse_search_operators(cls, solver: Solver, declarative: bool) -> dict[str, SearchOperator]:
         """
         Extract LNS solver option sets from _search_param/2 atoms.
 
         :param solver: SolverInterface object.
         :param declarative: Whether to parse declarative configuration or not.
-        :param logger: Logger object for logging warnings and information.
         :return: Dictionary mapping search operator names to SearchOperator objects.
         """
         search_operators: dict[str, SearchOperator] = {}
@@ -340,7 +342,9 @@ class ModelParser:
             search_operators.setdefault(operator, SearchOperator(operator))
 
             if parameter.type != SymbolType.Function or parameter.name != "" or len(parameter.arguments) != 2:
-                logger.warning(f"_search_param/2: Second argument '{parameter}' is invalid. (atom: {atom.symbol})")
+                cls.logger.warning(
+                    "_search_param/2: Second argument '%s' is invalid. (atom: %s)", parameter, atom.symbol
+                )
                 continue
 
             key_arg, value_arg = parameter.arguments
@@ -359,7 +363,7 @@ class ModelParser:
             try:
                 search_operators[operator][key] = value
             except (KeyError, TypeError) as error:
-                logger.warning(f"_search_param/2: {error} (atom: {atom.symbol})")
+                cls.logger.warning("_search_param/2: %s (atom: %s)", error, atom.symbol)
 
         return search_operators
 
@@ -399,7 +403,6 @@ class ModelParser:
         defined_prioritize_operators: list[str],
         defined_search_operators: list[str],
         declarative: bool,
-        logger: LNSLogger,
     ) -> dict[str, dict[str, list[str]]]:
         """
         Extract and validate configurations from atoms of _config/4.
@@ -410,7 +413,6 @@ class ModelParser:
         :param defined_prioritize_operators: List of available prioritize operator names.
         :param defined_search_operators: List of available search operator names.
         :param declarative: Whether to parse declarative configuration or not.
-        :param logger: Logger object for logging warnings and errors.
         :return: Dictionary mapping configuration names to lists of operator names.
         """
         configs: dict[str, dict[str, set[str]]] = {}
@@ -460,8 +462,11 @@ class ModelParser:
                     if operator_name in defined_operators[key]:
                         configs[config_name][key].add(operator_name)
                     else:
-                        logger.warning(
-                            f"_config/4: {info['type']} operator {operator_name} is not defined. (atom: {atom.symbol})"
+                        cls.logger.warning(
+                            "_config/4: %s operator %s is not defined. (atom: %s)",
+                            info["type"],
+                            operator_name,
+                            atom.symbol,
                         )
 
         if not configs:
@@ -484,7 +489,6 @@ class ModelParser:
         supported_strategies: list[str],
         default_strategy: str,
         declarative: bool,
-        logger: LNSLogger,
     ) -> tuple[str, dict[str, dict[str, list[str]]]]:
         """
         Extract and validate strategy and configurations subject to selection from atoms of _strategy/2.
@@ -494,7 +498,6 @@ class ModelParser:
         :param supported_strategies: List of available strategy names.
         :param default_strategy: Name of strategy to use when not specified.
         :param declarative: Whether to parse declarative configuration or not.
-        :param logger: Logger object for logging warnings and information.
         :return: Strategy name and Dictionary mapping names of configurations subject to selection to
             lists of operator names.
         """
@@ -509,16 +512,20 @@ class ModelParser:
                 else:
                     strategy_name = args[0].string
                 if strategy_name not in supported_strategies:
-                    logger.warning(f"_strategy/2: Strategy '{strategy_name}' is not supported. (atom: {atom.symbol})")
+                    cls.logger.warning(
+                        "_strategy/2: Strategy '%s' is not supported. (atom: %s)", strategy_name, atom.symbol
+                    )
                     continue
 
                 if strategy is None:
                     strategy = strategy_name
                 if strategy != strategy_name:
                     # fmt: off
-                    logger.warning(
-                        f"_strategy/2: Multiple strategies specified. Using '{strategy}' and ignoring "
-                        f"'{strategy_name}'. (atom: {atom.symbol})"
+                    cls.logger.warning(
+                        "_strategy/2: Multiple strategies specified. Using '%s' and ignoring '%s'. (atom: %s)",
+                        strategy,
+                        strategy_name,
+                        atom.symbol,
                     )
                     # fmt: on
                     continue
@@ -530,7 +537,7 @@ class ModelParser:
                 if config_name in defined_configs:
                     candidate_configs[config_name] = defined_configs[config_name]
                 else:
-                    logger.warning(f"_strategy/2: Config '{config_name}' is not defined. (atom: {atom.symbol})")
+                    cls.logger.warning("_strategy/2: Config '%s' is not defined. (atom: %s)", config_name, atom.symbol)
                     continue
 
         if not candidate_configs:
@@ -552,12 +559,11 @@ class ModelParser:
         :return: Configuration catalog used by the LNS loop.
         """
         # pylint: disable=protected-access
-        logger = lns_object.logger.getChild("ConfigParser")
         solver = lns_object.solver
         options = lns_object.options
         declarative = options._declarative
-        project_operators = cls._parse_project_operator(solver, declarative, logger)
-        destroy_operators = cls._parse_destroy_operators(solver, declarative, logger)
+        project_operators = cls._parse_project_operator(solver, declarative)
+        destroy_operators = cls._parse_destroy_operators(solver, declarative)
         if not declarative:
             if options._destruction_rate > 0:
                 dest_op = DestroyOperator.from_specs("default", [{"type": "p", "value": options._destruction_rate}])
@@ -565,8 +571,8 @@ class ModelParser:
                 dest_op = DestroyOperator.from_specs("default", [{"type": "auto", "value": None}])
             destroy_operators = {"default": dest_op}
 
-        prioritize_operators = cls._parse_prioritize_operators(solver, declarative, logger)
-        search_operators = cls._parse_search_operators(solver, declarative, logger)
+        prioritize_operators = cls._parse_prioritize_operators(solver, declarative)
+        search_operators = cls._parse_search_operators(solver, declarative)
         defined_configs = cls._parse_configs(
             solver,
             list(project_operators.keys()),
@@ -574,7 +580,6 @@ class ModelParser:
             list(prioritize_operators.keys()),
             list(search_operators.keys()),
             declarative,
-            logger,
         )
         strategy, candidate_configs = cls._parse_strategy(
             solver,
@@ -582,7 +587,6 @@ class ModelParser:
             options.get_supported_adaptive_strategy_names(),
             options.default_adaptive_strategy_name,
             declarative,
-            logger,
         )
 
         config_catalog: ConfigCatalog = {
@@ -593,7 +597,8 @@ class ModelParser:
             "search_operators": search_operators,
             "strategy": strategy,
         }
-        lns_object.logger.debug("LNS configuration catalog: %s", cls._format_config_catalog(config_catalog))
+        cls.logger.debug("LNS configuration catalog: %s", cls._format_config_catalog(config_catalog))
+        
         return config_catalog
 
     @classmethod

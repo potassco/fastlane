@@ -29,6 +29,9 @@ class TestModelParser(TestCase):
         self.solver = ClingoSolver()
         self.solver.control = clingo.Control()
         self.logger = mock.Mock()
+        logger_patch = mock.patch.object(ModelParser, "logger", self.logger)
+        logger_patch.start()
+        self.addCleanup(logger_patch.stop)
 
     def test_is_atom(self):
         """
@@ -56,7 +59,7 @@ class TestModelParser(TestCase):
             temp_file.close()
             self.solver.control.load(temp_file.name)
             self.solver.control.ground([("base", [])])
-        project_operators = ModelParser._parse_project_operator(self.solver, True, self.logger)
+        project_operators = ModelParser._parse_project_operator(self.solver, True)
         self.assertDictEqual(
             project_operators,
             {
@@ -69,7 +72,7 @@ class TestModelParser(TestCase):
         model = Model()
         model.shown = {Function("a", [Number(1), Number(2)]), Function("abc", [Number(2)]), Function("", [Number(1)])}
         self.solver.last_model = model
-        project_operators = ModelParser._parse_project_operator(self.solver, False, self.logger)
+        project_operators = ModelParser._parse_project_operator(self.solver, False)
         self.assertDictEqual(
             project_operators,
             {
@@ -110,7 +113,7 @@ class TestModelParser(TestCase):
             temp_file.close()
             self.solver.control.load(temp_file.name)
             self.solver.control.ground([("base", [])])
-        destroy_operators = ModelParser._parse_destroy_operators(self.solver, True, self.logger)
+        destroy_operators = ModelParser._parse_destroy_operators(self.solver, True)
         self.assertDictEqual(
             destroy_operators,
             {
@@ -126,7 +129,7 @@ class TestModelParser(TestCase):
             },
         )
 
-        destroy_operators = ModelParser._parse_destroy_operators(self.solver, False, self.logger)
+        destroy_operators = ModelParser._parse_destroy_operators(self.solver, False)
         self.assertDictEqual(
             destroy_operators,
             {
@@ -167,7 +170,7 @@ class TestModelParser(TestCase):
             temp_file.close()
             self.solver.control.load(temp_file.name)
             self.solver.control.ground([("base", [])])
-        prioritize_operators = ModelParser._parse_prioritize_operators(self.solver, True, self.logger)
+        prioritize_operators = ModelParser._parse_prioritize_operators(self.solver, True)
         self.assertDictEqual(
             prioritize_operators,
             {
@@ -178,7 +181,7 @@ class TestModelParser(TestCase):
             },
         )
 
-        prioritize_operators = ModelParser._parse_prioritize_operators(self.solver, False, self.logger)
+        prioritize_operators = ModelParser._parse_prioritize_operators(self.solver, False)
         self.assertDictEqual(
             prioritize_operators,
             {
@@ -206,7 +209,7 @@ class TestModelParser(TestCase):
             temp_file.close()
             self.solver.control.load(temp_file.name)
             self.solver.control.ground([("base", [])])
-        search_operators = ModelParser._parse_search_operators(self.solver, True, self.logger)
+        search_operators = ModelParser._parse_search_operators(self.solver, True)
         self.assertDictEqual(
             search_operators,
             {
@@ -215,7 +218,7 @@ class TestModelParser(TestCase):
             },
         )
 
-        search_operators = ModelParser._parse_search_operators(self.solver, False, self.logger)
+        search_operators = ModelParser._parse_search_operators(self.solver, False)
         self.assertDictEqual(search_operators, {})
 
     def test_parse_configs(self):
@@ -239,7 +242,7 @@ class TestModelParser(TestCase):
         prioritize_operators = ["1_true", "sign_inf"]
         search_operators = ["fast", "slow"]
         configs = ModelParser._parse_configs(
-            self.solver, project_operators, destroy_operators, prioritize_operators, search_operators, True, self.logger
+            self.solver, project_operators, destroy_operators, prioritize_operators, search_operators, True
         )
         self.assertDictEqual(
             configs,
@@ -266,7 +269,6 @@ class TestModelParser(TestCase):
             prioritize_operators,
             search_operators,
             False,
-            self.logger,
         )
         self.assertDictEqual(
             configs,
@@ -281,7 +283,7 @@ class TestModelParser(TestCase):
         )
 
         self.logger.reset_mock()
-        ModelParser._parse_configs(self.solver, [], [], [], [], True, self.logger)
+        ModelParser._parse_configs(self.solver, [], [], [], [], True)
         # 3 config atoms with 4 missing operator references each = 12 warnings
         self.assertEqual(self.logger.warning.call_count, 12)
 
@@ -326,7 +328,7 @@ class TestModelParser(TestCase):
         supported_strategies = ["roulette", "default", "second"]
         default_strategy = "default"
         strategy, candidate_configs = ModelParser._parse_strategy(
-            self.solver, configs, supported_strategies, default_strategy, True, self.logger
+            self.solver, configs, supported_strategies, default_strategy, True
         )
         self.assertTupleEqual(
             (strategy, candidate_configs),
@@ -348,7 +350,7 @@ class TestModelParser(TestCase):
         )
 
         strategy, candidate_configs = ModelParser._parse_strategy(
-            self.solver, configs, supported_strategies, default_strategy, False, self.logger
+            self.solver, configs, supported_strategies, default_strategy, False
         )
         self.assertTupleEqual(
             (strategy, candidate_configs),
@@ -436,12 +438,10 @@ class TestModelParser(TestCase):
             ) as mock_parse_strategy,
         ):
             catalog = ModelParser.parse_lns_config(lns_object)
-            mock_parse_project_operator.assert_called_once_with(solver, options._declarative, self.logger.getChild())
-            mock_parse_destroy_operators.assert_called_once_with(solver, options._declarative, self.logger.getChild())
-            mock_parse_prioritize_operators.assert_called_once_with(
-                solver, options._declarative, self.logger.getChild()
-            )
-            mock_parse_search_operators.assert_called_once_with(solver, options._declarative, self.logger.getChild())
+            mock_parse_project_operator.assert_called_once_with(solver, options._declarative)
+            mock_parse_destroy_operators.assert_called_once_with(solver, options._declarative)
+            mock_parse_prioritize_operators.assert_called_once_with(solver, options._declarative)
+            mock_parse_search_operators.assert_called_once_with(solver, options._declarative)
             mock_parse_configs.assert_called_once_with(
                 solver,
                 ["plays_3"],
@@ -449,7 +449,6 @@ class TestModelParser(TestCase):
                 ["1_true"],
                 ["fast"],
                 options._declarative,
-                self.logger.getChild(),
             )
             mock_parse_strategy.assert_called_once_with(
                 solver,
@@ -464,7 +463,6 @@ class TestModelParser(TestCase):
                 ["default", "roulette"],
                 "default",
                 options._declarative,
-                self.logger.getChild(),
             )
             self.assertDictEqual(
                 catalog,

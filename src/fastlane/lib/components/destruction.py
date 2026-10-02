@@ -8,8 +8,10 @@ from clingo.symbol import Symbol, SymbolType
 
 from fastlane import Model
 from fastlane.parsers.model_parser import ModelParser
-from fastlane.utils.logger import DEBUG_EXTRA, LNSLogger
+from fastlane.utils.logger import DEBUG_EXTRA, getLogger
 from fastlane.utils.types import ActiveConfig, DestroyOperator, DestructionSpec, ProjectOperator
+
+logger = getLogger("LNS")
 
 
 # unused default destruction method, can be used for testing
@@ -38,13 +40,12 @@ def format_atoms(atoms: set[Symbol]) -> str:
     return " ".join([str(atom) for atom in sorted(atoms)])
 
 
-def _project(model: Model, project_operators: list[ProjectOperator], logger: LNSLogger) -> set[Symbol]:
+def _project(model: Model, project_operators: list[ProjectOperator]) -> set[Symbol]:
     """
     Project atoms based on the runtime configuration.
 
     :param model: Model containing the atoms.
     :param project_operators: List of project operators.
-    :param logger: Logger for debugging.
     :return: Set of projected atoms
     """
     projected_atoms: set[Symbol] = set()
@@ -52,9 +53,9 @@ def _project(model: Model, project_operators: list[ProjectOperator], logger: LNS
     for project_operator in project_operators:
         projected_atoms.update(ModelParser.get_projected_atoms(model, project_operator.name))
 
-    logger.debug(f"{len(projected_atoms)} projected atoms:")
+    logger.debug("%d projected atoms:", len(projected_atoms))
     if logger.isEnabledFor(DEBUG_EXTRA):  # nocoverage
-        logger.debug_extra(f"{len(projected_atoms)} projected atoms: {format_atoms(projected_atoms)}")
+        logger.debug_extra("%d projected atoms: %s", len(projected_atoms), format_atoms(projected_atoms))
 
     return projected_atoms
 
@@ -135,7 +136,6 @@ def _destroy(
     model: Model,
     destroy_operators: list[DestroyOperator],
     projected_atoms: set[Symbol],
-    logger: LNSLogger,
 ) -> set[Symbol]:
     """
     Destroy a subset of atoms according to the runtime configuration.
@@ -155,27 +155,26 @@ def _destroy(
                 _destroy_atoms_if_all_args_selected(atom_term_pairs, destroy_operator.get_all_specs())
             )
 
-    logger.debug(f"{len(destroyed_atoms)} destroyed atoms:")
+    logger.debug("%d destroyed atoms:", len(destroyed_atoms))
     if logger.isEnabledFor(DEBUG_EXTRA):  # nocoverage
-        logger.debug_extra(f"{format_atoms(destroyed_atoms)}")
+        logger.debug_extra("%s", format_atoms(destroyed_atoms))
 
     prioritized_atoms = projected_atoms - destroyed_atoms
 
-    logger.debug(f"{len(prioritized_atoms)} prioritized atoms:")
+    logger.debug("%d prioritized atoms:", len(prioritized_atoms))
     if logger.isEnabledFor(DEBUG_EXTRA):  # nocoverage
-        logger.debug_extra(f"{format_atoms(prioritized_atoms)}")
+        logger.debug_extra("%s", format_atoms(prioritized_atoms))
 
     return prioritized_atoms
 
 
-def destroy_config(model: Model, config: ActiveConfig, logger: LNSLogger) -> set[Symbol]:
+def destroy_config(model: Model, config: ActiveConfig) -> set[Symbol]:
     """
     Destroy portion of atoms as defined by LNS configuration.
 
     :param model: Model containing the atoms.
     :param config: Active configuration.
-    :param logger: Logger instance.
     :return: Set of non destroyed atoms
     """
-    projected = _project(model, config["project_operators"], logger)
-    return _destroy(model, config["destroy_operators"], projected, logger)
+    projected = _project(model, config["project_operators"])
+    return _destroy(model, config["destroy_operators"], projected)

@@ -9,13 +9,28 @@ from unittest import TestCase
 from clingo.symbol import Function, Infimum, Number, String, Supremum
 
 from fastlane.utils.conversions import args_to_dict, str_to_symbols, symbol_to_str
-from fastlane.utils.logger import setup_logger
+from fastlane.utils.logger import LNSLogger, getLogger, setup_logger
 
 
 class TestLogger(TestCase):
     """
     Test cases for the logger.
     """
+
+    def test_get_logger(self):
+        """
+        Test logger identity sharing and configuration preservation.
+        """
+        log = getLogger("test.shared")
+        self.assertIsInstance(log, LNSLogger)
+        self.assertIs(log, getLogger("test.shared"))
+        self.assertIs(log, logging.getLogger("test.shared"))
+        self.assertIsNot(log, getLogger("test.other"))
+        self.assertIs(log, setup_logger("test.shared", logging.INFO))
+        handlers = log.handlers[:]
+        self.assertIs(log, getLogger("test.shared"))
+        self.assertEqual(log.handlers, handlers)
+        self.assertEqual(log.level, logging.INFO)
 
     def test_logger(self):
         """

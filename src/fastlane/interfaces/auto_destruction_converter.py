@@ -6,6 +6,7 @@ import copy
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Optional
 
+from fastlane.utils.logger import getLogger
 from fastlane.utils.types import ActiveConfig, ProjectOperator
 
 if TYPE_CHECKING:
@@ -16,6 +17,8 @@ class AutoDestructionConverter(ABC):
     """
     Converter interface for computing destruction percentages of auto-mode destroy operators.
     """
+
+    logger = getLogger("LNS")
 
     @classmethod
     def __subclasshook__(cls, subclass: type) -> bool:  # nocoverage
@@ -43,9 +46,10 @@ class AutoDestructionConverter(ABC):
                         config["name"], config["project_operators"], destroy_operator_name
                     )
                     if lns_object is not None:
-                        lns_object.logger.info(
-                            f"Auto destruction percent: {destruction_percent:.3f}% "
-                            f"(destroy operator: {destroy_operator_name})"
+                        self.logger.info(
+                            "Auto destruction percent: %.3f%% (destroy operator: %s)",
+                            destruction_percent,
+                            destroy_operator_name,
                         )
                     destroy_operator[i] = {"type": "p", "value": destruction_percent}
         return resolved_config

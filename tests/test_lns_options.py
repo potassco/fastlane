@@ -88,10 +88,10 @@ class TestLNSOptions(TestCase):
         """
         Test the build_adaptive_strategy method.
         """
-        self.assertIsInstance(self.lns_options.build_adaptive_strategy("static", mock.Mock()), StaticStrategy)
-        self.assertIsInstance(self.lns_options.build_adaptive_strategy("roulette", mock.Mock()), RouletteWheelStrategy)
+        self.assertIsInstance(self.lns_options.build_adaptive_strategy("static"), StaticStrategy)
+        self.assertIsInstance(self.lns_options.build_adaptive_strategy("roulette"), RouletteWheelStrategy)
         with self.assertRaises(ValueError):
-            self.lns_options.build_adaptive_strategy("non-existent-strategy", mock.Mock())
+            self.lns_options.build_adaptive_strategy("non-existent-strategy")
 
     def test_prepare(self) -> None:
         """

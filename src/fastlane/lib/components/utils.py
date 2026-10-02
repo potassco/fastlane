@@ -8,12 +8,14 @@ import math
 from typing import TYPE_CHECKING, Any, Optional, Sequence
 
 from fastlane import Timer
+from fastlane.utils.logger import getLogger
 
 if TYPE_CHECKING:
     from fastlane.interfaces.solver import SolverConfig  # nocoverage
     from fastlane.lns import LNS  # nocoverage
 
 UINT_MAX = 4294967295
+logger = getLogger("LNS")
 
 
 def calculate_variability(list1: set[Any], list2: set[Any]) -> float:
@@ -60,8 +62,8 @@ def update_time_limit(lns_object: "LNS", solver_config: "SolverConfig") -> None:
             solver_config.time_limit = remaining_time
         elif 0 < remaining_time < solver_tl:
             solver_config.time_limit = remaining_time
-            lns_object.logger.debug("elapsed time: %d seconds", lns_object.timer.get_elapsed_time())
-            lns_object.logger.debug(
+            logger.debug("elapsed time: %d seconds", lns_object.timer.get_elapsed_time())
+            logger.debug(
                 "Time limit for solver reduced to %d seconds to fit into overall time limit.",
                 solver_config.time_limit,
             )

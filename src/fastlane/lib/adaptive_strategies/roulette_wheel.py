@@ -3,13 +3,13 @@ Roulette-wheel strategy for adaptive LNS configuration selection.
 """
 
 import random
-from logging import Logger
 from typing import TYPE_CHECKING, Any
 
 from fastlane import Model
 from fastlane.interfaces.adaptive_strategy import AdaptiveStrategy
 from fastlane.interfaces.auto_destruction_converter import AutoDestructionConverter
 from fastlane.lib.auto_destruction_converters.last_improv import LastImprovementDestructionConverter
+from fastlane.utils.logger import getLogger
 from fastlane.utils.types import ActiveConfig, ConfigCatalog
 
 if TYPE_CHECKING:
@@ -20,7 +20,6 @@ class RouletteWheelStrategy(AdaptiveStrategy):
     """
     Roulette-wheel strategy.
 
-    :param logger: Logger for logging messages.
     :param learning_rate: Learning rate used to update weights, 0 < learning_rate < 1.
     :param lex_weight: Weight used to convert lexicographic cost into integer cost.
     :param converter: Converter for computing destruction percentages of auto-mode destroy operators.
@@ -29,13 +28,12 @@ class RouletteWheelStrategy(AdaptiveStrategy):
 
     def __init__(
         self,
-        logger: Logger,
         learning_rate: float = 0.5,
         lex_weight: int = 1000,
         converter: AutoDestructionConverter = LastImprovementDestructionConverter(),
         min_weight: float = 0.001,
     ):
-        self.logger = logger
+        self.logger = getLogger("LNS")
         self._learning_rate = learning_rate
         self._lex_weight = lex_weight
         self._converter = converter

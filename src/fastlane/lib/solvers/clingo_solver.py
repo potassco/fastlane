@@ -88,8 +88,6 @@ class ClingoSolver(Solver):
         if files is None:
             files = lns_object.files
 
-        self.logger = lns_object.logger
-
         def custom_logger(mc: clingo.MessageCode, msg: str) -> None:  # nocoverage
             if mc != clingo.MessageCode.Other:
                 print(msg, file=sys.stderr)
@@ -105,6 +103,7 @@ class ClingoSolver(Solver):
 
         :param model: Model found during solving.
         """
+        self.logger.info("%.3f, %s", self._solve_timer.get_elapsed_time(), model.cost)
         self.last_model = Model()
         self.last_model.shown = set(model.symbols(shown=True))
         self.last_model.true = set(model.symbols(atoms=True))
@@ -277,7 +276,7 @@ class ClingoSolver(Solver):
                         )
                 if ringing_timers and not self._interrupted and not self.finished:
                     self._interrupted = True
-                    self.logger.debug("interrupted by timer(s): %s", ", ".join(ringing_timers))
+                    self.logger.info("interrupted by timer(s): %s", ", ".join(ringing_timers))
                     handle.cancel()
         self._interrupted = False
         # if self.last_model is None and not self.finished:

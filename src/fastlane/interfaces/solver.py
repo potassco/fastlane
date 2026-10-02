@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 import clingo
 from clingo.symbol import Symbol
 
-from fastlane.utils.logger import LNSLogger
+from fastlane.utils.logger import LNSLogger, getLogger
 
 if TYPE_CHECKING:  # nocoverage
     from fastlane import Model
@@ -55,7 +55,7 @@ class Solver(ABC):
         self.result = "UNKNOWN"
         self.optimum = "unknown"
         self.minimize_variable: Optional[Symbol] = None
-        self.logger: LNSLogger = LNSLogger("temporary_solver_logger")
+        self.logger: LNSLogger = getLogger("LNS")
         self.stop: bool = False
         self._assumptions_used = False
         self.last_model: Optional[Model] = None

@@ -8,7 +8,9 @@ from clingo.symbol import Number, Symbol
 
 from fastlane import LINE, Model
 from fastlane.interfaces.solver import Solver, SolverConfig
-from fastlane.utils.logger import DEBUG_EXTRA, LNSLogger
+from fastlane.utils.logger import DEBUG_EXTRA, getLogger
+
+logger = getLogger("LNS")
 
 
 def repair_assumptions(solver: Solver, solver_config: SolverConfig, fixed_atoms: set[Symbol]) -> Optional[Model]:
@@ -30,7 +32,6 @@ def repair_heuristics(
     fixed_atoms_heuristics: set[Symbol],
     prev_fixed_atoms_heuristics: set[Symbol],
     step: int,
-    logger: LNSLogger,
 ) -> Optional[Model]:
     """
     Repair solution by prioritizing fixed atoms.
@@ -40,10 +41,9 @@ def repair_heuristics(
     :param fixed_atoms_heuristics: Set of fixed atoms for heuristics.
     :param prev_fixed_atoms_heuristics: Set of previously fixed atoms for heuristics.
     :param step: Current step number.
-    :param logger: Logger instance.
     :return: New model if found, otherwise None.
     """
-    logger.debug(f"release {len(prev_fixed_atoms_heuristics)} externals:")
+    logger.debug("release %d externals:", len(prev_fixed_atoms_heuristics))
     released_externals = []
     for a in prev_fixed_atoms_heuristics:
         solver.release_external(a)
@@ -52,7 +52,7 @@ def repair_heuristics(
     if logger.isEnabledFor(DEBUG_EXTRA):  # nocoverage
         released_line = ". ".join(released_externals)
         logger.debug_extra("%s%s", released_line, "." if released_line else "")
-    logger.debug(f"get {len(fixed_atoms_heuristics)} new externals:")
+    logger.debug("get %d new externals:", len(fixed_atoms_heuristics))
     statements = ""
     for a in fixed_atoms_heuristics:
         ext_statement = f"#external {a}."
@@ -62,7 +62,7 @@ def repair_heuristics(
     solver.ground([("external", [Number(step)])])
     solver.ground([("heuristic", [Number(step)])])
 
-    logger.debug(f"enable {len(fixed_atoms_heuristics)} externals:")
+    logger.debug("enable %d externals:", len(fixed_atoms_heuristics))
     enabled_externals = []
     for a in fixed_atoms_heuristics:
         solver.assign_external(a, True)

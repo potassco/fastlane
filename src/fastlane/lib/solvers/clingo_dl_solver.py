@@ -65,8 +65,6 @@ class ClingoDLSolver(ClingoSolver):
         if files is None:
             files = lns_object.files
 
-        self.logger = lns_object.logger
-
         def custom_logger(mc: clingo.MessageCode, msg: str) -> None:  # nocoverage
             if mc != clingo.MessageCode.Other:
                 print(msg, file=sys.stderr)
@@ -82,8 +80,8 @@ class ClingoDLSolver(ClingoSolver):
             )
             if self.minimize_variable is not None:
                 bound_subprogram = f"#program bound(t). &diff {{ {self.minimize_variable} - 0 }} <= B :- __b(B,t)."
-                lns_object.logger.debug(LINE)
-                lns_object.logger.debug(bound_subprogram)
+                self.logger.debug(LINE)
+                self.logger.debug(bound_subprogram)
                 ast.parse_string(bound_subprogram, lambda ast: thy.rewrite_ast(ast, builder.add))
 
         self.control, self.theory = ctl, thy

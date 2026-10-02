@@ -57,8 +57,6 @@ class ClingconSolver(ClingoSolver):
         if files is None:
             files = lns_object.files
 
-        self.logger = lns_object.logger
-
         def custom_logger(mc: clingo.MessageCode, msg: str) -> None:  # nocoverage
             if mc != clingo.MessageCode.Other:
                 print(msg, file=sys.stderr)

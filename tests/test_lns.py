@@ -204,7 +204,7 @@ class TestLNS(TestCase):
             self.lns.post_first_solution()
 
             mock_parse.assert_called_once_with(self.lns)
-            mock_build.assert_called_once_with(config_catalog["strategy"], self.lns.logger)
+            mock_build.assert_called_once_with(config_catalog["strategy"])
             strategy.get_initial_config.assert_called_once_with(config_catalog, self.lns.current_model)
 
             mock_heur.assert_called_once_with(config_catalog)
@@ -313,7 +313,7 @@ class TestLNS(TestCase):
         with mock.patch("fastlane.lns.destroy_config", return_value=r_set) as mock_destroy:
             result = self.lns.destroy()
 
-            mock_destroy.assert_called_once_with(model, config, self.lns.logger)
+            mock_destroy.assert_called_once_with(model, config)
             self.assertEqual(result, r_set)
 
     def test_prepare_lns_solver_config(self):

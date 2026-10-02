@@ -5,7 +5,6 @@ Class containing all LNS options and their default values, as well as methods fo
 from __future__ import annotations
 
 from dataclasses import dataclass, field, fields
-from logging import Logger
 from typing import Any, ClassVar, Optional, TypeVar
 
 from clingo import Symbol
@@ -282,12 +281,12 @@ class LNSOptions:
         return ["roulette", "static"]
 
     # name -> strat object, init strat with params later (setup())
-    def build_adaptive_strategy(self, strategy_name: str, logger: Logger) -> AdaptiveStrategy:
+    def build_adaptive_strategy(self, strategy_name: str) -> AdaptiveStrategy:
         """
         Build adaptive strategy instance from selected strategy name.
         """
         if strategy_name == "roulette":
-            return RouletteWheelStrategy(logger, self.learning_rate, self.lex_weight, self.auto_converter)
+            return RouletteWheelStrategy(self.learning_rate, self.lex_weight, self.auto_converter)
         if strategy_name == "static":
             return StaticStrategy(self.auto_converter)
         raise ValueError(

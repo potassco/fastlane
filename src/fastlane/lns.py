@@ -204,9 +204,7 @@ class LNS:
         if not self.solver.finished:
             self._config_catalog = ModelParser.parse_lns_config(self)
 
-            self._adaptive_strategy = self.options.build_adaptive_strategy(
-                self._config_catalog["strategy"], self.logger
-            )
+            self._adaptive_strategy = self.options.build_adaptive_strategy(self._config_catalog["strategy"])
             self._active_config = self._adaptive_strategy.get_initial_config(self._config_catalog, self.current_model)
 
             # heuristics
@@ -279,7 +277,7 @@ class LNS:
 
         :return: Fixed (not destroyed) atoms.
         """
-        return destroy_config(self.current_model, self._active_config, self.logger)
+        return destroy_config(self.current_model, self._active_config)
 
     def _prepare_lns_solver_config(self) -> None:
         """
@@ -359,7 +357,6 @@ class LNS:
                 fixed_atoms_heuristics=fixed_atoms_heuristics,
                 prev_fixed_atoms_heuristics=self.prev_fixed_atoms,
                 step=self.step_c,
-                logger=self.logger,
             )
             self.prev_fixed_atoms = fixed_atoms_heuristics.copy()
         # assumptions

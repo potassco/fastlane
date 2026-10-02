@@ -34,7 +34,6 @@ class TestRepairComponents(TestCase):
         """
         mock_solver = mock.Mock(spec=Solver)
         mock_solver_config = mock.Mock(spec=SolverConfig)
-        mock_logger = mock.Mock()
 
         fixed_atoms_heuristics = {
             Function(
@@ -77,7 +76,6 @@ class TestRepairComponents(TestCase):
             fixed_atoms_heuristics=fixed_atoms_heuristics,
             prev_fixed_atoms_heuristics=prev_fixed_atoms_heuristics,
             step=2,
-            logger=mock_logger,
         )
 
         self.assertEqual(mock_solver.release_external.call_count, len(prev_fixed_atoms_heuristics))
