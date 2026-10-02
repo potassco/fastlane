@@ -57,28 +57,14 @@ class TestRepairComponents(TestCase):
                 True,
             ),
         }
-        prev_fixed_atoms_heuristics = {
-            Function(
-                "__heuristic",
-                [
-                    Function("plays", [Number(1), Number(2), Number(3)], True),
-                    Number(1),
-                    Function("true", [], True),
-                    Number(1),
-                ],
-                True,
-            )
-        }
-
         repair_heuristics(
             solver=mock_solver,
             solver_config=mock_solver_config,
             fixed_atoms_heuristics=fixed_atoms_heuristics,
-            prev_fixed_atoms_heuristics=prev_fixed_atoms_heuristics,
             step=2,
         )
 
-        self.assertEqual(mock_solver.release_external.call_count, len(prev_fixed_atoms_heuristics))
+        self.assertEqual(mock_solver.release_external.call_count, len(fixed_atoms_heuristics))
         mock_solver.add.assert_called_once()
         add_name, add_parameters, add_program = mock_solver.add.call_args.args
         self.assertEqual(add_name, "external")

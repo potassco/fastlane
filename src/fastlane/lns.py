@@ -45,7 +45,6 @@ class LNS:
     :ivar stats: List of statistics dictionaries.
     :ivar _config_catalog: Parsed config catalog.
     :ivar _active_config: Active config for the current iteration.
-    :ivar prev_fixed_atoms: Set of previously fixed atoms.
     :ivar _is_variable: Indicates if the problem is variable.
     :ivar _adaptive_strategy: Adaptive strategy object.
     :ivar init_solver_config: Initial solver configuration.
@@ -88,8 +87,6 @@ class LNS:
         self._config_catalog: ConfigCatalog = {}
         # selected config specification for current iteration
         self._active_config: ActiveConfig = {}
-
-        self.prev_fixed_atoms: set[Symbol] = set()
 
         self._is_variable: bool = False
         self._adaptive_strategy: AdaptiveStrategy = StaticStrategy()
@@ -355,10 +352,8 @@ class LNS:
                 solver=self.solver,
                 solver_config=self.lns_solver_config,
                 fixed_atoms_heuristics=fixed_atoms_heuristics,
-                prev_fixed_atoms_heuristics=self.prev_fixed_atoms,
                 step=self.step_c,
             )
-            self.prev_fixed_atoms = fixed_atoms_heuristics.copy()
         # assumptions
         elif self.options.fix == "assumptions":
             self.logger.debug("repair using assumptions")

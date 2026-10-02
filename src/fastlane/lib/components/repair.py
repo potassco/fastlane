@@ -30,7 +30,6 @@ def repair_heuristics(
     solver: Solver,
     solver_config: SolverConfig,
     fixed_atoms_heuristics: set[Symbol],
-    prev_fixed_atoms_heuristics: set[Symbol],
     step: int,
 ) -> Optional[Model]:
     """
@@ -39,19 +38,9 @@ def repair_heuristics(
     :param solver: Solver instance.
     :param solver_config: Solver configuration.
     :param fixed_atoms_heuristics: Set of fixed atoms for heuristics.
-    :param prev_fixed_atoms_heuristics: Set of previously fixed atoms for heuristics.
     :param step: Current step number.
     :return: New model if found, otherwise None.
     """
-    logger.debug("release %d externals:", len(prev_fixed_atoms_heuristics))
-    released_externals = []
-    for a in prev_fixed_atoms_heuristics:
-        solver.release_external(a)
-        released_externals.append(str(a))
-
-    if logger.isEnabledFor(DEBUG_EXTRA):  # nocoverage
-        released_line = ". ".join(released_externals)
-        logger.debug_extra("%s%s", released_line, "." if released_line else "")
     logger.debug("get %d new externals:", len(fixed_atoms_heuristics))
     statements = ""
     for a in fixed_atoms_heuristics:
@@ -74,8 +63,14 @@ def repair_heuristics(
     logger.debug(LINE)
     logger.debug("start solving...")
     new_model = solver.solve(solver_config)
-    # release externals after solving instead of before solving of next iteration
-    # for a in fixed_atoms_heuristics:
-    #     solver.release_external(a)
+    logger.debug("release %d externals:", len(fixed_atoms_heuristics))
+    released_externals = []
+    for a in fixed_atoms_heuristics:
+        solver.release_external(a)
+        released_externals.append(str(a))
+
+    if logger.isEnabledFor(DEBUG_EXTRA):  # nocoverage
+        released_line = ". ".join(released_externals)
+        logger.debug_extra("%s%s", released_line, "." if released_line else "")
 
     return new_model

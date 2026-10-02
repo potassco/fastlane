@@ -410,7 +410,6 @@ class TestLNS(TestCase):
             mock_repair.assert_called_once()
             mock_update_stats.assert_called_once_with(new_model)
             self.assertIs(new_model, model)
-            self.assertSetEqual(self.lns.prev_fixed_atoms, fixed_heu)
 
         self.lns.options.fix = "assumptions"
         with (
