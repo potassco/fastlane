@@ -603,7 +603,7 @@ class ModelParser:
             "strategy": strategy,
         }
         cls.logger.debug("LNS configuration catalog: %s", cls._format_config_catalog(config_catalog))
-        
+
         return config_catalog
 
     @classmethod

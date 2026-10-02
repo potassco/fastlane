@@ -299,7 +299,7 @@ class TestModelParser(TestCase):
         """
         Four-argument configurations do not select or require search operators.
         """
-        self.solver.control.add("base", [], '_config(config, project, destroy, prioritize).')
+        self.solver.control.add("base", [], "_config(config, project, destroy, prioritize).")
         self.solver.control.ground([("base", [])])
         for search_operators in ([], ["fast"]):
             with self.subTest(search_operators=search_operators):
