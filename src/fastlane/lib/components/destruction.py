@@ -52,8 +52,8 @@ def _project(model: Model, project_operators: list[ProjectOperator]) -> set[Symb
 
     for project_operator in project_operators:
         projected_atoms.update(ModelParser.get_projected_atoms(model, project_operator.name))
+        logger.debug("%d atoms projected by operator '%s':", len(projected_atoms), project_operator.name)
 
-    logger.debug("%d projected atoms:", len(projected_atoms))
     if logger.isEnabledFor(DEBUG_EXTRA):  # nocoverage
         logger.debug_extra("%d projected atoms: %s", len(projected_atoms), format_atoms(projected_atoms))
 
@@ -154,8 +154,7 @@ def _destroy(
             destroyed_atoms.update(
                 _destroy_atoms_if_all_args_selected(atom_term_pairs, destroy_operator.get_all_specs())
             )
-
-    logger.debug("%d destroyed atoms:", len(destroyed_atoms))
+        logger.debug("%d atoms destroyed by operator '%s':", len(destroyed_atoms), destroy_operator.name)
     if logger.isEnabledFor(DEBUG_EXTRA):  # nocoverage
         logger.debug_extra("%s", format_atoms(destroyed_atoms))
 
@@ -177,4 +176,13 @@ def destroy_config(model: Model, config: ActiveConfig) -> set[Symbol]:
     :return: Set of non destroyed atoms
     """
     projected = _project(model, config["project_operators"])
-    return _destroy(model, config["destroy_operators"], projected)
+    fixed_atoms = _destroy(model, config["destroy_operators"], projected)
+    projected_count = len(projected)
+    destroyed_percent = (projected_count - len(fixed_atoms)) / projected_count * 100 if projected_count else 0.0
+    logger.info(
+        "%s/%s projected atoms fixed (%.2f%% destroyed)",
+        len(fixed_atoms),
+        projected_count,
+        destroyed_percent,
+    )
+    return fixed_atoms

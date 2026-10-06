@@ -561,11 +561,6 @@ class LNS:
 
             self.logger.debug(LINE)
             self.logger.debug("# repair")
-            self.logger.info(
-                "repair with %s fixed atoms (%.2f%% destroyed)",
-                len(fixed_atoms),
-                (len(self.current_model.shown) - len(fixed_atoms)) / len(self.current_model.shown) * 100,
-            )
             self.new_model = self.repair(fixed_atoms)
 
             self.logger.debug(LINE)

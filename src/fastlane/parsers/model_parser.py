@@ -658,19 +658,19 @@ class ModelParser:
         )
         if "configs" in config_catalog:
             configs = ",".join(
-                config
-                + "["
-                + "project_operators={"
-                + ",".join(operators["project_operators"])
-                + "},destroy_operators={"
-                + ",".join(operators["destroy_operators"])
-                + "},prioritize_operators={"
-                + ",".join(operators["prioritize_operators"])
-                + "},search_operators={"
-                + ",".join(operators["search_operators"])
-                + "}"
+                f"{config_name}["
+                + ",".join(
+                    f"{key}={{{','.join(config[key])}}}"
+                    for key in (
+                        "project_operators",
+                        "destroy_operators",
+                        "prioritize_operators",
+                        "search_operators",
+                    )
+                    if key in config
+                )
                 + "]"
-                for config, operators in config_catalog["configs"].items()
+                for config_name, config in config_catalog["configs"].items()
             )
             out += f", configs={{{configs}}}"
 
