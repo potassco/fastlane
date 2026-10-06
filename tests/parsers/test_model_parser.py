@@ -253,7 +253,7 @@ class TestModelParser(TestCase):
                 "config1": {
                     "project_operators": ["plays_3"],
                     "destroy_operators": ["auto", "random_n"],
-                    "prioritize_operators": ["1_true", "sign_inf"],
+                    "prioritize_operators": ["1_true"],
                     "search_operators": ["fast"],
                 },
                 "config2": {
@@ -265,7 +265,7 @@ class TestModelParser(TestCase):
                 "config3": {
                     "project_operators": ["plays_3"],
                     "destroy_operators": ["auto", "random_n"],
-                    "prioritize_operators": ["1_true", "sign_inf"],
+                    "prioritize_operators": ["1_true"],
                     "search_operators": [],
                 },
             },
@@ -318,6 +318,28 @@ class TestModelParser(TestCase):
                     },
                 )
         self.logger.warning.assert_not_called()
+
+    def test_parse_configs_with_search_operator_pool(self):
+        """Clingo pools expand to config atoms that merge by config name."""
+        self.solver.control.add(
+            "base",
+            [],
+            "_config(pool, project, destroy, prioritize, (fast;slow))."
+            "_config(single, project, destroy, prioritize, fast).",
+        )
+        self.solver.control.ground([("base", [])])
+
+        configs = ModelParser._parse_configs(
+            self.solver,
+            ["project"],
+            ["destroy"],
+            ["prioritize"],
+            ["fast", "slow"],
+            True,
+        )
+
+        self.assertEqual(configs["pool"]["search_operators"], ["fast", "slow"])
+        self.assertEqual(configs["single"]["search_operators"], ["fast"])
 
     def test_parse_strategy(self):
         """
@@ -735,6 +757,10 @@ class TestModelParser(TestCase):
         model = Model()
         model.shown = {
             Function("plays", [Number(1), Number(2), Number(3)]),
+            Function("abc", [Number(1), Number(2)]),
+        }
+        model.true = {
+            Function("plays", [Number(1), Number(2), Number(3)]),
             Function("plays", [Number(4), Number(5), Number(6)]),
             Function("abc", [Number(1), Number(2)]),
         }
@@ -743,6 +769,11 @@ class TestModelParser(TestCase):
                 Function(
                     "_project",
                     [String("plays_3"), Function("plays", [Number(1), Number(2), Number(3)], True)],
+                    True,
+                ),
+                Function(
+                    "_project",
+                    [String("plays_3"), Function("plays", [Number(4), Number(5), Number(6)], True)],
                     True,
                 ),
                 Function(
@@ -761,7 +792,10 @@ class TestModelParser(TestCase):
             projected_atoms = ModelParser.get_projected_atoms(model, "plays_3")
         self.assertSetEqual(
             projected_atoms,
-            {Function("plays", [Number(1), Number(2), Number(3)])},
+            {
+                Function("plays", [Number(1), Number(2), Number(3)]),
+                Function("plays", [Number(4), Number(5), Number(6)]),
+            },
         )
 
         # Repeated calls with the same inputs should return the cached object.
