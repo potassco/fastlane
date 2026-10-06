@@ -732,7 +732,7 @@ class ModelParser:
             if operator_name == project_operator_name:
                 is_project2_defined = True
                 second_arg = args[1]
-                if cls._is_atom(second_arg) and second_arg in model.shown:
+                if cls._is_atom(second_arg) and second_arg in model.true:
                     projected_atoms.add(second_arg)
 
         # default project all shown
