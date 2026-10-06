@@ -61,6 +61,7 @@ The usage of search parameters, disables features such as automatic increases fo
 solve-limit and cutoff.
 
 The following lines define three configurations using the previously defined operators.
+For each configuration one or more project, destroy and search operators can be defined.
 Search parameters are optional.
 Finally, the `_strategy` atoms selects the strategy to be used, in this case `RouletteWheelStrategy`,
 and adds the configurations to the portfolio. 
@@ -72,7 +73,7 @@ _project(plays_3, plays(P,W,G)) :- plays(P,W,G).
 
 % _destroy_op(name, [auto,p(),n(),(p(),n(),...)]).
 _destroy_op((random,N), p(N)) :- N=(10;20).
-_destroy((random,(10;20)), plays(P,W,G), (P,W,G)) :- plays(P,W,G).
+_destroy((random,N), plays(P,W,G), (P,W,G)) :- plays(P,W,G), N=(10;20).
 _destroy_op("week_auto", auto).
 _destroy("week_auto", plays(P,W,G), W) :- plays(P,W,G).
 
@@ -81,14 +82,15 @@ _prioritize_op("1_true", 1, true).
 _prioritize("1_true", plays(P,W,G)) :- plays(P,W,G).
 
 % _search_param(name, (option, value))
-_search_param("cutoff-1s-tweety", ("cutoff", 1)).
-_search_param("cutoff-1s-tweety", ("configuration", "tweety")).
+_search_param("cutoff-1s", ("cutoff", 1)).
+_search_param("tweety", ("configuration", "tweety")).
 _search_param("cutoff-3s", ("cutoff", 3)).
+_search_param("cutoff-3s", ("configuration", "auto")).
 
 % _config(name, project_op, destroy_op, prioritize_op[, search_param]).
 _config("Random10", "plays_3", (random,10), "1_true", "cutoff-3s").
 _config("Random20", "plays_3", (random,20), "1_true").
-_config("Week_auto", "plays_3", "week_auto", "1_true", "cutoff-1s-tweety").
+_config("Week_auto", "plays_3", "week_auto", "1_true", ("cutoff-1s";"tweety")).
 
 _strategy("roulette", C) :- _config(C, _, _, _, _).
 _strategy("roulette", C) :- _config(C, _, _, _).

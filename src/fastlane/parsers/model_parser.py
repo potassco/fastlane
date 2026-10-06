@@ -463,9 +463,7 @@ class ModelParser:
                         operator_name = str(operator_atom)
                     else:
                         operator_name = operator_atom.string
-                    if operator_name in defined_operators[key]:
-                        configs[config_name][key].add(operator_name)
-                    else:
+                    if operator_name not in defined_operators[key]:
                         cls.logger.warning(
                             "_config/%s: %s operator %s is not defined. (atom: %s)",
                             len(args),
@@ -473,6 +471,19 @@ class ModelParser:
                             operator_name,
                             atom.symbol,
                         )
+                        continue
+                    selected_operators = configs[config_name][key]
+                    if key == "prioritize_operators" and selected_operators and operator_name not in selected_operators:
+                        cls.logger.warning(
+                            "_config/%s: Configuration '%s' defines more than one prioritize operator; "
+                            "ignoring '%s'. (atom: %s)",
+                            len(args),
+                            config_name,
+                            operator_name,
+                            atom.symbol,
+                        )
+                        continue
+                    selected_operators.add(operator_name)
 
         if not configs:
             configs["default"] = {key: set(operators) for key, operators in defined_operators.items()}
