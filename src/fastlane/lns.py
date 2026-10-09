@@ -179,6 +179,17 @@ class LNS:
         Ground the base ASP program.
         """
         self.solver.ground([("base", [])], self.options.context)
+        # prepare output format and print header
+        header, self._iter_format = get_output_format("", self.options.time_limit, self.options.max_steps)
+        print(header.format("time in s", "step", "cost"))
+        print(
+            self._iter_format.format(
+                self.timer.get_elapsed_time(),
+                "ground",
+                "",
+            ),
+            flush=True,
+        )
 
     def get_first_solution(self) -> bool:
         """
@@ -210,11 +221,10 @@ class LNS:
                 self.logger.debug("Adding heuristics:\n%s", heuristics)
                 self.solver.add("heuristic", ["t"], heuristics)
 
-        # prepare output format and print header
-        header, self._iter_format = get_output_format(
+        # update iter format
+        _, self._iter_format = get_output_format(
             self.best_model.get_cost_str(), self.options.time_limit, self.options.max_steps
         )
-        print(header.format("time in s", "step", "cost"))
         print(
             self._iter_format.format(
                 self.timer.get_elapsed_time(),

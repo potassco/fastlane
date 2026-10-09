@@ -135,9 +135,23 @@ class TestLNS(TestCase):
         Test the post_setup method.
         """
         self.lns.solver = mock.Mock()
-
-        self.lns.post_setup()
-
+        self.lns.timer = mock.Mock()
+        self.lns.timer.get_elapsed_time.return_value = 5.5
+        header_fmt = "header: {} | {} | {}"
+        iter_fmt = "iter: {} | {} | {}"
+        with (
+            mock.patch("fastlane.lns.get_output_format", return_value=(header_fmt, iter_fmt)) as mock_output,
+            mock.patch("builtins.print") as mock_print,
+        ):
+            self.lns.post_setup()
+            mock_output.assert_called_once_with("", self.lns.options.time_limit, self.lns.options.max_steps)
+            mock_print.assert_has_calls(
+                [
+                    mock.call("header: time in s | step | cost"),
+                    mock.call("iter: 5.5 | ground | ", flush=True),
+                ]
+            )
+            self.assertEqual(mock_print.call_count, 2)
         self.lns.solver.ground.assert_called_once_with([("base", [])], self.lns.options.context)
 
     def test_get_first_solution(self):
@@ -216,11 +230,10 @@ class TestLNS(TestCase):
 
             mock_print.assert_has_calls(
                 [
-                    mock.call("header: time in s | step | cost"),
                     mock.call("iter: 12.5 | initial | 3 1", flush=True),
                 ]
             )
-            self.assertEqual(mock_print.call_count, 2)
+            self.assertEqual(mock_print.call_count, 1)
 
             self.assertEqual(self.lns.best_model.get_cost_str.call_count, 2)
             self.lns.timer.get_elapsed_time.assert_called_once()
