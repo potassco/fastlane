@@ -47,3 +47,15 @@ You can check a successful installation by running
 ```bash
 $ fastlane -h
 ```
+
+### Converter
+
+The experimental `fastlane-convert` command can be used to convert an alaspo-style
+JSON configuration into a fastlane configuration:
+
+```bash
+fastlane-convert input.json > out.lp
+```
+
+Conversion warnings are written to standard error. Use `fastlane-convert --help`
+for command help.

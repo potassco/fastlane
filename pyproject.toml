@@ -28,6 +28,7 @@ full = ["fastlane[doc]"]
 
 [project.scripts]
 fastlane = "fastlane.__main__:main"
+fastlane-convert = "fastlane.utils.config_converter:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

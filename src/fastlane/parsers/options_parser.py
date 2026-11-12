@@ -37,6 +37,20 @@ VERSION = metadata.version("potassco-fastlane")
 # pylint: disable=line-too-long, too-many-lines
 
 
+def formatter(prog: str) -> RawTextHelpFormatter:
+    """
+    Get custom formatter for command line options.
+
+    :param prog: Program name.
+    :return: Custom formatter.
+    """
+    return RawTextHelpFormatter(
+        prog,
+        max_help_position=10,
+        width=100,
+    )
+
+
 def _parse_solver(solvers: dict[str, Solver], string: str) -> Solver:
     """
     Parse the solver string.
@@ -520,20 +534,6 @@ class OptionsParser:
                 classes_in_package.append(obj)
         return classes_in_package
 
-    @staticmethod
-    def formatter(prog: str) -> RawTextHelpFormatter:
-        """
-        Get custom formatter for command line options.
-
-        :param prog: Program name.
-        :return: Custom formatter.
-        """
-        return RawTextHelpFormatter(
-            prog,
-            max_help_position=10,
-            width=100,
-        )
-
     # pylint: disable=too-many-statements
     @classmethod
     def get_parser(cls) -> ArgumentParser:
@@ -547,7 +547,7 @@ class OptionsParser:
                 Check the documentation for a guide on how to use this framework
                 and all possible options for configuration.
                 """),
-            formatter_class=cls.formatter,
+            formatter_class=formatter,
         )
 
         logging_levels = {
