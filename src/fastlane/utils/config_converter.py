@@ -110,18 +110,44 @@ def _parse_destroy_sizes(sizes: Any) -> list[tuple[str, Symbol]]:
     return specifications
 
 
-def parse_destroy(candidates: list[Any], out_lines: list[str]) -> tuple[list[Symbol], dict[str, Any]]:
+def _write_destroy_rules(operators: dict[Symbol, tuple[str, list[Symbol]]], out_lines: list[str]) -> dict[Symbol, str]:
+    """
+    Write pooled size rules and collect their domains for config rules.
+
+    :param operators: The destroy operators and their size kind and values.
+    :param out_lines: The list of output lines to append to.
+    :return: Auxiliary rule bodies for the destroy operators.
+    """
+    aux_rules: dict[Symbol, str] = {}
+    size_index = 0
+    for operator, (size_type, sizes) in operators.items():
+        if size_type == "auto":
+            out_lines.append(f"_destroy_op({operator}, auto(0)).")
+            continue
+        size_predicate = f"_destroy_sizes_{size_index}"
+        size_index += 1
+        rule_body = f"{size_predicate}(N)"
+        out_lines.append(f"{size_predicate}({';'.join(str(size) for size in sizes)}).")
+        out_lines.append(f"_destroy_op({operator}, {size_type}(N)) :- {rule_body}.")
+        aux_rules[operator] = rule_body
+    return aux_rules
+
+
+def parse_destroy(
+    candidates: list[Any], out_lines: list[str]
+) -> tuple[list[Symbol], dict[str, Any], dict[Symbol, str]]:
     """
     Append declarative destroy rules and collect random-atom search parameters.
 
     Invalid supported entries are warned about and skipped as a whole.
+    The first valid declarative entry for each operator name wins.
 
     :param candidates: The list of candidate destroy operators.
     :param out_lines: The list of output lines to append to.
-    :return: A tuple containing the parsed destroy operators and required parameters.
+    :return: Parsed destroy operators, required parameters, and auxiliary rule bodies.
     """
-    # ordered sets
-    operators: dict[Symbol, None] = {}
+    seen_names: set[Symbol] = set()
+    operators: dict[Symbol, tuple[str, list[Symbol]]] = {}
     search_parameters: dict[str, Any] = {}
     for candidate in candidates:
         if isinstance(candidate, dict) and candidate.get("type") not in ("randomAtoms", "declarative"):
@@ -148,14 +174,21 @@ def parse_destroy(candidates: list[Any], out_lines: list[str]) -> tuple[list[Sym
             warn(f"Failed to parse entry {candidate}: {error}")
             continue
 
-        for size_type, value in specifications:
-            operator = Tuple_([name, value])
-            if operator in operators:
-                warn(f"Duplicate destroy operator {operator}; skipped.")
+        if name in seen_names:
+            warn(f"Duplicate destroy operator name {name}; skipped.")
+            continue
+        seen_names.add(name)
+        size_type = specifications[0][0]
+        values: list[Symbol] = []
+        for _, value in specifications:
+            if value in values:
+                warn(f"Duplicate destroy operator {Tuple_([name, value])}; skipped.")
                 continue
-            operators[operator] = None
-            out_lines.append(f"_destroy_op({operator}, {size_type}({value})).")
-    return list(operators), search_parameters
+            values.append(value)
+        operator = Tuple_([name, String("auto") if size_type == "auto" else Function("N")])
+        operators[operator] = (size_type, values)
+    aux_rules = _write_destroy_rules(operators, out_lines)
+    return list(operators), search_parameters, aux_rules
 
 
 def _collect_search_parameters(entry: dict[str, Any], name: Symbol, parameters: dict[str, Any]) -> None:
@@ -199,16 +232,16 @@ def parse_search(
     :return: Ordered parameter operators by name, and auxiliary rules.
     """
     operators: dict[Symbol, dict[Symbol, None]] = {}
-    parameters: dict[str, Any] = {}
     aux_rules: dict[Symbol, tuple[Symbol, str]] = {}
     for candidate_index, candidate in enumerate(candidates):
         try:
             entry = valid_object(candidate, "searchParams entry")
             name = String(valid_name(entry.get("name"), "searchParams.name"))
         except ValueError as error:
-            warn(f"{error} Skipping search operator.")
+            warn(f"{error} Skipping search operator {candidate}.")
             continue
 
+        parameters: dict[str, Any] = {}
         _collect_search_parameters(entry, name, parameters)
         parameters.update(add_params)
 
@@ -228,14 +261,14 @@ def parse_search(
                 continue
 
             parameter_value = Number(value) if isinstance(value, int) else String(value)
-            operator = Tuple_([name, parameter_value])
-            out_lines.append(f"_search_param({operator}, ({String(key)}, {parameter_value})).")
+            operator = Tuple_([name, String(key)])
 
             named_operators = operators.setdefault(name, {})
             if operator in named_operators:
                 warn(f"Duplicate search operator {operator}; skipped.")
                 continue
             named_operators[operator] = None
+            out_lines.append(f"_search_param({operator}, ({String(key)}, {parameter_value})).")
 
     return operators, aux_rules
 
@@ -249,25 +282,31 @@ def convert(json_dict: dict[str, Any]) -> str:
     """
     output_lines: list[str] = []
     destroy_candidates = get_supported(json_dict, "destroyOperators", "relaxOperators")
-    destroy_operators, additional_parameters = parse_destroy(destroy_candidates, output_lines)
+    destroy_operators, additional_parameters, destroy_aux_rules = parse_destroy(destroy_candidates, output_lines)
     search_candidates = get_supported(json_dict, "searchOperators", "searchParams")
-    search_operators, aux_rules = parse_search(search_candidates, additional_parameters, output_lines)
+    search_operators, search_aux_rules = parse_search(search_candidates, additional_parameters, output_lines)
     for destroy_operator, search_name in product(destroy_operators, search_operators):
         search_parameters = ";".join(str(parameter) for parameter in search_operators[search_name])
-        if aux_rule := aux_rules.get(search_name):
+        rule_bodies = []
+        if destroy_body := destroy_aux_rules.get(destroy_operator):
+            rule_bodies.append(destroy_body)
+        if aux_rule := search_aux_rules.get(search_name):
             timeout_operator, rule_body = aux_rule
+            rule_bodies.append(rule_body)
+            rule_suffix = f" :- {', '.join(rule_bodies)}."
             configuration = Tuple_([destroy_operator, timeout_operator])
-            # Keep timeout and ordinary parameters in separate rules for the same configuration.
+            # keep timeout and ordinary parameters in separate rules for the same configuration.
             output_lines.append(
-                f"_config({configuration}, default, {destroy_operator}, default, ({timeout_operator})) :- {rule_body}."
+                f"_config({configuration}, default, {destroy_operator}, default, ({timeout_operator})){rule_suffix}"
             )
             output_lines.append(
-                f"_config({configuration}, default, {destroy_operator}, default, ({search_parameters})) :- {rule_body}."
+                f"_config({configuration}, default, {destroy_operator}, default, ({search_parameters})){rule_suffix}"
             )
         else:
             configuration = Tuple_([destroy_operator, search_name])
+            rule_suffix = f" :- {', '.join(rule_bodies)}." if rule_bodies else "."
             output_lines.append(
-                f"_config({configuration}, default, {destroy_operator}, default, ({search_parameters}))."
+                f"_config({configuration}, default, {destroy_operator}, default, ({search_parameters})){rule_suffix}"
             )
     if "strategy" in json_dict:
         try:
