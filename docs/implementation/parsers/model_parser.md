@@ -1,3 +1,3 @@
-::: fastlane.parsers.config_parser
+::: fastlane.parsers.model_parser
     options:
         show_root_heading: false

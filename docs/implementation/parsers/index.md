@@ -2,8 +2,8 @@
 
 This submodule includes the following parsers:
 
-- [Config Parser]
+- [Model Parser]
 - [Options Parser]
 
-[Config Parser]: config_parser.md
+[Model Parser]: model_parser.md
 [Options Parser]: options_parser.md

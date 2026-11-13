@@ -98,7 +98,7 @@ nav = [
     {"LNS class" = "implementation/lns.md"},
     {"Parsers" = [
       "implementation/parsers/index.md",
-      {"Config Parser" = "implementation/parsers/config_parser.md"},
+      {"Model Parser" = "implementation/parsers/model_parser.md"},
       {"Options Parser" = "implementation/parsers/options_parser.md"},
     ]},
     {"Utilities" = [
