@@ -81,7 +81,7 @@ def _destroy_atoms_if_term_selected(
         num_selected_terms = round(len(candidate_terms) * value / 100)
     else:  # n, "auto" should not be present here
         num_selected_terms = min(len(candidate_terms), value)
-    selected_terms = random.sample(sorted(candidate_terms), num_selected_terms)
+    selected_terms = set(random.sample(sorted(candidate_terms), num_selected_terms))
     for pair in atom_term_pairs:
         if pair["term"] in selected_terms:
             destroyed_atoms.add(pair["atom"])
@@ -108,7 +108,7 @@ def _destroy_atoms_if_all_args_selected(
         return term.type == SymbolType.Function and not term.name
 
     candidate_args: list[set[Symbol]] = [set() for _ in range(len(percents_or_numbers))]
-    selected_args: list[list[Symbol]] = []
+    selected_args: list[set[Symbol]] = []
 
     for pair in atom_term_pairs:
         if _is_tuple(pair["term"]) and len(pair["term"].arguments) == len(percents_or_numbers):
@@ -122,7 +122,7 @@ def _destroy_atoms_if_all_args_selected(
             num_selected_args = round(len(candidate_args[i]) * value / 100)
         else:  # n, "auto" should not be present here
             num_selected_args = min(len(candidate_args[i]), value)
-        selected_args.append(random.sample(sorted(candidate_args[i]), num_selected_args))
+        selected_args.append(set(random.sample(sorted(candidate_args[i]), num_selected_args)))
     for pair in atom_term_pairs:
         if _is_tuple(pair["term"]) and len(pair["term"].arguments) == len(percents_or_numbers):
             all_args_selected = all(arg in selected_args[i] for i, arg in enumerate(pair["term"].arguments))

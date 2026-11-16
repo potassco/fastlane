@@ -52,25 +52,21 @@ def repair_heuristics(
     solver.ground([("heuristic", [Number(step)])])
 
     logger.debug("enable %d externals:", len(fixed_atoms_heuristics))
-    enabled_externals = []
     for a in fixed_atoms_heuristics:
         solver.assign_external(a, True)
-        enabled_externals.append(str(a))
     if logger.isEnabledFor(DEBUG_EXTRA):  # nocoverage
-        enabled_externals_line = ". ".join(enabled_externals)
+        enabled_externals_line = ". ".join(str(a) for a in fixed_atoms_heuristics)
         logger.debug_extra("%s%s", enabled_externals_line, "." if enabled_externals_line else "")
 
     logger.debug(LINE)
     logger.debug("start solving...")
     new_model = solver.solve(solver_config)
     logger.debug("release %d externals:", len(fixed_atoms_heuristics))
-    released_externals = []
     for a in fixed_atoms_heuristics:
         solver.release_external(a)
-        released_externals.append(str(a))
 
     if logger.isEnabledFor(DEBUG_EXTRA):  # nocoverage
-        released_line = ". ".join(released_externals)
+        released_line = ". ".join(str(a) for a in fixed_atoms_heuristics)
         logger.debug_extra("%s%s", released_line, "." if released_line else "")
 
     return new_model

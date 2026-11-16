@@ -180,10 +180,12 @@ def parse_destroy(
         seen_names.add(name)
         size_type = specifications[0][0]
         values: list[Symbol] = []
+        seen_values: set[Symbol] = set()
         for _, value in specifications:
-            if value in values:
+            if value in seen_values:
                 warn(f"Duplicate destroy operator {Tuple_([name, value])}; skipped.")
                 continue
+            seen_values.add(value)
             values.append(value)
         operator = Tuple_([name, String("auto") if size_type == "auto" else Function("N")])
         operators[operator] = (size_type, values)

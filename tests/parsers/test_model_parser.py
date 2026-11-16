@@ -717,6 +717,12 @@ class TestModelParser(TestCase):
             Function("_project", [String("plays_3"), Function("plays", [Number(1), Number(2), Number(3)])]),
             Function("_destroy", [String("random_n"), Function("plays", [Number(1), Number(2), Number(3)]), Number(2)]),
             Function("_prioritize", [String("1_true"), Function("plays", [Number(1), Number(2), Number(3)])]),
+            Function("_project", [String("plays_3"), Function("plays")], positive=False),
+            Function("_destroy", [String("random_n"), Function("plays")]),
+            Function("_prioritize", [String("1_true")]),
+            Function("plays", [Number(1), Number(2), Number(3)]),
+            Number(1),
+            String("_project"),
         }
         specs = ModelParser.get_op_specs(model)
         self.assertDictEqual(

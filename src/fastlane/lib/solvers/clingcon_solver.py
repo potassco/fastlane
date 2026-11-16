@@ -159,7 +159,7 @@ class ClingconSolver(ClingoSolver):
             async_=True,
         ) as handle:
             ringing_timers = []
-            while not handle.wait(0):
+            while not handle.wait(0.01):
                 if self._solve_timer.is_ringing:
                     ringing_timers.append("solve_timer")
                     self.logger.debug("solve timer ringing after %s seconds", self._solve_timer.get_elapsed_time())

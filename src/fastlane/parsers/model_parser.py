@@ -693,13 +693,14 @@ class ModelParser:
             return cached_specs
 
         specs: dict[str, set[Symbol]] = {}
+        arities = {"_project": 2, "_destroy": 3, "_prioritize": 2}
         for atom in model.true:
-            if atom.match("_project", 2):
-                specs.setdefault("_project", set()).add(atom)
-            elif atom.match("_destroy", 3):
-                specs.setdefault("_destroy", set()).add(atom)
-            elif atom.match("_prioritize", 2):
-                specs.setdefault("_prioritize", set()).add(atom)
+            if atom.type != SymbolType.Function:
+                continue
+            name = atom.name
+            arity = arities.get(name)
+            if arity is not None and atom.positive and len(atom.arguments) == arity:
+                specs.setdefault(name, set()).add(atom)
 
         cls._op_specs_cache[model] = specs
         return specs
