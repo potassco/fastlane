@@ -1,6 +1,6 @@
 # Benchmark-Tool
 
-This section gives a brief overview on how to use the LNS framework
+This section gives a brief overview on how to use *fastlane*
 with the [poatssco-benchmark-tool].
 
 ## Usage
@@ -16,7 +16,7 @@ btool init
 - Install [runlim] into the `programs` folder
 - Make sure all programs are executable.
 - Modify one of the provided [runscripts] to fit your use-case and copy it into the `runscripts` folder.
-- Make sure fastlane is correctly installed in a conda environment
+- Make sure *fastlane* is correctly installed in a conda environment
 - Depending on your system, you might need to load your conda environment during benchmark runs
     - For benchmarking on a cluster (dist jobs), load the environment inside `./templates/single.dist`
     - Otherwise set the conda environment inside the `./programs/fastlane-conda` script

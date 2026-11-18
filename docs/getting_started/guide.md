@@ -121,7 +121,7 @@ We can configure the search by providing additional parameters or provide a new
 `LNSOptions` object during initialization.
 
 !!! note
-    You can interrupt the framework at any time using `Ctrl+C`.
+    You can interrupt *fastlane* at any time using `Ctrl+C`.
 
     The seed can only influence the search to a certain degree but not
     guarantee reproducibility, due to different timings and interrupts. For example, if

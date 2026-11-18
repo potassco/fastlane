@@ -1,4 +1,4 @@
-# fastlane: A Framework for Answer Set Programming-based Large Neighborhood Search
+# *fastlane*: A Framework for Answer Set Programming-based Large Neighborhood Search
 
 The goal of this project is to implement an extensive and easily modifiable
 implementation of LNS using the tools of [potassco](https://potassco.org/).
@@ -47,11 +47,13 @@ You can check a successful installation by running
 ```bash
 $ fastlane -h
 ```
+The [Getting started](https://docs.potassco.org/fastlane/getting_started/) section
+provides information on how to use *fastlane*.
 
 ### Converter
 
 The experimental `fastlane-convert` command can be used to convert an alaspo-style
-JSON configuration into a fastlane configuration:
+JSON configuration into a *fastlane* configuration:
 
 ```bash
 fastlane-convert input.json > out.lp
