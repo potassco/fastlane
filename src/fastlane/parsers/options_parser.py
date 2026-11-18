@@ -1089,6 +1089,10 @@ class OptionsParser:
         ##########
         # parameters
 
-        parser.add_argument("files", help="ASP input file(s)", nargs="+")
+        parser.add_argument(
+            "files",
+            help="ASP input file(s); use '-' for stdin (default when omitted and stdin is not a terminal)",
+            nargs="*",
+        )
 
         return parser

@@ -393,6 +393,15 @@ class TestOptionsParser(TestCase):
         # fmt: on
         self.assertEqual(description_text, expected_description_text)
 
+    def test_input_files(self):
+        """
+        Test optional input files and the stdin marker.
+        """
+        for files in ([], ["-"], ["x.lp"], ["x.lp", "-"]):
+            with self.subTest(files=files):
+                args = self.parser.parse_args(["--preset=lns", *files])
+                self.assertEqual(args.files, files)
+
     def test_parser(self):
         """
         Test the parse_args method.
