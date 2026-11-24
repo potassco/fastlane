@@ -2,7 +2,7 @@
 
 ## Installation
 
-The framework can be installed with any Python version newer than 3.12
+*fastlane* can be installed with any Python version newer than 3.12
 using pip:
 
 ```bash
@@ -36,7 +36,7 @@ When using as a command line tool use the `-h` flag to see all available options
 fastlane -h
 ```
 
-The framework currently supports implementation of the clingo, clingo-dl and clingcon solvers,
+*fastlane* currently supports implementation of the clingo, clingo-dl and clingcon solvers,
 and the approaches of LNS, ALNS, LNPS and ALNPS, selectable via different options and presets.
 
 For finer control one can implement their own solver and/or strategy or modify existing ones through inheritance.
@@ -45,14 +45,14 @@ Any solver or other component should be implemented according to the interfaces 
 has to implement all abstract methods.
 More details to the concrete implementation can be found in the corresponding [section][implementation].
 
-When using the framework as a python module, the LNS object has to be initialized with the encoding files.
+When using *fastlane* as a python module, the LNS object has to be initialized with the encoding files.
 A dictionary of parameters can be passed during initialization of the `LNS` object, which intern is used
 to overwrite attributes of the `LNSOptions` object. Alternatively, already initialized `LNSOptions` objects can also be provided.
 
 The 'preset' parameter can be used to set multiple parameters at once according to predefined presets.
 Manually set parameters will always override preset values. And preset values will overwrite default configuration values.
 An example of the LNS initialization can be seen below or in [`./examples/demo.py`][test].
-For a more detailed and step by step introduction to the framework, check out the [guide].
+For a more detailed and step by step introduction to *fastlane*, check out the [guide].
 
 ```python
 from fastlane.lns import LNS
@@ -73,6 +73,19 @@ The same search can be performed through the command line as follows:
 ```bash
 fastlane --seed=42 --time-limit=60 ./examples/golf.lp 
 ```
+
+When no filenames are provided, the CLI reads piped or redirected standard input.
+Use `-` to select standard input explicitly, including alongside named files:
+
+```bash
+cat file.lp | fastlane --preset=lns
+fastlane --preset=lns < file.lp
+cat file.lp | fastlane --preset=lns encoding.lp -
+```
+
+!!! note
+    With no filenames and an interactive terminal, fastlane reports a missing-input error.
+    Use `-` to read interactively instead.
 
 ## Encodings
 

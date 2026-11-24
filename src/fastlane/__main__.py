@@ -2,6 +2,8 @@
 The main entry point for the application.
 """
 
+import sys
+
 from fastlane.lns import LNS
 from fastlane.parsers.options_parser import OptionsParser
 
@@ -14,10 +16,10 @@ def main() -> None:
     parser = OptionsParser.get_parser()
     args = parser.parse_args()
 
-    # args.files=["examples/golf.lp"]
-
-    if len(args.files) == 0:
-        parser.error("No input files provided.")
+    if not args.files:
+        if sys.stdin.isatty():
+            parser.error("No input files provided.")
+        args.files = ["-"]
 
     lns = LNS(args.files, vars(args))
     lns.main()
