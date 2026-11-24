@@ -4,17 +4,21 @@ Solver interface used for LNS.
 
 from __future__ import annotations
 
+import threading
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 import clingo
+from clingo.solving import Model as ClingoModel
+from clingo.solving import SolveResult
+from clingo.statistics import StatisticsMap
 from clingo.symbol import Symbol
 
+from fastlane import Model, ThreadedTimer
 from fastlane.utils.logger import LNSLogger, getLogger
 
 if TYPE_CHECKING:  # nocoverage
-    from fastlane import Model
     from fastlane.lns import LNS
 
 
@@ -52,12 +56,15 @@ class Solver(ABC):
         self.control: clingo.control.Control = clingo.control.Control()
         self.theory: Any = None
         self.finished: bool = False
-        self.result = "UNKNOWN"
-        self.optimum = "unknown"
+        self.result: str = "UNKNOWN"
+        self.optimum: str = "unknown"
         self.minimize_variable: Optional[Symbol] = None
         self.logger: LNSLogger = getLogger("LNS")
         self.stop: bool = False
-        self._assumptions_used = False
+        self._assumptions_used: bool = False
+        self.interrupted: bool = False
+        self.watcher: Optional[SolveWatcher] = None
+        self._watcher_active: bool = False
         self.last_model: Optional[Model] = None
 
         self.stats: dict[str, Any] = {}
@@ -73,6 +80,7 @@ class Solver(ABC):
             and callable(subclass.repair)
             and hasattr(subclass, "solve")
             and callable(subclass.solve)
+            and hasattr(subclass, "postprocess_solve")
             or NotImplemented
         )
 
@@ -119,6 +127,26 @@ class Solver(ABC):
         :return: Last obtained model.
         """
         raise NotImplementedError
+
+    @abstractmethod
+    def postprocess_solve(self, model: Optional[ClingoModel], result: SolveResult) -> None:
+        """
+        Post-process the result of a solve.
+
+        :param model: Last obtained Clingo model.
+        :param result: Solve result.
+        """
+        raise NotImplementedError
+
+    def request_stop(self) -> bool:
+        """
+        Request shutdown without acquiring locks or waiting.
+
+        Return True while the solve loop must finish watcher cleanup before unwinding.
+        """
+        self.stop = True
+        self.finished = True
+        return self._watcher_active
 
     def ground(
         self,
@@ -167,3 +195,136 @@ class Solver(ABC):
         :return: Statistics dictionary.
         """
         return self.control.statistics
+
+    def _prepare_solve(self) -> None:
+        """
+        Additional preparation before solving.
+        """
+
+    def _on_model(self, model: ClingoModel) -> None:
+        """
+        Handle a new model from the solver.
+
+        :param model: The Clingo model received.
+        """
+
+    def _on_statistics(self, step: StatisticsMap, accu: StatisticsMap) -> None:
+        """
+        Handle statistics update from the solver.
+
+        :param step: Current step statistics.
+        :param accu: Accumulated statistics.
+        """
+
+    def _on_finish(self, result: SolveResult) -> None:
+        """
+        Handle the finalization of the solver.
+        """
+
+
+class SolveWatcher(threading.Thread):
+    """
+    Watcher thread for monitoring the solving process.
+    Handles timers and model callbacks.
+
+    :ivar solver: The Solver instance being monitored.
+    :ivar ctl: The Clingo control object from the solver.
+    :ivar _stop_event: Event to signal stopping of the watcher thread.
+    :ivar solve_timer: Timer for the solving process.
+    :ivar cutoff_timer: Timer for the cutoff process.
+    :ivar assumptions: Assumptions used in the solving process.
+    :ivar exception: Stores any exception raised during solving.
+    """
+
+    def __init__(self, solver: Solver, assumptions: Optional[list[tuple[clingo.symbol.Symbol, bool]]] = None) -> None:
+        """
+        Initialize the SolveWatcher.
+
+        :param solver: The Solver instance being monitored.
+        :param assumptions: Assumptions used in the solving process.
+        """
+        super().__init__()
+        self.solver: Solver = solver
+        self.ctl: clingo.Control = solver.control
+        self._stop_event: threading.Event = threading.Event()
+        self.solve_timer: ThreadedTimer = ThreadedTimer(self.stop)
+        self.cutoff_timer: ThreadedTimer = ThreadedTimer(self.stop)
+        self.assumptions: list[tuple[clingo.symbol.Symbol, bool]] = assumptions or []
+        self.exception: Optional[BaseException] = None
+
+    # pylint: disable=protected-access
+    def _on_model(self, model: clingo.Model) -> None:
+        """
+        Handle a new model from the solver.
+
+        :param model: The Clingo model received.
+        """
+        self.solver._on_model(model)
+        self.solver.logger.info("%.3f, %s", self.solve_timer.get_elapsed_time(), model.cost)
+        self.solver.stats["time_to_last_model"] = self.cutoff_timer.get_elapsed_time()
+        self.cutoff_timer.restart()
+
+    # pylint: disable=protected-access
+    def _on_finish(self, result: SolveResult) -> None:
+        """
+        Handle the finish of the solving process.
+
+        :param result: The result of the solve.
+        """
+        self.solver._on_finish(result)
+        self._stop_event.set()
+
+    def run(self) -> None:
+        """
+        Run the watcher thread.
+        """
+        try:
+            self._run_solve()
+        except BaseException as error:  # pylint: disable=broad-exception-caught
+            # Exceptions are stored and re-raised after cleanup.
+            self.exception = error
+
+    # pylint: disable=protected-access
+    def _run_solve(self) -> None:
+        """
+        Run the solving process with Clingo asynchronously.
+        Handles model callbacks, timer interruptions, and result processing.
+        """
+        with self.ctl.solve(
+            async_=True,
+            on_model=self._on_model,
+            on_statistics=self.solver._on_statistics,
+            on_finish=self._on_finish,
+            assumptions=self.assumptions,
+        ) as handle:
+            self._stop_event.wait()
+            # Cancellation may wait for model callbacks, so hold no timer locks.
+            handle.cancel()
+            # print timer interrupting
+            for name, timer in (
+                ("Solve", self.solve_timer),
+                ("Cutoff", self.cutoff_timer),
+            ):
+                if timer.is_ringing:
+                    self.solver.logger.info("%s timer ringing after %s seconds", name, timer.get_elapsed_time())
+
+            self.solver.postprocess_solve(handle.last(), handle.get())
+
+    def stop(self) -> None:
+        """
+        Request cancellation without blocking the timer callback.
+        """
+        self.solver.interrupted = True
+        self._stop_event.set()
+
+    def cleanup(self) -> None:
+        """
+        Let model callbacks finish before shutting down their timers.
+        """
+        self.stop()
+        while self.is_alive():
+            self.join(timeout=0.1)
+        self.solve_timer.stop()
+        self.cutoff_timer.stop()
+        self.solve_timer.join()
+        self.cutoff_timer.join()

@@ -2,8 +2,9 @@
 Helper classes.
 """
 
+import threading
 import time
-from typing import Any, ClassVar, Optional
+from typing import Any, Callable, ClassVar, Optional
 
 from clingo import Symbol
 
@@ -152,3 +153,120 @@ class Timer:
             if elapsed_time >= self._time_limit:
                 self._ringing = True
         return self._ringing
+
+# pylint: disable=too-many-instance-attributes
+class ThreadedTimer:
+    """
+    A resettable timer with one worker.
+    stop() shuts it down permanently.
+
+    :ivar _condition: threading.Condition for synchronizing access to the timer state.
+    :ivar _on_timeout: Callback function to be called when the timer expires.
+    :ivar _timeout: Timeout duration in seconds.
+    :ivar _start_time: Time when the timer was started.
+    :ivar _deadline: Absolute time when the timer will expire.
+    :ivar _ringing: Boolean indicating if the timer has expired.
+    :ivar _stopped: Boolean indicating if the timer has been stopped.
+    :ivar _thread: Worker thread for the timer.
+    """
+
+    def __init__(self, on_timeout: Callable[[], None]) -> None:
+        """
+        Initialize the timer with the given timeout callback.
+
+        :param on_timeout: Callback function to be called when the timer expires.
+        """
+        self._condition: threading.Condition = threading.Condition()
+        self._on_timeout: Callable[[], None] = on_timeout
+        self._time_limit: Optional[float] = None
+        self._start_time: Optional[float] = None
+        self._deadline: Optional[float] = None
+        self._ringing: bool = False
+        self._stopped: bool = False
+        self._thread: Optional[threading.Thread] = None
+
+    def start(self, time_limit: Optional[float], *, armed: bool = True) -> None:
+        """
+        Start the timer with the given timeout and armed status.
+        None for no time limit.
+
+        :param time_limit: Timeout duration in seconds.
+        :param armed: Whether the timer should be armed immediately.
+        """
+        with self._condition:
+            if self._stopped:
+                raise RuntimeError("Cannot start a stopped timer")
+            if time_limit is not None and time_limit < 0:
+                raise ValueError("Timeout must be nonnegative or None")
+            self._time_limit = time_limit
+            self._start_time = time.monotonic()
+            self._deadline = None if time_limit is None or not armed else self._start_time + time_limit
+            self._ringing = False
+            if self._thread is None:
+                self._thread = threading.Thread(target=self._run)
+                self._thread.start()
+            self._condition.notify()
+
+    def restart(self, time_limit: Optional[float] = UNSET) -> None:
+        """
+        Restart with the saved duration, a new duration, or None for no limit.
+
+        :param time_limit: Timeout duration in seconds.
+        """
+        with self._condition:
+            if time_limit is UNSET:
+                if self._start_time is None:
+                    raise RuntimeError("Timer has not been started")
+                time_limit = self._time_limit
+            self.start(time_limit)
+
+    def get_elapsed_time(self) -> float:
+        """
+        Seconds since the latest start/restart, or 0.0 before starting.
+        """
+        with self._condition:
+            if self._start_time is None:
+                return 0.0
+            return time.monotonic() - self._start_time
+
+    def _run(self) -> None:
+        """
+        Timer thread main loop.
+        Waits until the deadline is reached or the timer is stopped.
+        """
+        with self._condition:
+            while not self._stopped:
+                if self._deadline is None:
+                    self._condition.wait()
+                    continue
+                remaining = self._deadline - time.monotonic()
+                if remaining > 0:
+                    self._condition.wait(remaining)
+                    continue
+                self._deadline = None
+                self._ringing = True
+                # serialize expiration with resets, only signal the watcher here.
+                self._on_timeout()
+
+    def stop(self) -> None:
+        """
+        Stop the timer thread.
+        """
+        with self._condition:
+            self._stopped = True
+            self._condition.notify()
+
+    def join(self) -> None:
+        """
+        Wait for the timer thread to finish.
+        """
+        if self._thread is not None and self._thread.ident is not None:
+            self._thread.join()
+
+    @property
+    def is_ringing(self) -> bool:
+        """
+        Check if the timer is currently ringing.
+        """
+        with self._condition:
+            return self._ringing

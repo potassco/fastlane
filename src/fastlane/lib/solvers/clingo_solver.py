@@ -4,17 +4,15 @@ clingo solver for LNS.
 
 from __future__ import annotations
 
-import signal
 import sys
-from functools import partial
-from types import FrameType
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional
 
 import clingo
-from clingo.statistics import StatisticsMap
+from clingo.solving import Model as ClingoModel
+from clingo.solving import SolveResult
 
-from fastlane import Model, Timer
-from fastlane.interfaces.solver import Solver, SolverConfig
+from fastlane import Model
+from fastlane.interfaces.solver import Solver, SolverConfig, SolveWatcher
 from fastlane.utils.logger import DEBUG_EXTRA
 
 if TYPE_CHECKING:
@@ -29,9 +27,6 @@ class ClingoSolver(Solver):
 
     def __init__(self) -> None:
         super().__init__()
-        self._solve_timer = Timer()
-        self._cutoff_timer = Timer()
-        self._interrupted = False
         self._variability: bool = False
 
     @classmethod
@@ -42,32 +37,6 @@ class ClingoSolver(Solver):
         :return: Name of the solver.
         """
         return "clingo"
-
-    def setup_interrupt_handling(self, lns_object: LNS) -> None:
-        """
-        Setup signal handling for interrupts (SIGINT, SIGTERM).
-
-        :param lns_object: LNS object.
-        """
-        handler = partial(self.interrupt_handler, lns_object=lns_object)
-        signal.signal(signal.SIGINT, handler)
-        signal.signal(signal.SIGTERM, handler)
-
-    # pylint: disable=unused-argument
-    def interrupt_handler(self, sig: int, frame: Union[None, FrameType], lns_object: LNS) -> None:
-        """
-        Signal handler for interrupts (SIGINT, SIGTERM).
-
-        :param sig: Signal number.
-        :param frame: Current stack frame.
-        :param lns_object: LNS object.
-        """
-        print("INTERRUPTED")
-        self.finished = True
-        self.control.interrupt()
-        self.stop = True
-        lns_object.print_result()
-        raise SystemExit
 
     # pylint: disable=dangerous-default-value
     def setup(
@@ -83,8 +52,6 @@ class ClingoSolver(Solver):
         :param args: clingo arguments, default: lns_object.clingo_options.
         :param files: ASP files to be loaded, default: lns_object.files.
         """
-        self.setup_interrupt_handling(lns_object)
-
         if files is None:
             files = lns_object.files
 
@@ -96,87 +63,6 @@ class ClingoSolver(Solver):
         for path in files:
             ctl.load(path)
         self.control, self.theory = ctl, None
-
-    def _on_model(self, model: clingo.Model) -> None:
-        """
-        Saves model for later use.
-
-        :param model: Model found during solving.
-        """
-        self.logger.info("%.3f, %s", self._solve_timer.get_elapsed_time(), model.cost)
-        self.last_model = Model()
-        self.last_model.shown = set(model.symbols(shown=True))
-        self.last_model.true = set(model.symbols(atoms=True))
-        self.last_model.cost = model.cost
-        self.stats["time_to_last_model"] = self._cutoff_timer.get_elapsed_time()
-        self._cutoff_timer.restart()
-
-    def _on_statistics(self, step: StatisticsMap, accu: StatisticsMap) -> None:  # nocoverage
-        """
-        Update statistics.
-
-        :param step: Current step statistics.
-        :param accu: Accumulated statistics.
-        """
-        return
-
-    def _on_finish(self, res: clingo.SolveResult) -> None:  # nocoverage
-        """
-        Search finished.
-
-        :param res: Result of the solving process.
-        """
-        if res.satisfiable:
-            self.result = "SATISFIABLE"
-            self.stats["result"] = "SATISFIABLE"
-            if self.last_model is None:
-                self.finished = True
-                return
-        if (
-            self._variability
-            and res.exhausted
-            and not self.finished
-            and not self._interrupted
-            # cant prove optimum with assumptions
-            and not self._assumptions_used
-        ):
-            if res.unsatisfiable:
-                self.result = "UNSATISFIABLE"
-                self.stats["result"] = "UNSATISFIABLE"
-            else:
-                self.result = "OPTIMUM FOUND"
-                self.optimum = "yes"
-                self.stats["result"] = "OPTIMUM FOUND"
-            self.finished = True
-
-    # def _find_first_solution(self, assumptions: list[tuple[clingo.symbol.Symbol, bool]] = []) -> None:
-    #     """
-    #     Try harder to find first solution.
-
-    #     :param assumptions: Assumptions for solving (fixed atoms).
-    #     :type assumptions: list[tuple[clingo.symbol.Symbol, bool]]
-    #     """
-    #     assert isinstance(self.control, clingo.control.Control)
-    #     assert isinstance(self.control.configuration.solve, clingo.Configuration)
-    #     solve_limit_tmp = self.control.configuration.solve.solve_limit
-    #     models_tmp = self.control.configuration.solve.models
-    #     self.control.configuration.solve.solve_limit = "umax"
-    #     self.control.configuration.solve.models = 1
-    #     self.logger.debug("solve-limit: %s", self.control.configuration.solve.solve_limit)
-    #     self.logger.debug("models: %s", self.control.configuration.solve.models)
-
-    #     with self.control.solve(
-    #         assumptions=assumptions,
-    #         on_model=self._on_model,
-    #         on_finish=self._on_finish,
-    #         on_statistics=self._on_statistics,
-    #         async_=True,
-    #     ) as handle:
-    #         while not handle.wait(0):
-    #             pass
-
-    #     self.control.configuration.solve.solve_limit = solve_limit_tmp
-    #     self.control.configuration.solve.models = models_tmp
 
     def _apply_config_to_control(self, config: SolverConfig) -> None:
         """
@@ -197,9 +83,18 @@ class ClingoSolver(Solver):
                 self.control.configuration.solver.heuristic = config.heuristic
         if isinstance(self.control.configuration.solve, clingo.Configuration):
             if config.opt_mode is not None:
-                self.control.configuration.solve.opt_mode = config.opt_mode
+                self._apply_opt_mode(config.opt_mode)
             if config.solve_limit is not None:
                 self.control.configuration.solve.solve_limit = config.solve_limit
+
+    def _apply_opt_mode(self, opt_mode: str) -> None:
+        """
+        Set the optimization mode for the current objective.
+
+        :param opt_mode: Optimization mode string.
+        """
+        if isinstance(self.control.configuration.solve, clingo.Configuration):
+            self.control.configuration.solve.opt_mode = opt_mode
 
     def _control_config_debug(self) -> None:
         """
@@ -226,10 +121,11 @@ class ClingoSolver(Solver):
     ) -> Optional[Model]:
         """
         Solve under assumptions using clingo.
+        Startup and worker failures are re-raised in the caller after timer cleanup.
 
         :config: Solver configuration.
         :param assumptions: Assumptions for solving (fixed atoms).
-        :param require_model: If True, ignore cutoff time until a model is found.
+        :param require_model: If True, defer cutoff until the first model; the time limit still applies.
         :return: Last obtained model.
         """
         self.last_model = None
@@ -252,38 +148,82 @@ class ClingoSolver(Solver):
             self.logger.debug_extra("time-limit: %s", time_limit)
             self.logger.debug_extra("cutoff: %s", cutoff)
 
-        self._solve_timer.reset()
-        self._solve_timer.start(time_limit)
-        self._cutoff_timer.reset()
-        self._cutoff_timer.start(cutoff)
-        with self.control.solve(
-            assumptions=assumptions,
-            on_model=self._on_model,
-            on_finish=self._on_finish,
-            async_=True,
-        ) as handle:
-            ringing_timers = []
-            # performance ?
-            while not handle.wait(0.01):
-                if self._solve_timer.is_ringing:
-                    ringing_timers.append("solve_timer")
-                    self.logger.debug("solve timer ringing after %s seconds", self._solve_timer.get_elapsed_time())
-                if self._cutoff_timer.is_ringing:
-                    if not require_model or self.last_model is not None:
-                        ringing_timers.append("cutoff_timer")
-                        self.logger.debug(
-                            "cutoff timer ringing after %s seconds", self._cutoff_timer.get_elapsed_time()
-                        )
-                if ringing_timers and not self._interrupted and not self.finished:
-                    self._interrupted = True
-                    self.logger.info("interrupted by timer(s): %s", ", ".join(ringing_timers))
-                    handle.cancel()
-        self._interrupted = False
-        # if self.last_model is None and not self.finished:
-        #     self.logger.warning(
-        #         "The solve-limit or time-limit is not enough to find a solution."
-        #         "Therefore, the first solution found is used as the initial solution."
-        #     )
-        #     self._find_first_solution()
-
+        self._prepare_solve()
+        self._run_watcher(assumptions, time_limit, cutoff, require_model)
         return self.last_model
+
+    def _run_watcher(
+        self,
+        assumptions: list[tuple[clingo.Symbol, bool]],
+        time_limit: Optional[float],
+        cutoff: Optional[int] = None,
+        require_model: bool = False,
+    ) -> None:
+        """
+        Run one prepared solve pass and propagate errors after cleanup.
+
+        :param assumptions: Assumptions for solving (fixed atoms).
+        :param time_limit: Time limit for this solve pass.
+        :param cutoff: Cutoff for this solve pass.
+        :param require_model: If True, defer cutoff until the first model; the time limit still applies.
+        """
+        self.watcher = SolveWatcher(self, assumptions)
+
+        try:
+            self._watcher_active = True
+            self.watcher.solve_timer.start(time_limit)
+            self.watcher.cutoff_timer.start(cutoff, armed=not require_model)
+            self.watcher.start()
+            while not self.stop and self.watcher.is_alive():
+                self.watcher.join(timeout=0.1)
+        finally:
+            try:
+                self.watcher.cleanup()
+            finally:
+                self._watcher_active = False
+                self.interrupted = False
+
+        if self.watcher.exception is not None:
+            raise self.watcher.exception
+
+    def _save_model(self, model: ClingoModel) -> None:
+        """
+        Save the given Clingo model into the solver's last model.
+
+        :param model: Clingo model to save.
+        """
+        self.last_model = Model()
+        self.last_model.shown = set(model.symbols(shown=True))
+        self.last_model.true = set(model.symbols(atoms=True))
+        self.last_model.cost = model.cost
+
+    def postprocess_solve(self, model: Optional[ClingoModel], result: SolveResult) -> None:
+        """
+        Post-process the result of a solve.
+
+        :param model: Last obtained Clingo model.
+        :param result: Solve result.
+        """
+        if model is not None:
+            self._save_model(model)
+
+        if result.satisfiable:
+            self.result = "SATISFIABLE"
+            self.stats["result"] = "SATISFIABLE"
+            if self.last_model is None:
+                self.finished = True
+                return
+        if (
+            self._variability
+            and result.exhausted
+            and not self.finished
+            and not self.interrupted
+            # cant prove optimum with assumptions
+            and not self._assumptions_used
+        ):
+            if result.unsatisfiable:
+                self.result = self.stats["result"] = "UNSATISFIABLE"
+            else:
+                self.result = self.stats["result"] = "OPTIMUM FOUND"
+                self.optimum = "yes"
+            self.finished = True

@@ -4,6 +4,10 @@ A modifiable large neighborhood search framework.
 
 import math
 import random
+import signal
+from collections.abc import Generator
+from contextlib import contextmanager
+from types import FrameType
 from typing import Any, Optional
 
 from clingo import Symbol
@@ -72,6 +76,7 @@ class LNS:
         self.logger: LNSLogger = setup_logger("LNS", self.options.log_level)
 
         self.files: list[str] = files
+        self.interrupted = False
 
         # step/iteration counter
         self.step_c: int = 0
@@ -491,6 +496,8 @@ class LNS:
         """
         Print the result of the LNS process.
         """
+        if self.interrupted:
+            print("INTERRUPTED")
         print(LINE)
         print("Result")
         print(LINE)
@@ -501,10 +508,49 @@ class LNS:
         print(f"Overall time: {self.timer.get_elapsed_time():.3f}s")
         print(LINE)
 
-    # pylint: disable=too-many-statements
+    @contextmanager
+    def _preserve_signals(self) -> Generator[None, None, None]:
+        """
+        Set signal handlers while preserving the previous ones. Restore them on exit.
+        """
+
+        def handle_signal(sig: int, _: Optional[FrameType]) -> None:
+            # second signal of the same kind forces termination
+            signal.signal(sig, signal.SIG_DFL)
+            self.interrupted = True
+            if not self.solver.request_stop():
+                raise KeyboardInterrupt
+
+        previous_handlers = {}
+        try:
+            for sig in (signal.SIGINT, signal.SIGTERM):
+                previous = signal.getsignal(sig)
+                if previous is not None:
+                    previous_handlers[sig] = previous
+                    signal.signal(sig, handle_signal)
+            yield
+        finally:
+            for sig, previous in previous_handlers.items():
+                if signal.getsignal(sig) != previous:
+                    signal.signal(sig, previous)
+
     def main(self) -> None:
         """
         Run Large-Neighbourhood Search according to set parameters.
+        """
+        with self._preserve_signals():
+            try:
+                self._run()
+            except KeyboardInterrupt:
+                self.interrupted = True
+            self.print_result()
+            if self.interrupted:
+                raise SystemExit
+
+    # pylint: disable=too-many-statements
+    def _run(self) -> None:
+        """
+        Run the search, leaving final reporting to the caller.
         """
         # c, b, n: current, best, new model
         # pre_setup()
@@ -548,6 +594,8 @@ class LNS:
         self.logger.debug(LINE)
         self.logger.debug("# get first solution")
         if not self.get_first_solution():
+            if self.interrupted:
+                return
             self.logger.error("First solution could not be obtained")
             raise SystemExit
 
@@ -594,5 +642,3 @@ class LNS:
             self.logger.debug(LINE)
             self.logger.debug("# pre_next_iteration")
             self.pre_next_iteration()
-
-        self.print_result()

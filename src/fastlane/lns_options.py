@@ -211,6 +211,7 @@ class LNSOptions:
                 f"{' '*(len('alnps')+2)}Config encoding is required!"
             ),
             "destruction": ("declarative", 0),
+            "init_time_limit": None,
             "init_cutoff": 10,
             "lns_cutoff": 5,
             "lns_cutoff_threshold": 2,
