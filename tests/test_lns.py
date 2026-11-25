@@ -2,6 +2,8 @@
 Test cases for LNS class.
 """
 
+import signal
+from contextlib import nullcontext
 from io import StringIO
 from unittest import TestCase, mock
 
@@ -51,6 +53,7 @@ class TestLNS(TestCase):
         self.assertEqual(lns.step_c, 0)
         self.assertFalse(lns._printout)
         self.assertIsInstance(lns.timer, Timer)
+        self.assertFalse(lns.interrupted)
 
     def test_parse_options(self) -> None:
         """
@@ -593,9 +596,128 @@ class TestLNS(TestCase):
                 ),
             )
 
+        self.lns.interrupted = True
+        with mock.patch("sys.stdout", new=StringIO()) as out:
+            self.lns.print_result()
+            self.assertTrue(out.getvalue().startswith("INTERRUPTED\n"))
+
     def test_main(self):
         """
-        Test the main method (successful run).
+        Test that main delegates the search and reports before restoring signals.
+        """
+        with (
+            mock.patch.object(self.lns, "_preserve_signals") as preserve,
+            mock.patch.object(self.lns, "_run") as run,
+            mock.patch.object(self.lns, "print_result") as print_result,
+        ):
+            calls = mock.Mock()
+            calls.attach_mock(preserve.return_value.__enter__, "enter")
+            calls.attach_mock(preserve.return_value.__exit__, "exit")
+            calls.attach_mock(run, "run")
+            calls.attach_mock(print_result, "print_result")
+            self.lns.main()
+            preserve.assert_called_once_with()
+            self.assertEqual(
+                calls.mock_calls,
+                [
+                    mock.call.enter(),
+                    mock.call.run(),
+                    mock.call.print_result(),
+                    mock.call.exit(None, None, None),
+                ],
+            )
+        self.assertFalse(self.lns.interrupted)
+
+    def test_main_interrupted(self):
+        """
+        Test reporting and exiting after immediate or deferred interruption.
+        """
+        for deferred in (False, True):
+            with (
+                self.subTest(deferred=deferred),
+                mock.patch.object(self.lns, "_preserve_signals"),
+                mock.patch.object(self.lns, "_run") as run,
+                mock.patch.object(self.lns, "print_result") as print_result,
+            ):
+                self.lns.interrupted = deferred
+                if not deferred:
+                    run.side_effect = KeyboardInterrupt
+                with self.assertRaises(SystemExit):
+                    self.lns.main()
+                run.assert_called_once_with()
+                print_result.assert_called_once_with()
+                self.assertTrue(self.lns.interrupted)
+
+    def test_preserve_signals(self):
+        """
+        Test installing and restoring handlers on normal and exceptional exits.
+        """
+        for fail in (False, True):
+            with self.subTest(fail=fail):
+                previous = {signal.SIGINT: mock.Mock(), signal.SIGTERM: signal.SIG_IGN}
+                handlers = previous.copy()
+                with (
+                    mock.patch("fastlane.lns.signal.getsignal", side_effect=handlers.__getitem__),
+                    mock.patch("fastlane.lns.signal.signal", side_effect=handlers.__setitem__) as set_signal,
+                ):
+                    with self.assertRaisesRegex(RuntimeError, "search failed") if fail else nullcontext():
+                        with self.lns._preserve_signals():
+                            handler = handlers[signal.SIGINT]
+                            self.assertTrue(callable(handler))
+                            self.assertIs(handlers[signal.SIGTERM], handler)
+                            if fail:
+                                raise RuntimeError("search failed")
+
+                    self.assertEqual(handlers, previous)
+                    self.assertEqual(
+                        set_signal.call_args_list,
+                        [
+                            mock.call(signal.SIGINT, handler),
+                            mock.call(signal.SIGTERM, handler),
+                            mock.call(signal.SIGINT, previous[signal.SIGINT]),
+                            mock.call(signal.SIGTERM, previous[signal.SIGTERM]),
+                        ],
+                    )
+
+    def test_preserve_signals_unknown_handler(self):
+        """
+        Test skipping unknown handlers and avoiding redundant restoration.
+        """
+        with (
+            mock.patch("fastlane.lns.signal.getsignal", side_effect=[None, signal.SIG_IGN, signal.SIG_IGN]),
+            mock.patch("fastlane.lns.signal.signal") as set_signal,
+        ):
+            with self.lns._preserve_signals():
+                self.assertEqual(set_signal.call_args.args[0], signal.SIGTERM)
+            set_signal.assert_called_once()
+
+    def test_signal_handler(self):
+        """
+        Test nonblocking active-watcher shutdown and immediate idle interruption.
+        """
+        for sig, active in ((signal.SIGINT, True), (signal.SIGTERM, False)):
+            with (
+                self.subTest(sig=sig, active=active),
+                mock.patch("fastlane.lns.signal.getsignal", return_value=signal.SIG_IGN),
+                mock.patch("fastlane.lns.signal.signal") as set_signal,
+            ):
+                self.lns.interrupted = False
+                self.lns.solver = mock.Mock()
+                self.lns.solver.request_stop.return_value = active
+                with self.lns._preserve_signals():
+                    handler = set_signal.call_args.args[1]
+                    if active:
+                        self.assertIsNone(handler(sig, None))
+                    else:
+                        with self.assertRaises(KeyboardInterrupt):
+                            handler(sig, None)
+                    self.assertTrue(self.lns.interrupted)
+                    self.lns.solver.request_stop.assert_called_once_with()
+                    set_signal.assert_any_call(sig, signal.SIG_DFL)
+
+    def test_run(self):
+        """
+        Test the search method (successful run).
         """
         initial_model = Model()
         initial_model.shown = {Function("a")}
@@ -627,7 +749,7 @@ class TestLNS(TestCase):
             mock.patch.object(self.lns, "pre_next_iteration") as mock_pre_next_iteration,
             mock.patch.object(self.lns, "print_result") as mock_print_result,
         ):
-            self.lns.main()
+            self.lns._run()
 
             mock_pre_setup.assert_called_once()
             mock_setup_solver.assert_called_once()
@@ -645,15 +767,15 @@ class TestLNS(TestCase):
             mock_check_better.assert_called_once()
             mock_better.assert_called_once()
             mock_pre_next_iteration.assert_called_once()
-            mock_print_result.assert_called_once()
+            mock_print_result.assert_not_called()
 
             self.assertIs(self.lns.current_model, repaired_model)
             self.assertIs(self.lns.best_model, repaired_model)
             self.assertEqual(self.lns.step_c, 1)
 
-    def test_main_no_first_solution(self):
+    def test_run_no_first_solution(self):
         """
-        Test main method when no initial solution is found.
+        Test the search method when no initial solution is found.
         """
         with (
             mock.patch.object(self.lns, "pre_setup") as mock_pre_setup,
@@ -664,7 +786,7 @@ class TestLNS(TestCase):
             mock.patch.object(self.lns, "print_result") as mock_print_result,
         ):
             with self.assertRaises(SystemExit):
-                self.lns.main()
+                self.lns._run()
 
             mock_pre_setup.assert_called_once()
             mock_setup_solver.assert_called_once()
@@ -672,3 +794,19 @@ class TestLNS(TestCase):
             mock_get_first_solution.assert_called_once()
             mock_post_first_solution.assert_not_called()
             mock_print_result.assert_not_called()
+
+    def test_run_interrupted_first_solution(self):
+        """Test returning to main for final reporting when initial solving is interrupted."""
+        self.lns.interrupted = True
+        with (
+            mock.patch.object(self.lns, "pre_setup"),
+            mock.patch.object(self.lns, "setup_solver"),
+            mock.patch.object(self.lns, "post_setup"),
+            mock.patch.object(self.lns, "get_first_solution", return_value=False) as first_solution,
+            mock.patch.object(self.lns, "post_first_solution") as post_first_solution,
+            mock.patch.object(self.lns, "print_result") as print_result,
+        ):
+            self.assertIsNone(self.lns._run())
+            first_solution.assert_called_once_with()
+            post_first_solution.assert_not_called()
+            print_result.assert_not_called()

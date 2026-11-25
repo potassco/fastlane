@@ -154,6 +154,7 @@ class Timer:
                 self._ringing = True
         return self._ringing
 
+
 # pylint: disable=too-many-instance-attributes
 class ThreadedTimer:
     """

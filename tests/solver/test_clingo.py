@@ -1,20 +1,18 @@
 """
-Test cases for solver classes.
+Test cases for clingo solvers and their solve watcher.
 """
 
-import signal
-from logging import Logger
+import threading
 from unittest import TestCase, mock
 
 import clingo
 from clingo.symbol import Function
 
-from fastlane import Model, Timer
-from fastlane.interfaces.solver import SolverConfig
+from fastlane import Model
+from fastlane.interfaces.solver import Solver, SolverConfig, SolveWatcher
 from fastlane.lib.solvers.clingo_solver import ClingoSolver
-from fastlane.lns import LNS
 
-# pylint: disable=protected-access, too-many-statements
+# pylint: disable=protected-access
 
 
 class TestSolverConfig(TestCase):
@@ -23,173 +21,151 @@ class TestSolverConfig(TestCase):
     """
 
     def test_init(self):
-        """
-        Test initialization of SolverConfig.
-        """
+        """Test default solver configuration."""
         config = SolverConfig()
-        self.assertIsNone(config.configuration)
-        self.assertIsNone(config.opt_strategy)
-        self.assertIsNone(config.opt_heuristic)
-        self.assertIsNone(config.restart_on_model)
-        self.assertIsNone(config.heuristic)
-        self.assertIsNone(config.opt_mode)
-        self.assertIsNone(config.solve_limit)
-        self.assertIsNone(config.time_limit)
-        self.assertIsNone(config.cutoff)
-        self.assertIsNone(config.seed)
+        for name in (
+            "configuration",
+            "opt_strategy",
+            "opt_heuristic",
+            "restart_on_model",
+            "heuristic",
+            "opt_mode",
+            "solve_limit",
+            "time_limit",
+            "cutoff",
+            "seed",
+        ):
+            with self.subTest(name=name):
+                self.assertIsNone(getattr(config, name))
         self.assertTrue(config.variability)
 
 
-class TestSolverClingo(TestCase):
+class TestSolverClingo(TestCase):  # pylint: disable=too-many-public-methods
     """
     Test cases for ClingoSolver class.
     """
 
+    stype = ClingoSolver
+    name = "clingo"
+
     def setUp(self) -> None:
-        self.solver = ClingoSolver()
-        self.stype = ClingoSolver
-        self.name = "clingo"
-        self.lns = LNS(["./tests/ref/golf.lp"], {"log_level": 50})
+        control_patch = mock.patch("fastlane.interfaces.solver.clingo.control.Control", autospec=True)
+        self.control = control_patch.start().return_value
+        self.addCleanup(control_patch.stop)
+        self.solver = self.stype()
+        self.solver.logger = mock.Mock()
+        self.solver.logger.isEnabledFor.return_value = False
+        self.control.configuration = mock.Mock()
+        self.control.configuration.solver = mock.Mock(
+            spec=clingo.Configuration,
+            opt_strategy="bb,lin",
+            opt_heuristic="no",
+            restart_on_model="0",
+            heuristic="vsids",
+        )
+        self.control.configuration.solve = mock.Mock(
+            spec=clingo.Configuration, opt_mode="opt", solve_limit="umax,umax", parallel_mode="1"
+        )
+        self.lns = mock.Mock(files=["input.lp"])
 
     def test_init(self):
         """
-        Test initialization of ClingoSolver.
+        Test initialization of the current solver state.
         """
-        self.assertIsInstance(self.solver, self.stype)
-        self.assertIsInstance(self.solver.control, clingo.Control)
+        self.assertIs(self.solver.control, self.control)
         self.assertIsNone(self.solver.theory)
         self.assertFalse(self.solver.finished)
         self.assertEqual(self.solver.result, "UNKNOWN")
         self.assertEqual(self.solver.optimum, "unknown")
         self.assertIsNone(self.solver.minimize_variable)
-        self.assertIsInstance(self.solver.logger, Logger)
         self.assertFalse(self.solver.stop)
         self.assertFalse(self.solver._assumptions_used)
         self.assertIsNone(self.solver.last_model)
-        self.assertIsInstance(self.solver._solve_timer, Timer)
-        self.assertIsInstance(self.solver._cutoff_timer, Timer)
-        self.assertFalse(self.solver._interrupted)
+        self.assertIsNone(self.solver.watcher)
+        self.assertFalse(self.solver._watcher_active)
+        self.assertFalse(self.solver.interrupted)
         self.assertFalse(self.solver._variability)
 
     def test_ground(self):
         """
-        Test ground method.
+        Test forwarding grounding arguments.
         """
-        self.solver.setup(self.lns)
-        with mock.patch.object(self.solver.control, "ground") as mock_ground:
-            self.solver.ground()
-            mock_ground.assert_called_once_with([("base", [])], None)
+        self.solver.ground()
+        self.control.ground.assert_called_once_with([("base", [])], None)
 
     def test_add(self):
         """
-        Test add method.
+        Test forwarding program additions.
         """
-        self.solver.setup(self.lns)
-        with mock.patch.object(self.solver.control, "add") as mock_add:
-            self.solver.add("test", [], "a.")
-            mock_add.assert_called_once_with("test", [], "a.")
+        self.solver.add("test", [], "a.")
+        self.control.add.assert_called_once_with("test", [], "a.")
 
     def test_assign_external(self):
         """
-        Test assign_external method.
+        Test forwarding external assignments.
         """
-        self.solver.setup(self.lns)
-        with mock.patch.object(self.solver.control, "assign_external") as mock_assign:
-            atom = clingo.Function("a")
-            self.solver.assign_external(atom, True)
-            mock_assign.assert_called_once_with(atom, True)
+        atom = Function("a")
+        self.solver.assign_external(atom, True)
+        self.control.assign_external.assert_called_once_with(atom, True)
 
     def test_release_external(self):
         """
-        Test release_external method.
+        Test forwarding external releases.
         """
-        self.solver.setup(self.lns)
-        with mock.patch.object(self.solver.control, "release_external") as mock_release:
-            atom = clingo.Function("a")
-            self.solver.release_external(atom)
-            mock_release.assert_called_once_with(atom)
+        atom = Function("a")
+        self.solver.release_external(atom)
+        self.control.release_external.assert_called_once_with(atom)
 
     def test_get_stats(self):
         """
-        Test get_stats method.
+        Test returning control statistics without solving.
         """
-        self.solver.setup(self.lns)
-        self.solver.ground()
-        self.solver.control.configuration.solve.models = 2
-        self.solver.control.solve(on_model=lambda *args: None)
-        stats = self.solver.get_stats()
-        self.assertIsNotNone(stats)
-        self.assertIsInstance(stats["solving"]["solvers"]["choices"], float)
+        self.control.statistics = {"solving": {"solvers": {"choices": 2}}}
+        self.assertIs(self.solver.get_stats(), self.control.statistics)
 
     def test_get_name(self):
         """
-        Test get_name method.
+        Test the registered solver name.
         """
         self.assertEqual(self.stype.get_name(), self.name)
 
-    def test_interrupt_handler(self):
+    def test_request_stop(self):
         """
-        Test interrupt_handler method.
+        Test shutdown requests with and without an active watcher.
         """
-        self.solver.setup_interrupt_handling(self.lns)
-        self.assertFalse(self.solver.finished)
-        self.assertFalse(self.solver.stop)
-        with self.assertRaises(SystemExit), mock.patch.object(self.lns, "print_result") as print_result_mock:
-            signal.raise_signal(signal.SIGINT)
-            print_result_mock.assert_called_once_with(self.lns)
-        self.assertTrue(self.solver.finished)
-        self.assertTrue(self.solver.stop)
-
-        self.solver.setup(self.lns)
-        with (
-            self.assertRaises(SystemExit),
-            mock.patch.object(self.solver.control, "interrupt") as mock_interrupt,
-            mock.patch.object(self.lns, "print_result") as print_result_mock,
-        ):
-            self.solver.finished = False
-            self.solver.stop = False
-            signal.raise_signal(signal.SIGTERM)
-            mock_interrupt.assert_called_once()
-            print_result_mock.assert_called_once_with(self.lns)
-            self.assertTrue(self.solver.finished)
-            self.assertTrue(self.solver.stop)
+        for active in (False, True):
+            with self.subTest(active=active):
+                self.solver.stop = self.solver.finished = False
+                self.solver._watcher_active = active
+                self.assertEqual(self.solver.request_stop(), active)
+                self.assertTrue(self.solver.stop)
+                self.assertTrue(self.solver.finished)
+        self.control.interrupt.assert_not_called()
 
     def test_setup(self):
         """
-        Test clingo setup.
+        Test default and explicit files without loading real programs.
         """
-        self.solver.setup(self.lns)
-        self.assertIsInstance(self.solver.control, clingo.control.Control)
-        self.assertIsNone(self.solver.theory)
+        for files in (None, ["other.lp"]):
+            with self.subTest(files=files), mock.patch("fastlane.lib.solvers.clingo_solver.clingo.Control") as control:
+                self.solver.setup(self.lns, ["--models=2"], files)
+                self.assertEqual(control.call_args.args, (["--models=2"],))
+                self.assertTrue(callable(control.call_args.kwargs["logger"]))
+                control.return_value.load.assert_called_once_with((self.lns.files if files is None else files)[0])
+                self.assertIs(self.solver.control, control.return_value)
+                self.assertIsNone(self.solver.theory)
 
-        self.solver.setup(self.lns, ["--models=2"], ["./tests/ref/golf.lp"])
-        self.assertIsInstance(self.solver.control, clingo.control.Control)
-        self.assertIsNone(self.solver.theory)
-        self.assertEqual(self.solver.control.configuration.solve.models, "2")
-
-    def test_on_model(self):
+    def test_prepare_solve(self):
         """
-        Test _on_model method.
+        Test that plain clingo needs no additional preparation.
         """
-        self.solver.setup(self.lns)
-        self.solver.ground()
-        self.solver.control.configuration.solve.models = 1
-        self.assertIsNone(self.solver.last_model)
-        with (
-            mock.patch.object(self.solver._cutoff_timer, "get_elapsed_time", return_value=1) as mock_elapsed_time,
-            mock.patch.object(self.solver._cutoff_timer, "restart") as mock_restart,
-        ):
-            self.solver.control.solve(on_model=self.solver._on_model)
-            mock_elapsed_time.assert_called_once()
-            mock_restart.assert_called_once()
-        self.assertEqual(self.solver.stats["time_to_last_model"], 1)
-        self.assertIsInstance(self.solver.last_model, Model)
+        self.solver._prepare_solve()
+        self.assertEqual(self.control.method_calls, [])
 
     def test_apply_config_to_control(self):
         """
-        Test _apply_config_to_control method.
+        Test configuration forwarding without clingo's value normalization.
         """
-        self.solver.setup(self.lns)
         config = SolverConfig(
             configuration="tweety",
             opt_strategy="bb,0",
@@ -199,105 +175,324 @@ class TestSolverClingo(TestCase):
             opt_mode="opt,10",
             solve_limit="1000",
         )
-        self.solver._apply_config_to_control(config)
-        self.assertEqual(self.solver.control.configuration.configuration, config.configuration)
-        self.assertEqual(self.solver.control.configuration.solver.opt_strategy, "bb,lin")
-        self.assertEqual(self.solver.control.configuration.solver.opt_heuristic, "sign,model")
-        self.assertEqual(self.solver.control.configuration.solver.restart_on_model, config.restart_on_model)
-        self.assertEqual(self.solver.control.configuration.solver.heuristic, "domain,0")
-        self.assertEqual(self.solver.control.configuration.solve.opt_mode, config.opt_mode)
-        self.assertEqual(self.solver.control.configuration.solve.solve_limit, "1000,umax")
+        with mock.patch.object(self.solver, "_apply_opt_mode") as apply_opt_mode:
+            self.solver._apply_config_to_control(config)
+        self.assertEqual(self.control.configuration.configuration, config.configuration)
+        for name in ("opt_strategy", "opt_heuristic", "restart_on_model", "heuristic"):
+            self.assertEqual(getattr(self.control.configuration.solver, name), getattr(config, name))
+        apply_opt_mode.assert_called_once_with(config.opt_mode)
+        self.assertEqual(self.control.configuration.solve.solve_limit, config.solve_limit)
+
+    def test_apply_opt_mode(self):
+        """
+        Test applying the optimization mode.
+        """
+        self.solver._apply_opt_mode("opt,10")
+        self.assertEqual(self.control.configuration.solve.opt_mode, "opt,10")
 
     def test_control_config_debug(self):
         """
-        Test control configuration debug output.
+        Test logging all control configuration fields.
         """
-        self.solver.setup(self.lns)
-        self.test_apply_config_to_control()
-        with mock.patch.object(self.solver.logger, "debug_extra") as mock_debug:
-            self.solver._control_config_debug()
-            self.assertEqual(mock_debug.call_count, 9)
+        self.control.configuration.configuration = "tweety"
+        solver_config = self.control.configuration.solver
+        solve_config = self.control.configuration.solve
+        self.solver._control_config_debug()
+        self.solver.logger.debug_extra.assert_has_calls(
+            [
+                mock.call("clingo.Control configuration:"),
+                mock.call("configuration: %s", "tweety"),
+                mock.call("opt-strategy: %s", solver_config.opt_strategy),
+                mock.call("opt-heuristic: %s", solver_config.opt_heuristic),
+                mock.call("restart-on-model: %s", solver_config.restart_on_model),
+                mock.call("heuristic: %s", solver_config.heuristic),
+                mock.call("opt-mode: %s", solve_config.opt_mode),
+                mock.call("solve-limit: %s", solve_config.solve_limit),
+                mock.call("parallel-mode: %s", solve_config.parallel_mode),
+            ]
+        )
 
     def test_solve(self):
         """
-        Test solve method.
+        Test resetting state, applying configuration and delegating the solve pass.
         """
-        self.solver.setup(self.lns)
-
-        def setup_mock_timers(solve_ringing: bool, cutoff_ringing: bool) -> None:
-            self.solver._solve_timer = mock.MagicMock()
-            self.solver._solve_timer.is_ringing = solve_ringing
-            self.solver._solve_timer.get_elapsed_time.return_value = 1
-            self.solver._cutoff_timer = mock.MagicMock()
-            self.solver._cutoff_timer.is_ringing = cutoff_ringing
-            self.solver._cutoff_timer.get_elapsed_time.return_value = 1
-
-        def make_solve_context() -> tuple[mock.MagicMock, mock.MagicMock]:
-            handle = mock.MagicMock()
-            handle.wait.side_effect = [False, True]
-            solve_context = mock.MagicMock()
-            solve_context.__enter__.return_value = handle
-            solve_context.__exit__.return_value = False
-            return solve_context, handle
-
-        # default -> cutoff cancels
-        self.solver.finished = False
-        self.solver._interrupted = False
-        setup_mock_timers(solve_ringing=False, cutoff_ringing=True)
-        solve_context, handle = make_solve_context()
-        with mock.patch.object(self.solver.control, "solve", return_value=solve_context):
-            self.solver.solve()
-            handle.cancel.assert_called_once()
-
-        # require_model=True -> cutoff does not cancel if no model exists yet
-        self.solver.finished = False
-        self.solver._interrupted = False
-        setup_mock_timers(solve_ringing=False, cutoff_ringing=True)
-        solve_context, handle = make_solve_context()
-        with mock.patch.object(self.solver.control, "solve", return_value=solve_context):
-            self.solver.solve(require_model=True)
-            handle.cancel.assert_not_called()
-
-        # model found during search -> cutoff cancels even when require_model=True
-        self.solver.finished = False
-        self.solver._interrupted = False
-        setup_mock_timers(solve_ringing=False, cutoff_ringing=True)
-        solve_context, handle = make_solve_context()
-
-        def find_model(timeout) -> bool:  # pylint: disable=unused-argument
-            if self.solver.last_model is None:
-                self.solver.last_model = Model()
-                return False
-            return True
-
-        handle.wait.side_effect = find_model
-        with mock.patch.object(self.solver.control, "solve", return_value=solve_context):
-            self.solver.solve(require_model=True)
-            handle.cancel.assert_called_once()
-
-        # solve timer always cancels, independent of require_model
-        self.solver.finished = False
-        self.solver._interrupted = False
-        setup_mock_timers(solve_ringing=True, cutoff_ringing=False)
-        solve_context, handle = make_solve_context()
-        with mock.patch.object(self.solver.control, "solve", return_value=solve_context):
-            self.solver.solve(require_model=True)
-            handle.cancel.assert_called_once()
-
-        # assumptions are forwarded and config is applied
         assumptions = [(Function("a"), True)]
-        config = SolverConfig(time_limit=10, cutoff=5)
-        self.solver.last_model = None
-        self.solver.finished = False
-        self.solver._interrupted = False
-        setup_mock_timers(solve_ringing=False, cutoff_ringing=False)
-        solve_context, _ = make_solve_context()
+        config = SolverConfig(time_limit=10, cutoff=5, variability=True)
+        model = Model()
+
+        def run_watcher(*_args):
+            self.assertIsNone(self.solver.last_model)
+            self.solver.last_model = model
+
         with (
-            mock.patch.object(self.solver, "_apply_config_to_control") as mock_apply,
-            mock.patch.object(self.solver.control, "solve", return_value=solve_context) as mock_solve,
+            mock.patch.object(self.solver, "_apply_config_to_control") as apply_config,
+            mock.patch.object(self.solver, "_prepare_solve") as prepare,
+            mock.patch.object(self.solver, "_run_watcher", side_effect=run_watcher) as run,
         ):
-            self.assertFalse(self.solver._assumptions_used)
-            self.solver.solve(config=config, assumptions=assumptions)
+            self.assertIs(self.solver.solve(config, assumptions, True), model)
             self.assertTrue(self.solver._assumptions_used)
-            mock_apply.assert_called_once_with(config)
-            self.assertEqual(mock_solve.call_args.kwargs["assumptions"], assumptions)
+            self.assertTrue(self.solver._variability)
+            apply_config.assert_called_once_with(config)
+            prepare.assert_called_once_with()
+            run.assert_called_once_with(assumptions, 10, 5, True)
+
+            apply_config.reset_mock()
+            run.reset_mock()
+            self.assertIs(self.solver.solve(), model)
+            self.assertFalse(self.solver._assumptions_used)
+            apply_config.assert_not_called()
+            run.assert_called_once_with([], None, None, False)
+
+    def test_run_watcher(self):
+        """
+        Test watcher startup, joining and cleanup.
+        """
+        assumptions = [(Function("a"), True)]
+        with mock.patch("fastlane.lib.solvers.clingo_solver.SolveWatcher") as watcher_class:
+            watcher = watcher_class.return_value
+            watcher.is_alive.side_effect = [True, False]
+            watcher.exception = None
+            self.solver.interrupted = True
+            self.solver._run_watcher(assumptions, 10, 5, True)
+            watcher_class.assert_called_once_with(self.solver, assumptions)
+            watcher.solve_timer.start.assert_called_once_with(10)
+            watcher.cutoff_timer.start.assert_called_once_with(5, armed=False)
+            watcher.start.assert_called_once_with()
+            watcher.join.assert_called_once_with(timeout=0.1)
+            watcher.cleanup.assert_called_once_with()
+            self.assertFalse(self.solver._watcher_active)
+            self.assertFalse(self.solver.interrupted)
+
+    def test_run_watcher_errors(self):
+        """
+        Test propagating startup, worker and cleanup failures after resetting state.
+        """
+        for failure in ("start", "worker", "cleanup"):
+            with (
+                self.subTest(failure=failure),
+                mock.patch("fastlane.lib.solvers.clingo_solver.SolveWatcher") as watcher_class,
+            ):
+                error = RuntimeError(failure)
+                watcher = watcher_class.return_value
+                watcher.is_alive.return_value = False
+                watcher.exception = error if failure == "worker" else None
+                if failure != "worker":
+                    getattr(watcher, failure).side_effect = error
+                self.solver.interrupted = True
+                with self.assertRaises(RuntimeError) as raised:
+                    self.solver._run_watcher([], None)
+                self.assertIs(raised.exception, error)
+                watcher.cleanup.assert_called_once_with()
+                self.assertFalse(self.solver._watcher_active)
+                self.assertFalse(self.solver.interrupted)
+
+    def test_save_model(self):
+        """
+        Test copying shown atoms, true atoms and cost.
+        """
+        model = mock.Mock(cost=[3, 2])
+        model.symbols.side_effect = [[Function("shown")], [Function("shown"), Function("hidden")]]
+        self.solver._save_model(model)
+        self.assertEqual(self.solver.last_model.shown, {Function("shown")})
+        self.assertEqual(self.solver.last_model.true, {Function("shown"), Function("hidden")})
+        self.assertEqual(self.solver.last_model.cost, [3, 2])
+        model.symbols.assert_has_calls([mock.call(shown=True), mock.call(atoms=True)])
+
+    def test_postprocess_solve(self):
+        """
+        Test saving models and recognizing exhausted SAT and UNSAT searches.
+        """
+        model = mock.Mock()
+        sat = mock.Mock(satisfiable=True, unsatisfiable=False, exhausted=True)
+        unsat = mock.Mock(satisfiable=False, unsatisfiable=True, exhausted=True)
+        with mock.patch.object(self.solver, "_save_model") as save:
+            self.solver.last_model = Model()
+            self.solver._variability = True
+            self.solver.postprocess_solve(model, sat)
+            save.assert_called_once_with(model)
+        self.assertEqual(self.solver.result, "OPTIMUM FOUND")
+        self.assertEqual(self.solver.stats["result"], "OPTIMUM FOUND")
+        self.assertEqual(self.solver.optimum, "yes")
+        self.assertTrue(self.solver.finished)
+
+        self.solver.finished = False
+        self.solver.last_model = None
+        self.solver.postprocess_solve(None, unsat)
+        self.assertEqual(self.solver.result, "UNSATISFIABLE")
+        self.assertEqual(self.solver.stats["result"], "UNSATISFIABLE")
+        self.assertTrue(self.solver.finished)
+
+        self.solver.finished = False
+        self.solver.postprocess_solve(None, sat)
+        self.assertEqual(self.solver.result, "SATISFIABLE")
+        self.assertEqual(self.solver.stats["result"], "SATISFIABLE")
+        self.assertTrue(self.solver.finished)
+
+    def test_postprocess_solve_incomplete(self):
+        """
+        Test that assumptions and interruptions do not prove an optimum.
+        """
+        result = mock.Mock(satisfiable=True, unsatisfiable=False, exhausted=True)
+        for attribute in ("_assumptions_used", "interrupted"):
+            with self.subTest(attribute=attribute):
+                self.solver.finished = False
+                self.solver.last_model = Model()
+                self.solver._variability = True
+                setattr(self.solver, attribute, True)
+                self.solver.postprocess_solve(None, result)
+                self.assertEqual(self.solver.result, "SATISFIABLE")
+                self.assertFalse(self.solver.finished)
+                setattr(self.solver, attribute, False)
+
+    def test_postprocess_solve_abstract(self):
+        """
+        Test that the abstract interface requires a concrete postprocessor.
+        """
+        with self.assertRaises(NotImplementedError):
+            Solver.postprocess_solve(self.solver, None, mock.Mock())
+
+
+class TestSolveWatcher(TestCase):
+    """
+    Test watcher methods with mocked control and timers.
+    """
+
+    def setUp(self) -> None:
+        self.solver = mock.Mock()
+        with mock.patch("fastlane.interfaces.solver.ThreadedTimer") as timer_class:
+            self.watcher = SolveWatcher(self.solver, [(Function("a"), True)])
+        self.assertEqual(timer_class.call_args_list, [mock.call(self.watcher.stop), mock.call(self.watcher.stop)])
+        self.watcher.solve_timer = mock.Mock()
+        self.watcher.cutoff_timer = mock.Mock()
+
+    def test_init(self):
+        """
+        Test watcher ownership, assumptions and initial state.
+        """
+        self.assertIs(self.watcher.solver, self.solver)
+        self.assertIs(self.watcher.ctl, self.solver.control)
+        self.assertEqual(self.watcher.assumptions, [(Function("a"), True)])
+        self.assertIsNone(self.watcher.exception)
+        self.assertFalse(self.watcher._stop_event.is_set())
+
+    def test_on_model(self):
+        """
+        Test model callback forwarding and cutoff rearming.
+        """
+        model = mock.Mock(cost=[4])
+        self.solver.stats = {}
+        self.watcher.solve_timer.get_elapsed_time.return_value = 2
+        self.watcher.cutoff_timer.get_elapsed_time.return_value = 1
+        self.watcher._on_model(model)
+        self.solver._on_model.assert_called_once_with(model)
+        self.solver.logger.info.assert_called_once_with("%.3f, %s", 2, [4])
+        self.assertEqual(self.solver.stats["time_to_last_model"], 1)
+        self.watcher.cutoff_timer.restart.assert_called_once_with()
+
+    def test_on_finish(self):
+        """
+        Test finish callback forwarding and wakeup.
+        """
+        result = mock.Mock()
+        self.watcher._on_finish(result)
+        self.solver._on_finish.assert_called_once_with(result)
+        self.assertTrue(self.watcher._stop_event.is_set())
+
+    def test_run(self):
+        """
+        Test delegation to the solve worker and storage of worker exceptions.
+        """
+        with mock.patch.object(self.watcher, "_run_solve") as run:
+            self.watcher.run()
+            run.assert_called_once_with()
+            self.assertIsNone(self.watcher.exception)
+            error = RuntimeError("worker failed")
+            run.side_effect = error
+            self.watcher.run()
+            self.assertIs(self.watcher.exception, error)
+
+    def test_run_solve(self):
+        """
+        Test asynchronous solve arguments, cancellation and result forwarding.
+        """
+        context = mock.MagicMock()
+        handle = context.__enter__.return_value
+        self.solver.control.solve.return_value = context
+        self.watcher._stop_event.set()
+        self.watcher.solve_timer.is_ringing = True
+        self.watcher.solve_timer.get_elapsed_time.return_value = 10
+        self.watcher.cutoff_timer.is_ringing = False
+        self.watcher._run_solve()
+        self.solver.control.solve.assert_called_once_with(
+            async_=True,
+            on_model=self.watcher._on_model,
+            on_statistics=self.solver._on_statistics,
+            on_finish=self.watcher._on_finish,
+            assumptions=self.watcher.assumptions,
+        )
+        handle.cancel.assert_called_once_with()
+        self.solver.postprocess_solve.assert_called_once_with(handle.last.return_value, handle.get.return_value)
+        self.solver.logger.info.assert_called_once_with("%s timer ringing after %s seconds", "Solve", 10)
+
+    def test_stop(self):
+        """
+        Test nonblocking stop signalling without cancellation in the caller.
+        """
+        self.watcher.stop()
+        self.assertTrue(self.solver.interrupted)
+        self.assertTrue(self.watcher._stop_event.is_set())
+        self.solver.control.interrupt.assert_not_called()
+
+    def test_cleanup(self):
+        """
+        Test waiting for callbacks before shutting down timers.
+        """
+        calls = mock.Mock()
+        calls.attach_mock(self.watcher.solve_timer, "solve_timer")
+        calls.attach_mock(self.watcher.cutoff_timer, "cutoff_timer")
+        with (
+            mock.patch.object(self.watcher, "stop") as stop,
+            mock.patch.object(self.watcher, "is_alive", side_effect=[True, False]),
+            mock.patch.object(self.watcher, "join") as join,
+        ):
+            calls.attach_mock(stop, "stop")
+            calls.attach_mock(join, "join")
+            self.watcher.cleanup()
+        self.assertEqual(
+            calls.mock_calls,
+            [
+                mock.call.stop(),
+                mock.call.join(timeout=0.1),
+                mock.call.solve_timer.stop(),
+                mock.call.cutoff_timer.stop(),
+                mock.call.solve_timer.join(),
+                mock.call.cutoff_timer.join(),
+            ],
+        )
+
+    def test_thread_stop(self):
+        """
+        Test that stop wakes a real watcher thread blocked on its event.
+        """
+        started = threading.Event()
+        context = mock.MagicMock()
+
+        def enter_solve():
+            started.set()
+            return mock.Mock()
+
+        context.__enter__.side_effect = enter_solve
+        self.solver.control.solve.return_value = context
+        self.watcher.solve_timer.is_ringing = False
+        self.watcher.cutoff_timer.is_ringing = False
+        self.watcher.start()
+        try:
+            self.assertTrue(started.wait(timeout=2), "Watcher did not start")
+            self.watcher.stop()
+            self.watcher.join(timeout=2)
+            self.assertFalse(self.watcher.is_alive(), "Stop did not wake the watcher")
+            self.assertIsNone(self.watcher.exception)
+            self.solver.postprocess_solve.assert_called_once()
+        finally:
+            self.watcher.stop()
+            self.watcher.join(timeout=2)
