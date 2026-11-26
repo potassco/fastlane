@@ -172,7 +172,7 @@ class LNSOptions:
     lns_opt_strategy: Optional[str] = None
     lns_opt_heuristic: Optional[str] = None
     lns_restart_on_model: Optional[bool] = None
-    lns_heuristic: Optional[str] = "Domain"
+    lns_heuristic: Optional[str] = None
     # lns_opt_mode default has to be set manually in parser
     lns_opt_mode: dict[str, Optional[str]] = field(default_factory=lambda: {"mode": None, "nf": None, "modifier": None})
 
@@ -193,6 +193,7 @@ class LNSOptions:
             "lns_time_limit": None,
             "lns_solve_limit": "2500000,5000",
             "fix": "heuristics",
+            "lns_heuristic": "Domain",
         },
         "alns": {
             "description": "ALNS using assumptions and an adaptive strategy. Config encoding is required!",
@@ -217,6 +218,7 @@ class LNSOptions:
             "lns_cutoff_threshold": 2,
             "lns_cutoff_increase_rate": 5,
             "fix": "heuristics",
+            "lns_heuristic": "Domain",
             "default_adaptive_strategy_name": "roulette",
             "lex_weight": 1000,
             "learning_rate": 0.5,
