@@ -21,3 +21,5 @@ via the provided presets.
 ::: fastlane.Model
 
 ::: fastlane.Timer
+
+::: fastlane.ThreadedTimer

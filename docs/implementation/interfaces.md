@@ -21,6 +21,10 @@ respect the this interface.
 
 ## Solver Interface
 
-Solver implementations should follow the `Solver` Interface and make use of the `SolverConfig` class.
+Solver implementations should follow the `Solver` Interface and make use of the `SolverConfig` and `SolveWatcher` class.
 
 ::: fastlane.interfaces.solver.Solver
+
+::: fastlane.interfaces.solver.SolverConfig
+
+::: fastlane.interfaces.solver.SolveWatcher

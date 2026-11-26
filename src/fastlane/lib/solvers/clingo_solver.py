@@ -123,7 +123,7 @@ class ClingoSolver(Solver):
         Solve under assumptions using clingo.
         Startup and worker failures are re-raised in the caller after timer cleanup.
 
-        :config: Solver configuration.
+        :param config: Solver configuration.
         :param assumptions: Assumptions for solving (fixed atoms).
         :param require_model: If True, defer cutoff until the first model; the time limit still applies.
         :return: Last obtained model.

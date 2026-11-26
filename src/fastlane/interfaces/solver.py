@@ -27,6 +27,18 @@ if TYPE_CHECKING:  # nocoverage
 class SolverConfig:
     """
     Configuration for a solver.
+
+    :ivar configuration: Solver configuration string.
+    :ivar opt_strategy: Optimization strategy.
+    :ivar opt_heuristic: Optimization heuristic.
+    :ivar restart_on_model: Restart on model.
+    :ivar heuristic: Heuristic.
+    :ivar opt_mode: Optimization mode.
+    :ivar solve_limit: Solve limit.
+    :ivar time_limit: Time limit.
+    :ivar cutoff: Cutoff time limit.
+    :ivar seed: Random seed.
+    :ivar variability: Variability flag.
     """
 
     configuration: Optional[str] = None
