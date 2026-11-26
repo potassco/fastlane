@@ -151,7 +151,13 @@ class TestConfigConverter(TestCase):
         )
         self.assertEqual(
             warnings.getvalue(),
+            "Warning: Random destruction in configuration currently not supported. "
+            "Either use declarative destruction or --destruction option instead.\n"
+            "Warning: Random destruction in configuration currently not supported. "
+            "Either use declarative destruction or --destruction option instead.\n"
             'Warning: Duplicate search operator ("second","cutoff"); skipped.\n'
+            "Warning: Random destruction in configuration currently not supported. "
+            "Either use declarative destruction or --destruction option instead.\n"
             "Warning: searchParams entry must be an object. Skipping search operator None.\n",
         )
 
