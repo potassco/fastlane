@@ -258,6 +258,10 @@ def parse_search(
                 continue
             if key == "randomAtoms":
                 # not supported for now
+                warn(
+                    "Random destruction in configuration currently not supported. "
+                    "Either use declarative destruction or --destruction option instead."
+                )
                 # out_lines.append(f"_rate({';'.join(str(rate) for rate in value)}).")
                 # out_lines.append('_search_param(("destroy", R), ("relax-rate", R)) :- _rate(R).')
                 continue
