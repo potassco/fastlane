@@ -15,7 +15,7 @@ from clingo.solving import SolveResult
 from clingo.statistics import StatisticsMap
 from clingo.symbol import Symbol
 
-from fastlane import Model, ThreadedTimer
+from fastlane import Model, Timer
 from fastlane.utils.logger import LNSLogger, getLogger
 
 if TYPE_CHECKING:  # nocoverage
@@ -76,7 +76,6 @@ class Solver(ABC):
         self._assumptions_used: bool = False
         self.interrupted: bool = False
         self.watcher: Optional[SolveWatcher] = None
-        self._watcher_active: bool = False
         self.last_model: Optional[Model] = None
 
         self.stats: dict[str, Any] = {}
@@ -152,13 +151,19 @@ class Solver(ABC):
 
     def request_stop(self) -> bool:
         """
-        Request shutdown without acquiring locks or waiting.
+        Request shutdown and interrupt any active (or upcoming) solve.
 
-        Return True while the solve loop must finish watcher cleanup before unwinding.
+        Control.interrupt() is documented as thread-safe and safe to call from a
+        signal handler, so this can be called directly from anywhere, including
+        Fastlane's own signal handler.
+
+        Return True while an active solve must still unwind before the caller can proceed.
         """
         self.stop = True
         self.finished = True
-        return self._watcher_active
+        self.interrupted = True
+        self.control.interrupt()
+        return self.watcher is not None and self.watcher.active
 
     def ground(
         self,
@@ -234,109 +239,118 @@ class Solver(ABC):
         """
 
 
-class SolveWatcher(threading.Thread):
+class SolveWatcher(ABC):
     """
-    Watcher thread for monitoring the solving process.
-    Handles timers and model callbacks.
+    Coordinates one solve pass: deadlines and result handling.
+
+    Deadlines are enforced by one-shot threading.Timer alarms that call stop()
+    directly.
+    Concrete watchers only need to implement how one backend-specific blocking
+    solve is actually run (_run_solve) and interrupted (_interrupt).
 
     :ivar solver: The Solver instance being monitored.
-    :ivar ctl: The Clingo control object from the solver.
-    :ivar _stop_event: Event to signal stopping of the watcher thread.
-    :ivar solve_timer: Timer for the solving process.
-    :ivar cutoff_timer: Timer for the cutoff process.
-    :ivar assumptions: Assumptions used in the solving process.
-    :ivar exception: Stores any exception raised during solving.
+    :ivar solve_timer: Timer tracking the overall time limit.
+    :ivar cutoff_timer: Timer tracking the no-improvement cutoff.
+    :ivar active: Whether a solve is currently in progress.
     """
 
-    def __init__(self, solver: Solver, assumptions: Optional[list[tuple[clingo.symbol.Symbol, bool]]] = None) -> None:
+    def __init__(self, solver: Solver) -> None:
         """
         Initialize the SolveWatcher.
 
         :param solver: The Solver instance being monitored.
-        :param assumptions: Assumptions used in the solving process.
         """
-        super().__init__()
         self.solver: Solver = solver
-        self.ctl: clingo.Control = solver.control
-        self._stop_event: threading.Event = threading.Event()
-        self.solve_timer: ThreadedTimer = ThreadedTimer(self.stop)
-        self.cutoff_timer: ThreadedTimer = ThreadedTimer(self.stop)
-        self.assumptions: list[tuple[clingo.symbol.Symbol, bool]] = assumptions or []
-        self.exception: Optional[BaseException] = None
+        self.solve_timer: Timer = Timer()
+        self.cutoff_timer: Timer = Timer()
+        self.active: bool = False
+        self._cutoff_seconds: Optional[int] = None
+        self._cutoff_alarm: Optional[threading.Timer] = None
 
-    # pylint: disable=protected-access
-    def _on_model(self, model: clingo.Model) -> None:
+    def solve(
+        self,
+        time_limit: Optional[float],
+        cutoff: Optional[int] = None,
+        require_model: bool = False,
+    ) -> None:
         """
-        Handle a new model from the solver.
+        Run one solve pass to completion, blocking without polling.
 
-        :param model: The Clingo model received.
-        """
-        self.solver._on_model(model)
-        self.solver.logger.info("%.3f, %s", self.solve_timer.get_elapsed_time(), model.cost)
-        self.solver.stats["time_to_last_model"] = self.cutoff_timer.get_elapsed_time()
-        self.cutoff_timer.restart()
+        Call once per watcher.
 
-    # pylint: disable=protected-access
-    def _on_finish(self, result: SolveResult) -> None:
+        :param time_limit: Time limit for this solve pass.
+        :param cutoff: Cutoff for this solve pass.
+        :param require_model: Defer cutoff until the first model; the time limit still applies.
         """
-        Handle the finish of the solving process.
-
-        :param result: The result of the solve.
-        """
-        self.solver._on_finish(result)
-        self._stop_event.set()
-
-    def run(self) -> None:
-        """
-        Run the watcher thread.
-        """
+        self.solve_timer.start(time_limit)
+        self.cutoff_timer.start(cutoff, armed=not require_model)
+        self._cutoff_seconds = cutoff
+        self.active = True
+        solve_alarm = self._schedule(time_limit)
+        self._cutoff_alarm = None if require_model else self._schedule(cutoff)
         try:
             self._run_solve()
-        except BaseException as error:  # pylint: disable=broad-exception-caught
-            # Exceptions are stored and re-raised after cleanup.
-            self.exception = error
-
-    # pylint: disable=protected-access
-    def _run_solve(self) -> None:
-        """
-        Run the solving process with Clingo asynchronously.
-        Handles model callbacks, timer interruptions, and result processing.
-        """
-        with self.ctl.solve(
-            async_=True,
-            on_model=self._on_model,
-            on_statistics=self.solver._on_statistics,
-            on_finish=self._on_finish,
-            assumptions=self.assumptions,
-        ) as handle:
-            self._stop_event.wait()
-            # Cancellation may wait for model callbacks, so hold no timer locks.
-            handle.cancel()
-            # print timer interrupting
-            for name, timer in (
-                ("Solve", self.solve_timer),
-                ("Cutoff", self.cutoff_timer),
-            ):
+            for name, timer in (("Solve", self.solve_timer), ("Cutoff", self.cutoff_timer)):
                 if timer.is_ringing:
                     self.solver.logger.info("%s timer ringing after %s seconds", name, timer.get_elapsed_time())
+        finally:
+            self._cancel(solve_alarm)
+            self._cancel(self._cutoff_alarm)
+            self._cutoff_alarm = None
+            self.active = False
+            self.solver.interrupted = False
 
-            self.solver.postprocess_solve(handle.last(), handle.get())
+    @abstractmethod
+    def _run_solve(self) -> None:  # nocoverage
+        """
+        Run the backend-specific blocking solve pass and report its result.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def _interrupt(self) -> None:  # nocoverage
+        """
+        Interrupt the backend's search. Must be thread- and signal-safe.
+        """
+        raise NotImplementedError
 
     def stop(self) -> None:
         """
-        Request cancellation without blocking the timer callback.
+        Interrupt the current (or next) solve. Thread- and signal-safe.
         """
         self.solver.interrupted = True
-        self._stop_event.set()
+        self._interrupt()
 
-    def cleanup(self) -> None:
+    def _rearm_cutoff(self) -> None:
         """
-        Let model callbacks finish before shutting down their timers.
+        Restart the cutoff timer and reschedule its alarm after a new model is found.
+
+        Call this from a concrete watcher's model callback.
         """
-        self.stop()
-        while self.is_alive():
-            self.join(timeout=0.1)
-        self.solve_timer.stop()
-        self.cutoff_timer.stop()
-        self.solve_timer.join()
-        self.cutoff_timer.join()
+        self.cutoff_timer.restart()
+        self._cancel(self._cutoff_alarm)
+        self._cutoff_alarm = self._schedule(self._cutoff_seconds)
+
+    def _schedule(self, seconds: Optional[float]) -> Optional[threading.Timer]:
+        """
+        Schedule a one-shot interruption after the given delay.
+
+        :param seconds: Delay in seconds, or None to not schedule an alarm.
+        """
+        if seconds is None:
+            return None
+        alarm = threading.Timer(seconds, self.stop)
+        alarm.daemon = True
+        alarm.start()
+        return alarm
+
+    @staticmethod
+    def _cancel(alarm: Optional[threading.Timer]) -> None:
+        """
+        Cancel a scheduled alarm and wait for its thread to finish.
+
+        :param alarm: Alarm to cancel, or None.
+        """
+        if alarm is not None:
+            alarm.cancel()
+            alarm.join()

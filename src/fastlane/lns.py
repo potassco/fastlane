@@ -5,6 +5,8 @@ A modifiable large neighborhood search framework.
 import math
 import random
 import signal
+import socket
+import threading
 from collections.abc import Generator
 from contextlib import contextmanager
 from types import FrameType
@@ -508,6 +510,21 @@ class LNS:
         print(f"Overall time: {self.timer.get_elapsed_time():.3f}s")
         print(LINE)
 
+    def _signal_relay(self, reader: socket.socket, stop: threading.Event) -> None:
+        """
+        Immediately interrupt the solver on an OS signal, without polling.
+
+        Clingo's blocking solve only returns control to Python once it finishes, so the
+        Python-level signal handler below would otherwise not run until then. This loop
+        reacts to the low-level signal wakeup (relayed through the socket pair by
+        ``signal.set_wakeup_fd``) as soon as it happens, on both Windows and Unix.
+
+        :param reader: Read end of the wakeup socket pair.
+        :param stop: Event used to end the loop during cleanup.
+        """
+        while reader.recv(4096) and not stop.is_set():
+            self.solver.control.interrupt()
+
     @contextmanager
     def _preserve_signals(self) -> Generator[None, None, None]:
         """
@@ -522,7 +539,16 @@ class LNS:
                 raise KeyboardInterrupt
 
         previous_handlers = {}
+        reader, writer = socket.socketpair()
+        writer.setblocking(False)
+        stop_relay = threading.Event()
+        relay = threading.Thread(target=self._signal_relay, args=(reader, stop_relay))
+        previous_fd: Optional[int] = None
         try:
+            previous_fd = signal.set_wakeup_fd(writer.fileno(), warn_on_full_buffer=False)
+            if previous_fd != -1:
+                raise RuntimeError("Cannot install signal handling while another signal wakeup fd is installed")
+            relay.start()
             for sig in (signal.SIGINT, signal.SIGTERM):
                 previous = signal.getsignal(sig)
                 if previous is not None:
@@ -533,6 +559,17 @@ class LNS:
             for sig, previous in previous_handlers.items():
                 if signal.getsignal(sig) != previous:
                     signal.signal(sig, previous)
+            if previous_fd is not None:
+                signal.set_wakeup_fd(previous_fd)
+            stop_relay.set()
+            if relay.is_alive():
+                try:
+                    writer.send(b"\0")
+                except OSError:
+                    pass  # The socket may already be unusable; stop_relay still ends the loop.
+                relay.join()
+            reader.close()
+            writer.close()
 
     def main(self) -> None:
         """

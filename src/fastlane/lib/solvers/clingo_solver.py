@@ -19,6 +19,59 @@ if TYPE_CHECKING:
     from fastlane.lns import LNS  # nocoverage
 
 
+class ClingoSolveWatcher(SolveWatcher):
+    """
+    SolveWatcher implementation driving clingo's asynchronous solve API.
+
+    :ivar ctl: The Clingo control object from the solver.
+    :ivar assumptions: Assumptions used in the solving process.
+    """
+
+    def __init__(self, solver: Solver, assumptions: Optional[list[tuple[clingo.symbol.Symbol, bool]]] = None) -> None:
+        """
+        Initialize the ClingoSolveWatcher.
+
+        :param solver: The Solver instance being monitored.
+        :param assumptions: Assumptions used in the solving process.
+        """
+        super().__init__(solver)
+        self.ctl: clingo.Control = solver.control
+        self.assumptions: list[tuple[clingo.symbol.Symbol, bool]] = assumptions or []
+
+    # pylint: disable=protected-access
+    def _run_solve(self) -> None:
+        """
+        Run the solving process with Clingo asynchronously and postprocess its result.
+        """
+        with self.ctl.solve(
+            assumptions=self.assumptions,
+            on_model=self._on_model,
+            on_statistics=self.solver._on_statistics,
+            on_finish=self.solver._on_finish,
+            async_=True,
+        ) as handle:
+            handle.wait()
+            self.solver.postprocess_solve(handle.last(), handle.get())
+
+    def _interrupt(self) -> None:
+        """
+        Interrupt the active (or next) clingo solve. Thread- and signal-safe.
+        """
+        self.ctl.interrupt()
+
+    # pylint: disable=protected-access
+    def _on_model(self, model: clingo.Model) -> None:
+        """
+        Handle a new model from the solver and rearm the cutoff.
+
+        :param model: The Clingo model received.
+        """
+        self.solver._on_model(model)
+        self.solver.logger.info("%.3f, %s", self.solve_timer.get_elapsed_time(), model.cost)
+        self.solver.stats["time_to_last_model"] = self.cutoff_timer.get_elapsed_time()
+        self._rearm_cutoff()
+
+
 # pylint: disable=too-many-instance-attributes
 class ClingoSolver(Solver):
     """
@@ -167,24 +220,8 @@ class ClingoSolver(Solver):
         :param cutoff: Cutoff for this solve pass.
         :param require_model: If True, defer cutoff until the first model; the time limit still applies.
         """
-        self.watcher = SolveWatcher(self, assumptions)
-
-        try:
-            self._watcher_active = True
-            self.watcher.solve_timer.start(time_limit)
-            self.watcher.cutoff_timer.start(cutoff, armed=not require_model)
-            self.watcher.start()
-            while not self.stop and self.watcher.is_alive():
-                self.watcher.join(timeout=0.1)
-        finally:
-            try:
-                self.watcher.cleanup()
-            finally:
-                self._watcher_active = False
-                self.interrupted = False
-
-        if self.watcher.exception is not None:
-            raise self.watcher.exception
+        self.watcher = ClingoSolveWatcher(self, assumptions)
+        self.watcher.solve(time_limit, cutoff, require_model)
 
     def _save_model(self, model: ClingoModel) -> None:
         """
