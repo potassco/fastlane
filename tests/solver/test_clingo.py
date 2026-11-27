@@ -2,15 +2,14 @@
 Test cases for clingo solvers and their solve watcher.
 """
 
-import threading
 from unittest import TestCase, mock
 
 import clingo
 from clingo.symbol import Function
 
-from fastlane import Model
-from fastlane.interfaces.solver import Solver, SolverConfig, SolveWatcher
-from fastlane.lib.solvers.clingo_solver import ClingoSolver
+from fastlane import Model, Timer
+from fastlane.interfaces.solver import Solver, SolverConfig
+from fastlane.lib.solvers.clingo_solver import ClingoSolver, ClingoSolveWatcher
 
 # pylint: disable=protected-access
 
@@ -82,7 +81,6 @@ class TestSolverClingo(TestCase):  # pylint: disable=too-many-public-methods
         self.assertFalse(self.solver._assumptions_used)
         self.assertIsNone(self.solver.last_model)
         self.assertIsNone(self.solver.watcher)
-        self.assertFalse(self.solver._watcher_active)
         self.assertFalse(self.solver.interrupted)
         self.assertFalse(self.solver._variability)
 
@@ -131,16 +129,25 @@ class TestSolverClingo(TestCase):  # pylint: disable=too-many-public-methods
 
     def test_request_stop(self):
         """
-        Test shutdown requests with and without an active watcher.
+        Test shutdown requests with and without an active watcher, always interrupting.
         """
+        self.assertFalse(self.solver.request_stop())
+        self.control.interrupt.assert_called_once_with()
+        self.assertTrue(self.solver.stop)
+        self.assertTrue(self.solver.finished)
+        self.assertTrue(self.solver.interrupted)
+
+        watcher = mock.Mock()
+        self.solver.watcher = watcher
         for active in (False, True):
             with self.subTest(active=active):
                 self.solver.stop = self.solver.finished = False
-                self.solver._watcher_active = active
+                watcher.active = active
                 self.assertEqual(self.solver.request_stop(), active)
                 self.assertTrue(self.solver.stop)
                 self.assertTrue(self.solver.finished)
-        self.control.interrupt.assert_not_called()
+        self.assertEqual(watcher.mock_calls, [])
+        self.assertEqual(self.control.interrupt.call_count, 3)
 
     def test_setup(self):
         """
@@ -245,46 +252,26 @@ class TestSolverClingo(TestCase):  # pylint: disable=too-many-public-methods
 
     def test_run_watcher(self):
         """
-        Test watcher startup, joining and cleanup.
+        Test delegating lifecycle ownership to the retained watcher.
         """
         assumptions = [(Function("a"), True)]
-        with mock.patch("fastlane.lib.solvers.clingo_solver.SolveWatcher") as watcher_class:
+        with mock.patch("fastlane.lib.solvers.clingo_solver.ClingoSolveWatcher") as watcher_class:
             watcher = watcher_class.return_value
-            watcher.is_alive.side_effect = [True, False]
-            watcher.exception = None
-            self.solver.interrupted = True
             self.solver._run_watcher(assumptions, 10, 5, True)
             watcher_class.assert_called_once_with(self.solver, assumptions)
-            watcher.solve_timer.start.assert_called_once_with(10)
-            watcher.cutoff_timer.start.assert_called_once_with(5, armed=False)
-            watcher.start.assert_called_once_with()
-            watcher.join.assert_called_once_with(timeout=0.1)
-            watcher.cleanup.assert_called_once_with()
-            self.assertFalse(self.solver._watcher_active)
-            self.assertFalse(self.solver.interrupted)
+            self.assertIs(self.solver.watcher, watcher)
+            watcher.solve.assert_called_once_with(10, 5, True)
 
-    def test_run_watcher_errors(self):
+    def test_run_watcher_error(self):
         """
-        Test propagating startup, worker and cleanup failures after resetting state.
+        Test propagating the lifecycle owner's error unchanged.
         """
-        for failure in ("start", "worker", "cleanup"):
-            with (
-                self.subTest(failure=failure),
-                mock.patch("fastlane.lib.solvers.clingo_solver.SolveWatcher") as watcher_class,
-            ):
-                error = RuntimeError(failure)
-                watcher = watcher_class.return_value
-                watcher.is_alive.return_value = False
-                watcher.exception = error if failure == "worker" else None
-                if failure != "worker":
-                    getattr(watcher, failure).side_effect = error
-                self.solver.interrupted = True
-                with self.assertRaises(RuntimeError) as raised:
-                    self.solver._run_watcher([], None)
-                self.assertIs(raised.exception, error)
-                watcher.cleanup.assert_called_once_with()
-                self.assertFalse(self.solver._watcher_active)
-                self.assertFalse(self.solver.interrupted)
+        error = RuntimeError("solve failed")
+        with mock.patch("fastlane.lib.solvers.clingo_solver.ClingoSolveWatcher") as watcher_class:
+            watcher_class.return_value.solve.side_effect = error
+            with self.assertRaises(RuntimeError) as raised:
+                self.solver._run_watcher([], None)
+            self.assertIs(raised.exception, error)
 
     def test_save_model(self):
         """
@@ -352,18 +339,14 @@ class TestSolverClingo(TestCase):  # pylint: disable=too-many-public-methods
             Solver.postprocess_solve(self.solver, None, mock.Mock())
 
 
-class TestSolveWatcher(TestCase):
+class TestClingoSolveWatcher(TestCase):
     """
     Test watcher methods with mocked control and timers.
     """
 
     def setUp(self) -> None:
         self.solver = mock.Mock()
-        with mock.patch("fastlane.interfaces.solver.ThreadedTimer") as timer_class:
-            self.watcher = SolveWatcher(self.solver, [(Function("a"), True)])
-        self.assertEqual(timer_class.call_args_list, [mock.call(self.watcher.stop), mock.call(self.watcher.stop)])
-        self.watcher.solve_timer = mock.Mock()
-        self.watcher.cutoff_timer = mock.Mock()
+        self.watcher = ClingoSolveWatcher(self.solver, [(Function("a"), True)])
 
     def test_init(self):
         """
@@ -372,127 +355,145 @@ class TestSolveWatcher(TestCase):
         self.assertIs(self.watcher.solver, self.solver)
         self.assertIs(self.watcher.ctl, self.solver.control)
         self.assertEqual(self.watcher.assumptions, [(Function("a"), True)])
-        self.assertIsNone(self.watcher.exception)
-        self.assertFalse(self.watcher._stop_event.is_set())
+        self.assertIsInstance(self.watcher.solve_timer, Timer)
+        self.assertIsInstance(self.watcher.cutoff_timer, Timer)
+        self.assertFalse(self.watcher.active)
+        self.assertIsNone(self.watcher._cutoff_seconds)
+        self.assertIsNone(self.watcher._cutoff_alarm)
 
     def test_on_model(self):
         """
-        Test model callback forwarding and cutoff rearming.
+        Test model callback forwarding, cutoff rearming, and alarm rescheduling.
         """
         model = mock.Mock(cost=[4])
         self.solver.stats = {}
-        self.watcher.solve_timer.get_elapsed_time.return_value = 2
-        self.watcher.cutoff_timer.get_elapsed_time.return_value = 1
-        self.watcher._on_model(model)
+        self.watcher.solve_timer = mock.Mock(get_elapsed_time=mock.Mock(return_value=2))
+        self.watcher.cutoff_timer = mock.Mock(get_elapsed_time=mock.Mock(return_value=1))
+        old_alarm = mock.Mock()
+        self.watcher._cutoff_alarm = old_alarm
+        self.watcher._cutoff_seconds = 5
+        with mock.patch.object(self.watcher, "_schedule", return_value="new-alarm") as schedule:
+            self.watcher._on_model(model)
         self.solver._on_model.assert_called_once_with(model)
         self.solver.logger.info.assert_called_once_with("%.3f, %s", 2, [4])
         self.assertEqual(self.solver.stats["time_to_last_model"], 1)
         self.watcher.cutoff_timer.restart.assert_called_once_with()
+        old_alarm.cancel.assert_called_once_with()
+        old_alarm.join.assert_called_once_with()
+        schedule.assert_called_once_with(5)
+        self.assertEqual(self.watcher._cutoff_alarm, "new-alarm")
 
-    def test_on_finish(self):
+    def test_stop(self):
         """
-        Test finish callback forwarding and wakeup.
+        Test that stop interrupts the solve directly, without any indirection.
         """
-        result = mock.Mock()
-        self.watcher._on_finish(result)
-        self.solver._on_finish.assert_called_once_with(result)
-        self.assertTrue(self.watcher._stop_event.is_set())
+        self.watcher.stop()
+        self.assertTrue(self.solver.interrupted)
+        self.solver.control.interrupt.assert_called_once_with()
 
-    def test_run(self):
+    def test_schedule_none(self):
         """
-        Test delegation to the solve worker and storage of worker exceptions.
+        Test that no alarm is scheduled when there is no deadline.
         """
-        with mock.patch.object(self.watcher, "_run_solve") as run:
-            self.watcher.run()
-            run.assert_called_once_with()
-            self.assertIsNone(self.watcher.exception)
-            error = RuntimeError("worker failed")
-            run.side_effect = error
-            self.watcher.run()
-            self.assertIs(self.watcher.exception, error)
+        self.assertIsNone(self.watcher._schedule(None))
 
-    def test_run_solve(self):
+    def test_schedule(self):
         """
-        Test asynchronous solve arguments, cancellation and result forwarding.
+        Test scheduling a daemonized one-shot alarm that calls stop() on expiry.
+        """
+        with mock.patch("fastlane.interfaces.solver.threading.Timer") as timer_class:
+            alarm = timer_class.return_value
+            result = self.watcher._schedule(5)
+        timer_class.assert_called_once_with(5, self.watcher.stop)
+        self.assertTrue(alarm.daemon)
+        alarm.start.assert_called_once_with()
+        self.assertIs(result, alarm)
+
+    def test_cancel_none(self):
+        """
+        Test that cancelling a missing alarm is a no-op.
+        """
+        ClingoSolveWatcher._cancel(None)  # pylint: disable=protected-access
+
+    def test_cancel(self):
+        """
+        Test cancelling and joining a scheduled alarm.
+        """
+        alarm = mock.Mock()
+        ClingoSolveWatcher._cancel(alarm)  # pylint: disable=protected-access
+        alarm.cancel.assert_called_once_with()
+        alarm.join.assert_called_once_with()
+
+    def test_solve(self):
+        """
+        Test the full solve pass: deadlines, the blocking wait, and result handling.
         """
         context = mock.MagicMock()
         handle = context.__enter__.return_value
         self.solver.control.solve.return_value = context
-        self.watcher._stop_event.set()
-        self.watcher.solve_timer.is_ringing = True
-        self.watcher.solve_timer.get_elapsed_time.return_value = 10
-        self.watcher.cutoff_timer.is_ringing = False
-        self.watcher._run_solve()
+        solve_alarm, cutoff_alarm = mock.Mock(), mock.Mock()
+        self.watcher.solve_timer = mock.Mock(is_ringing=True, get_elapsed_time=mock.Mock(return_value=10))
+        self.watcher.cutoff_timer = mock.Mock(is_ringing=False)
+        with mock.patch.object(self.watcher, "_schedule", side_effect=[solve_alarm, cutoff_alarm]) as schedule:
+            self.watcher.solve(10, 5, False)
+        self.watcher.solve_timer.start.assert_called_once_with(10)
+        self.watcher.cutoff_timer.start.assert_called_once_with(5, armed=True)
         self.solver.control.solve.assert_called_once_with(
-            async_=True,
+            assumptions=self.watcher.assumptions,
             on_model=self.watcher._on_model,
             on_statistics=self.solver._on_statistics,
-            on_finish=self.watcher._on_finish,
-            assumptions=self.watcher.assumptions,
+            on_finish=self.solver._on_finish,
+            async_=True,
         )
-        handle.cancel.assert_called_once_with()
+        handle.wait.assert_called_once_with()
         self.solver.postprocess_solve.assert_called_once_with(handle.last.return_value, handle.get.return_value)
         self.solver.logger.info.assert_called_once_with("%s timer ringing after %s seconds", "Solve", 10)
+        schedule.assert_has_calls([mock.call(10), mock.call(5)])
+        solve_alarm.cancel.assert_called_once_with()
+        solve_alarm.join.assert_called_once_with()
+        cutoff_alarm.cancel.assert_called_once_with()
+        cutoff_alarm.join.assert_called_once_with()
+        self.assertFalse(self.watcher.active)
+        self.assertFalse(self.solver.interrupted)
 
-    def test_stop(self):
+    def test_solve_require_model_defers_cutoff(self):
         """
-        Test nonblocking stop signalling without cancellation in the caller.
+        Test that require_model defers scheduling the cutoff alarm until the first model.
         """
-        self.watcher.stop()
-        self.assertTrue(self.solver.interrupted)
-        self.assertTrue(self.watcher._stop_event.is_set())
-        self.solver.control.interrupt.assert_not_called()
+        self.solver.control.solve.return_value = mock.MagicMock()
+        self.watcher.cutoff_timer = mock.Mock()
+        with mock.patch.object(self.watcher, "_schedule", return_value=None) as schedule:
+            self.watcher.solve(None, 5, True)
+        self.watcher.cutoff_timer.start.assert_called_once_with(5, armed=False)
+        schedule.assert_called_once_with(None)  # only the (disabled) overall deadline
+        self.assertIsNone(self.watcher._cutoff_alarm)
 
-    def test_cleanup(self):
+    def test_solve_error_propagates(self):
         """
-        Test waiting for callbacks before shutting down timers.
+        Test that solve errors propagate directly to the caller, with state still reset.
         """
-        calls = mock.Mock()
-        calls.attach_mock(self.watcher.solve_timer, "solve_timer")
-        calls.attach_mock(self.watcher.cutoff_timer, "cutoff_timer")
-        with (
-            mock.patch.object(self.watcher, "stop") as stop,
-            mock.patch.object(self.watcher, "is_alive", side_effect=[True, False]),
-            mock.patch.object(self.watcher, "join") as join,
-        ):
-            calls.attach_mock(stop, "stop")
-            calls.attach_mock(join, "join")
-            self.watcher.cleanup()
-        self.assertEqual(
-            calls.mock_calls,
-            [
-                mock.call.stop(),
-                mock.call.join(timeout=0.1),
-                mock.call.solve_timer.stop(),
-                mock.call.cutoff_timer.stop(),
-                mock.call.solve_timer.join(),
-                mock.call.cutoff_timer.join(),
-            ],
-        )
+        error = RuntimeError("solve failed")
+        self.solver.control.solve.side_effect = error
+        with self.assertRaises(RuntimeError) as raised:
+            self.watcher.solve(None)
+        self.assertIs(raised.exception, error)
+        self.assertFalse(self.watcher.active)
+        self.assertFalse(self.solver.interrupted)
 
-    def test_thread_stop(self):
+    def test_real_time_limit(self):
         """
-        Test that stop wakes a real watcher thread blocked on its event.
+        Test that a real one-shot alarm interrupts an otherwise much longer real solve.
         """
-        started = threading.Event()
-        context = mock.MagicMock()
+        solver = ClingoSolver()
+        solver.logger = mock.Mock()
+        solver.logger.isEnabledFor.return_value = False
+        solver.control.configuration.solve.models = 0  # enumerate all answer sets
+        solver.add("base", [], "{ a(1..24) }.")
+        solver.ground()
+        watcher = ClingoSolveWatcher(solver)
 
-        def enter_solve():
-            started.set()
-            return mock.Mock()
+        watcher.solve(0.2)
 
-        context.__enter__.side_effect = enter_solve
-        self.solver.control.solve.return_value = context
-        self.watcher.solve_timer.is_ringing = False
-        self.watcher.cutoff_timer.is_ringing = False
-        self.watcher.start()
-        try:
-            self.assertTrue(started.wait(timeout=2), "Watcher did not start")
-            self.watcher.stop()
-            self.watcher.join(timeout=2)
-            self.assertFalse(self.watcher.is_alive(), "Stop did not wake the watcher")
-            self.assertIsNone(self.watcher.exception)
-            self.solver.postprocess_solve.assert_called_once()
-        finally:
-            self.watcher.stop()
-            self.watcher.join(timeout=2)
+        self.assertTrue(watcher.solve_timer.is_ringing)
+        self.assertFalse(watcher.active)
+        solver.logger.info.assert_any_call("%s timer ringing after %s seconds", "Solve", mock.ANY)

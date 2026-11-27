@@ -2,6 +2,11 @@
 Integration tests.
 """
 
+import signal
+import subprocess
+import sys
+import textwrap
+import threading
 from io import StringIO
 from unittest import TestCase, mock
 
@@ -146,3 +151,97 @@ class TestIntegrationClingcon(TestIntegrationClingo):
 
     def _check_solver(self, lns: LNS):
         self.assertIsNotNone(lns.solver.theory)
+
+
+class TestSolveInterruptions(TestCase):
+    """
+    Exercise non-polling shutdown with real threads, alarms, signals, and clingo.
+    """
+
+    def test_external_stop(self):
+        """
+        Stop a background solve started without a time limit, via Control.interrupt().
+        """
+        solver = ClingoSolver()
+        solver.control.configuration.solve.models = 0
+        solver.add("base", [], "{ a(1..35) }.")
+        solver.ground()
+        started = threading.Event()
+        solver._on_model = lambda _model: started.set()  # pylint: disable=protected-access
+        errors = []
+
+        def solve():
+            try:
+                solver.solve()
+            except BaseException as error:  # pylint: disable=broad-exception-caught
+                errors.append(error)
+
+        worker = threading.Thread(target=solve)
+        worker.start()
+        try:
+            self.assertTrue(started.wait(5), "Search did not start")
+            solver.request_stop()
+            worker.join(5)
+            self.assertFalse(worker.is_alive(), "Stop request did not wake the solve")
+        finally:
+            solver.request_stop()
+            worker.join(5)
+        self.assertEqual(errors, [])
+        self.assertIsNotNone(solver.last_model)
+
+    def test_signals(self):
+        """
+        SIGINT and SIGTERM interrupt a blocked main-thread solve on Windows and Unix.
+        """
+        code = textwrap.dedent("""
+            import os
+            import signal
+            import sys
+            import threading
+            import time
+            from fastlane.lns import LNS
+            from fastlane.lns_options import LNSOptions
+
+            lns = LNS([], options=LNSOptions(log_level=50))
+            solver = lns.solver
+            solver.control.configuration.solve.models = 0
+            solver.add("base", [], "{ a(1..35) }.")
+            solver.ground()
+            ready = threading.Event()
+            solver._on_model = lambda model: ready.set()
+            sent_at = []
+
+            def interrupt():
+                if not ready.wait(5):
+                    raise RuntimeError("Search did not start")
+                sent_at.append(time.monotonic())
+                sig = int(sys.argv[1])
+                if sys.platform == "win32":
+                    signal.raise_signal(sig)
+                else:
+                    os.kill(os.getpid(), sig)
+
+            previous = {sig: signal.getsignal(sig) for sig in (signal.SIGINT, signal.SIGTERM)}
+            with lns._preserve_signals():
+                sender = threading.Thread(target=interrupt)
+                sender.start()
+                solver.solve()
+                sender.join()
+            assert sent_at and time.monotonic() - sent_at[0] < 2, "Unresponsive interruption"
+            assert lns.interrupted and solver.finished
+            assert solver.last_model is not None
+            assert all(signal.getsignal(sig) == handler for sig, handler in previous.items())
+            fd = signal.set_wakeup_fd(-1)
+            assert fd == -1, "Signal wakeup fd was not restored"
+            assert not solver.watcher.active
+            """)
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            with self.subTest(signal=sig):
+                result = subprocess.run(
+                    [sys.executable, "-c", code, str(int(sig))],
+                    capture_output=True,
+                    text=True,
+                    timeout=15,
+                    check=False,
+                )
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

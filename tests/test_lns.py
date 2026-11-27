@@ -650,21 +650,28 @@ class TestLNS(TestCase):
 
     def test_preserve_signals(self):
         """
-        Test installing and restoring handlers on normal and exceptional exits.
+        Test installing and restoring handlers, the wakeup fd, and the relay thread.
         """
         for fail in (False, True):
             with self.subTest(fail=fail):
                 previous = {signal.SIGINT: mock.Mock(), signal.SIGTERM: signal.SIG_IGN}
                 handlers = previous.copy()
+                reader, writer = mock.Mock(), mock.Mock()
                 with (
                     mock.patch("fastlane.lns.signal.getsignal", side_effect=handlers.__getitem__),
                     mock.patch("fastlane.lns.signal.signal", side_effect=handlers.__setitem__) as set_signal,
+                    mock.patch("fastlane.lns.socket.socketpair", return_value=(reader, writer)),
+                    mock.patch("fastlane.lns.signal.set_wakeup_fd", return_value=-1) as set_wakeup,
+                    mock.patch("fastlane.lns.threading.Thread") as thread_class,
                 ):
+                    relay = thread_class.return_value
                     with self.assertRaisesRegex(RuntimeError, "search failed") if fail else nullcontext():
                         with self.lns._preserve_signals():
                             handler = handlers[signal.SIGINT]
                             self.assertTrue(callable(handler))
                             self.assertIs(handlers[signal.SIGTERM], handler)
+                            thread_class.assert_called_once_with(target=self.lns._signal_relay, args=(reader, mock.ANY))
+                            relay.start.assert_called_once_with()
                             if fail:
                                 raise RuntimeError("search failed")
 
@@ -678,6 +685,14 @@ class TestLNS(TestCase):
                             mock.call(signal.SIGTERM, previous[signal.SIGTERM]),
                         ],
                     )
+                    self.assertEqual(
+                        set_wakeup.call_args_list,
+                        [mock.call(writer.fileno(), warn_on_full_buffer=False), mock.call(-1)],
+                    )
+                    writer.send.assert_called_once_with(b"\0")
+                    relay.join.assert_called_once_with()
+                    reader.close.assert_called_once_with()
+                    writer.close.assert_called_once_with()
 
     def test_preserve_signals_unknown_handler(self):
         """
@@ -686,10 +701,72 @@ class TestLNS(TestCase):
         with (
             mock.patch("fastlane.lns.signal.getsignal", side_effect=[None, signal.SIG_IGN, signal.SIG_IGN]),
             mock.patch("fastlane.lns.signal.signal") as set_signal,
+            mock.patch("fastlane.lns.socket.socketpair", return_value=(mock.Mock(), mock.Mock())),
+            mock.patch("fastlane.lns.signal.set_wakeup_fd", return_value=-1),
+            mock.patch("fastlane.lns.threading.Thread"),
         ):
             with self.lns._preserve_signals():
                 self.assertEqual(set_signal.call_args.args[0], signal.SIGTERM)
             set_signal.assert_called_once()
+
+    def test_preserve_signals_wakeup_conflict(self):
+        """
+        Test rejecting an existing signal wakeup fd without starting the relay thread.
+        """
+        with (
+            mock.patch("fastlane.lns.socket.socketpair", return_value=(mock.Mock(), mock.Mock())),
+            mock.patch("fastlane.lns.signal.set_wakeup_fd", return_value=3) as set_wakeup,
+            mock.patch("fastlane.lns.threading.Thread") as thread_class,
+        ):
+            with self.assertRaisesRegex(RuntimeError, "another signal wakeup fd"):
+                with self.lns._preserve_signals():
+                    self.fail("An existing wakeup fd must not be taken over")
+            thread_class.return_value.start.assert_not_called()
+            self.assertEqual(set_wakeup.call_args_list, [mock.call(mock.ANY, warn_on_full_buffer=False), mock.call(3)])
+
+    def test_preserve_signals_writer_error(self):
+        """
+        Test that a failed wakeup send is swallowed; the relay still stops and joins.
+        """
+        reader, writer = mock.Mock(), mock.Mock()
+        writer.send.side_effect = OSError("socket already closed")
+        with (
+            mock.patch("fastlane.lns.signal.getsignal", return_value=signal.SIG_IGN),
+            mock.patch("fastlane.lns.signal.signal"),
+            mock.patch("fastlane.lns.socket.socketpair", return_value=(reader, writer)),
+            mock.patch("fastlane.lns.signal.set_wakeup_fd", return_value=-1),
+            mock.patch("fastlane.lns.threading.Thread") as thread_class,
+        ):
+            relay = thread_class.return_value
+            with self.lns._preserve_signals():
+                pass
+            writer.send.assert_called_once_with(b"\0")
+            relay.join.assert_called_once_with()
+        reader.close.assert_called_once_with()
+        writer.close.assert_called_once_with()
+
+    def test_signal_relay(self):
+        """
+        Test relaying wakeups to an immediate interrupt until stopped or the socket closes.
+        """
+        self.lns.solver = mock.Mock()
+        reader = mock.Mock()
+        stop = mock.Mock(is_set=mock.Mock(side_effect=[False, False]))
+        reader.recv.side_effect = [b"\0", b"\0", b""]
+        self.lns._signal_relay(reader, stop)
+        self.assertEqual(reader.recv.call_count, 3)
+        self.assertEqual(self.lns.solver.control.interrupt.call_count, 2)
+
+    def test_signal_relay_stopped(self):
+        """
+        Test that a pending stop ends the loop without a final interrupt.
+        """
+        self.lns.solver = mock.Mock()
+        reader = mock.Mock()
+        reader.recv.return_value = b"\0"
+        stop = mock.Mock(is_set=mock.Mock(return_value=True))
+        self.lns._signal_relay(reader, stop)
+        self.lns.solver.control.interrupt.assert_not_called()
 
     def test_signal_handler(self):
         """
@@ -700,6 +777,9 @@ class TestLNS(TestCase):
                 self.subTest(sig=sig, active=active),
                 mock.patch("fastlane.lns.signal.getsignal", return_value=signal.SIG_IGN),
                 mock.patch("fastlane.lns.signal.signal") as set_signal,
+                mock.patch("fastlane.lns.socket.socketpair", return_value=(mock.Mock(), mock.Mock())),
+                mock.patch("fastlane.lns.signal.set_wakeup_fd", return_value=-1),
+                mock.patch("fastlane.lns.threading.Thread"),
             ):
                 self.lns.interrupted = False
                 self.lns.solver = mock.Mock()
